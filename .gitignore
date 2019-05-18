@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# Directories
+bin
+obj
+
+# MSVC
+.vs
+*.user

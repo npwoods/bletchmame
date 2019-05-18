@@ -1,0 +1,71 @@
+/***************************************************************************
+
+    client.h
+
+    Client for invoking MAME for various tasks
+
+***************************************************************************/
+
+#pragma once
+
+#ifndef CLIENT_H
+#define CLIENT_H
+
+// For compilers that support precompilation, includes "wx/wx.h".
+#include "wx/wxprec.h"
+#include <wx/process.h>
+#include <wx/txtstrm.h>
+#include <wx/msgqueue.h>
+#include <wx/xml/xml.h>
+#include <iostream>
+#include <thread>
+
+// for all others, include the necessary headers (this file is usually all you
+// need because it includes almost all "standard" wxWidgets headers)
+#ifndef WX_PRECOMP
+#include "wx/wx.h"
+#endif
+
+#include "task.h"
+#include "job.h"
+
+
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
+class IMameClientSite
+{
+public:
+    virtual wxEvtHandler &EventHandler() = 0;
+    virtual const wxString &GetMameCommand() = 0;
+};
+
+
+class MameClient
+{
+public:
+    MameClient(IMameClientSite &site);
+    ~MameClient();
+
+    void Launch(std::unique_ptr<Task> &&task, int event_id);
+    void Reset();
+
+    template<class T> T *GetCurrentTask()
+    {
+        return dynamic_cast<T*>(m_task.get());
+    }
+
+private:
+    IMameClientSite &               m_site;
+    std::unique_ptr<Task>           m_task;
+    std::unique_ptr<wxProcess>      m_process;
+    long                            m_process_id;
+    std::thread                     m_thread;
+
+    static Job                      s_job;
+
+    void OnTerminate(int pid, int status);
+};
+
+#endif // CLIENT_H
