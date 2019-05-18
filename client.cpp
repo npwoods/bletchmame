@@ -32,21 +32,21 @@
 
 namespace
 {
-    class ProcessWithTerminateCallback : public wxProcess
+    class MyProcess : public wxProcess
     {
     public:
-        ProcessWithTerminateCallback(std::function<void(int pid, int status)> &&func)
+		void SetProcess(std::shared_ptr<wxProcess> &&process)
         {
-            m_func = std::move(func);
+			m_process = std::move(process);
         }
 
         virtual void OnTerminate(int pid, int status) override
         {
-            m_func(pid, status);
+			wxLogStatus("Slave process terminated; pid=%d status=%d", pid, status);
         }
 
-    private:
-        std::function<void(int pid, int status)> m_func;
+	private:
+		std::shared_ptr<wxProcess> m_process;
     };
 }
 
@@ -58,18 +58,31 @@ namespace
 Job MameClient::s_job;
 
 
+//-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
 MameClient::MameClient(IMameClientSite &site)
     : m_site(site)
-    , m_process_id(0)
 {
 }
 
+
+//-------------------------------------------------
+//  dtor
+//-------------------------------------------------
 
 MameClient::~MameClient()
 {
+	Abort();
     Reset();
 }
 
+
+
+//-------------------------------------------------
+//  Launch
+//-------------------------------------------------
 
 void MameClient::Launch(std::unique_ptr<Task> &&task, int)
 {
@@ -79,26 +92,42 @@ void MameClient::Launch(std::unique_ptr<Task> &&task, int)
         throw false;
     }
 
+	// build a command to launch the MAME slave
     std::string launch_command = m_site.GetMameCommand().ToStdString() + " " + task->Arguments();
 
-    m_process = std::unique_ptr<wxProcess>(new ProcessWithTerminateCallback([&](int pid, int status) { this->OnTerminate(pid, status); }));
-    m_process->Redirect();
+	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
+	auto process = std::shared_ptr<MyProcess>(new MyProcess());
+	m_process_for_main_thread = process;
+	m_process_for_task_thread = process;
+	process->Redirect();
+	process->SetProcess(process);
 
-    m_process_id = ::wxExecute(launch_command, wxEXEC_ASYNC, m_process.get());
-    if (m_process_id == 0)
+    long process_id = ::wxExecute(launch_command, wxEXEC_ASYNC, m_process_for_main_thread.get());
+    if (process_id == 0)
     {
         throw false;
     }
 
-    s_job.AddProcess(m_process_id);
+    s_job.AddProcess(process_id);
 
     m_task = std::move(task);
     m_thread = std::thread([this]
     {
-        m_task->Process(*m_process, m_site.EventHandler());
+		// we should really have logging, but wxWidgets handles logging oddly from child threads
+		wxLog::EnableLogging(false);
+
+		// invoke the task's process method
+        m_task->Process(*m_process_for_task_thread, m_site.EventHandler());
+
+		// we're done with our handle to the process
+		m_process_for_task_thread.reset();
     });
 }
 
+
+//-------------------------------------------------
+//  Reset
+//-------------------------------------------------
 
 void MameClient::Reset()
 {
@@ -106,10 +135,24 @@ void MameClient::Reset()
         m_thread.join();
     if (m_task)
         m_task.reset();
+	if (m_process_for_main_thread)
+		m_process_for_main_thread.reset();
+
+	// the following should never happen, as the act of joining the thread should cause
+	// this to be cleared, but so be it
+	if (m_process_for_task_thread)
+		m_process_for_task_thread.reset();
 }
 
 
-void MameClient::OnTerminate(int, int)
+//-------------------------------------------------
+//  Abort
+//-------------------------------------------------
+
+void MameClient::Abort()
 {
-    m_process.reset();
+	if (m_task)
+		m_task->Abort();
+	if (m_process_for_main_thread)
+		wxKill(m_process_for_main_thread->GetPid(), wxSIGKILL);
 }

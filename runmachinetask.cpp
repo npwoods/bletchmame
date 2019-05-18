@@ -73,12 +73,16 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
         else
         {
             m_message_queue.Receive(message);
+			wxLogDebug("MAME <== [%s]", message.m_command);
+			exiting = message.m_exit;
 
+			// special case - with an abort command, we continue immediately
+			if (message.m_command == "abort")
+				continue;
+
+			// emit this command to MAME
             output.WriteString(message.m_command);
             output.WriteString("\r\n");
-            wxLogDebug("MAME <== [%s]", message.m_command);
-
-            exiting = message.m_exit;
         }
 
         std::string str = input.ReadLine();
@@ -98,6 +102,16 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
     }
 
     QueuePayloadEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
+}
+
+
+//-------------------------------------------------
+//  Abort
+//-------------------------------------------------
+
+void RunMachineTask::Abort()
+{
+	Post("abort", true);
 }
 
 

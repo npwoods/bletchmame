@@ -59,13 +59,13 @@ public:
 private:
     IMameClientSite &               m_site;
     std::unique_ptr<Task>           m_task;
-    std::unique_ptr<wxProcess>      m_process;
-    long                            m_process_id;
+    std::shared_ptr<wxProcess>      m_process_for_main_thread;
+	std::shared_ptr<wxProcess>      m_process_for_task_thread;
     std::thread                     m_thread;
 
     static Job                      s_job;
 
-    void OnTerminate(int pid, int status);
+	void Abort();
 };
 
 #endif // CLIENT_H

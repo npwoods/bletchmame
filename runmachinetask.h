@@ -43,6 +43,7 @@ public:
 
     virtual std::string Arguments() override;
     virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
+	virtual void Abort() override;
 
     void Post(std::string &&command, bool exit = false);
 
