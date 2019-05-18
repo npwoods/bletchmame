@@ -117,7 +117,7 @@ MameFrame::MameFrame()
     , m_menu_bar(nullptr)
 {
     // set the frame icon
-    SetIcon(wxICON(sample));
+    SetIcon(wxICON(bletchmame));
 
     // set the size
     SetSize(m_prefs.GetSize());
