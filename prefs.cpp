@@ -114,7 +114,7 @@ void Preferences::ProcessXmlCallback(const std::vector<wxString> &path, const wx
             long index = -1, width = -1;
             if (node.GetAttribute("index").ToLong(&index) &&
                 node.GetAttribute("width").ToLong(&width) &&
-                index >= 0 && index <= m_column_widths.size() &&
+                index >= 0 && index <= (long)m_column_widths.size() &&
                 IsValidDimension(width))
             {
                 SetColumnWidth((int)index, (int)width);
@@ -148,7 +148,7 @@ void Preferences::Save(std::ostream &output)
     output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
     if (!m_selected_machine.IsEmpty())
         output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
-    for (int i = 0; i < m_column_widths.size(); i++)
+    for (size_t i = 0; i < m_column_widths.size(); i++)
         output << "\t<column index=\"" << i << "\" width=\"" << m_column_widths[i] << "\"/>" << std::endl;
     output << "</preferences>" << std::endl;
 }

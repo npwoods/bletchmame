@@ -302,7 +302,7 @@ void MameFrame::OnListItemSelected(wxListEvent &evt)
 void MameFrame::OnListItemActivated(wxListEvent &evt)
 {
     long index = evt.GetIndex();
-    if (index < 0 || index >= m_machines.size())
+    if (index < 0 || index >= (long)m_machines.size())
         return;
 
     Task *task = new RunMachineTask(m_machines[index].m_name.ToStdString(), GetTarget());
