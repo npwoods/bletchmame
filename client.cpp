@@ -86,42 +86,40 @@ MameClient::~MameClient()
 
 void MameClient::Launch(std::unique_ptr<Task> &&task, int)
 {
-    // Sanity check; don't do anything if we already have a task
-    if (m_task)
-    {
-        throw false;
-    }
+	// Sanity check; don't do anything if we already have a task
+	if (m_task)
+	{
+		throw false;
+	}
 
 	// build a command to launch the MAME slave
-    std::string launch_command = m_site.GetMameCommand().ToStdString() + " " + task->Arguments();
+	std::string launch_command = m_site.GetMameCommand().ToStdString() + " " + task->Arguments();
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
 	auto process = std::shared_ptr<MyProcess>(new MyProcess());
-	m_process_for_main_thread = process;
-	m_process_for_task_thread = process;
+	m_process = process;
 	process->Redirect();
 	process->SetProcess(process);
 
-    long process_id = ::wxExecute(launch_command, wxEXEC_ASYNC, m_process_for_main_thread.get());
-    if (process_id == 0)
-    {
-        throw false;
-    }
+	// launch the process
+	long process_id = ::wxExecute(launch_command, wxEXEC_ASYNC, m_process.get());
+	if (process_id == 0)
+	{
+		// TODO - better error handling, especially when we're not pointed at the proper executable
+		throw false;
+	}
 
-    s_job.AddProcess(process_id);
+	s_job.AddProcess(process_id);
 
-    m_task = std::move(task);
-    m_thread = std::thread([this]
-    {
+	m_task = std::move(task);
+	m_thread = std::thread([process, this]()
+	{
 		// we should really have logging, but wxWidgets handles logging oddly from child threads
 		wxLog::EnableLogging(false);
 
 		// invoke the task's process method
-        m_task->Process(*m_process_for_task_thread, m_site.EventHandler());
-
-		// we're done with our handle to the process
-		m_process_for_task_thread.reset();
-    });
+		m_task->Process(*process, m_site.EventHandler());
+	});
 }
 
 
@@ -135,13 +133,8 @@ void MameClient::Reset()
         m_thread.join();
     if (m_task)
         m_task.reset();
-	if (m_process_for_main_thread)
-		m_process_for_main_thread.reset();
-
-	// the following should never happen, as the act of joining the thread should cause
-	// this to be cleared, but so be it
-	if (m_process_for_task_thread)
-		m_process_for_task_thread.reset();
+	if (m_process)
+		m_process.reset();
 }
 
 
@@ -153,6 +146,6 @@ void MameClient::Abort()
 {
 	if (m_task)
 		m_task->Abort();
-	if (m_process_for_main_thread)
-		wxKill(m_process_for_main_thread->GetPid(), wxSIGKILL);
+	if (m_process)
+		wxKill(m_process->GetPid(), wxSIGKILL);
 }

@@ -59,8 +59,7 @@ public:
 private:
     IMameClientSite &               m_site;
     std::unique_ptr<Task>           m_task;
-    std::shared_ptr<wxProcess>      m_process_for_main_thread;
-	std::shared_ptr<wxProcess>      m_process_for_task_thread;
+    std::shared_ptr<wxProcess>      m_process;
     std::thread                     m_thread;
 
     static Job                      s_job;
