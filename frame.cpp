@@ -71,7 +71,7 @@ namespace
 
 		// status of running emulation
 		bool						m_status_paused;
-		int							m_status_frameskip;
+		std::string					m_status_frameskip;
 		bool						m_status_throttled;
 		float						m_status_throttle_rate;
 
@@ -176,10 +176,6 @@ void MameFrame::CreateMenuBar()
     wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode", wxEmptyString, wxITEM_CHECK);
     options_menu->AppendSubMenu(throttle_menu, "Throttle");
 	wxMenu *frameskip_menu = new wxMenu();
-	wxMenuItem *auto_frameskip_menu_item	= frameskip_menu->Append(id++, "Auto");
-	frameskip_menu->AppendSeparator();	// frameskip menu items are added later
-	wxMenuItem *increase_frameskip_menu_item = frameskip_menu->Append(id++, "Increase");
-	wxMenuItem *decrease_frameskip_menu_item = frameskip_menu->Append(id++, "Decrease");
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 
     // create the "Settings" menu
@@ -207,9 +203,6 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) {										}, auto_frameskip_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) {										}, increase_frameskip_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) {										}, decrease_frameskip_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnAbout();							}, about_menu_item->GetId());
 
 	// Bind UI update events
@@ -233,11 +226,15 @@ void MameFrame::CreateMenuBar()
 	}
 
 	// special setup for frameskip dynamic menu
-	for (int i = 0; i < 10; i++)
+	for (int i = -1; i <= 10; i++)
 	{
-		wxString text		= std::to_string(i);
+		wxString text		= i == -1 ? "Auto" : std::to_string(i);
 		wxMenuItem *item	= frameskip_menu->Insert(i + 1, id++, text, wxEmptyString, wxITEM_CHECK);
-		(void)item;
+		std::string value	= i == -1 ? "auto" : std::to_string(i);
+		std::string command = "frameskip " + value;
+
+		Bind(wxEVT_MENU,		[this, command](auto &)		{ Issue(std::string(command));								}, item->GetId());
+		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
 	}
 }
 

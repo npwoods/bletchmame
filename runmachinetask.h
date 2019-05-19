@@ -31,7 +31,7 @@ struct StatusUpdate
 {
 	bool				m_paused;
 	bool				m_paused_specified;
-	int					m_frameskip;
+	wxString			m_frameskip;
 	bool				m_frameskip_specified;
     wxString			m_speed_text;
 	bool				m_speed_text_specified;
