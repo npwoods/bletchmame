@@ -28,19 +28,27 @@ std::vector<TStr> string_split(const TStr &str, TFunc &&is_delim)
 {
 	std::vector<TStr> results;
 
-	size_t word_length = 0;
-	for (size_t i = 0; i <= str.length(); i++)
+	TStr::const_iterator word_begin = str.cbegin();
+	for (TStr::const_iterator iter = str.cbegin(); iter < str.cend(); iter++)
 	{
-		if (i < str.length() && !is_delim(str[i]))
+		if (is_delim(*iter))
 		{
-			word_length++;
+			if (word_begin < iter)
+			{
+				TStr word(word_begin, iter);
+				results.emplace_back(std::move(word));
+			}
+
+			word_begin = iter;
+			word_begin++;
 		}
-		else if (word_length > 0)
-		{
-			TStr word = str.substr(i - word_length, word_length);
-			results.emplace_back(std::move(word));
-			word_length = 0;
-		}
+	}
+
+	// squeeze off that final word, if necessary
+	if (word_begin < str.cend())
+	{
+		TStr word(word_begin, str.cend());
+		results.emplace_back(std::move(word));
 	}
 
 	return results;
