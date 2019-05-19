@@ -55,6 +55,10 @@ public:
     {
         return dynamic_cast<T*>(m_task.get());
     }
+	template<class T> const T *GetCurrentTask() const
+	{
+		return dynamic_cast<const T*>(m_task.get());
+	}
 
 private:
     IMameClientSite &               m_site;
