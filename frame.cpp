@@ -71,7 +71,7 @@ namespace
 
 		// status of running emulation
 		bool						m_status_paused;
-		std::string					m_status_frameskip;
+		wxString					m_status_frameskip;
 		bool						m_status_throttled;
 		float						m_status_throttle_rate;
 

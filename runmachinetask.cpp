@@ -32,7 +32,7 @@ wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(std::string &&machine_name, std::string &&target)
+RunMachineTask::RunMachineTask(wxString &&machine_name, std::string &&target)
     : m_machine_name(std::move(machine_name))
     , m_target(std::move(target))
 {
@@ -43,7 +43,7 @@ RunMachineTask::RunMachineTask(std::string &&machine_name, std::string &&target)
 //  Arguments
 //-------------------------------------------------
 
-std::string RunMachineTask::Arguments()
+wxString RunMachineTask::Arguments()
 {
     return m_machine_name + " -window -keyboardprovider dinput -slave_ui " + m_target + " -skip_gameinfo -sound none";
 }
@@ -85,12 +85,12 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
             output.WriteString("\r\n");
         }
 
-        std::string str = input.ReadLine();
+		wxString str = input.ReadLine();
         wxLogDebug("MAME ==> %s", str);
 
         // interpret the response
         util::string_truncate(str, '#');
-        std::vector<std::string> args = util::string_split(str, [](char ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
+        std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
 
         // did we get a status reponse
         if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
@@ -119,7 +119,7 @@ void RunMachineTask::Abort()
 //  OnBegin
 //-------------------------------------------------
 
-void RunMachineTask::Post(std::string &&command, bool exit)
+void RunMachineTask::Post(wxString &&command, bool exit)
 {
     Message message;
     message.m_command = std::move(command);

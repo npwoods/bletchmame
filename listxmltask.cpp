@@ -20,7 +20,7 @@ namespace
     class ListXmlTask : public Task
     {
     public:
-        virtual std::string Arguments() override
+        virtual wxString Arguments() override
         {
             return "-listxml -nodtd";
         }

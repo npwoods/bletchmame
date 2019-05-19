@@ -48,23 +48,23 @@ wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 class RunMachineTask : public Task
 {
 public:
-    RunMachineTask(std::string &&machine_name, std::string &&target);
+    RunMachineTask(wxString &&machine_name, std::string &&target);
 
-    virtual std::string Arguments() override;
+    virtual wxString Arguments() override;
     virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
 	virtual void Abort() override;
 
-    void Post(std::string &&command, bool exit = false);
+    void Post(wxString &&command, bool exit = false);
 
 private:
     struct Message
     {
-        std::string                 m_command;
+        wxString	                m_command;
         bool                        m_exit;
     };
 
-    std::string                     m_machine_name;
-    std::string                     m_target;
+	wxString						m_machine_name;
+	wxString						m_target;
     wxMessageQueue<Message>         m_message_queue;
 
     static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
