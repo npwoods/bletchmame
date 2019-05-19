@@ -48,7 +48,7 @@ public:
     MameClient(IMameClientSite &site);
     ~MameClient();
 
-    void Launch(std::unique_ptr<Task> &&task, int event_id);
+    void Launch(std::unique_ptr<Task> &&task);
     void Reset();
 
     template<class T> T *GetCurrentTask()

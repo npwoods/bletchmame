@@ -47,8 +47,7 @@ enum
     ID_THROTTLE_INCREASE,
     ID_THROTTLE_DECREASE,
     ID_THROTTLE_WARP,
-    ID_TASK_LISTXML,
-    ID_TASK_RUNMACHINE
+	ID_PING_TIMER
 };
 
 
@@ -65,12 +64,13 @@ namespace
         MameFrame();
 
         // event handlers (these functions should _not_ be virtual)
-        void OnExit();
-        void OnAbout();
-        void OnSize(wxSizeEvent &event);
-        void OnListItemSelected(wxListEvent &event);
-        void OnListItemActivated(wxListEvent &event);
-        void OnListColumnResized(wxListEvent &event);
+		void OnExit();
+		void OnAbout();
+		void OnSize(wxSizeEvent &event);
+		void OnListItemSelected(wxListEvent &event);
+		void OnListItemActivated(wxListEvent &event);
+		void OnListColumnResized(wxListEvent &event);
+		void OnPingTimer(wxTimerEvent &event);
 
         // Task notifications
         void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
@@ -82,11 +82,13 @@ namespace
         virtual const wxString &GetMameCommand() override;
 
     private:
-        MameClient                  m_client;
-        Preferences                 m_prefs;
-        wxListView *                m_list_view;
-        wxMenuBar *                 m_menu_bar;
-        std::vector<Machine>        m_machines;
+		MameClient                  m_client;
+		Preferences                 m_prefs;
+		wxListView *                m_list_view;
+		wxMenuBar *                 m_menu_bar;
+		wxTimer						m_ping_timer;
+		std::vector<Machine>        m_machines;
+		bool						m_pinging;
 
         static float s_throttle_rates[];
 
@@ -111,10 +113,12 @@ float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1
 //-------------------------------------------------
 
 MameFrame::MameFrame()
-    : wxFrame(nullptr, wxID_ANY, "BletchMAME")
-    , m_client(*this)
-    , m_list_view(nullptr)
-    , m_menu_bar(nullptr)
+	: wxFrame(nullptr, wxID_ANY, "BletchMAME")
+	, m_client(*this)
+	, m_list_view(nullptr)
+	, m_menu_bar(nullptr)
+	, m_ping_timer(this, ID_PING_TIMER)
+	, m_pinging(false)
 {
     // set the frame icon
     SetIcon(wxICON(bletchmame));
@@ -129,17 +133,18 @@ MameFrame::MameFrame()
     CreateStatusBar(2);
     SetStatusText("Welcome to BletchMAME!");
 
-    // the ties that bind...
-    Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
-    Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
-    Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
-    Bind(wxEVT_MENU,                [this](auto &)      { Issue("soft_reset");          }, ID_SOFT_RESET);
-    Bind(wxEVT_MENU,                [this](auto &)      { Issue("exit", true);          }, ID_STOP);
-    Bind(wxEVT_MENU,                [this](auto &)      { OnExit();                     }, ID_EXIT);
-    Bind(wxEVT_MENU,                [this](auto &)      { OnAbout();                    }, ID_ABOUT);
-    Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
-    Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
-    Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
+	// the ties that bind...
+	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
+	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
+	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
+	Bind(wxEVT_MENU,                [this](auto &)      { Issue("soft_reset");          }, ID_SOFT_RESET);
+	Bind(wxEVT_MENU,                [this](auto &)      { Issue("exit", true);          }, ID_STOP);
+	Bind(wxEVT_MENU,                [this](auto &)      { OnExit();                     }, ID_EXIT);
+	Bind(wxEVT_MENU,                [this](auto &)      { OnAbout();                    }, ID_ABOUT);
+	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
+	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
+	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
+	Bind(wxEVT_TIMER,				[this](auto &event) { OnPingTimer(event);           });
 
     // bind throttle rates
     for (int i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -156,7 +161,7 @@ MameFrame::MameFrame()
 
     // Connect to MAME
     Task::ptr task = create_list_xml_task();
-    m_client.Launch(std::move(task), ID_TASK_LISTXML);
+    m_client.Launch(std::move(task));
 }
 
 
@@ -280,7 +285,30 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &)
 
 void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 {
+	const StatusUpdate &payload(event.Payload());
+
+	if (payload.m_paused_specified)
+	{
+
+	}
+	if (payload.m_frameskip_specified)
+	{
+
+	}
+	if (payload.m_speed_text_specified)
+	{
+		SetStatusText(payload.m_speed_text);
+	}
+	if (payload.m_throttled_specified)
+	{
+
+	}
+	if (payload.m_throttle_rate_specified)
+	{
+	}
+
     SetStatusText(event.Payload().m_speed_text);
+	m_pinging = false;
 }
 
 
@@ -301,13 +329,13 @@ void MameFrame::OnListItemSelected(wxListEvent &evt)
 
 void MameFrame::OnListItemActivated(wxListEvent &evt)
 {
-    long index = evt.GetIndex();
-    if (index < 0 || index >= (long)m_machines.size())
-        return;
+	long index = evt.GetIndex();
+	if (index < 0 || index >= (long)m_machines.size())
+		return;
 
-    Task *task = new RunMachineTask(m_machines[index].m_name.ToStdString(), GetTarget());
-    m_client.Launch(Task::ptr(task), ID_TASK_RUNMACHINE);
-    UpdateEmulationSession();
+	Task *task = new RunMachineTask(m_machines[index].m_name.ToStdString(), GetTarget());
+	m_client.Launch(Task::ptr(task));
+	UpdateEmulationSession();
 }
 
 
@@ -320,6 +348,21 @@ void MameFrame::OnListColumnResized(wxListEvent &evt)
     int column_index = evt.GetColumn();
     int column_width = m_list_view->GetColumnWidth(column_index);
     m_prefs.SetColumnWidth(column_index, column_width);
+}
+
+
+//-------------------------------------------------
+//  OnPingTimer
+//-------------------------------------------------
+
+void MameFrame::OnPingTimer(wxTimerEvent &)
+{
+	// only issue a ping if there is an active session, and there is no ping in flight
+	if (!m_pinging && m_client.GetCurrentTask<RunMachineTask>())
+	{
+		m_pinging = true;
+		Issue("ping");
+	}
 }
 
 
@@ -404,6 +447,11 @@ void MameFrame::UpdateEmulationSession()
     }
 
     m_list_view->Show(!is_active);
+
+	if (is_active)
+		m_ping_timer.Start(500);
+	else
+		m_ping_timer.Stop();
 }
 
 

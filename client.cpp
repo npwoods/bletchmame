@@ -84,7 +84,7 @@ MameClient::~MameClient()
 //  Launch
 //-------------------------------------------------
 
-void MameClient::Launch(std::unique_ptr<Task> &&task, int)
+void MameClient::Launch(std::unique_ptr<Task> &&task)
 {
 	// Sanity check; don't do anything if we already have a task
 	if (m_task)

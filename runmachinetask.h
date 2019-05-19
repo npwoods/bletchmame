@@ -29,7 +29,16 @@ struct RunMachineResult
 
 struct StatusUpdate
 {
-    wxString    m_speed_text;
+	bool				m_paused;
+	bool				m_paused_specified;
+	int					m_frameskip;
+	bool				m_frameskip_specified;
+    wxString			m_speed_text;
+	bool				m_speed_text_specified;
+	bool				m_throttled;
+	bool				m_throttled_specified;
+	float				m_throttle_rate;
+	bool				m_throttle_rate_specified;
 };
 
 wxDECLARE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
