@@ -175,6 +175,12 @@ void MameFrame::CreateMenuBar()
     wxMenuItem *decrease_speed_menu_item	= throttle_menu->Append(id++, "Decrease Speed");
     wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode", wxEmptyString, wxITEM_CHECK);
     options_menu->AppendSubMenu(throttle_menu, "Throttle");
+	wxMenu *frameskip_menu = new wxMenu();
+	wxMenuItem *auto_frameskip_menu_item	= frameskip_menu->Append(id++, "Auto");
+	frameskip_menu->AppendSeparator();	// frameskip menu items are added later
+	wxMenuItem *increase_frameskip_menu_item = frameskip_menu->Append(id++, "Increase");
+	wxMenuItem *decrease_frameskip_menu_item = frameskip_menu->Append(id++, "Decrease");
+	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 
     // create the "Settings" menu
     wxMenu *settings_menu = new wxMenu();
@@ -201,6 +207,9 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) {										}, auto_frameskip_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) {										}, increase_frameskip_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) {										}, decrease_frameskip_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnAbout();							}, about_menu_item->GetId());
 
 	// Bind UI update events
@@ -212,7 +221,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);	}, warp_mode_menu_item->GetId());
 
-	// special setup for throttle menu, because it is dynamic
+	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
 	{
 		float throttle_rate	= s_throttle_rates[i];
@@ -221,6 +230,14 @@ void MameFrame::CreateMenuBar()
 
 		Bind(wxEVT_MENU,		[this, throttle_rate](auto &)		{ IssueThrottleRate(throttle_rate);										}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, throttle_rate](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_throttle_rate == throttle_rate);	}, item->GetId());
+	}
+
+	// special setup for frameskip dynamic menu
+	for (int i = 0; i < 10; i++)
+	{
+		wxString text		= std::to_string(i);
+		wxMenuItem *item	= frameskip_menu->Insert(i + 1, id++, text, wxEmptyString, wxITEM_CHECK);
+		(void)item;
 	}
 }
 
