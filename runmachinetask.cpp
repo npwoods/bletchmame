@@ -32,7 +32,7 @@ wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(wxString &&machine_name, std::string &&target)
+RunMachineTask::RunMachineTask(wxString &&machine_name, wxString &&target)
     : m_machine_name(std::move(machine_name))
     , m_target(std::move(target))
 {

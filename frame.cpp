@@ -87,7 +87,7 @@ namespace
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
         void UpdateMachineList();
         void UpdateEmulationSession();
-        std::string GetTarget();
+        wxString GetTarget();
     };
 
 };
@@ -372,7 +372,7 @@ void MameFrame::OnListItemActivated(wxListEvent &evt)
 	if (index < 0 || index >= (long)m_machines.size())
 		return;
 
-	Task::ptr task = std::make_unique<RunMachineTask>(m_machines[index].m_name.ToStdString(), GetTarget());
+	Task::ptr task = std::make_unique<RunMachineTask>(wxString(m_machines[index].m_name), GetTarget());
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
 }
@@ -519,7 +519,7 @@ void MameFrame::UpdateEmulationSession()
 //  GetTarget
 //-------------------------------------------------
 
-std::string MameFrame::GetTarget()
+wxString MameFrame::GetTarget()
 {
     return std::to_string((std::int64_t)GetHWND());
 }

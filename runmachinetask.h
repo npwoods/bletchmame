@@ -48,7 +48,7 @@ wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 class RunMachineTask : public Task
 {
 public:
-    RunMachineTask(wxString &&machine_name, std::string &&target);
+    RunMachineTask(wxString &&machine_name, wxString &&target);
 
     virtual wxString Arguments() override;
     virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
