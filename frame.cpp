@@ -15,6 +15,7 @@
 #include "prefs.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -24,10 +25,12 @@
 // IDs for the controls and the menu commands
 enum
 {
-    // user IDs
+	// user IDs
 	ID_PING_TIMER				= wxID_HIGHEST + 1,
 	ID_LAST
 };
+
+wxDEFINE_EVENT(EVT_SPECIFY_MAME_PATH, wxCommandEvent);
 
 
 //**************************************************************************
@@ -36,13 +39,13 @@ enum
 
 namespace
 {
-    class MameFrame : public wxFrame, public IMameClientSite
-    {
-    public:
-        // ctor(s)
-        MameFrame();
+	class MameFrame : public wxFrame, public IMameClientSite
+	{
+	public:
+		// ctor(s)
+		MameFrame();
 
-        // event handlers (these functions should _not_ be virtual)
+		// event handlers (these functions should _not_ be virtual)
 		void OnExit();
 		void OnAbout();
 		void OnSize(wxSizeEvent &event);
@@ -51,16 +54,18 @@ namespace
 		void OnListColumnResized(wxListEvent &event);
 		void OnPingTimer(wxTimerEvent &event);
 
-        // Task notifications
-        void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
-        void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
-        void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
+		// Task notifications
+		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
+		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
+		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
+		void OnSpecifyMamePath();
 
-        // IMameClientSite implementation
-        virtual wxEvtHandler &EventHandler() override;
-        virtual const wxString &GetMameCommand() override;
+		// IMameClientSite implementation
+		virtual wxEvtHandler &EventHandler() override;
+		virtual const wxString &GetMamePath() override;
+		virtual const wxString &GetMameExtraArguments() override;
 
-    private:
+	private:
 		MameClient                  m_client;
 		Preferences                 m_prefs;
 		wxListView *                m_list_view;
@@ -75,21 +80,20 @@ namespace
 		bool						m_status_throttled;
 		float						m_status_throttle_rate;
 
-        static float s_throttle_rates[];
+		static float s_throttle_rates[];
 
-        void CreateMenuBar();
-        void Issue(std::string &&command, bool exit = false);
+		void CreateMenuBar();
+		void Issue(std::string &&command, bool exit = false);
 		void IssueThrottled(bool throttled);
 		void IssueThrottleRate(float throttle_rate);
 		void ChangeThrottleRate(int adjustment);
 		bool IsEmulationSessionActive() const;
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event);
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
-        void UpdateMachineList();
-        void UpdateEmulationSession();
-        wxString GetTarget();
-    };
-
+		void UpdateMachineList();
+		void UpdateEmulationSession();
+		wxString GetTarget();
+	};
 };
 
 
@@ -111,38 +115,46 @@ MameFrame::MameFrame()
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
 {
-    // set the frame icon
-    SetIcon(wxICON(bletchmame));
+	// set the frame icon
+	SetIcon(wxICON(bletchmame));
 
-    // set the size
-    SetSize(m_prefs.GetSize());
+	// set the size
+	SetSize(m_prefs.GetSize());
 
-    // create the menu bar
-    CreateMenuBar();
+	// create the menu bar
+	CreateMenuBar();
 
-    // create a status bar just for fun (by default with 1 pane only)
-    CreateStatusBar(2);
-    SetStatusText("Welcome to BletchMAME!");
+	// create a status bar just for fun (by default with 1 pane only)
+	CreateStatusBar(2);
+	SetStatusText("Welcome to BletchMAME!");
 
 	// the ties that bind...
 	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
+	Bind(EVT_SPECIFY_MAME_PATH,     [this](auto &)      { OnSpecifyMamePath();			});
 	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
 	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
 	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
 	Bind(wxEVT_TIMER,				[this](auto &event) { OnPingTimer(event);           });
 
-    // Create a list view
-    m_list_view = new wxListView(this);
-    UpdateMachineList();
+	// Create a list view
+	m_list_view = new wxListView(this);
+	UpdateMachineList();
 
-    // nothing is running yet...
-    UpdateEmulationSession();
+	// nothing is running yet...
+	UpdateEmulationSession();
 
-    // Connect to MAME
-    Task::ptr task = create_list_xml_task();
-    m_client.Launch(std::move(task));
+	// Connect to MAME
+	if (wxFileExists(m_prefs.GetMamePath()))
+	{
+		m_client.Launch(create_list_xml_task());
+	}
+	else
+	{
+		// Can't find MAME; ask the user
+		util::PostEvent(*this, EVT_SPECIFY_MAME_PATH);
+	}
 }
 
 
@@ -154,44 +166,45 @@ void MameFrame::CreateMenuBar()
 {
 	int id = ID_LAST;
 
-    // create the "File" menu
-    wxMenu *file_menu = new wxMenu();
+	// create the "File" menu
+	wxMenu *file_menu = new wxMenu();
 	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
-    wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause");
-    wxMenu *reset_menu = new wxMenu();
-    wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
+	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause");
+	wxMenu *reset_menu = new wxMenu();
+	wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
 	wxMenuItem *hard_reset_menu_item		= reset_menu->Append(id++, "Hard Reset");
-    file_menu->AppendSubMenu(reset_menu, "Reset");
-    wxMenuItem *exit_menu_item				= file_menu->Append(wxID_EXIT, "E&xit\tAlt-X");
+	file_menu->AppendSubMenu(reset_menu, "Reset");
+	wxMenuItem *exit_menu_item				= file_menu->Append(wxID_EXIT, "E&xit\tAlt-X");
 
-    // create the "Devices" menu
-    wxMenu *devices_menu = new wxMenu();
+	// create the "Devices" menu
+	wxMenu *devices_menu = new wxMenu();
 
-    // create the "Options" menu
-    wxMenu *options_menu = new wxMenu();
-    wxMenu *throttle_menu = new wxMenu();
-    throttle_menu->AppendSeparator();	// throttle menu items are added later
+	// create the "Options" menu
+	wxMenu *options_menu = new wxMenu();
+	wxMenu *throttle_menu = new wxMenu();
+	throttle_menu->AppendSeparator();	// throttle menu items are added later
 	wxMenuItem *increase_speed_menu_item	= throttle_menu->Append(id++, "Increase Speed");
-    wxMenuItem *decrease_speed_menu_item	= throttle_menu->Append(id++, "Decrease Speed");
-    wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode", wxEmptyString, wxITEM_CHECK);
-    options_menu->AppendSubMenu(throttle_menu, "Throttle");
+	wxMenuItem *decrease_speed_menu_item	= throttle_menu->Append(id++, "Decrease Speed");
+	wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode", wxEmptyString, wxITEM_CHECK);
+	options_menu->AppendSubMenu(throttle_menu, "Throttle");
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 
-    // create the "Settings" menu
-    wxMenu *settings_menu = new wxMenu();
+	// create the "Settings" menu
+	wxMenu *settings_menu = new wxMenu();
+	wxMenuItem *specify_mame_path_menu_item	= settings_menu->Append(id++, "Specify MAME path...");
 
-    // the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
-    wxMenu *help_menu = new wxMenu();
-    wxMenuItem *about_menu_item				= help_menu->Append(wxID_ABOUT, "&About\tF1");
+	// the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
+	wxMenu *help_menu = new wxMenu();
+	wxMenuItem *about_menu_item				= help_menu->Append(wxID_ABOUT, "&About\tF1");
 
-    // now append the freshly created menu to the menu bar...
-    m_menu_bar = new wxMenuBar();
-    m_menu_bar->Append(file_menu, "&File");
-    m_menu_bar->Append(devices_menu, "&Devices");
-    m_menu_bar->Append(options_menu, "&Options");
-    m_menu_bar->Append(settings_menu, "&Settings");
-    m_menu_bar->Append(help_menu, "&Help");
+	// now append the freshly created menu to the menu bar...
+	m_menu_bar = new wxMenuBar();
+	m_menu_bar->Append(file_menu, "&File");
+	m_menu_bar->Append(devices_menu, "&Devices");
+	m_menu_bar->Append(options_menu, "&Options");
+	m_menu_bar->Append(settings_menu, "&Settings");
+	m_menu_bar->Append(help_menu, "&Help");
 
 	// ... and attach this menu bar to the frame
 	SetMenuBar(m_menu_bar);
@@ -203,6 +216,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { util::PostEvent(*this, EVT_SPECIFY_MAME_PATH);	}, specify_mame_path_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnAbout();							}, about_menu_item->GetId());
 
 	// Bind UI update events
@@ -348,6 +362,21 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttle_rate = payload.m_throttle_rate;
 
 	m_pinging = false;
+}
+
+
+//-------------------------------------------------
+//  OnSpecifyMamePath
+//-------------------------------------------------
+
+void MameFrame::OnSpecifyMamePath()
+{
+	wxFileDialog dialog(this, "Specify MAME Path", "", "", "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (dialog.ShowModal() == wxID_CANCEL)
+		return;
+
+	m_prefs.SetMamePath(dialog.GetPath());
+	m_client.Launch(create_list_xml_task());
 }
 
 
@@ -504,9 +533,9 @@ void MameFrame::UpdateMachineList()
 
 void MameFrame::UpdateEmulationSession()
 {
-    bool is_active = IsEmulationSessionActive();
+	bool is_active = IsEmulationSessionActive();
 
-    m_list_view->Show(!is_active);
+	m_list_view->Show(!is_active);
 
 	if (is_active)
 		m_ping_timer.Start(500);
@@ -521,7 +550,7 @@ void MameFrame::UpdateEmulationSession()
 
 wxString MameFrame::GetTarget()
 {
-    return std::to_string((std::int64_t)GetHWND());
+	return std::to_string((std::int64_t)GetHWND());
 }
 
 
@@ -531,17 +560,27 @@ wxString MameFrame::GetTarget()
 
 wxEvtHandler &MameFrame::EventHandler()
 {
-    return *this;
+	return *this;
 }
 
 
 //-------------------------------------------------
-//  GetMameCommand
+//  GetMamePath
 //-------------------------------------------------
 
-const wxString &MameFrame::GetMameCommand()
+const wxString &MameFrame::GetMamePath()
 {
-    return m_prefs.GetMameCommand();
+	return m_prefs.GetMamePath();
+}
+
+
+//-------------------------------------------------
+//  GetMameExtraArguments
+//-------------------------------------------------
+
+const wxString &MameFrame::GetMameExtraArguments()
+{
+	return m_prefs.GetMameExtraArguments();
 }
 
 

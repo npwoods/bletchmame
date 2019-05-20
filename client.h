@@ -37,36 +37,37 @@
 class IMameClientSite
 {
 public:
-    virtual wxEvtHandler &EventHandler() = 0;
-    virtual const wxString &GetMameCommand() = 0;
+	virtual wxEvtHandler &EventHandler() = 0;
+	virtual const wxString &GetMamePath() = 0;
+	virtual const wxString &GetMameExtraArguments() = 0;
 };
 
 
 class MameClient
 {
 public:
-    MameClient(IMameClientSite &site);
-    ~MameClient();
+	MameClient(IMameClientSite &site);
+	~MameClient();
 
-    void Launch(std::unique_ptr<Task> &&task);
-    void Reset();
+	void Launch(std::unique_ptr<Task> &&task);
+	void Reset();
 
-    template<class T> T *GetCurrentTask()
-    {
-        return dynamic_cast<T*>(m_task.get());
-    }
+	template<class T> T *GetCurrentTask()
+	{
+		return dynamic_cast<T*>(m_task.get());
+	}
 	template<class T> const T *GetCurrentTask() const
 	{
 		return dynamic_cast<const T*>(m_task.get());
 	}
 
 private:
-    IMameClientSite &               m_site;
-    std::unique_ptr<Task>           m_task;
-    std::shared_ptr<wxProcess>      m_process;
-    std::thread                     m_thread;
+	IMameClientSite &               m_site;
+	std::unique_ptr<Task>           m_task;
+	std::shared_ptr<wxProcess>      m_process;
+	std::thread                     m_thread;
 
-    static Job                      s_job;
+	static Job                      s_job;
 
 	void Abort();
 };

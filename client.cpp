@@ -93,7 +93,11 @@ void MameClient::Launch(std::unique_ptr<Task> &&task)
 	}
 
 	// build a command to launch the MAME slave
-	std::string launch_command = m_site.GetMameCommand().ToStdString() + " " + task->Arguments();
+	const wxString &mame_path(m_site.GetMamePath());
+	const wxString &mame_extra_arguments(m_site.GetMameExtraArguments());
+	wxString launch_command = (mame_path.Contains(" ") ? "\"" + mame_path + "\"" : mame_path)
+		+ " " + task->Arguments()
+		+ (mame_extra_arguments.IsEmpty() ? wxEmptyString : " " + mame_extra_arguments);
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
 	auto process = std::make_shared<MyProcess>();
