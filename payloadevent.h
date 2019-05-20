@@ -28,7 +28,7 @@ public:
     T &Payload() { return *m_ptr; }
 
 protected:
-    virtual wxEvent *Clone() const
+    virtual wxEvent *Clone() const override
     {
         return new PayloadEvent(GetEventType(), GetId(), m_ptr);
     }
@@ -42,13 +42,5 @@ private:
     {
     }
 };
-
-
-template<class T>
-void QueuePayloadEvent(wxEvtHandler &handler, wxEventType event_type, int winid, T &&payload)
-{
-    wxEvent *event = new PayloadEvent<T>(event_type, winid, std::move(payload));
-    handler.QueueEvent(event);
-}
 
 #endif // PAYLOADEVENT_H

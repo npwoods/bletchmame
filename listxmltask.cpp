@@ -9,6 +9,7 @@
 #include <wx/xml/xml.h>
 
 #include "listxmltask.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -55,8 +56,8 @@ wxDEFINE_EVENT(EVT_LIST_XML_RESULT, PayloadEvent<ListXmlResult>);
 
 void ListXmlTask::Process(wxProcess &process, wxEvtHandler &handler)
 {
-    ListXmlResult result = InternalProcess(*process.GetInputStream());
-    QueuePayloadEvent(handler, EVT_LIST_XML_RESULT, wxID_ANY, std::move(result));
+	ListXmlResult result = InternalProcess(*process.GetInputStream());
+	util::QueueEvent(handler, EVT_LIST_XML_RESULT, wxID_ANY, std::move(result));
 }
 
 

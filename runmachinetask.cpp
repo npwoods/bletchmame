@@ -97,11 +97,11 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
         {
             StatusUpdate status_update;
             if (ReadStatusUpdate(input, status_update))
-                QueuePayloadEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
+                util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
         }
     }
 
-    QueuePayloadEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
+	util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
 }
 
 

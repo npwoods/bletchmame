@@ -11,6 +11,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include <wx/event.h>
 #include <wx/xml/xml.h>
 
 namespace util {
@@ -80,6 +81,25 @@ bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name,
 bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, double &result);
 bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, float &result);
 
+
+//**************************************************************************
+//  EVENTS
+//**************************************************************************
+
+template<typename TEvent, typename... TArgs>
+void PostEvent(wxEvtHandler &dest, const wxEventTypeTag<TEvent> &event_type, TArgs&&... args)
+{
+	wxEvent *event = new TEvent(event_type, std::forward<TArgs>(args)...);
+	wxPostEvent(&dest, *event);
+}
+
+
+template<typename TEvent, typename... TArgs>
+void QueueEvent(wxEvtHandler &dest, const wxEventTypeTag<TEvent> &event_type, TArgs&&... args)
+{
+	wxEvent *event = new TEvent(event_type, std::forward<TArgs>(args)...);
+	dest.QueueEvent(event);
+}
 
 //**************************************************************************
 
