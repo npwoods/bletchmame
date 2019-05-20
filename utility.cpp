@@ -10,6 +10,40 @@
 
 
 //-------------------------------------------------
+//  append_conditionally_quoted
+//-------------------------------------------------
+
+static void append_conditionally_quoted(wxString &buffer, const wxString &text)
+{
+	bool has_spaces = std::find_if(text.begin(), text.end(), [](wchar_t ch) { return ch == ' '; }) != text.end();
+
+	if (has_spaces)
+		buffer += "\"";
+	buffer += text;
+	if (has_spaces)
+		buffer += "\"";
+}
+
+
+//-------------------------------------------------
+//  build_command_line
+//-------------------------------------------------
+
+wxString util::build_command_line(const wxString &executable, const std::vector<wxString> &argv)
+{
+	wxString result;
+	append_conditionally_quoted(result, executable);
+
+	for (const wxString &arg : argv)
+	{
+		result += " ";
+		append_conditionally_quoted(result, arg);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  InternalProcessXml
 //-------------------------------------------------
 

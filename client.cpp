@@ -24,6 +24,7 @@
 #endif
 
 #include "client.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -92,12 +93,14 @@ void MameClient::Launch(std::unique_ptr<Task> &&task)
 		throw false;
 	}
 
-	// build a command to launch the MAME slave
+	// get the MAME path and extra arguments out of our preferences
 	const wxString &mame_path(m_site.GetMamePath());
 	const wxString &mame_extra_arguments(m_site.GetMameExtraArguments());
-	wxString launch_command = (mame_path.Contains(" ") ? "\"" + mame_path + "\"" : mame_path)
-		+ " " + task->Arguments()
-		+ (mame_extra_arguments.IsEmpty() ? wxEmptyString : " " + mame_extra_arguments);
+
+	// build the command line
+	wxString launch_command = util::build_command_line(mame_path, task->GetArguments());
+	if (!mame_extra_arguments.IsEmpty())
+		launch_command += " " + mame_extra_arguments;
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
 	auto process = std::make_shared<MyProcess>();

@@ -18,15 +18,15 @@
 
 namespace
 {
-    class ListXmlTask : public Task
-    {
-    public:
-        virtual wxString Arguments() override
-        {
-            return "-listxml -nodtd";
-        }
+	class ListXmlTask : public Task
+	{
+	public:
+		virtual std::vector<wxString> GetArguments() const
+		{
+			return { "-listxml", "-nodtd" };
+		}
 
-        virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
+		virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
 
     private:
         ListXmlResult InternalProcess(wxInputStream &input);

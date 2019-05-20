@@ -40,12 +40,23 @@ RunMachineTask::RunMachineTask(wxString &&machine_name, wxString &&target)
 
 
 //-------------------------------------------------
-//  Arguments
+//  GetArguments
 //-------------------------------------------------
 
-wxString RunMachineTask::Arguments()
+std::vector<wxString> RunMachineTask::GetArguments() const
 {
-    return m_machine_name + " -window -keyboardprovider dinput -slave_ui " + m_target + " -skip_gameinfo -sound none";
+	return
+	{
+		m_machine_name,
+		"-window",
+		"-keyboardprovider",
+		"dinput",
+		"-slave_ui",
+		m_target,
+		"-skip_gameinfo",
+		"-sound",
+		"none"
+	};
 }
 
 
