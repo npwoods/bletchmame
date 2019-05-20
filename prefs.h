@@ -38,6 +38,8 @@ public:
 	void SetSelectedMachine(const wxString &machine_name)   { m_selected_machine = machine_name; }
 	void SetSelectedMachine(wxString &&machine_name)        { m_selected_machine = std::move(machine_name); }
 
+	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
+
 private:
 	wxString                        m_mame_path;
 	wxString                        m_mame_extra_arguments;
@@ -49,7 +51,7 @@ private:
 	void Save();
 	void Save(std::ostream &output);
 	void ProcessXmlCallback(const std::vector<wxString> &path, const wxXmlNode &node);
-	wxString GetFileName();
+	wxString GetFileName(bool ensure_directory_exists);
 };
 
 #endif // PREFS_H

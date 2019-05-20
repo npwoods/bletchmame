@@ -18,6 +18,7 @@
 
 #include "runmachinetask.h"
 #include "utility.h"
+#include "prefs.h"
 
 
 //**************************************************************************
@@ -48,6 +49,8 @@ std::vector<wxString> RunMachineTask::GetArguments() const
 	return
 	{
 		m_machine_name,
+		"-cfg_directory",
+		Preferences::GetConfigDirectory(true),
 		"-window",
 		"-keyboardprovider",
 		"dinput",

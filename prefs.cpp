@@ -9,6 +9,7 @@
 #include <wx/stdpaths.h>
 #include <wx/filename.h>
 #include <wx/xml/xml.h>
+#include <wx/dir.h>
 #include <fstream>
 #include <functional>
 
@@ -61,7 +62,7 @@ bool Preferences::Load()
 {
 	using namespace std::placeholders;
 
-	wxString file_name = GetFileName();
+	wxString file_name = GetFileName(false);
 
 	// first check to see if the file exists
 	if (!wxFileExists(file_name))
@@ -134,7 +135,7 @@ void Preferences::ProcessXmlCallback(const std::vector<wxString> &path, const wx
 
 void Preferences::Save()
 {
-	wxString file_name = GetFileName();
+	wxString file_name = GetFileName(true);
 	std::ofstream output(file_name.ToStdString(), std::ios_base::out);
 	Save(output);
 }
@@ -163,10 +164,28 @@ void Preferences::Save(std::ostream &output)
 //  GetFileName
 //-------------------------------------------------
 
-wxString Preferences::GetFileName()
+wxString Preferences::GetFileName(bool ensure_directory_exists)
 {
-	wxStandardPaths::Get().UseAppInfo(wxStandardPaths::AppInfo_None);
-	wxString path = wxStandardPaths::Get().GetUserConfigDir();
-	wxFileName file_name(path, "BletchMAME.xml");
+	wxString directory = GetConfigDirectory(ensure_directory_exists);
+	wxFileName file_name(directory, "BletchMAME.xml");
 	return file_name.GetFullPath();
+}
+
+
+//-------------------------------------------------
+//  GetConfigDirectory - gets the configuration
+//	directory, and optionally ensuring it exists
+//-------------------------------------------------
+
+wxString Preferences::GetConfigDirectory(bool ensure_directory_exists)
+{
+	// this is currently a thin wrapper on GetUserDataDir(), but hypothetically
+	// we might want a command line option to override this directory
+	wxString directory = wxStandardPaths::Get().GetUserDataDir();
+
+	// if appropriate, ensure the directory exists
+	if (ensure_directory_exists && !wxDir::Exists(directory))
+		wxDir::Make(directory);
+
+	return directory;
 }
