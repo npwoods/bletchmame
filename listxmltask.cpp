@@ -129,6 +129,6 @@ Machine ListXmlTask::MachineFromXmlNode(wxXmlNode &node)
 
 Task::ptr create_list_xml_task()
 {
-    return Task::ptr(new ListXmlTask());
+	return std::make_unique<ListXmlTask>();
 }
 

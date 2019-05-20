@@ -96,7 +96,7 @@ void MameClient::Launch(std::unique_ptr<Task> &&task)
 	std::string launch_command = m_site.GetMameCommand().ToStdString() + " " + task->Arguments();
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
-	auto process = std::shared_ptr<MyProcess>(new MyProcess());
+	auto process = std::make_shared<MyProcess>();
 	m_process = process;
 	process->Redirect();
 	process->SetProcess(process);

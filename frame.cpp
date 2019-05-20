@@ -372,8 +372,8 @@ void MameFrame::OnListItemActivated(wxListEvent &evt)
 	if (index < 0 || index >= (long)m_machines.size())
 		return;
 
-	Task *task = new RunMachineTask(m_machines[index].m_name.ToStdString(), GetTarget());
-	m_client.Launch(Task::ptr(task));
+	Task::ptr task = std::make_unique<RunMachineTask>(m_machines[index].m_name.ToStdString(), GetTarget());
+	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
 }
 
