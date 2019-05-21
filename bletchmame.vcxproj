@@ -219,28 +219,28 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="app.cpp" />
-    <ClCompile Include="client.cpp" />
-    <ClCompile Include="frame.cpp" />
-    <ClCompile Include="job.cpp" />
-    <ClCompile Include="listxmltask.cpp" />
-    <ClCompile Include="prefs.cpp" />
-    <ClCompile Include="runmachinetask.cpp" />
-    <ClCompile Include="utility.cpp" />
+    <ClCompile Include="src\app.cpp" />
+    <ClCompile Include="src\client.cpp" />
+    <ClCompile Include="src\frame.cpp" />
+    <ClCompile Include="src\job.cpp" />
+    <ClCompile Include="src\listxmltask.cpp" />
+    <ClCompile Include="src\prefs.cpp" />
+    <ClCompile Include="src\runmachinetask.cpp" />
+    <ClCompile Include="src\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="bletchmame.rc" />
+    <ResourceCompile Include="src\bletchmame.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="client.h" />
-    <ClInclude Include="frame.h" />
-    <ClInclude Include="job.h" />
-    <ClInclude Include="listxmltask.h" />
-    <ClInclude Include="payloadevent.h" />
-    <ClInclude Include="prefs.h" />
-    <ClInclude Include="runmachinetask.h" />
-    <ClInclude Include="task.h" />
-    <ClInclude Include="utility.h" />
+    <ClInclude Include="src\client.h" />
+    <ClInclude Include="src\frame.h" />
+    <ClInclude Include="src\job.h" />
+    <ClInclude Include="src\listxmltask.h" />
+    <ClInclude Include="src\payloadevent.h" />
+    <ClInclude Include="src\prefs.h" />
+    <ClInclude Include="src\unmachinetask.h" />
+    <ClInclude Include="src\task.h" />
+    <ClInclude Include="src\utility.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
