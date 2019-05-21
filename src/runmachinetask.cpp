@@ -44,11 +44,15 @@ RunMachineTask::RunMachineTask(wxString &&machine_name, wxString &&target)
 //  GetArguments
 //-------------------------------------------------
 
-std::vector<wxString> RunMachineTask::GetArguments() const
+std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) const
 {
 	return
 	{
 		m_machine_name,
+		"-rompath",
+		prefs.GetPath(Preferences::path_type::roms),
+		"-samplepath",
+		prefs.GetPath(Preferences::path_type::samples),
 		"-cfg_directory",
 		Preferences::GetConfigDirectory(true),
 		"-window",

@@ -15,12 +15,17 @@
 
 static void append_conditionally_quoted(wxString &buffer, const wxString &text)
 {
-	bool has_spaces = std::find_if(text.begin(), text.end(), [](wchar_t ch) { return ch == ' '; }) != text.end();
+	auto iter = std::find_if(text.begin(), text.end(), [](wchar_t ch)
+	{
+		return ch == ' ';
+	});
+	bool has_spaces = iter != text.end();
+	bool need_quotes = buffer.IsEmpty() || has_spaces;
 
-	if (has_spaces)
+	if (need_quotes)
 		buffer += "\"";
 	buffer += text;
-	if (has_spaces)
+	if (need_quotes)
 		buffer += "\"";
 }
 

@@ -24,6 +24,7 @@
 #endif
 
 #include "client.h"
+#include "prefs.h"
 #include "utility.h"
 
 
@@ -63,8 +64,9 @@ Job MameClient::s_job;
 //  ctor
 //-------------------------------------------------
 
-MameClient::MameClient(IMameClientSite &site)
-    : m_site(site)
+MameClient::MameClient(wxEvtHandler &event_handler, const Preferences &prefs)
+    : m_event_handler(event_handler)
+	, m_prefs(prefs)
 {
 }
 
@@ -93,14 +95,15 @@ void MameClient::Launch(std::unique_ptr<Task> &&task)
 		throw false;
 	}
 
-	// get the MAME path and extra arguments out of our preferences
-	const wxString &mame_path(m_site.GetMamePath());
-	const wxString &mame_extra_arguments(m_site.GetMameExtraArguments());
-
 	// build the command line
-	wxString launch_command = util::build_command_line(mame_path, task->GetArguments());
-	if (!mame_extra_arguments.IsEmpty())
-		launch_command += " " + mame_extra_arguments;
+	wxString launch_command = util::build_command_line(
+		m_prefs.GetPath(Preferences::path_type::emu_exectuable),
+		task->GetArguments(m_prefs));
+
+	// slap on any extra arguments
+	const wxString &extra_arguments(m_prefs.GetMameExtraArguments());
+	if (!extra_arguments.IsEmpty())
+		launch_command += " " + extra_arguments;
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
 	auto process = std::make_shared<MyProcess>();
@@ -125,7 +128,7 @@ void MameClient::Launch(std::unique_ptr<Task> &&task)
 		wxLog::EnableLogging(false);
 
 		// invoke the task's process method
-		m_task->Process(*process, m_site.EventHandler());
+		m_task->Process(*process, m_event_handler);
 	});
 }
 

@@ -39,7 +39,7 @@ wxDEFINE_EVENT(EVT_SPECIFY_MAME_PATH, wxCommandEvent);
 
 namespace
 {
-	class MameFrame : public wxFrame, public IMameClientSite
+	class MameFrame : public wxFrame
 	{
 	public:
 		// ctor(s)
@@ -59,11 +59,6 @@ namespace
 		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
 		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
 		void OnSpecifyMamePath();
-
-		// IMameClientSite implementation
-		virtual wxEvtHandler &EventHandler() override;
-		virtual const wxString &GetMamePath() override;
-		virtual const wxString &GetMameExtraArguments() override;
 
 	private:
 		MameClient                  m_client;
@@ -109,7 +104,7 @@ float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1
 
 MameFrame::MameFrame()
 	: wxFrame(nullptr, wxID_ANY, "BletchMAME")
-	, m_client(*this)
+	, m_client(*this, m_prefs)
 	, m_list_view(nullptr)
 	, m_menu_bar(nullptr)
 	, m_ping_timer(this, ID_PING_TIMER)
@@ -551,36 +546,6 @@ void MameFrame::UpdateEmulationSession()
 wxString MameFrame::GetTarget()
 {
 	return std::to_string((std::int64_t)GetHWND());
-}
-
-
-//-------------------------------------------------
-//  EventHandler
-//-------------------------------------------------
-
-wxEvtHandler &MameFrame::EventHandler()
-{
-	return *this;
-}
-
-
-//-------------------------------------------------
-//  GetMamePath
-//-------------------------------------------------
-
-const wxString &MameFrame::GetMamePath()
-{
-	return m_prefs.GetPath(Preferences::path_type::emu_exectuable);
-}
-
-
-//-------------------------------------------------
-//  GetMameExtraArguments
-//-------------------------------------------------
-
-const wxString &MameFrame::GetMameExtraArguments()
-{
-	return m_prefs.GetMameExtraArguments();
 }
 
 

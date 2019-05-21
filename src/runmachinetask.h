@@ -50,7 +50,7 @@ class RunMachineTask : public Task
 public:
     RunMachineTask(wxString &&machine_name, wxString &&target);
 
-    virtual std::vector<wxString> GetArguments() const override;
+    virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
     virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
 	virtual void Abort() override;
 

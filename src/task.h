@@ -14,6 +14,8 @@
 #include <wx/process.h>
 #include <wx/event.h>
 
+class Preferences;
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -32,7 +34,7 @@ public:
 
 	virtual void Process(wxProcess &process, wxEvtHandler &handler) = 0;
 	virtual void Abort() {}
-	virtual std::vector<wxString> GetArguments() const = 0;
+	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const = 0;
 };
 
 

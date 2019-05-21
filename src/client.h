@@ -34,19 +34,10 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
-class IMameClientSite
-{
-public:
-	virtual wxEvtHandler &EventHandler() = 0;
-	virtual const wxString &GetMamePath() = 0;
-	virtual const wxString &GetMameExtraArguments() = 0;
-};
-
-
 class MameClient
 {
 public:
-	MameClient(IMameClientSite &site);
+	MameClient(wxEvtHandler &event_handler, const Preferences &prefs);
 	~MameClient();
 
 	void Launch(std::unique_ptr<Task> &&task);
@@ -62,7 +53,8 @@ public:
 	}
 
 private:
-	IMameClientSite &               m_site;
+	wxEvtHandler &					m_event_handler;
+	const Preferences &				m_prefs;
 	std::unique_ptr<Task>           m_task;
 	std::shared_ptr<wxProcess>      m_process;
 	std::thread                     m_thread;
