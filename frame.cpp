@@ -146,7 +146,7 @@ MameFrame::MameFrame()
 	UpdateEmulationSession();
 
 	// Connect to MAME
-	if (wxFileExists(m_prefs.GetMamePath()))
+	if (wxFileExists(m_prefs.GetPath(Preferences::path_type::emu_exectuable)))
 	{
 		m_client.Launch(create_list_xml_task());
 	}
@@ -375,7 +375,7 @@ void MameFrame::OnSpecifyMamePath()
 	if (dialog.ShowModal() == wxID_CANCEL)
 		return;
 
-	m_prefs.SetMamePath(dialog.GetPath());
+	m_prefs.SetPath(Preferences::path_type::emu_exectuable, dialog.GetPath());
 	m_client.Launch(create_list_xml_task());
 }
 
@@ -570,7 +570,7 @@ wxEvtHandler &MameFrame::EventHandler()
 
 const wxString &MameFrame::GetMamePath()
 {
-	return m_prefs.GetMamePath();
+	return m_prefs.GetPath(Preferences::path_type::emu_exectuable);
 }
 
 

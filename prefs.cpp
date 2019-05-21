@@ -18,6 +18,18 @@
 
 
 //**************************************************************************
+//  LOCAL VARIABLES
+//**************************************************************************
+
+static std::array<const char *, static_cast<size_t>(Preferences::path_type::count)>	s_path_names =
+{
+	"emu",
+	"roms",
+	"samples"
+};
+
+
+//**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
 
@@ -88,9 +100,14 @@ void Preferences::ProcessXmlCallback(const std::vector<wxString> &path, const wx
 	{
 		const wxString &component(path[1]);
 
-		if (component == "mamepath")
+		if (component == "path")
 		{
-			SetMamePath(node.GetNodeContent());
+			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), node.GetAttribute("type"));
+			if (iter != s_path_names.cend())
+			{
+				path_type type = static_cast<path_type>(iter - s_path_names.cbegin());
+				SetPath(type, node.GetNodeContent());
+			}
 		}
 		else if (component == "mameextraarguments")
 		{
@@ -149,8 +166,10 @@ void Preferences::Save(std::ostream &output)
 {
 	output << "<!-- Preferences for BletchMAME -->" << std::endl;
 	output << "<preferences>" << std::endl;
-	output << "\t<mamepath>" << m_mame_path << "</mamepath>" << std::endl;
-	output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
+	for (size_t i = 0; i < m_paths.size(); i++)
+		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetPath(static_cast<path_type>(i)) << "</path>" << std::endl;
+	if (!m_mame_extra_arguments.IsEmpty())
+		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
 	if (!m_selected_machine.IsEmpty())
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;

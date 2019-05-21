@@ -19,11 +19,20 @@
 class Preferences
 {
 public:
+	enum class path_type
+	{
+		emu_exectuable,
+		roms,
+		samples,
+
+		count
+	};
+
 	Preferences();
 	~Preferences();
 
-	const wxString &GetMamePath() const						{ return m_mame_path; }
-	void SetMamePath(wxString &&mame_path)					{ m_mame_path = std::move(mame_path); }
+	const wxString &GetPath(path_type type) const			{ return m_paths[static_cast<size_t>(type)]; }
+	void SetPath(path_type type, wxString &&mame_path)		{ m_paths[static_cast<size_t>(type)] = std::move(mame_path); }
 
 	const wxString &GetMameExtraArguments() const			{ return m_mame_extra_arguments; }
 	void SetMameExtraArguments(wxString &&extra_arguments)	{ m_mame_extra_arguments = std::move(extra_arguments); }
@@ -41,11 +50,11 @@ public:
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
 
 private:
-	wxString                        m_mame_path;
-	wxString                        m_mame_extra_arguments;
-	wxSize                          m_size;
-	std::array<int, 4>              m_column_widths;
-	wxString                        m_selected_machine;
+	std::array<wxString, static_cast<size_t>(path_type::count)>			m_paths;
+	wxString															m_mame_extra_arguments;
+	wxSize																m_size;
+	std::array<int, 4>													m_column_widths;
+	wxString															m_selected_machine;
 
 	bool Load();
 	void Save();
