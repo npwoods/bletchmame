@@ -172,8 +172,14 @@ void Preferences::Save(std::ostream &output)
 {
 	output << "<!-- Preferences for BletchMAME -->" << std::endl;
 	output << "<preferences>" << std::endl;
+	output << std::endl;
+
+	output << "\t<!-- Paths -->" << std::endl;
 	for (size_t i = 0; i < m_paths.size(); i++)
 		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetPath(static_cast<path_type>(i)) << "</path>" << std::endl;
+	output << std::endl;
+
+	output << "\t<!-- Other -->" << std::endl;
 	if (!m_mame_extra_arguments.IsEmpty())
 		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
@@ -181,6 +187,8 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
 	for (size_t i = 0; i < m_column_widths.size(); i++)
 		output << "\t<column index=\"" << i << "\" width=\"" << m_column_widths[i] << "\"/>" << std::endl;
+	output << std::endl;
+
 	output << "</preferences>" << std::endl;
 }
 
