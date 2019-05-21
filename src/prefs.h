@@ -24,6 +24,8 @@ public:
 		emu_exectuable,
 		roms,
 		samples,
+		config,
+		nvram,
 
 		count
 	};

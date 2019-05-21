@@ -25,7 +25,9 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 {
 	"emu",
 	"roms",
-	"samples"
+	"samples",
+	"config",
+	"nvram"
 };
 
 
@@ -52,6 +54,10 @@ Preferences::Preferences()
     : m_size(950, 600)
     , m_column_widths({85, 370, 50, 320})
 {
+	// Defaults
+	SetPath(path_type::config, GetConfigDirectory(true));
+	SetPath(path_type::nvram, GetConfigDirectory(true));
+
     Load();
 }
 
