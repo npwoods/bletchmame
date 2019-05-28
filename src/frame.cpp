@@ -12,6 +12,7 @@
 
 #include "frame.h"
 #include "client.h"
+#include "dlgpaths.h"
 #include "prefs.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
@@ -187,7 +188,7 @@ void MameFrame::CreateMenuBar()
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
-	wxMenuItem *specify_mame_path_menu_item	= settings_menu->Append(id++, "Specify MAME path...");
+	wxMenuItem *show_paths_dialog_menu_item	= settings_menu->Append(id++, "Paths...");
 
 	// the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
 	wxMenu *help_menu = new wxMenu();
@@ -211,7 +212,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { util::PostEvent(*this, EVT_SPECIFY_MAME_PATH);	}, specify_mame_path_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);			}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnAbout();							}, about_menu_item->GetId());
 
 	// Bind UI update events

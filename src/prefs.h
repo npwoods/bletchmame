@@ -13,6 +13,7 @@
 
 #include <wx/string.h>
 #include <wx/gdicmn.h>
+#include <wx/xml/xml.h>
 #include <array>
 #include <ostream>
 

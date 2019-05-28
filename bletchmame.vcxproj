@@ -221,6 +221,7 @@
   <ItemGroup>
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\client.cpp" />
+    <ClCompile Include="src\dlgpaths.cpp" />
     <ClCompile Include="src\frame.cpp" />
     <ClCompile Include="src\job.cpp" />
     <ClCompile Include="src\listxmltask.cpp" />
@@ -233,12 +234,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\client.h" />
+    <ClInclude Include="src\dlgpaths.h" />
     <ClInclude Include="src\frame.h" />
     <ClInclude Include="src\job.h" />
     <ClInclude Include="src\listxmltask.h" />
     <ClInclude Include="src\payloadevent.h" />
     <ClInclude Include="src\prefs.h" />
-    <ClInclude Include="src\unmachinetask.h" />
+    <ClInclude Include="src\runmachinetask.h" />
     <ClInclude Include="src\task.h" />
     <ClInclude Include="src\utility.h" />
   </ItemGroup>
