@@ -367,11 +367,11 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 
 void MameFrame::OnSpecifyMamePath()
 {
-	wxFileDialog dialog(this, "Specify MAME Path", "", "", "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-	if (dialog.ShowModal() == wxID_CANCEL)
+	wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable);
+	if (path.IsEmpty())
 		return;
 
-	m_prefs.SetPath(Preferences::path_type::emu_exectuable, dialog.GetPath());
+	m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
 	m_client.Launch(create_list_xml_task());
 }
 

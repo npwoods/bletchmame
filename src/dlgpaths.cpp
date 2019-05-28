@@ -10,11 +10,12 @@
 #include <wx/textctrl.h>
 #include <wx/stattext.h>
 #include <wx/sizer.h>
-#include <wx/radiobut.h>
 #include <wx/combobox.h>
 #include <wx/button.h>
 #include <wx/statbox.h>
 #include <wx/listctrl.h>
+#include <wx/filedlg.h>
+#include <wx/dirdlg.h>
 
 #include "dlgpaths.h"
 #include "prefs.h"
@@ -32,20 +33,37 @@ namespace
 	public:
 		PathsDialog(Preferences &prefs);
 
+		void Persist();
+
 	private:
+		enum
+		{
+			// user IDs
+			ID_NEW_DIR_ENTRY = wxID_HIGHEST + 1,
+			ID_LAST
+		};
+
 		static const size_t PATH_COUNT = (size_t)Preferences::path_type::count;
 		static const std::array<wxString, PATH_COUNT> s_combo_box_strings;
 
 		Preferences &						m_prefs;
-		std::array<wxString, PATH_COUNT>	m_paths;
+		std::array<wxString, PATH_COUNT>	m_path_lists;
+		std::vector<wxString>				m_current_path_list;
 		wxComboBox *						m_combo_box;
 		wxListView *						m_list_view;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxBoxSizer *sizer, TArgs&&... args);
 		static std::array<wxString, PATH_COUNT> BuildComboBoxStrings();
 
-		void PopulateListView();
-		static bool IsMultiPath(Preferences::path_type type);
+		void UpdateListView();
+		void UpdateCurrentPathList();
+		void CurrentPathListChanged();
+		bool IsMultiPath() const;
+		bool IsSelectingPath() const;
+		Preferences::path_type GetCurrentPath() const;
+		void OnBrowse();
+		void OnInsert();
+		void OnDelete();
 	};
 };
 
@@ -54,7 +72,7 @@ namespace
 //  IMPLEMENTATION
 //**************************************************************************
 
-const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_strings = PathsDialog::BuildComboBoxStrings();
+const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_strings = BuildComboBoxStrings();
 
 
 //-------------------------------------------------
@@ -67,11 +85,11 @@ PathsDialog::PathsDialog(Preferences &prefs)
 	, m_combo_box(nullptr)
 	, m_list_view(nullptr)
 {
-	int id = wxID_HIGHEST + 1;
+	int id = ID_LAST;
 
 	// path data
 	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_paths[i] = m_prefs.GetPath(static_cast<Preferences::path_type>(i));
+		m_path_lists[i] = m_prefs.GetPath(static_cast<Preferences::path_type>(i));
 
 	// Left column
 	wxBoxSizer *vbox_left = new wxBoxSizer(wxVERTICAL);
@@ -90,15 +108,20 @@ PathsDialog::PathsDialog(Preferences &prefs)
 
 	// Right column
 	wxBoxSizer *vbox_right = new wxBoxSizer(wxVERTICAL);
-	wxButton &ok_button		= AddControl<wxButton>(vbox_right, id++, "OK");
-	wxButton &close_button	= AddControl<wxButton>(vbox_right, id++, "Close");
-	wxButton &browse_button = AddControl<wxButton>(vbox_right, id++, "Browse");
-	wxButton &insert_button = AddControl<wxButton>(vbox_right, id++, "Insert");
-	wxButton &delete_button	= AddControl<wxButton>(vbox_right, id++, "Delete");
+	wxButton &ok_button		= AddControl<wxButton>(vbox_right, wxID_OK,		"OK");
+	wxButton &cancel_button = AddControl<wxButton>(vbox_right, wxID_CANCEL,	"Cancel");
+	wxButton &browse_button = AddControl<wxButton>(vbox_right, id++,		"Browse");
+	wxButton &insert_button = AddControl<wxButton>(vbox_right, id++,		"Insert");
+	wxButton &delete_button	= AddControl<wxButton>(vbox_right, id++,		"Delete");
 
 	// Combo box
 	m_combo_box->Select(0);
-	PopulateListView();
+
+	// List view
+	m_list_view->ClearAll();
+	m_list_view->AppendColumn(wxEmptyString, wxLIST_FORMAT_LEFT, m_list_view->GetSize().GetWidth());
+	UpdateCurrentPathList();
+	UpdateListView();
 
 	// Overall layout
 	wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
@@ -107,45 +130,141 @@ PathsDialog::PathsDialog(Preferences &prefs)
 	SetSizer(hbox);
 
 	// bind events
-	Bind(wxEVT_COMBOBOX, [this](auto &) { PopulateListView(); });
+	Bind(wxEVT_COMBOBOX,	[this](auto &)		{ UpdateCurrentPathList(); UpdateListView(); });
+	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnBrowse();										}, browse_button.GetId());
+	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnInsert();										}, insert_button.GetId());
+	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnDelete();										}, delete_button.GetId());
+	Bind(wxEVT_UPDATE_UI,	[this](auto &event) { event.Enable(false);								}, insert_button.GetId());
+	Bind(wxEVT_UPDATE_UI,	[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button.GetId());
 
+	// appease compiler
 	(void)ok_button;
-	(void)close_button;
-	(void)browse_button;
-	(void)insert_button;
-	(void)delete_button;
+	(void)cancel_button;
 }
 
 
 //-------------------------------------------------
-//  PopulateListView
+//  Persist
 //-------------------------------------------------
 
-void PathsDialog::PopulateListView()
+void PathsDialog::Persist()
 {
-	int type = m_combo_box->GetSelection();
+	for (size_t i = 0; i < PATH_COUNT; i++)
+		m_prefs.SetPath((Preferences::path_type) i, std::move(m_path_lists[i]));
+}
+
+
+//-------------------------------------------------
+//  OnBrowse
+//-------------------------------------------------
+
+void PathsDialog::OnBrowse()
+{
+	// show the file dialog
+	wxString path = show_specify_single_path_dialog(*this, GetCurrentPath());
+	if (path.IsEmpty())
+		return;
+
+	// identify the current item (with a sanity check)
+	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
+	if (item > m_current_path_list.size())
+		return;
+
+	// specify it
+	if (item == m_current_path_list.size())
+		m_current_path_list.push_back(std::move(path));
+	else
+		m_current_path_list[item] = std::move(path);
+	CurrentPathListChanged();
+}
+
+
+//-------------------------------------------------
+//  OnInsert
+//-------------------------------------------------
+
+void PathsDialog::OnInsert()
+{
+	throw false;
+}
+
+
+//-------------------------------------------------
+//  OnDelete
+//-------------------------------------------------
+
+void PathsDialog::OnDelete()
+{
+	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
+	if (item >= m_current_path_list.size())
+		return;
+
+	// delete it!
+	m_current_path_list.erase(m_current_path_list.begin() + item);
+	CurrentPathListChanged();
+}
+
+
+//-------------------------------------------------
+//  CurrentPathListChanged
+//-------------------------------------------------
+
+void PathsDialog::CurrentPathListChanged()
+{
+	wxString path_list = util::string_join(wxString(";"), m_current_path_list);
+	m_path_lists[m_combo_box->GetSelection()] = std::move(path_list);
+
+	UpdateListView();
+}
+
+
+//-------------------------------------------------
+//  UpdateListView
+//-------------------------------------------------
+
+void PathsDialog::UpdateListView()
+{
 	wxListItem item;
-	int id = 0;
+	int index = 0;
 
-	m_list_view->ClearAll();
-	m_list_view->AppendColumn(wxEmptyString, wxLIST_FORMAT_LEFT, m_list_view->GetSize().GetWidth());
-
-	if (!m_paths[type].IsEmpty())
+	for (const wxString &path : m_current_path_list)
 	{
-		for (auto path : util::string_split(m_paths[type], [](wchar_t ch) { return ch == ';'; }))
-		{
-			item.SetText(path);
-			item.SetId(id++);
+		item.SetText(path);
+		item.SetId(index++);
+		if (m_list_view->GetItemCount() > index)
+			m_list_view->SetItem(item);
+		else
 			m_list_view->InsertItem(item);
-		}
 	}
 
-	if (m_paths[type].IsEmpty() || IsMultiPath(static_cast<Preferences::path_type>(type)))
+	if (m_current_path_list.empty() || IsMultiPath())
 	{
 		item.SetText("<               >");
-		item.SetId(id++);
-		m_list_view->InsertItem(item);
+		item.SetId(index++);
+		if (m_list_view->GetItemCount() > index)
+			m_list_view->SetItem(item);
+		else
+			m_list_view->InsertItem(item);
 	}
+
+	// delete further items
+	while (m_list_view->GetItemCount() > index)
+		m_list_view->DeleteItem(index);
+}
+
+
+//-------------------------------------------------
+//  UpdateCurrentPathList
+//-------------------------------------------------
+
+void PathsDialog::UpdateCurrentPathList()
+{
+	int type = m_combo_box->GetSelection();
+
+	if (m_path_lists[type].IsEmpty())
+		m_current_path_list.clear();
+	else
+		m_current_path_list = util::string_split(m_path_lists[type], [](wchar_t ch) { return ch == ';'; });
 }
 
 
@@ -182,10 +301,10 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 //  IsMultiPath
 //-------------------------------------------------
 
-bool PathsDialog::IsMultiPath(Preferences::path_type type)
+bool PathsDialog::IsMultiPath() const
 {
 	bool result;
-	switch (type)
+	switch (GetCurrentPath())
 	{
 	case Preferences::path_type::emu_exectuable:
 	case Preferences::path_type::config:
@@ -206,11 +325,61 @@ bool PathsDialog::IsMultiPath(Preferences::path_type type)
 
 
 //-------------------------------------------------
+//  GetCurrentPath
+//-------------------------------------------------
+
+Preferences::path_type PathsDialog::GetCurrentPath() const
+{
+	int selection = m_combo_box->GetSelection();
+	return static_cast<Preferences::path_type>(selection);
+}
+
+
+//-------------------------------------------------
+//  IsSelectingPath
+//-------------------------------------------------
+
+bool PathsDialog::IsSelectingPath() const
+{
+	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
+	return item < m_current_path_list.size();
+}
+
+
+//-------------------------------------------------
+//  show_specify_single_path_dialog
+//-------------------------------------------------
+
+wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_type type)
+{
+	wxString result;
+	if (type == Preferences::path_type::emu_exectuable)
+	{
+		wxFileDialog dialog(&parent, "Specify MAME Path", "", "", "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		if (dialog.ShowModal() == wxID_OK)
+			result = dialog.GetPath();
+	}
+	else
+	{
+		wxDirDialog dialog(&parent, "Specify Path", "");
+		if (dialog.ShowModal() == wxID_OK)
+			result = dialog.GetPath();
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  show_paths_dialog
 //-------------------------------------------------
 
-bool show_paths_dialog(Preferences prefs)
+bool show_paths_dialog(Preferences &prefs)
 {
-	PathsDialog dlg(prefs);
-	return dlg.ShowModal() == wxID_OK;
+	PathsDialog dialog(prefs);
+	bool result = dialog.ShowModal() == wxID_OK;
+	if (result)
+	{
+		dialog.Persist();
+	}
+	return result;
 }

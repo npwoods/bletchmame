@@ -32,6 +32,8 @@ public:
 	};
 
 	Preferences();
+	Preferences(const Preferences &) = delete;
+	Preferences(Preferences &&) = delete;
 	~Preferences();
 
 	const wxString &GetPath(path_type type) const			{ return m_paths[static_cast<size_t>(type)]; }

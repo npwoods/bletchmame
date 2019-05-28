@@ -11,8 +11,9 @@
 #ifndef DLGPATHS_H
 #define DLGPATHS_H
 
-class Preferences;
+#include "prefs.h"
 
-bool show_paths_dialog(Preferences prefs);
+bool show_paths_dialog(Preferences &prefs);
+wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_type type);
 
 #endif // DLGPATHS_H
