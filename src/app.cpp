@@ -2,13 +2,15 @@
 
     app.cpp
 
-    MAME Front End Application
+    BletchMAME Front End Application
 
 ***************************************************************************/
 
-#include "wx/wxprec.h"
-#include "wx/wx.h"
+#include <wx/wxprec.h>
+#include <wx/wx.h>
+
 #include "frame.h"
+#include "validity.h"
 
 
 //**************************************************************************
@@ -53,6 +55,14 @@ namespace
 
 bool MameApp::OnInit()
 {
+#ifdef _DEBUG
+	const bool run_validity_checks = true;
+#else
+	const bool run_validity_checks = false;
+#endif
+	if (run_validity_checks && !validity_checks())
+		return false;
+
     // call the base class initialization method, currently it only parses a
     // few common command-line options but it could be do more in the future
     if ( !wxApp::OnInit() )
