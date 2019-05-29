@@ -17,6 +17,7 @@
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "utility.h"
+#include "virtuallistview.h"
 
 
 //**************************************************************************
@@ -64,7 +65,7 @@ namespace
 	private:
 		MameClient                  m_client;
 		Preferences                 m_prefs;
-		wxListView *                m_list_view;
+		VirtualListView *           m_list_view;
 		wxMenuBar *                 m_menu_bar;
 		wxTimer						m_ping_timer;
 		std::vector<Machine>        m_machines;
@@ -87,6 +88,7 @@ namespace
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event);
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
 		void UpdateMachineList();
+		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
 		wxString GetTarget();
 	};
@@ -135,7 +137,13 @@ MameFrame::MameFrame()
 	Bind(wxEVT_TIMER,				[this](auto &event) { OnPingTimer(event);           });
 
 	// Create a list view
-	m_list_view = new wxListView(this);
+	m_list_view = new VirtualListView(this);
+	m_list_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(static_cast<size_t>(item), column); });
+    m_list_view->ClearAll();
+    m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
+    m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
+    m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
+    m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
 	UpdateMachineList();
 
 	// nothing is running yet...
@@ -494,32 +502,50 @@ void MameFrame::ChangeThrottleRate(int adjustment)
 
 void MameFrame::UpdateMachineList()
 {
-    m_list_view->ClearAll();
-    m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
-    m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
-    m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
-    m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
+	m_list_view->SetItemCount(m_machines.size());
+	m_list_view->RefreshItems(0, m_machines.size() - 1);
 
-    int index = 0;
-    long selected_index = -1;
-    for (auto &ent : m_machines)
-    {
-        m_list_view->InsertItem(index, ent.m_name);
-        m_list_view->SetItem(index, 1, ent.m_description);
-        m_list_view->SetItem(index, 2, ent.m_year);
-        m_list_view->SetItem(index, 3, ent.m_manfacturer);
+	// find the currently selected machine
+	auto iter = std::find_if(m_machines.begin(), m_machines.end(), [this](const Machine &machine)
+	{
+		return machine.m_name == m_prefs.GetSelectedMachine();
+	});
 
-        if (ent.m_name == m_prefs.GetSelectedMachine())
-            selected_index = index;
-        index++;
-    }
+	// if successful, select it
+	if (iter < m_machines.end())
+	{
+		long selected_index = iter - m_machines.begin();
+		m_list_view->Select(selected_index);
+		m_list_view->EnsureVisible(selected_index);
+	}
+}
 
-    // if we found something to select, select it
-    if (selected_index >= 0)
-    {
-        m_list_view->Select(selected_index);
-        m_list_view->EnsureVisible(selected_index);
-    }
+
+//-------------------------------------------------
+//  GetListItemText
+//-------------------------------------------------
+
+wxString MameFrame::GetListItemText(size_t item, long column) const
+{
+	wxString result;
+	switch (column)
+	{
+	case 0:
+		result = m_machines[item].m_name;
+		break;
+	case 1:
+		result = m_machines[item].m_description;
+		break;
+	case 2:
+		result = m_machines[item].m_year;
+		break;
+	case 3:
+		result = m_machines[item].m_manfacturer;
+		break;
+	default:
+		throw false;
+	}
+	return result;
 }
 
 
