@@ -37,7 +37,7 @@ public:
 	~Preferences();
 
 	const wxString &GetPath(path_type type) const			{ return m_paths[static_cast<size_t>(type)]; }
-	void SetPath(path_type type, wxString &&mame_path)		{ m_paths[static_cast<size_t>(type)] = std::move(mame_path); }
+	void SetPath(path_type type, wxString &&path)			{ m_paths[static_cast<size_t>(type)] = std::move(path); }
 
 	const wxString &GetMameExtraArguments() const			{ return m_mame_extra_arguments; }
 	void SetMameExtraArguments(wxString &&extra_arguments)	{ m_mame_extra_arguments = std::move(extra_arguments); }
