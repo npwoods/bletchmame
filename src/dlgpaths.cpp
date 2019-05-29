@@ -61,9 +61,14 @@ namespace
 		bool IsMultiPath() const;
 		bool IsSelectingPath() const;
 		Preferences::path_type GetCurrentPath() const;
-		void OnBrowse();
+		bool BrowseForPath();
+		bool BrowseForPath(long item);
+		bool BrowseForPath(size_t item);
+		void OnListBeginLabelEdit(long item);
+		void OnListEndLabelEdit(long item);
 		void OnInsert();
 		void OnDelete();
+		void SetPathValue(size_t item, wxString &&value);
 	};
 };
 
@@ -104,7 +109,7 @@ PathsDialog::PathsDialog(Preferences &prefs)
 		s_combo_box_strings.data(),
 		wxCB_READONLY);
 	AddControl<wxStaticText>(vbox_left, id++, "Directories:");
-	m_list_view = &AddControl<wxListView>(vbox_left, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER);
+	m_list_view = &AddControl<wxListView>(vbox_left, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS);
 
 	// Right column
 	wxBoxSizer *vbox_right = new wxBoxSizer(wxVERTICAL);
@@ -130,12 +135,15 @@ PathsDialog::PathsDialog(Preferences &prefs)
 	SetSizer(hbox);
 
 	// bind events
-	Bind(wxEVT_COMBOBOX,	[this](auto &)		{ UpdateCurrentPathList(); UpdateListView(); });
-	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnBrowse();										}, browse_button.GetId());
-	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnInsert();										}, insert_button.GetId());
-	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnDelete();										}, delete_button.GetId());
-	Bind(wxEVT_UPDATE_UI,	[this](auto &event) { event.Enable(false);								}, insert_button.GetId());
-	Bind(wxEVT_UPDATE_UI,	[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button.GetId());
+	Bind(wxEVT_COMBOBOX,				[this](auto &)		{ UpdateCurrentPathList(); UpdateListView(); });
+	Bind(wxEVT_BUTTON,					[this](auto &)		{ BrowseForPath();									}, browse_button.GetId());
+	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnInsert();										}, insert_button.GetId());
+	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnDelete();										}, delete_button.GetId());
+	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(false);								}, insert_button.GetId());
+	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button.GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { BrowseForPath(event.GetIndex());					});
+	Bind(wxEVT_LIST_BEGIN_LABEL_EDIT,	[this](auto &event) { OnListBeginLabelEdit(event.GetIndex());			});
+	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnListEndLabelEdit(event.GetIndex());				});
 
 	// appease compiler
 	(void)ok_button;
@@ -155,26 +163,77 @@ void PathsDialog::Persist()
 
 
 //-------------------------------------------------
-//  OnBrowse
+//  BrowseForPath
 //-------------------------------------------------
 
-void PathsDialog::OnBrowse()
+bool PathsDialog::BrowseForPath()
 {
+	long item = m_list_view->GetFocusedItem();
+	return BrowseForPath(static_cast<size_t>(item));
+}
+
+
+bool PathsDialog::BrowseForPath(long item)
+{
+	return BrowseForPath(static_cast<size_t>(item));
+}
+
+
+bool PathsDialog::BrowseForPath(size_t item)
+{
+	// should really be a sanity check
+	if (item > m_current_path_list.size())
+		return false;
+
 	// show the file dialog
 	wxString path = show_specify_single_path_dialog(*this, GetCurrentPath());
 	if (path.IsEmpty())
-		return;
-
-	// identify the current item (with a sanity check)
-	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
-	if (item > m_current_path_list.size())
-		return;
+		return false;
 
 	// specify it
+	SetPathValue(item, std::move(path));
+	CurrentPathListChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  OnListBeginLabelEdit
+//-------------------------------------------------
+
+void PathsDialog::OnListBeginLabelEdit(long item)
+{
+	// is this the "extension" item?  if so we need to empty out the text
+	if (static_cast<size_t>(item) == m_current_path_list.size())
+	{
+		wxTextCtrl *edit_control = m_list_view->GetEditControl();
+		edit_control->ChangeValue("");
+	}
+}
+
+
+//-------------------------------------------------
+//  OnListEndLabelEdit
+//-------------------------------------------------
+
+void PathsDialog::OnListEndLabelEdit(long item)
+{
+	wxTextCtrl *edit_control = m_list_view->GetEditControl();
+	wxString value = edit_control->GetValue();
+	SetPathValue(static_cast<size_t>(item), std::move(value));
+}
+
+
+//-------------------------------------------------
+//  SetPathValue
+//-------------------------------------------------
+
+void PathsDialog::SetPathValue(size_t item, wxString &&value)
+{
 	if (item == m_current_path_list.size())
-		m_current_path_list.push_back(std::move(path));
+		m_current_path_list.push_back(std::move(value));
 	else
-		m_current_path_list[item] = std::move(path);
+		m_current_path_list[item] = std::move(value);
 	CurrentPathListChanged();
 }
 
