@@ -229,6 +229,7 @@
     <ClCompile Include="runmachinetask.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="validity.cpp" />
+    <ClCompile Include="virtuallistview.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="bletchmame.rc" />
@@ -245,6 +246,7 @@
     <ClInclude Include="task.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="validity.h" />
+    <ClInclude Include="virtuallistview.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

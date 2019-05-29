@@ -20,6 +20,7 @@
 #include "dlgpaths.h"
 #include "prefs.h"
 #include "utility.h"
+#include "virtuallistview.h"
 
 
 //**************************************************************************
@@ -50,13 +51,13 @@ namespace
 		std::array<wxString, PATH_COUNT>	m_path_lists;
 		std::vector<wxString>				m_current_path_list;
 		wxComboBox *						m_combo_box;
-		wxListView *						m_list_view;
+		VirtualListView *					m_list_view;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxBoxSizer *sizer, TArgs&&... args);
 		static std::array<wxString, PATH_COUNT> BuildComboBoxStrings();
 
-		void UpdateListView();
 		void UpdateCurrentPathList();
+		void RefreshListView();
 		void CurrentPathListChanged();
 		bool IsMultiPath() const;
 		bool IsSelectingPath() const;
@@ -69,6 +70,7 @@ namespace
 		void OnInsert();
 		void OnDelete();
 		void SetPathValue(size_t item, wxString &&value);
+		wxString GetListItemText(size_t item) const;
 	};
 };
 
@@ -109,7 +111,8 @@ PathsDialog::PathsDialog(Preferences &prefs)
 		s_combo_box_strings.data(),
 		wxCB_READONLY);
 	AddControl<wxStaticText>(vbox_left, id++, "Directories:");
-	m_list_view = &AddControl<wxListView>(vbox_left, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS);
+	m_list_view = &AddControl<VirtualListView>(vbox_left, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS | wxLC_VIRTUAL);
+	m_list_view->SetOnGetItemText([this](long item, long) { return GetListItemText(static_cast<size_t>(item)); });
 
 	// Right column
 	wxBoxSizer *vbox_right = new wxBoxSizer(wxVERTICAL);
@@ -125,8 +128,7 @@ PathsDialog::PathsDialog(Preferences &prefs)
 	// List view
 	m_list_view->ClearAll();
 	m_list_view->AppendColumn(wxEmptyString, wxLIST_FORMAT_LEFT, m_list_view->GetSize().GetWidth());
-	UpdateCurrentPathList();
-	UpdateListView();
+	UpdateCurrentPathList();	
 
 	// Overall layout
 	wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
@@ -135,7 +137,7 @@ PathsDialog::PathsDialog(Preferences &prefs)
 	SetSizer(hbox);
 
 	// bind events
-	Bind(wxEVT_COMBOBOX,				[this](auto &)		{ UpdateCurrentPathList(); UpdateListView(); });
+	Bind(wxEVT_COMBOBOX,				[this](auto &)		{ UpdateCurrentPathList(); });
 	Bind(wxEVT_BUTTON,					[this](auto &)		{ BrowseForPath();									}, browse_button.GetId());
 	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnInsert();										}, insert_button.GetId());
 	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnDelete();										}, delete_button.GetId());
@@ -192,7 +194,6 @@ bool PathsDialog::BrowseForPath(size_t item)
 
 	// specify it
 	SetPathValue(item, std::move(path));
-	CurrentPathListChanged();
 	return true;
 }
 
@@ -270,45 +271,24 @@ void PathsDialog::OnDelete()
 
 void PathsDialog::CurrentPathListChanged()
 {
+	// reflect changes on the m_current_path_list back into m_path_lists 
 	wxString path_list = util::string_join(wxString(";"), m_current_path_list);
 	m_path_lists[m_combo_box->GetSelection()] = std::move(path_list);
-
-	UpdateListView();
+	
+	// because the list view may have changed, we need to refresh it
+	RefreshListView();
 }
 
 
 //-------------------------------------------------
-//  UpdateListView
+//  GetListItemText
 //-------------------------------------------------
 
-void PathsDialog::UpdateListView()
+wxString PathsDialog::GetListItemText(size_t item) const
 {
-	wxListItem item;
-	int index = 0;
-
-	for (const wxString &path : m_current_path_list)
-	{
-		item.SetText(path);
-		item.SetId(index++);
-		if (m_list_view->GetItemCount() > index)
-			m_list_view->SetItem(item);
-		else
-			m_list_view->InsertItem(item);
-	}
-
-	if (m_current_path_list.empty() || IsMultiPath())
-	{
-		item.SetText("<               >");
-		item.SetId(index++);
-		if (m_list_view->GetItemCount() > index)
-			m_list_view->SetItem(item);
-		else
-			m_list_view->InsertItem(item);
-	}
-
-	// delete further items
-	while (m_list_view->GetItemCount() > index)
-		m_list_view->DeleteItem(index);
+	return item < m_current_path_list.size()
+		? m_current_path_list[item]
+		: "<               >";
 }
 
 
@@ -324,6 +304,20 @@ void PathsDialog::UpdateCurrentPathList()
 		m_current_path_list.clear();
 	else
 		m_current_path_list = util::string_split(m_path_lists[type], [](wchar_t ch) { return ch == ';'; });
+
+	RefreshListView();
+}
+
+
+//-------------------------------------------------
+//  RefreshListView
+//-------------------------------------------------
+
+void PathsDialog::RefreshListView()
+{
+	long item_count = m_current_path_list.size() + (IsMultiPath() ? 1 : 0);
+	m_list_view->SetItemCount(item_count);
+	m_list_view->RefreshItems(0, item_count - 1);
 }
 
 
