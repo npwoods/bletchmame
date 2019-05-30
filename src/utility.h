@@ -29,8 +29,8 @@ std::vector<TStr> string_split(const TStr &str, TFunc &&is_delim)
 {
 	std::vector<TStr> results;
 
-	TStr::const_iterator word_begin = str.cbegin();
-	for (TStr::const_iterator iter = str.cbegin(); iter < str.cend(); iter++)
+	auto word_begin = str.cbegin();
+	for (auto iter = str.cbegin(); iter < str.cend(); iter++)
 	{
 		if (is_delim(*iter))
 		{

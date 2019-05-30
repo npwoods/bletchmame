@@ -29,7 +29,7 @@ wxString VirtualListView::OnGetItemText(long item, long column) const
 {
 	return m_func_on_get_item_text
 		? m_func_on_get_item_text(item, column)
-		: wxEmptyString;
+		: wxString(wxEmptyString);
 }
 
 

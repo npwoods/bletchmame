@@ -13,6 +13,7 @@
 
 #include <wx/process.h>
 #include <wx/event.h>
+#include <memory>
 
 class Preferences;
 
