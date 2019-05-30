@@ -8,6 +8,11 @@
 
 #include "virtuallistview.h"
 
+
+//-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
 VirtualListView::VirtualListView(wxWindow *parent, wxWindowID winid, const wxPoint& pos, const wxSize& size,
 		long style, const wxValidator& validator, const wxString &name)
 	: wxListView(parent, winid, pos, size, style, validator, name)
@@ -16,7 +21,25 @@ VirtualListView::VirtualListView(wxWindow *parent, wxWindowID winid, const wxPoi
 }
 
 
+//-------------------------------------------------
+//  OnGetItemText
+//-------------------------------------------------
+
 wxString VirtualListView::OnGetItemText(long item, long column) const
 {
-	return m_func_on_get_item_text(item, column);
+	return m_func_on_get_item_text
+		? m_func_on_get_item_text(item, column)
+		: wxEmptyString;
+}
+
+
+//-------------------------------------------------
+//  OnGetItemAttr
+//-------------------------------------------------
+
+wxListItemAttr *VirtualListView::OnGetItemAttr(long item) const
+{
+	return m_func_on_get_item_attr
+		? m_func_on_get_item_attr(item)
+		: nullptr;
 }

@@ -14,7 +14,9 @@
 #include <wx/button.h>
 #include <wx/statbox.h>
 #include <wx/listctrl.h>
+#include <wx/file.h>
 #include <wx/filedlg.h>
+#include <wx/dir.h>
 #include <wx/dirdlg.h>
 
 #include "dlgpaths.h"
@@ -50,8 +52,10 @@ namespace
 		Preferences &						m_prefs;
 		std::array<wxString, PATH_COUNT>	m_path_lists;
 		std::vector<wxString>				m_current_path_list;
+		std::vector<bool>					m_current_path_valid_list;
 		wxComboBox *						m_combo_box;
 		VirtualListView *					m_list_view;
+		wxListItemAttr						m_list_item_attr;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxBoxSizer *sizer, TArgs&&... args);
 		static std::array<wxString, PATH_COUNT> BuildComboBoxStrings();
@@ -71,6 +75,7 @@ namespace
 		void OnDelete();
 		void SetPathValue(size_t item, wxString &&value);
 		wxString GetListItemText(size_t item) const;
+		wxListItemAttr *GetListItemAttr(size_t item);
 	};
 };
 
@@ -112,7 +117,8 @@ PathsDialog::PathsDialog(Preferences &prefs)
 		wxCB_READONLY);
 	AddControl<wxStaticText>(vbox_left, id++, "Directories:");
 	m_list_view = &AddControl<VirtualListView>(vbox_left, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS | wxLC_VIRTUAL);
-	m_list_view->SetOnGetItemText([this](long item, long) { return GetListItemText(static_cast<size_t>(item)); });
+	m_list_view->SetOnGetItemText([this](long item, long)	{ return GetListItemText(static_cast<size_t>(item)); });
+	m_list_view->SetOnGetItemAttr([this](long item)			{ return GetListItemAttr(static_cast<size_t>(item)); });
 
 	// Right column
 	wxBoxSizer *vbox_right = new wxBoxSizer(wxVERTICAL);
@@ -293,6 +299,18 @@ wxString PathsDialog::GetListItemText(size_t item) const
 
 
 //-------------------------------------------------
+//  GetListItemAttr
+//-------------------------------------------------
+
+wxListItemAttr *PathsDialog::GetListItemAttr(size_t item)
+{
+	bool is_valid = item >= m_current_path_valid_list.size() || m_current_path_valid_list[item];
+	m_list_item_attr.SetTextColour(is_valid ? *wxBLACK : *wxRED);
+	return &m_list_item_attr;
+}
+
+
+//-------------------------------------------------
 //  UpdateCurrentPathList
 //-------------------------------------------------
 
@@ -315,6 +333,17 @@ void PathsDialog::UpdateCurrentPathList()
 
 void PathsDialog::RefreshListView()
 {
+	// recalculate m_current_path_valid_list
+	m_current_path_valid_list.resize(m_current_path_list.size());
+	bool expect_dir = GetCurrentPath() != Preferences::path_type::emu_exectuable;
+	for (size_t i = 0; i < m_current_path_list.size(); i++)
+	{
+		m_current_path_valid_list[i] = expect_dir
+			? wxDir::Exists(m_current_path_list[i])
+			: wxFile::Exists(m_current_path_list[i]);
+	}
+
+	// update the item count and refresh all items
 	long item_count = m_current_path_list.size() + (IsMultiPath() ? 1 : 0);
 	m_list_view->SetItemCount(item_count);
 	m_list_view->RefreshItems(0, item_count - 1);
