@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.25920.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bletchmame", "src\bletchmame.vcxproj", "{D047B23C-34AE-4EA9-B615-C9166B530063}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BletchMAME", "src\bletchmame.vcxproj", "{D047B23C-34AE-4EA9-B615-C9166B530063}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
