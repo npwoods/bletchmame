@@ -10,8 +10,8 @@
 #################################################################
 
 OBJ				= obj/x64_mingw
-WXWIDGETS_LIBS	= -lwxbase31u -lwxbase31u_net -lwxbase31u_xml -lwxexpat -lwxjpeg -lwxmsw31u_adv -lwxmsw31u_aui -lwxmsw31u_core -lwxmsw31u_gl -lwxmsw31u_html -lwxmsw31u_media -lwxmsw31u_propgrid -lwxmsw31u_ribbon -lwxmsw31u_richtext -lwxmsw31u_stc -lwxmsw31u_webview -lwxmsw31u_xrc -lwxpng -lwxregexu -lwxscintilla -lwxtiff -lwxzlib
-LIBS			= -luser32 -lkernel32 -lgdi32 -lole32 -lmingw32 -lgcc -lmsvcrt -lstdc++ $(WXWIDGETS_LIBS)
+WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxbase31u_xml -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
+LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
 
 OBJECTFILES=\
 	$(OBJ)/app.o				\
@@ -26,8 +26,9 @@ OBJECTFILES=\
 	$(OBJ)/validity.o			\
 	$(OBJ)/virtuallistview.o	\
 
-bin/x64_mingw/BletchMAME.exe:	$(OBJECTFILES)
+bin/x64_mingw/BletchMAME.exe:	$(OBJECTFILES) Makefile
 	g++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -o $@
+	strip $@
 
-obj/x64_mingw/%.o:	src/%.cpp
+obj/x64_mingw/%.o:	src/%.cpp Makefile
 	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -O4 -c -o $@ $<
