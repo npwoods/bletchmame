@@ -9,6 +9,7 @@
 #include "wx/wxprec.h"
 
 #include <wx/listctrl.h>
+#include <wx/textfile.h>
 
 #include "frame.h"
 #include "client.h"
@@ -68,6 +69,7 @@ namespace
 		VirtualListView *           m_list_view;
 		wxMenuBar *                 m_menu_bar;
 		wxTimer						m_ping_timer;
+		wxString					m_mame_build;
 		std::vector<Machine>        m_machines;
 		bool						m_pinging;
 
@@ -273,8 +275,8 @@ bool MameFrame::IsEmulationSessionActive() const
 
 void MameFrame::OnExit()
 {
-    // true is to force the frame to close
-    Close(true);
+	// true is to force the frame to close
+	Close(true);
 }
 
 
@@ -284,7 +286,17 @@ void MameFrame::OnExit()
 
 void MameFrame::OnAbout()
 {
-    wxMessageBox("BletchMAME", "About BletchMAME", wxOK | wxICON_INFORMATION, this);
+	wxString message = "BletchMAME";
+
+	if (!m_mame_build.IsEmpty())
+	{
+		wxString eoln = wxTextFile::GetEOL();
+		message += eoln
+			+ eoln
+			+ "MAME Build: " + m_mame_build;
+	}
+
+	wxMessageBox(message, "About BletchMAME", wxOK | wxICON_INFORMATION, this);
 }
 
 
@@ -321,17 +333,18 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked)
 
 void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 {
-    // identify the results
-    if (!event.Payload().m_success)
-        return;
+	// identify the results
+	if (!event.Payload().m_success)
+		return;
 
-    // take over the machine list
-    m_machines = std::move(event.Payload().m_machines);
+	// take over the machine list
+	m_mame_build = std::move(event.Payload().m_build);
+	m_machines = std::move(event.Payload().m_machines);
 
-    // update!
-    UpdateMachineList();
+	// update!
+	UpdateMachineList();
 
-    m_client.Reset();
+	m_client.Reset();
 }
 
 
