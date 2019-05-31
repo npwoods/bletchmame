@@ -23,6 +23,7 @@
 #include "prefs.h"
 #include "utility.h"
 #include "virtuallistview.h"
+#include <wx/filename.h>
 
 
 //**************************************************************************
@@ -225,9 +226,17 @@ void PathsDialog::OnListBeginLabelEdit(long item)
 
 void PathsDialog::OnListEndLabelEdit(long item)
 {
+	// get the value entered in
 	wxTextCtrl *edit_control = m_list_view->GetEditControl();
-	wxString value = edit_control->GetValue();
-	SetPathValue(static_cast<size_t>(item), std::move(value));
+	const wxString value = edit_control->GetValue();
+
+	// canonicalize it (for some reason, on Windows this seems to only canonicalize the
+	// leaf filename, so more to do)
+	wxFileName file_name(value);
+	wxString canonicalized_value = file_name.GetLongPath();
+
+	// and specify it
+	SetPathValue(static_cast<size_t>(item), std::move(canonicalized_value));
 }
 
 
