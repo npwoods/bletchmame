@@ -195,7 +195,7 @@ bool PathsDialog::BrowseForPath(size_t item)
 		return false;
 
 	// show the file dialog
-	wxString path = show_specify_single_path_dialog(*this, GetCurrentPath());
+	wxString path = show_specify_single_path_dialog(*this, GetCurrentPath(), m_current_path_list[item]);
 	if (path.IsEmpty())
 		return false;
 
@@ -441,18 +441,18 @@ bool PathsDialog::IsSelectingPath() const
 //  show_specify_single_path_dialog
 //-------------------------------------------------
 
-wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_type type)
+wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_type type, const wxString &default_path)
 {
 	wxString result;
 	if (type == Preferences::path_type::emu_exectuable)
 	{
-		wxFileDialog dialog(&parent, "Specify MAME Path", "", "", "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		wxFileDialog dialog(&parent, "Specify MAME Path", "", default_path, "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 		if (dialog.ShowModal() == wxID_OK)
 			result = dialog.GetPath();
 	}
 	else
 	{
-		wxDirDialog dialog(&parent, "Specify Path", "");
+		wxDirDialog dialog(&parent, "Specify Path", default_path);
 		if (dialog.ShowModal() == wxID_OK)
 			result = dialog.GetPath();
 	}

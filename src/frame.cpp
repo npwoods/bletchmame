@@ -388,7 +388,7 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 
 void MameFrame::OnSpecifyMamePath()
 {
-	wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable);
+	wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable, m_prefs.GetPath(Preferences::path_type::emu_exectuable));
 	if (path.IsEmpty())
 		return;
 
