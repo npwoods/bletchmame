@@ -26,6 +26,7 @@ OBJECTFILES=\
 	$(OBJ)/utility.o			\
 	$(OBJ)/validity.o			\
 	$(OBJ)/virtuallistview.o	\
+	$(OBJ)/bletchmame.res.o		\
 
 $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)
 	g++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -o $@
@@ -33,6 +34,9 @@ $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)
 
 $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)
 	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -O4 -c -o $@ $<
+
+$(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)
+	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
 $(BIN):
 	mkdir bin\\mingw_win64\\release
