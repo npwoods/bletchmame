@@ -28,6 +28,10 @@ public:
 		~Attributes() = delete;
 
 		wxString operator[](const char *attribute) const;
+		bool Get(const char *attribute, int &value) const;
+
+	private:
+		const char *InternalGet(const char *attribute) const;
 	};
 
 	// ctor/dtor
@@ -47,6 +51,7 @@ public:
 	}
 
 	bool Parse(wxInputStream &input);
+	bool Parse(const wxString &file_name);
 	wxString ErrorMessage() const;
 
 private:

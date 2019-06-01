@@ -16,7 +16,6 @@
 #include <wx/process.h>
 #include <wx/txtstrm.h>
 #include <wx/msgqueue.h>
-#include <wx/xml/xml.h>
 #include <iostream>
 #include <thread>
 

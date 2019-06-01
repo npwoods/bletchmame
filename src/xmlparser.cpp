@@ -8,6 +8,7 @@
 
 #include <expat.h>
 #include <wx/stream.h>
+#include <wx/wfstream.h>
 
 #include "xmlparser.h"
 
@@ -54,6 +55,17 @@ bool XmlParser::Parse(wxInputStream &input)
 	m_current_node = nullptr;
 	m_unknown_depth = 0;
 	return success;
+}
+
+
+//-------------------------------------------------
+//  Parse
+//-------------------------------------------------
+
+bool XmlParser::Parse(const wxString &file_name)
+{
+	wxFileInputStream input(file_name);
+	return Parse(input);
 }
 
 
@@ -237,6 +249,28 @@ void XmlParser::CharacterDataHandler(void *user_data, const char *s, int len)
 
 wxString XmlParser::Attributes::operator[](const char *attribute) const
 {
+	return InternalGet(attribute);
+}
+
+
+//-------------------------------------------------
+//  Attributes::Get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::Get(const char *attribute, int &value) const
+{
+	const char *string_value = InternalGet(attribute);
+	int rc = sscanf(string_value, "%d", &value);
+	return rc > 0;
+}
+
+
+//-------------------------------------------------
+//  Attributes::InternalGet
+//-------------------------------------------------
+
+const char *XmlParser::Attributes::InternalGet(const char *attribute) const
+{
 	const char **actual_attribute = reinterpret_cast<const char **>(const_cast<Attributes *>(this));
 
 	for (size_t i = 0; actual_attribute[i]; i += 2)
@@ -244,7 +278,7 @@ wxString XmlParser::Attributes::operator[](const char *attribute) const
 		if (!strcmp(attribute, actual_attribute[i + 0]))
 			return actual_attribute[i + 1];
 	}
-	
+
 	return "";
 }
 

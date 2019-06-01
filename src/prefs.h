@@ -13,7 +13,6 @@
 
 #include <wx/string.h>
 #include <wx/gdicmn.h>
-#include <wx/xml/xml.h>
 #include <array>
 #include <ostream>
 
@@ -64,7 +63,6 @@ private:
 	bool Load();
 	void Save();
 	void Save(std::ostream &output);
-	void ProcessXmlCallback(const std::vector<wxString> &path, const wxXmlNode &node);
 	wxString GetFileName(bool ensure_directory_exists);
 };
 

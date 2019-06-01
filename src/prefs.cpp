@@ -8,13 +8,13 @@
 
 #include <wx/stdpaths.h>
 #include <wx/filename.h>
-#include <wx/xml/xml.h>
 #include <wx/dir.h>
 #include <fstream>
 #include <functional>
 
 #include "prefs.h"
 #include "utility.h"
+#include "xmlparser.h"
 
 
 //**************************************************************************
@@ -39,7 +39,7 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 //  ValidateDimension
 //-------------------------------------------------
 
-static bool IsValidDimension(long dimension)
+static bool IsValidDimension(int dimension)
 {
     // arbitrary validation of dimensions
     return dimension >= 10 && dimension <= 20000;
@@ -86,69 +86,50 @@ bool Preferences::Load()
 	if (!wxFileExists(file_name))
 		return false;
 
-	// if it does, try to load it
-	wxXmlDocument xml;
-	if (!xml.Load(file_name))
-		return false;
-
-	util::ProcessXml(xml, std::bind(&Preferences::ProcessXmlCallback, this, _1, _2));
-	return false;
-}
-
-
-//-------------------------------------------------
-//  ProcessXmlCallback
-//-------------------------------------------------
-
-void Preferences::ProcessXmlCallback(const std::vector<wxString> &path, const wxXmlNode &node)
-{
-	if (path.size() == 2 && path[0] == "preferences")
+	XmlParser xml;
+	path_type type = path_type::count;
+	xml.OnElement({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
-		const wxString &component(path[1]);
+		auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), attributes["type"]);
+		type = iter != s_path_names.cend()
+			? static_cast<path_type>(iter - s_path_names.cbegin())
+			: path_type::count;
+	});
+	xml.OnElement({ "preferences", "path" }, [&](wxString &&content)
+	{
+		if (type < path_type::count)
+			SetPath(type, std::move(content));
+		type = path_type::count;
+	});
+	xml.OnElement({ "preferences", "mameextraarguments" }, [&](wxString &&content)
+	{
+		SetMameExtraArguments(std::move(content));
+	});
+	xml.OnElement({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
+	{
+		int width, height;
+		if (attributes.Get("width", width) && attributes.Get("height", height) && IsValidDimension(width) && IsValidDimension(height))
+		{
+			wxSize size;
+			size.SetWidth(width);
+			size.SetHeight(height);
+			SetSize(size);
+		}
+	});
+	xml.OnElement({ "preferences", "selectedmachine" }, [&](wxString &&content)
+	{
+		SetSelectedMachine(std::move(content));
+	});
+	xml.OnElement({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
+	{
+		int index, width;
+		if (attributes.Get("index", index) && attributes.Get("width", width) && IsValidDimension(width))
+		{
+			SetColumnWidth(index, width);
+		}
 
-		if (component == "path")
-		{
-			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), node.GetAttribute("type"));
-			if (iter != s_path_names.cend())
-			{
-				path_type type = static_cast<path_type>(iter - s_path_names.cbegin());
-				SetPath(type, node.GetNodeContent());
-			}
-		}
-		else if (component == "mameextraarguments")
-		{
-			SetMameExtraArguments(node.GetNodeContent());
-		}
-		else if (component == "size")
-		{
-			long width = -1, height = -1;
-			if (node.GetAttribute("width").ToLong(&width) &&
-				node.GetAttribute("height").ToLong(&height) &&
-				IsValidDimension(width) &&
-				IsValidDimension(height))
-			{
-				wxSize size;
-				size.SetWidth((int)width);
-				size.SetHeight((int)height);
-				SetSize(size);
-			}
-		}
-		else if (component == "selectedmachine")
-		{
-			SetSelectedMachine(node.GetNodeContent());
-		}
-		else if (component == "column")
-		{
-			long index = -1, width = -1;
-			if (node.GetAttribute("index").ToLong(&index) &&
-				node.GetAttribute("width").ToLong(&width) &&
-				index >= 0 && index <= (long)m_column_widths.size() &&
-				IsValidDimension(width))
-			{
-				SetColumnWidth((int)index, (int)width);
-			}
-		}
-	}
+	});
+	return xml.Parse(file_name);
 }
 
 

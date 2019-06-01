@@ -12,6 +12,7 @@
 #define RUNMACHINETASK_H
 
 #include <wx/msgqueue.h>
+#include <wx/xml/xml.h>
 
 #include "task.h"
 #include "payloadevent.h"
