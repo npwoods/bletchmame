@@ -26,6 +26,7 @@ OBJECTFILES=\
 	$(OBJ)/utility.o			\
 	$(OBJ)/validity.o			\
 	$(OBJ)/virtuallistview.o	\
+	$(OBJ)/xmlparser.o			\
 	$(OBJ)/bletchmame.res.o		\
 
 $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)
