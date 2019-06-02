@@ -59,6 +59,9 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	XmlParser xml;
     ListXmlResult result;
 
+	// as of 2-Jun-2019, MAME 0.210 has 35947 machines; reserve space in the vector with clearance for the future
+	result.m_machines.reserve(40000);
+
 	std::vector<Machine>::iterator current_machine;
 
 	xml.OnElement({ "mame" }, [&](const XmlParser::Attributes &attributes)
@@ -88,7 +91,10 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	});
 
 	result.m_success = xml.Parse(input);
-    return result;
+
+	// we're done processing!  shrink the vector and move on
+	result.m_machines.shrink_to_fit();
+	return result;
 }
 
 
