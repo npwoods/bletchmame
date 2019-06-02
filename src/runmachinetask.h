@@ -61,8 +61,11 @@ protected:
 private:
     struct Message
     {
+		Message();
+
 		enum class type
 		{
+			INVALID,
 			COMMAND,
 			TERMINATED
 		};

@@ -22,12 +22,8 @@
 
 
 //**************************************************************************
-//  IMPLEMENTATION
+//  MAIN THREAD OPERATIONS
 //**************************************************************************
-
-wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
-wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
-
 
 //-------------------------------------------------
 //  ctor
@@ -64,93 +60,6 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		m_target,
 		"-skip_gameinfo"
 	};
-}
-
-
-//-------------------------------------------------
-//  Process
-//-------------------------------------------------
-
-void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
-{
-    RunMachineResult result;
-
-	// set up streams
-    wxTextInputStream input(*process.GetInputStream());
-    wxTextOutputStream output(*process.GetOutputStream());
-	wxTextInputStream error(*process.GetErrorStream());
-
-	// receive the inaugural response from MAME
-	ReceiveResponse(handler, input);
-
-	// loop until the process terminates
-	bool done = false;
-	emu_error status = emu_error::NONE;
-    while (!done)
-    {
-		// await a message from the queue
-        Message message;
-        m_message_queue.Receive(message);
-		wxLogDebug("MAME <== [%s]", message.m_command);
-
-		switch(message.m_type)
-		{
-			case Message::type::COMMAND:
-				// emit this command to MAME
-				output.WriteString(message.m_command);
-				output.WriteString("\r\n");
-
-				// and receive a response from MAME
-				ReceiveResponse(handler, input);
-				break;
-
-			case Message::type::TERMINATED:
-				done = true;
-				status = message.m_status;
-				break;
-
-			default:
-				throw false;
-        }
-    }
-
-	// read until the end of the stream
-	wxString error_message;
-	if (status != emu_error::NONE)
-	{
-		wxString s;
-		while ((s = error.ReadLine()), !s.IsEmpty())
-		{
-			error_message += s;
-			error_message += "\r\n";
-		}
-	}
-	result.m_error_message = std::move(error_message);
-
-	util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
-}
-
-
-//-------------------------------------------------
-//  ReceiveResponse
-//-------------------------------------------------
-
-void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
-{
-	wxString str = input.ReadLine();
-	wxLogDebug("MAME ==> %s", str);
-
-	// interpret the response
-	util::string_truncate(str, '#');
-	std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
-
-	// did we get a status reponse
-	if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
-	{
-		StatusUpdate status_update;
-		if (ReadStatusUpdate(input, status_update))
-			util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
-	}
 }
 
 
@@ -200,6 +109,98 @@ void RunMachineTask::Post(Message &&message)
 }
 
 
+//**************************************************************************
+//  CLIENT THREAD OPERATIONS
+//**************************************************************************
+
+//-------------------------------------------------
+//  Process
+//-------------------------------------------------
+
+void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
+{
+	RunMachineResult result;
+
+	// set up streams
+	wxTextInputStream input(*process.GetInputStream());
+	wxTextOutputStream output(*process.GetOutputStream());
+	wxTextInputStream error(*process.GetErrorStream());
+
+	// receive the inaugural response from MAME
+	ReceiveResponse(handler, input);
+
+	// loop until the process terminates
+	bool done = false;
+	emu_error status = emu_error::NONE;
+	while (!done)
+	{
+		// await a message from the queue
+		Message message;
+		m_message_queue.Receive(message);
+
+		switch (message.m_type)
+		{
+		case Message::type::COMMAND:
+			// emit this command to MAME
+			wxLogDebug("MAME <== [%s]", message.m_command);
+			output.WriteString(message.m_command);
+			output.WriteString("\r\n");
+
+			// and receive a response from MAME
+			ReceiveResponse(handler, input);
+			break;
+
+		case Message::type::TERMINATED:
+			wxLogDebug("MAME --- TERMINATED (status=%d)", message.m_status);
+			done = true;
+			status = message.m_status;
+			break;
+
+		default:
+			throw false;
+		}
+	}
+
+	// read until the end of the stream
+	wxString error_message;
+	if (status != emu_error::NONE)
+	{
+		wxString s;
+		while ((s = error.ReadLine()), !s.IsEmpty())
+		{
+			error_message += s;
+			error_message += "\r\n";
+		}
+	}
+	result.m_error_message = std::move(error_message);
+
+	util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
+}
+
+
+//-------------------------------------------------
+//  ReceiveResponse
+//-------------------------------------------------
+
+void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
+{
+	wxString str = input.ReadLine();
+	wxLogDebug("MAME ==> %s", str);
+
+	// interpret the response
+	util::string_truncate(str, '#');
+	std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
+
+	// did we get a status reponse
+	if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
+	{
+		StatusUpdate status_update;
+		if (ReadStatusUpdate(input, status_update))
+			util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
+	}
+}
+
+
 //-------------------------------------------------
 //  ReadStatusUpdate
 //-------------------------------------------------
@@ -219,10 +220,10 @@ bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &re
 	});
 	xml.OnElement({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_frameskip_specified		= attributes.Get("frameskip", result.m_frameskip);
-		result.m_speed_text_specified		= attributes.Get("speed_text", result.m_speed_text);
-		result.m_throttled_specified		= attributes.Get("throttled", result.m_throttled);
-		result.m_throttle_rate_specified	= attributes.Get("throttle_rate", result.m_throttle_rate);
+		result.m_frameskip_specified = attributes.Get("frameskip", result.m_frameskip);
+		result.m_speed_text_specified = attributes.Get("speed_text", result.m_speed_text);
+		result.m_throttled_specified = attributes.Get("throttled", result.m_throttled);
+		result.m_throttle_rate_specified = attributes.Get("throttle_rate", result.m_throttle_rate);
 	});
 
 	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
@@ -240,4 +241,23 @@ bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &re
 
 	wxStringInputStream input_buffer(buffer);
 	return xml.Parse(input_buffer);
+}
+
+
+//**************************************************************************
+//  MISCELLANEOUS
+//**************************************************************************
+
+wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
+wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
+
+
+//-------------------------------------------------
+//  Message::ctor
+//-------------------------------------------------
+
+RunMachineTask::Message::Message()
+	: m_type(type::INVALID)
+	, m_status(emu_error::NONE)
+{
 }
