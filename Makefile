@@ -29,19 +29,16 @@ OBJECTFILES=\
 	$(OBJ)/xmlparser.o			\
 	$(OBJ)/bletchmame.res.o		\
 
-$(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)
+$(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)/dir.txt
 	g++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -o $@
 	strip $@
 
-$(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)
+$(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
 	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -O4 -c -o $@ $<
 
-$(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)
+$(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
-$(BIN):
-	mkdir bin\\mingw_win64\\release
-
-$(OBJ):
-	mkdir obj\\mingw_win64\\release
-
+%/dir.txt:
+	-mkdir $(subst /,\\, $(@D))
+	echo Directory Placeholder > $@
