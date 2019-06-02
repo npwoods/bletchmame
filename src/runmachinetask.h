@@ -50,24 +50,35 @@ class RunMachineTask : public Task
 public:
     RunMachineTask(wxString &&machine_name, wxString &&target);
 
-    virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
-    virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
-	virtual void Abort() override;
+    void Post(std::string &&command);
 
-    void Post(wxString &&command, bool exit = false);
+protected:
+	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
+	virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
+	virtual void Abort() override;
+	virtual void OnTerminate(emu_error status) override;
 
 private:
     struct Message
     {
-        wxString	                m_command;
-        bool                        m_exit;
+		enum class type
+		{
+			COMMAND,
+			TERMINATED
+		};
+
+		type						m_type;
+        std::string	                m_command;
+		emu_error					m_status;
     };
 
 	wxString						m_machine_name;
 	wxString						m_target;
     wxMessageQueue<Message>         m_message_queue;
 
+	void Post(Message &&message);
     static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
+	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
 };
 
 

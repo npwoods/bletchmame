@@ -19,7 +19,7 @@ namespace
 {
 	class ListXmlTask : public Task
 	{
-	public:
+	protected:
 		virtual std::vector<wxString> GetArguments(const Preferences &) const
 		{
 			return { "-listxml", "-nodtd", "-lightxml" };

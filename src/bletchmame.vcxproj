@@ -233,6 +233,7 @@
     <ClCompile Include="listxmltask.cpp" />
     <ClCompile Include="prefs.cpp" />
     <ClCompile Include="runmachinetask.cpp" />
+    <ClCompile Include="task.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="validity.cpp" />
     <ClCompile Include="virtuallistview.cpp" />

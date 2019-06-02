@@ -75,51 +75,82 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 {
     RunMachineResult result;
 
+	// set up streams
     wxTextInputStream input(*process.GetInputStream());
     wxTextOutputStream output(*process.GetOutputStream());
-    bool exiting = false;
-    bool first = true;
+	wxTextInputStream error(*process.GetErrorStream());
 
-    while (!exiting)
+	// receive the inaugural response from MAME
+	ReceiveResponse(handler, input);
+
+	// loop until the process terminates
+	bool done = false;
+	emu_error status = emu_error::NONE;
+    while (!done)
     {
+		// await a message from the queue
         Message message;
+        m_message_queue.Receive(message);
+		wxLogDebug("MAME <== [%s]", message.m_command);
 
-        if (first)
-        {
-            first = false;
-        }
-        else
-        {
-            m_message_queue.Receive(message);
-			wxLogDebug("MAME <== [%s]", message.m_command);
-			exiting = message.m_exit;
+		switch(message.m_type)
+		{
+			case Message::type::COMMAND:
+				// emit this command to MAME
+				output.WriteString(message.m_command);
+				output.WriteString("\r\n");
 
-			// special case - with an abort command, we continue immediately
-			if (message.m_command == "abort")
-				continue;
+				// and receive a response from MAME
+				ReceiveResponse(handler, input);
+				break;
 
-			// emit this command to MAME
-            output.WriteString(message.m_command);
-            output.WriteString("\r\n");
-        }
+			case Message::type::TERMINATED:
+				done = true;
+				status = message.m_status;
+				break;
 
-		wxString str = input.ReadLine();
-        wxLogDebug("MAME ==> %s", str);
-
-        // interpret the response
-        util::string_truncate(str, '#');
-        std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
-
-        // did we get a status reponse
-        if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
-        {
-            StatusUpdate status_update;
-            if (ReadStatusUpdate(input, status_update))
-                util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
+			default:
+				throw false;
         }
     }
 
+	// read until the end of the stream
+	wxString error_message;
+	if (status != emu_error::NONE)
+	{
+		wxString s;
+		while ((s = error.ReadLine()), !s.IsEmpty())
+		{
+			error_message += s;
+			error_message += "\r\n";
+		}
+	}
+	result.m_error_message = std::move(error_message);
+
 	util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
+}
+
+
+//-------------------------------------------------
+//  ReceiveResponse
+//-------------------------------------------------
+
+void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
+{
+	wxString str = input.ReadLine();
+	wxLogDebug("MAME ==> %s", str);
+
+	// interpret the response
+	util::string_truncate(str, '#');
+	std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
+
+	// did we get a status reponse
+	if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
+	{
+		StatusUpdate status_update;
+		if (ReadStatusUpdate(input, status_update))
+			util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
+	}
 }
 
 
@@ -129,20 +160,43 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 
 void RunMachineTask::Abort()
 {
-	Post("abort", true);
+	Post("exit");
 }
 
 
 //-------------------------------------------------
-//  OnBegin
+//  OnTerminate
 //-------------------------------------------------
 
-void RunMachineTask::Post(wxString &&command, bool exit)
+void RunMachineTask::OnTerminate(emu_error status)
 {
-    Message message;
+	Message message;
+	message.m_type = Message::type::TERMINATED;
+	message.m_status = status;
+	Post(std::move(message));
+}
+
+
+//-------------------------------------------------
+//  Post
+//-------------------------------------------------
+
+void RunMachineTask::Post(std::string &&command)
+{
+	Message message;
+	message.m_type = Message::type::COMMAND;
     message.m_command = std::move(command);
-    message.m_exit = exit;
-    m_message_queue.Post(message);
+	Post(std::move(message));
+}
+
+
+//-------------------------------------------------
+//  Post
+//-------------------------------------------------
+
+void RunMachineTask::Post(Message &&message)
+{
+	m_message_queue.Post(message);
 }
 
 

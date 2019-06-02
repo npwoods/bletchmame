@@ -39,7 +39,7 @@ public:
 	MameClient(wxEvtHandler &event_handler, const Preferences &prefs);
 	~MameClient();
 
-	void Launch(std::unique_ptr<Task> &&task);
+	void Launch(Task::ptr &&task);
 	void Reset();
 
 	template<class T> T *GetCurrentTask()
@@ -54,11 +54,11 @@ public:
 private:
 	wxEvtHandler &					m_event_handler;
 	const Preferences &				m_prefs;
-	std::unique_ptr<Task>           m_task;
-	std::shared_ptr<wxProcess>      m_process;
-	std::thread                     m_thread;
+	Task::ptr						m_task;
+	std::shared_ptr<wxProcess>		m_process;
+	std::thread						m_thread;
 
-	static Job                      s_job;
+	static Job						s_job;
 
 	void Abort();
 };

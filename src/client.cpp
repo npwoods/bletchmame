@@ -34,9 +34,14 @@
 
 namespace
 {
-    class MyProcess : public wxProcess
+    class ClientProcess : public wxProcess
     {
     public:
+		ClientProcess(std::function<void(Task::emu_error status)> func)
+			: m_on_terminate_func(std::move(func))
+		{
+		}
+
 		void SetProcess(std::shared_ptr<wxProcess> &&process)
         {
 			m_process = std::move(process);
@@ -45,10 +50,12 @@ namespace
         virtual void OnTerminate(int pid, int status) override
         {
 			wxLogStatus("Slave process terminated; pid=%d status=%d", pid, status);
+			m_on_terminate_func(static_cast<Task::emu_error>(status));
         }
 
 	private:
-		std::shared_ptr<wxProcess> m_process;
+		std::function<void(Task::emu_error status)>	m_on_terminate_func;
+		std::shared_ptr<wxProcess>		m_process;
     };
 }
 
@@ -87,7 +94,7 @@ MameClient::~MameClient()
 //  Launch
 //-------------------------------------------------
 
-void MameClient::Launch(std::unique_ptr<Task> &&task)
+void MameClient::Launch(Task::ptr &&task)
 {
 	// Sanity check; don't do anything if we already have a task
 	if (m_task)
@@ -106,7 +113,7 @@ void MameClient::Launch(std::unique_ptr<Task> &&task)
 		launch_command += " " + extra_arguments;
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
-	auto process = std::make_shared<MyProcess>();
+	auto process = std::make_shared<ClientProcess>([task](Task::emu_error status) { task->OnTerminate(status); });
 	m_process = process;
 	process->Redirect();
 	process->SetProcess(process);

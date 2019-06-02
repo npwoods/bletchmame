@@ -16,7 +16,7 @@
 #include <memory>
 
 class Preferences;
-
+class MameClient;
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -26,16 +26,39 @@ class Preferences;
 
 class Task
 {
+	friend class MameClient;
+
 public:
-    typedef std::unique_ptr<Task> ptr;
+	// taken from MAME main.h
+	enum class emu_error
+	{
+		NONE = 0,				/* no error */
+		FAILED_VALIDITY = 1,	/* failed validity checks */
+		MISSING_FILES = 2,		/* missing files */
+		FATALERROR = 3,			/* some other fatal error */
+		DEVICE = 4,				/* device initialization error (MESS-specific) */
+		NO_SUCH_GAME = 5,		/* game was specified but doesn't exist */
+		INVALID_CONFIG = 6,		/* some sort of error in configuration */
+		IDENT_NONROMS = 7,		/* identified all non-ROM files */
+		IDENT_PARTIAL = 8,		/* identified some files but not all */
+		IDENT_NONE = 9			/* identified no files */
+	};
 
-    virtual ~Task()
-    {
-    }
+	typedef std::shared_ptr<Task> ptr;
+	virtual ~Task();
 
-	virtual void Process(wxProcess &process, wxEvtHandler &handler) = 0;
-	virtual void Abort() {}
+protected:
+	// called on the main thread to trigger a shutdown (e.g. - BletchMAME is closed)
+	virtual void Abort();
+
+	// retrieves the arguments to be used at the command line
 	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const = 0;
+
+	// called on a child thread tasked with ownership of a MAME child process
+	virtual void Process(wxProcess &process, wxEvtHandler &handler) = 0;
+
+	// called on the main thread when the process has exited
+	virtual void OnTerminate(emu_error status);
 };
 
 

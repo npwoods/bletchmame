@@ -82,7 +82,7 @@ namespace
 		static float s_throttle_rates[];
 
 		void CreateMenuBar();
-		void Issue(std::string &&command, bool exit = false);
+		void Issue(std::string &&command);
 		void IssueThrottled(bool throttled);
 		void IssueThrottleRate(float throttle_rate);
 		void ChangeThrottleRate(int adjustment);
@@ -217,7 +217,7 @@ void MameFrame::CreateMenuBar()
 
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Issue("exit", true);					}, stop_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("exit");						}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnExit();								}, exit_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
@@ -352,10 +352,18 @@ void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 //  OnRunMachineCompleted
 //-------------------------------------------------
 
-void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &)
+void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 {
-    m_client.Reset();
+	const RunMachineResult &payload(event.Payload());
+
+	m_client.Reset();
     UpdateEmulationSession();
+
+	// report any errors
+	if (!payload.m_error_message.IsEmpty())
+	{
+		wxMessageBox(payload.m_error_message, "Error", wxOK | wxCENTRE, this);
+	}
 }
 
 
@@ -455,13 +463,13 @@ void MameFrame::OnPingTimer(wxTimerEvent &)
 //  Issue
 //-------------------------------------------------
 
-void MameFrame::Issue(std::string &&command, bool exit)
+void MameFrame::Issue(std::string &&command)
 {
     RunMachineTask *task = m_client.GetCurrentTask<RunMachineTask>();
     if (!task)
         return;
 
-    task->Post(std::move(command), exit);
+    task->Post(std::move(command));
 }
 
 

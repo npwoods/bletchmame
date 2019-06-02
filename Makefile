@@ -23,6 +23,7 @@ OBJECTFILES=\
 	$(OBJ)/listxmltask.o		\
 	$(OBJ)/prefs.o				\
 	$(OBJ)/runmachinetask.o		\
+	$(OBJ)/task.o				\
 	$(OBJ)/utility.o			\
 	$(OBJ)/validity.o			\
 	$(OBJ)/virtuallistview.o	\
