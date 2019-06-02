@@ -266,6 +266,58 @@ bool XmlParser::Attributes::Get(const char *attribute, int &value) const
 
 
 //-------------------------------------------------
+//  Attributes::Get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::Get(const char *attribute, bool &value) const
+{
+	int int_value;
+	if (Get(attribute, int_value))
+	{
+		value = int_value != 0;
+		return true;
+	}
+
+	const char *string_value = InternalGet(attribute);
+	if (!strcmp(string_value, "false") || !strcmp(string_value, "off"))
+	{
+		value = false;
+		return true;
+	}
+	if (!strcmp(string_value, "true") || !strcmp(string_value, "on"))
+	{
+		value = true;
+		return true;
+	}
+
+	return false;
+}
+
+
+//-------------------------------------------------
+//  Attributes::Get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::Get(const char *attribute, float &value) const
+{
+	const char *string_value = InternalGet(attribute);
+	int rc = sscanf(string_value, "%f", &value);
+	return rc > 0;
+}
+
+
+//-------------------------------------------------
+//  Attributes::Get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
+{
+	value = (*this)[attribute];
+	return value.IsEmpty();
+}
+
+
+//-------------------------------------------------
 //  Attributes::InternalGet
 //-------------------------------------------------
 

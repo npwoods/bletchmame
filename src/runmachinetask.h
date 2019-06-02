@@ -12,7 +12,6 @@
 #define RUNMACHINETASK_H
 
 #include <wx/msgqueue.h>
-#include <wx/xml/xml.h>
 
 #include "task.h"
 #include "payloadevent.h"
@@ -69,7 +68,6 @@ private:
     wxMessageQueue<Message>         m_message_queue;
 
     static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
-    static bool ReadXmlFromInputStream(wxXmlDocument &xml, wxTextInputStream &input);
 };
 
 

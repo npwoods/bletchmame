@@ -12,13 +12,13 @@
 #include <wx/process.h>
 #include <wx/txtstrm.h>
 #include <wx/sstream.h>
-#include <wx/xml/xml.h>
 #include <iostream>
 #include <thread>
 
 #include "runmachinetask.h"
 #include "utility.h"
 #include "prefs.h"
+#include "xmlparser.h"
 
 
 //**************************************************************************
@@ -160,56 +160,32 @@ bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &re
 	result.m_throttled_specified = false;
 	result.m_throttle_rate_specified = false;
 
-    wxXmlDocument xml;
-    if (!ReadXmlFromInputStream(xml, input))
-        return false;
-
-	util::ProcessXml(xml, [&result](const std::vector<wxString> &path, const wxXmlNode &node)
+	XmlParser xml;
+	xml.OnElement({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
-		switch (path.size())
-		{
-		case 1:
-			if (path[0] == "status")
-			{
-				result.m_paused_specified = util::GetXmlAttributeValue(node, "paused", result.m_paused);
-			}
-			break;
-
-		case 2:
-			if (path[0] == "status" && path[1] == "video")
-			{
-				result.m_frameskip_specified		= util::GetXmlAttributeValue(node, "frameskip", result.m_frameskip);
-				result.m_speed_text_specified		= util::GetXmlAttributeValue(node, "speed_text", result.m_speed_text);
-				result.m_throttled_specified		= util::GetXmlAttributeValue(node, "throttled", result.m_throttled);
-				result.m_throttle_rate_specified	= util::GetXmlAttributeValue(node, "throttle_rate", result.m_throttle_rate);
-			}
-			break;
-		}
+		result.m_paused_specified = attributes.Get("paused", result.m_paused);
+	});
+	xml.OnElement({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
+	{
+		result.m_frameskip_specified		= attributes.Get("frameskip", result.m_frameskip);
+		result.m_speed_text_specified		= attributes.Get("speed_text", result.m_speed_text);
+		result.m_throttled_specified		= attributes.Get("throttled", result.m_throttled);
+		result.m_throttle_rate_specified	= attributes.Get("throttle_rate", result.m_throttle_rate);
 	});
 
-    return true;
-}
+	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
+	// crude mechanism to read the XML
+	wxString buffer;
+	bool done = false;
+	while (!done)
+	{
+		wxString line = input.ReadLine();
+		buffer.Append(line);
 
+		if (input.GetInputStream().Eof() || line.StartsWith("</"))
+			done = true;
+	}
 
-//-------------------------------------------------
-//  ReadStatusUpdate
-//-------------------------------------------------
-
-bool RunMachineTask::ReadXmlFromInputStream(wxXmlDocument &xml, wxTextInputStream &input)
-{
-    // because wxXmlDocument::Load() is not smart enough to read until XML ends, we are using this
-    // crude mechanism to read the XML
-    wxString buffer;
-    bool done = false;
-    while (!done)
-    {
-        wxString line = input.ReadLine();
-        buffer.Append(line);
-
-        if (input.GetInputStream().Eof() || line.StartsWith("</"))
-            done = true;
-    }
-
-    wxStringInputStream input_buffer(buffer);
-    return xml.Load(input_buffer);
+	wxStringInputStream input_buffer(buffer);
+	return xml.Parse(input_buffer);
 }
