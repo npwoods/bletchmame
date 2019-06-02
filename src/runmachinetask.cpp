@@ -62,9 +62,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"dinput",
 		"-slave_ui",
 		m_target,
-		"-skip_gameinfo",
-		"-sound",
-		"none"
+		"-skip_gameinfo"
 	};
 }
 
