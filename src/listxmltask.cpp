@@ -22,7 +22,7 @@ namespace
 	public:
 		virtual std::vector<wxString> GetArguments(const Preferences &) const
 		{
-			return { "-listxmllight", "-nodtd" };
+			return { "-listxml", "-nodtd", "-lightxml" };
 		}
 
 		virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
