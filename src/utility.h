@@ -12,7 +12,6 @@
 #define UTILITY_H
 
 #include <wx/event.h>
-#include <wx/xml/xml.h>
 
 namespace util {
 
@@ -96,19 +95,6 @@ void string_truncate(TStr &str, TChar ch)
 //**************************************************************************
 
 wxString build_command_line(const wxString &executable, const std::vector<wxString> &argv);
-
-
-//**************************************************************************
-//  XML UTILITIES
-//**************************************************************************
-
-void ProcessXml(wxXmlDocument &xml, const std::function<void(const std::vector<wxString> &path, const wxXmlNode &node)> &callback);
-inline bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, wxString &result) { return node.GetAttribute(attribute_name, &result); }
-bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, bool &result);
-bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, long &result);
-bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, int &result);
-bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, double &result);
-bool GetXmlAttributeValue(const wxXmlNode &node, const wxString &attribute_name, float &result);
 
 
 //**************************************************************************
