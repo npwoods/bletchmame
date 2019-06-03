@@ -56,7 +56,8 @@ protected:
 	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
 	virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
 	virtual void Abort() override;
-	virtual void OnTerminate(emu_error status) override;
+	virtual void OnChildProcessCompleted(emu_error status) override;
+	virtual void OnChildProcessKilled() override;
 
 private:
     struct Message

@@ -38,7 +38,7 @@ namespace
     {
     public:
 		ClientProcess(std::function<void(Task::emu_error status)> func)
-			: m_on_terminate_func(std::move(func))
+			: m_on_child_process_completed_func(std::move(func))
 		{
 		}
 
@@ -50,12 +50,12 @@ namespace
         virtual void OnTerminate(int pid, int status) override
         {
 			wxLogStatus("Slave process terminated; pid=%d status=%d", pid, status);
-			m_on_terminate_func(static_cast<Task::emu_error>(status));
+			m_on_child_process_completed_func(static_cast<Task::emu_error>(status));
         }
 
 	private:
-		std::function<void(Task::emu_error status)>	m_on_terminate_func;
-		std::shared_ptr<wxProcess>		m_process;
+		std::function<void(Task::emu_error status)>	m_on_child_process_completed_func;
+		std::shared_ptr<wxProcess>					m_process;
     };
 }
 
@@ -113,7 +113,7 @@ void MameClient::Launch(Task::ptr &&task)
 		launch_command += " " + extra_arguments;
 
 	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
-	auto process = std::make_shared<ClientProcess>([task](Task::emu_error status) { task->OnTerminate(status); });
+	auto process = std::make_shared<ClientProcess>([task](Task::emu_error status) { task->OnChildProcessCompleted(status); });
 	m_process = process;
 	process->Redirect();
 	process->SetProcess(process);
@@ -131,7 +131,8 @@ void MameClient::Launch(Task::ptr &&task)
 	m_task = std::move(task);
 	m_thread = std::thread([process, this]()
 	{
-		// we should really have logging, but wxWidgets handles logging oddly from child threads
+		// we should really have logging, but wxWidgets handles logging oddly from child threads.  I want
+		// that to all go to error logging, not message boxes
 		wxLog::EnableLogging(false);
 
 		// invoke the task's process method
@@ -162,7 +163,12 @@ void MameClient::Reset()
 void MameClient::Abort()
 {
 	if (m_task)
+	{
 		m_task->Abort();
+	}
 	if (m_process)
+	{
 		wxKill(m_process->GetPid(), wxSIGKILL);
+		m_task->OnChildProcessKilled();
+	}
 }

@@ -74,14 +74,27 @@ void RunMachineTask::Abort()
 
 
 //-------------------------------------------------
-//  OnTerminate
+//  OnChildProcessCompleted
 //-------------------------------------------------
 
-void RunMachineTask::OnTerminate(emu_error status)
+void RunMachineTask::OnChildProcessCompleted(emu_error status)
 {
 	Message message;
 	message.m_type = Message::type::TERMINATED;
 	message.m_status = status;
+	Post(std::move(message));
+}
+
+
+//-------------------------------------------------
+//  OnChildProcessKilled
+//-------------------------------------------------
+
+void RunMachineTask::OnChildProcessKilled()
+{
+	Message message;
+	message.m_type = Message::type::TERMINATED;
+	message.m_status = emu_error::NONE;
 	Post(std::move(message));
 }
 

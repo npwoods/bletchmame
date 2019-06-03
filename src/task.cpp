@@ -35,10 +35,20 @@ void Task::Abort()
 
 
 //-------------------------------------------------
-//  OnTerminate
+//  OnChildProcessCompleted
 //-------------------------------------------------
 
-void Task::OnTerminate(emu_error)
+void Task::OnChildProcessCompleted(emu_error)
+{
+	// by default, do nothing
+}
+
+
+//-------------------------------------------------
+//  OnChildProcessKilled
+//-------------------------------------------------
+
+void Task::OnChildProcessKilled()
 {
 	// by default, do nothing
 }

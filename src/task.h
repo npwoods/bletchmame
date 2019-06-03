@@ -57,8 +57,11 @@ protected:
 	// called on a child thread tasked with ownership of a MAME child process
 	virtual void Process(wxProcess &process, wxEvtHandler &handler) = 0;
 
-	// called on the main thread when the process has exited
-	virtual void OnTerminate(emu_error status);
+	// called on the main thread when the child process has been completed
+	virtual void OnChildProcessCompleted(emu_error status);
+
+	// called on the main thread when the child process has been killed
+	virtual void OnChildProcessKilled();
 };
 
 
