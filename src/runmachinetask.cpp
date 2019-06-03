@@ -20,6 +20,9 @@
 #include "prefs.h"
 #include "xmlparser.h"
 
+wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
+wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
+
 
 //**************************************************************************
 //  MAIN THREAD OPERATIONS
@@ -79,7 +82,7 @@ void RunMachineTask::Abort()
 
 void RunMachineTask::OnChildProcessCompleted(emu_error status)
 {
-	PostTerminated(status);
+	InternalPost(Message::type::TERMINATED, "", status);
 }
 
 
@@ -89,20 +92,7 @@ void RunMachineTask::OnChildProcessCompleted(emu_error status)
 
 void RunMachineTask::OnChildProcessKilled()
 {
-	PostTerminated(emu_error::KILLED);
-}
-
-
-//-------------------------------------------------
-//  PostTerminated
-//-------------------------------------------------
-
-void RunMachineTask::PostTerminated(emu_error status)
-{
-	Message message;
-	message.m_type = Message::type::TERMINATED;
-	message.m_status = status;
-	Post(std::move(message));
+	InternalPost(Message::type::TERMINATED, "", emu_error::KILLED);
 }
 
 
@@ -112,19 +102,20 @@ void RunMachineTask::PostTerminated(emu_error status)
 
 void RunMachineTask::Post(std::string &&command)
 {
-	Message message;
-	message.m_type = Message::type::COMMAND;
-    message.m_command = std::move(command);
-	Post(std::move(message));
+	InternalPost(Message::type::COMMAND, std::move(command));
 }
 
 
 //-------------------------------------------------
-//  Post
+//  InternalPost
 //-------------------------------------------------
 
-void RunMachineTask::Post(Message &&message)
+void RunMachineTask::InternalPost(Message::type type, std::string &&command, emu_error status)
 {
+	Message message;
+	message.m_type = type;
+	message.m_command = std::move(command);
+	message.m_status = status;
 	m_message_queue.Post(message);
 }
 
@@ -261,23 +252,4 @@ bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &re
 
 	wxStringInputStream input_buffer(buffer);
 	return xml.Parse(input_buffer);
-}
-
-
-//**************************************************************************
-//  MISCELLANEOUS
-//**************************************************************************
-
-wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
-wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
-
-
-//-------------------------------------------------
-//  Message::ctor
-//-------------------------------------------------
-
-RunMachineTask::Message::Message()
-	: m_type(type::INVALID)
-	, m_status(emu_error::INVALID)
-{
 }

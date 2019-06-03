@@ -62,8 +62,6 @@ protected:
 private:
     struct Message
     {
-		Message();
-
 		enum class type
 		{
 			INVALID,
@@ -80,8 +78,7 @@ private:
 	wxString						m_target;
     wxMessageQueue<Message>         m_message_queue;
 
-	void Post(Message &&message);
-	void PostTerminated(emu_error status);
+	void InternalPost(Message::type type, std::string &&command, emu_error status = emu_error::INVALID);
     static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
 	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
 };
