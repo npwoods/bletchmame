@@ -50,7 +50,7 @@ namespace
 
 		// event handlers (these functions should _not_ be virtual)
 		void OnClose(wxCloseEvent &event);
-		void OnMenuExit();
+		void OnMenuStop();
 		void OnMenuAbout();
 		void OnSize(wxSizeEvent &event);
 		void OnListItemSelected(wxListEvent &event);
@@ -220,8 +220,8 @@ void MameFrame::CreateMenuBar()
 
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Issue("exit");						}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuExit();							}, exit_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuStop();							}, stop_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Close(false);							}, exit_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
@@ -276,8 +276,21 @@ bool MameFrame::IsEmulationSessionActive() const
 //  OnClose
 //-------------------------------------------------
 
-void MameFrame::OnClose(wxCloseEvent &)
+void MameFrame::OnClose(wxCloseEvent &event)
 {
+
+	if (IsEmulationSessionActive())
+	{
+		wxString message = "Do you really want to exit?\n"
+			"\n"
+			"All data in emulated RAM will be lost";
+		if (wxMessageBox(message, "BletchMAME", wxYES_NO | wxICON_QUESTION, this) != wxYES)
+		{
+			event.Veto();
+			return;
+		}
+	}
+
 	for (int i = 0; i < Preferences::COLUMN_COUNT; i++)
 	{
 		int order = m_list_view->GetColumnOrder(i);
@@ -288,13 +301,16 @@ void MameFrame::OnClose(wxCloseEvent &)
 
 
 //-------------------------------------------------
-//  OnMenuExit
+//  OnMenuStop
 //-------------------------------------------------
 
-void MameFrame::OnMenuExit()
+void MameFrame::OnMenuStop()
 {
-	// true is to force the frame to close
-	Close(true);
+	wxString message = "Do you really want to stop?\n"
+		"\n"
+		"All data in emulated RAM will be lost";
+	if (wxMessageBox(message, "BletchMAME", wxYES_NO | wxICON_QUESTION, this) == wxYES)
+		Issue("exit");
 }
 
 
