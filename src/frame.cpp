@@ -49,6 +49,7 @@ namespace
 		MameFrame();
 
 		// event handlers (these functions should _not_ be virtual)
+		void OnClose(wxCloseEvent &event);
 		void OnExit();
 		void OnAbout();
 		void OnSize(wxSizeEvent &event);
@@ -133,6 +134,7 @@ MameFrame::MameFrame()
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
 	Bind(EVT_SPECIFY_MAME_PATH,     [this](auto &)      { OnSpecifyMamePath();			});
+	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);				});
 	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
 	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
 	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
@@ -141,11 +143,12 @@ MameFrame::MameFrame()
 	// Create a list view
 	m_list_view = new VirtualListView(this);
 	m_list_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(static_cast<size_t>(item), column); });
-    m_list_view->ClearAll();
-    m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
-    m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
-    m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
-    m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
+	m_list_view->ClearAll();
+	m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
+	m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
+	m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
+	m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
+	m_list_view->SetColumnsOrder(m_prefs.GetColumnOrder());
 	UpdateMachineList();
 
 	// nothing is running yet...
@@ -266,6 +269,21 @@ void MameFrame::CreateMenuBar()
 bool MameFrame::IsEmulationSessionActive() const
 {
 	return m_client.GetCurrentTask<RunMachineTask>() != nullptr;
+}
+
+
+//-------------------------------------------------
+//  OnClose
+//-------------------------------------------------
+
+void MameFrame::OnClose(wxCloseEvent &)
+{
+	for (int i = 0; i < Preferences::COLUMN_COUNT; i++)
+	{
+		int order = m_list_view->GetColumnOrder(i);
+		m_prefs.SetColumnOrder(i, order);
+	}
+	Destroy();
 }
 
 

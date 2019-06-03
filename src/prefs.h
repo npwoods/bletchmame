@@ -30,6 +30,8 @@ public:
 		count
 	};
 
+	static const int COLUMN_COUNT = 4;
+
 	Preferences();
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
@@ -47,6 +49,10 @@ public:
 	int GetColumnWidth(int column_index) const              { return m_column_widths[column_index]; }
 	void SetColumnWidth(int column_index, int width)        { m_column_widths[column_index] = width; }
 
+	wxArrayInt GetColumnOrder() const						{ return wxArrayInt(m_column_order.begin(), m_column_order.end()); }
+	void SetColumnOrder(int column_index, int order)		{ m_column_order[column_index] = order; }
+	void SetColumnOrder(const std::array<int, 4> &order)	{ m_column_order = order; }
+
 	const wxString &GetSelectedMachine() const              { return m_selected_machine; }
 	void SetSelectedMachine(const wxString &machine_name)   { m_selected_machine = machine_name; }
 	void SetSelectedMachine(wxString &&machine_name)        { m_selected_machine = std::move(machine_name); }
@@ -57,7 +63,8 @@ private:
 	std::array<wxString, static_cast<size_t>(path_type::count)>			m_paths;
 	wxString															m_mame_extra_arguments;
 	wxSize																m_size;
-	std::array<int, 4>													m_column_widths;
+	std::array<int, COLUMN_COUNT>										m_column_widths;
+	std::array<int, COLUMN_COUNT>										m_column_order;
 	wxString															m_selected_machine;
 
 	bool Load();

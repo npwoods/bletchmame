@@ -51,10 +51,12 @@ static bool IsValidDimension(int dimension)
 //-------------------------------------------------
 
 Preferences::Preferences()
-    : m_size(950, 600)
-    , m_column_widths({85, 370, 50, 320})
+	: m_size(950, 600)
+	, m_column_widths({85, 370, 50, 320})
 {
 	// Defaults
+	for (int i = 0; i < COLUMN_COUNT; i++)
+		SetColumnOrder(i, i);
 	SetPath(path_type::config, GetConfigDirectory(true));
 	SetPath(path_type::nvram, GetConfigDirectory(true));
 
@@ -88,6 +90,7 @@ bool Preferences::Load()
 
 	XmlParser xml;
 	path_type type = path_type::count;
+	std::array<int, COLUMN_COUNT> column_order;
 	xml.OnElement({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
 		auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), attributes["type"]);
@@ -122,14 +125,27 @@ bool Preferences::Load()
 	});
 	xml.OnElement({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		int index, width;
-		if (attributes.Get("index", index) && attributes.Get("width", width) && IsValidDimension(width))
+		int index, width, order;
+		if (attributes.Get("index", index))
 		{
-			SetColumnWidth(index, width);
+			if (attributes.Get("width", width) && IsValidDimension(width))
+				SetColumnWidth(index, width);
+			if (attributes.Get("order", order) && order >= 0 && order < column_order.size())
+				column_order[index] = order;
 		}
 
 	});
-	return xml.Parse(file_name);
+	bool success = xml.Parse(file_name);
+
+	// we're merging in the column order here because we want to make sure that
+	// the columns are specified if and only if each column is present
+	int column_order_mask = 0;
+	for (size_t i = 0; i < column_order.size(); i++)
+		column_order_mask |= 1 << i;
+	if (column_order_mask == (1 << column_order.size()) - 1)
+		SetColumnOrder(column_order);
+
+	return success;
 }
 
 
@@ -167,7 +183,7 @@ void Preferences::Save(std::ostream &output)
 	if (!m_selected_machine.IsEmpty())
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
 	for (size_t i = 0; i < m_column_widths.size(); i++)
-		output << "\t<column index=\"" << i << "\" width=\"" << m_column_widths[i] << "\"/>" << std::endl;
+		output << "\t<column index=\"" << i << "\" width=\"" << m_column_widths[i] << "\" order=\"" << m_column_order[i] << "\"/>" << std::endl;
 	output << std::endl;
 
 	output << "</preferences>" << std::endl;
