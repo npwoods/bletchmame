@@ -79,10 +79,7 @@ void RunMachineTask::Abort()
 
 void RunMachineTask::OnChildProcessCompleted(emu_error status)
 {
-	Message message;
-	message.m_type = Message::type::TERMINATED;
-	message.m_status = status;
-	Post(std::move(message));
+	PostTerminated(status);
 }
 
 
@@ -92,9 +89,19 @@ void RunMachineTask::OnChildProcessCompleted(emu_error status)
 
 void RunMachineTask::OnChildProcessKilled()
 {
+	PostTerminated(emu_error::KILLED);
+}
+
+
+//-------------------------------------------------
+//  PostTerminated
+//-------------------------------------------------
+
+void RunMachineTask::PostTerminated(emu_error status)
+{
 	Message message;
 	message.m_type = Message::type::TERMINATED;
-	message.m_status = emu_error::NONE;
+	message.m_status = status;
 	Post(std::move(message));
 }
 
@@ -271,6 +278,6 @@ wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 
 RunMachineTask::Message::Message()
 	: m_type(type::INVALID)
-	, m_status(emu_error::NONE)
+	, m_status(emu_error::INVALID)
 {
 }

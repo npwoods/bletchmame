@@ -81,6 +81,7 @@ private:
     wxMessageQueue<Message>         m_message_queue;
 
 	void Post(Message &&message);
+	void PostTerminated(emu_error status);
     static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
 	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
 };
