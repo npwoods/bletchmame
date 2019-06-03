@@ -50,8 +50,8 @@ namespace
 
 		// event handlers (these functions should _not_ be virtual)
 		void OnClose(wxCloseEvent &event);
-		void OnExit();
-		void OnAbout();
+		void OnMenuExit();
+		void OnMenuAbout();
 		void OnSize(wxSizeEvent &event);
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
@@ -221,12 +221,12 @@ void MameFrame::CreateMenuBar()
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("exit");						}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnExit();								}, exit_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuExit();							}, exit_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);			}, show_paths_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnAbout();							}, about_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();						}, about_menu_item->GetId());
 
 	// Bind UI update events
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, stop_menu_item->GetId());
@@ -288,10 +288,10 @@ void MameFrame::OnClose(wxCloseEvent &)
 
 
 //-------------------------------------------------
-//  OnExit
+//  OnMenuExit
 //-------------------------------------------------
 
-void MameFrame::OnExit()
+void MameFrame::OnMenuExit()
 {
 	// true is to force the frame to close
 	Close(true);
@@ -299,10 +299,10 @@ void MameFrame::OnExit()
 
 
 //-------------------------------------------------
-//  OnAbout
+//  OnMenuAbout
 //-------------------------------------------------
 
-void MameFrame::OnAbout()
+void MameFrame::OnMenuAbout()
 {
 	wxString message = "BletchMAME";
 
