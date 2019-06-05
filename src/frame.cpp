@@ -49,6 +49,7 @@ namespace
 		MameFrame();
 
 		// event handlers (these functions should _not_ be virtual)
+		void OnKeyDown(wxKeyEvent &event);
 		void OnSize(wxSizeEvent &event);
 		void OnClose(wxCloseEvent &event);
 		void OnMenuStop();
@@ -134,6 +135,7 @@ MameFrame::MameFrame()
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
 	Bind(EVT_SPECIFY_MAME_PATH,     [this](auto &)      { OnSpecifyMamePath();			});
+	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             });
 	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);				});
 	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);				});
 	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
@@ -270,6 +272,22 @@ void MameFrame::CreateMenuBar()
 bool MameFrame::IsEmulationSessionActive() const
 {
 	return m_client.GetCurrentTask<RunMachineTask>() != nullptr;
+}
+
+
+//-------------------------------------------------
+//  OnKeyDown
+//-------------------------------------------------
+
+void MameFrame::OnKeyDown(wxKeyEvent &event)
+{
+	// pressing ALT to bring up menus is not friendly when running the emulation
+	bool swallow_event = IsEmulationSessionActive() && event.GetKeyCode() == WXK_ALT;
+
+	// counterintuitively, the way to swallow the event is to _not_ call Skip(), which really
+	// means "Skip this event handler"
+	if (!swallow_event)
+		event.Skip();
 }
 
 
