@@ -49,10 +49,10 @@ namespace
 		MameFrame();
 
 		// event handlers (these functions should _not_ be virtual)
+		void OnSize(wxSizeEvent &event);
 		void OnClose(wxCloseEvent &event);
 		void OnMenuStop();
 		void OnMenuAbout();
-		void OnSize(wxSizeEvent &event);
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
 		void OnListColumnResized(wxListEvent &event);
@@ -134,6 +134,7 @@ MameFrame::MameFrame()
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
 	Bind(EVT_SPECIFY_MAME_PATH,     [this](auto &)      { OnSpecifyMamePath();			});
+	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);				});
 	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);				});
 	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
 	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
@@ -273,12 +274,25 @@ bool MameFrame::IsEmulationSessionActive() const
 
 
 //-------------------------------------------------
+//  OnSize
+//-------------------------------------------------
+
+void MameFrame::OnSize(wxSizeEvent &event)
+{
+	// update the window size in preferences
+	m_prefs.SetSize(event.GetSize());
+
+	// skip this event handler so the default behavior applies
+	event.Skip();
+}
+
+
+//-------------------------------------------------
 //  OnClose
 //-------------------------------------------------
 
 void MameFrame::OnClose(wxCloseEvent &event)
 {
-
 	if (IsEmulationSessionActive())
 	{
 		wxString message = "Do you really want to exit?\n"
@@ -331,16 +345,6 @@ void MameFrame::OnMenuAbout()
 	}
 
 	wxMessageBox(message, "About BletchMAME", wxOK | wxICON_INFORMATION, this);
-}
-
-
-//-------------------------------------------------
-//  OnSize
-//-------------------------------------------------
-
-void MameFrame::OnSize(wxSizeEvent &evt)
-{
-    m_prefs.SetSize(evt.GetSize());
 }
 
 
