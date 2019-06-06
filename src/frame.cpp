@@ -57,7 +57,6 @@ namespace
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
 		void OnListColumnResized(wxListEvent &event);
-		void OnPingTimer(wxTimerEvent &event);
 
 		// Task notifications
 		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
@@ -84,10 +83,6 @@ namespace
 		static float s_throttle_rates[];
 
 		void CreateMenuBar();
-		void Issue(std::string &&command);
-		void IssueThrottled(bool throttled);
-		void IssueThrottleRate(float throttle_rate);
-		void ChangeThrottleRate(int adjustment);
 		bool IsEmulationSessionActive() const;
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event);
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
@@ -95,12 +90,20 @@ namespace
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
 		wxString GetTarget();
+
+		// Runtime Control
+		void Issue(std::string &&command);
+		void InvokePing();
+		void ChangePaused(bool paused);
+		void ChangeThrottled(bool throttled);
+		void ChangeThrottleRate(float throttle_rate);
+		void ChangeThrottleRate(int adjustment);
 	};
 };
 
 
 //**************************************************************************
-//  IMPLEMENTATION
+//  MAIN IMPLEMENTATION
 //**************************************************************************
 
 float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1f };
@@ -141,7 +144,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
 	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
 	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
-	Bind(wxEVT_TIMER,				[this](auto &event) { OnPingTimer(event);           });
+	Bind(wxEVT_TIMER,				[this](auto &)		{ InvokePing();					});
 
 	// Create a list view
 	m_list_view = new VirtualListView(this);
@@ -181,7 +184,7 @@ void MameFrame::CreateMenuBar()
 	// create the "File" menu
 	wxMenu *file_menu = new wxMenu();
 	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
-	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause");
+	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause", wxEmptyString, wxITEM_CHECK);
 	wxMenu *reset_menu = new wxMenu();
 	wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
 	wxMenuItem *hard_reset_menu_item		= reset_menu->Append(id++, "Hard Reset");
@@ -222,18 +225,19 @@ void MameFrame::CreateMenuBar()
 	SetMenuBar(m_menu_bar);
 
 	// Bind menu item selected events
-	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuStop();							}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Close(false);							}, exit_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { IssueThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ Issue("soft_reset");					}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();							}, stop_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);		}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);							}, exit_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);			}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();						}, about_menu_item->GetId());
 
 	// Bind UI update events
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, stop_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);		}, pause_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, increase_speed_menu_item->GetId());
@@ -247,7 +251,7 @@ void MameFrame::CreateMenuBar()
 		wxString text		= std::to_string((int)(throttle_rate * 100)) + "%";
 		wxMenuItem *item	= throttle_menu->Insert(i, id++, text, wxEmptyString, wxITEM_CHECK);
 
-		Bind(wxEVT_MENU,		[this, throttle_rate](auto &)		{ IssueThrottleRate(throttle_rate);										}, item->GetId());
+		Bind(wxEVT_MENU,		[this, throttle_rate](auto &)		{ ChangeThrottleRate(throttle_rate);										}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, throttle_rate](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_throttle_rate == throttle_rate);	}, item->GetId());
 	}
 
@@ -501,79 +505,6 @@ void MameFrame::OnListColumnResized(wxListEvent &evt)
 
 
 //-------------------------------------------------
-//  OnPingTimer
-//-------------------------------------------------
-
-void MameFrame::OnPingTimer(wxTimerEvent &)
-{
-	// only issue a ping if there is an active session, and there is no ping in flight
-	if (!m_pinging && IsEmulationSessionActive())
-	{
-		m_pinging = true;
-		Issue("ping");
-	}
-}
-
-
-//-------------------------------------------------
-//  Issue
-//-------------------------------------------------
-
-void MameFrame::Issue(std::string &&command)
-{
-    RunMachineTask *task = m_client.GetCurrentTask<RunMachineTask>();
-    if (!task)
-        return;
-
-    task->Post(std::move(command));
-}
-
-
-//-------------------------------------------------
-//  IssueThrottled
-//-------------------------------------------------
-
-void MameFrame::IssueThrottled(bool throttled)
-{
-	Issue("throttled " + std::to_string(throttled ? 1 : 0));
-}
-
-
-//-------------------------------------------------
-//  IssueThrottleRate
-//-------------------------------------------------
-
-void MameFrame::IssueThrottleRate(float throttle_rate)
-{
-	Issue("throttle_rate " + std::to_string(throttle_rate));
-}
-
-
-//-------------------------------------------------
-//  ChangeThrottleRate
-//-------------------------------------------------
-
-void MameFrame::ChangeThrottleRate(int adjustment)
-{
-	// find where we are in the array
-	int index;
-	for (index = 0; index < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); index++)
-	{
-		if (m_status_throttle_rate >= s_throttle_rates[index])
-			break;
-	}
-
-	// apply the adjustment
-	index += adjustment;
-	index = std::max(index, 0);
-	index = std::min(index, (int)(sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]) - 1));
-
-	// and change the throttle rate
-	IssueThrottleRate(s_throttle_rates[index]);
-}
-
-
-//-------------------------------------------------
 //  UpdateMachineList
 //-------------------------------------------------
 
@@ -652,6 +583,101 @@ wxString MameFrame::GetTarget()
 	return std::to_string((std::int64_t)GetHWND());
 }
 
+
+//**************************************************************************
+//  RUNTIME CONTROL
+//
+//	Actions that affect MAME at runtime go here.  The naming convention is
+//	that "invocation actions" take the form InvokeXyz(), whereas methods
+//	that change something take the form ChangeXyz()
+//**************************************************************************
+
+//-------------------------------------------------
+//  Issue
+//-------------------------------------------------
+
+void MameFrame::Issue(std::string &&command)
+{
+	RunMachineTask *task = m_client.GetCurrentTask<RunMachineTask>();
+	if (!task)
+		return;
+
+	task->Post(std::move(command));
+}
+
+
+//-------------------------------------------------
+//  InvokePing
+//-------------------------------------------------
+
+void MameFrame::InvokePing()
+{
+	// only issue a ping if there is an active session, and there is no ping in flight
+	if (!m_pinging && IsEmulationSessionActive())
+	{
+		m_pinging = true;
+		Issue("ping");
+	}
+}
+
+
+//-------------------------------------------------
+//  ChangePaused
+//-------------------------------------------------
+
+void MameFrame::ChangePaused(bool paused)
+{
+	Issue(paused ? "pause" : "resume");
+}
+
+
+//-------------------------------------------------
+//  ChangeThrottled
+//-------------------------------------------------
+
+void MameFrame::ChangeThrottled(bool throttled)
+{
+	Issue("throttled " + std::to_string(throttled ? 1 : 0));
+}
+
+
+//-------------------------------------------------
+//  IssueThrottleRate
+//-------------------------------------------------
+
+void MameFrame::ChangeThrottleRate(float throttle_rate)
+{
+	Issue("throttle_rate " + std::to_string(throttle_rate));
+}
+
+
+//-------------------------------------------------
+//  ChangeThrottleRate
+//-------------------------------------------------
+
+void MameFrame::ChangeThrottleRate(int adjustment)
+{
+	// find where we are in the array
+	int index;
+	for (index = 0; index < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); index++)
+	{
+		if (m_status_throttle_rate >= s_throttle_rates[index])
+			break;
+	}
+
+	// apply the adjustment
+	index += adjustment;
+	index = std::max(index, 0);
+	index = std::min(index, (int)(sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]) - 1));
+
+	// and change the throttle rate
+	ChangeThrottleRate(s_throttle_rates[index]);
+}
+
+
+//**************************************************************************
+//  INSTANTIATION
+//**************************************************************************
 
 //-------------------------------------------------
 //  create_mame_frame
