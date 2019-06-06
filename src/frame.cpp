@@ -383,7 +383,7 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event)
 void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked)
 {
 	OnEmuMenuUpdateUI(event);
-	event.Check(checked);
+	event.Check(checked && IsEmulationSessionActive());
 }
 
 
