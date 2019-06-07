@@ -8,6 +8,8 @@
 
 #include <expat.h>
 #include <wx/stream.h>
+#include <wx/sstream.h>
+#include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 
 #include "xmlparser.h"
@@ -66,6 +68,17 @@ bool XmlParser::Parse(const wxString &file_name)
 {
 	wxFileInputStream input(file_name);
 	return Parse(input);
+}
+
+
+//-------------------------------------------------
+//  ParseXml
+//-------------------------------------------------
+
+bool XmlParser::ParseXml(const wxString &xml_text)
+{
+	wxStringInputStream string_stream(xml_text);
+	return Parse(string_stream);
 }
 
 
@@ -313,7 +326,7 @@ bool XmlParser::Attributes::Get(const char *attribute, float &value) const
 bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
 {
 	value = (*this)[attribute];
-	return value.IsEmpty();
+	return !value.IsEmpty();
 }
 
 

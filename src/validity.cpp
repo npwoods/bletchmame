@@ -8,6 +8,7 @@
 
 #include "validity.h"
 #include "utility.h"
+#include "xmlparser.h"
 
 
 //**************************************************************************
@@ -40,6 +41,29 @@ bool validity_checks()
 		std::vector<std::wstring> vec = { L"Alpha", L"Bravo", L"Charlie" };
 		std::wstring result = util::string_join(std::wstring(L","), vec);
 		assert(result == L"Alpha,Bravo,Charlie");
+	}
+
+	{
+		XmlParser xml;
+		wxString charlie_value;
+		int foxtrot_value = 0;
+		xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+		{
+			assert(attributes.Get("charlie", charlie_value));
+		});
+		xml.OnElement({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
+		{
+			assert(attributes.Get("foxtrot", foxtrot_value));
+		});
+
+		bool result = xml.ParseXml(
+			"<alpha>"
+				"<bravo charlie=\"delta\"/>"
+				"<echo foxtrot=\"42\"/>"
+			"</alpha>");
+		assert(result);
+		assert(charlie_value == "delta");
+		assert(foxtrot_value == 42);
 	}
 
 	return true;

@@ -55,6 +55,7 @@ public:
 
 	bool Parse(wxInputStream &input);
 	bool Parse(const wxString &file_name);
+	bool ParseXml(const wxString &xml_text);
 	wxString ErrorMessage() const;
 
 private:
