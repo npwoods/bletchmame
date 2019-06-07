@@ -69,6 +69,7 @@ namespace
 		Preferences                 m_prefs;
 		VirtualListView *           m_list_view;
 		wxMenuBar *                 m_menu_bar;
+		wxAcceleratorTable			m_menu_bar_accelerators;
 		wxTimer						m_ping_timer;
 		wxString					m_mame_build;
 		std::vector<Machine>        m_machines;
@@ -225,6 +226,10 @@ void MameFrame::CreateMenuBar()
 
 	// ... and attach this menu bar to the frame
 	SetMenuBar(m_menu_bar);
+
+	// get a copy of the accelerators; we need this so we can disable them when
+	// we toggle the menu bar
+	m_menu_bar_accelerators = *m_menu_bar->GetAcceleratorTable();
 
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ Issue("soft_reset");					}, soft_reset_menu_item->GetId());
@@ -612,7 +617,16 @@ void MameFrame::UpdateEmulationSession()
 void MameFrame::UpdateMenuBar()
 {
 	bool menu_bar_shown = !IsEmulationSessionActive() || m_prefs.GetMenuBarShown();
+
+	// when we hide the menu bar, we disable the accelerators
+	m_menu_bar->SetAcceleratorTable(menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
+
+#ifdef WIN32
+	// Win32 specific code
 	SetMenu(GetHWND(), menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
+#else
+	throw false;
+#endif
 }
 
 
