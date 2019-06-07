@@ -53,6 +53,7 @@ static bool IsValidDimension(int dimension)
 Preferences::Preferences()
 	: m_size(950, 600)
 	, m_column_widths({85, 370, 50, 320})
+	, m_menu_bar_shown(true)
 {
 	// Defaults
 	for (int i = 0; i < COLUMN_COUNT; i++)
@@ -91,6 +92,12 @@ bool Preferences::Load()
 	XmlParser xml;
 	path_type type = path_type::count;
 	std::array<int, COLUMN_COUNT> column_order;
+	xml.OnElement({ "preferences" }, [&](const XmlParser::Attributes &attributes)
+	{
+		bool menu_bar_shown;
+		if (attributes.Get("menu_bar_shown", menu_bar_shown))
+			SetMenuBarShown(menu_bar_shown);
+	});
 	xml.OnElement({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
 		auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), attributes["type"]);
@@ -168,7 +175,7 @@ void Preferences::Save()
 void Preferences::Save(std::ostream &output)
 {
 	output << "<!-- Preferences for BletchMAME -->" << std::endl;
-	output << "<preferences>" << std::endl;
+	output << "<preferences menu_bar_shown=\"" << (m_menu_bar_shown ? "1" : "0") << "\">" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Paths -->" << std::endl;

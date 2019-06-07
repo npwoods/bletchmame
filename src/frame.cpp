@@ -90,6 +90,7 @@ namespace
 		void UpdateMachineList();
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
+		void UpdateMenuBar();
 		wxString GetTarget();
 
 		// Runtime Control
@@ -309,6 +310,12 @@ void MameFrame::OnKeyDown(wxKeyEvent &event)
 {
 	// pressing ALT to bring up menus is not friendly when running the emulation
 	bool swallow_event = IsEmulationSessionActive() && event.GetKeyCode() == WXK_ALT;
+
+	if (IsEmulationSessionActive() && event.GetKeyCode() == WXK_SCROLL)
+	{
+		m_prefs.SetMenuBarShown(!m_prefs.GetMenuBarShown());
+		UpdateMenuBar();
+	}
 
 	// counterintuitively, the way to swallow the event is to _not_ call Skip(), which really
 	// means "Skip this event handler"
@@ -593,6 +600,19 @@ void MameFrame::UpdateEmulationSession()
 		m_ping_timer.Start(500);
 	else
 		m_ping_timer.Stop();
+
+	UpdateMenuBar();
+}
+
+
+//-------------------------------------------------
+//  UpdateMenuBar
+//-------------------------------------------------
+
+void MameFrame::UpdateMenuBar()
+{
+	bool menu_bar_shown = !IsEmulationSessionActive() || m_prefs.GetMenuBarShown();
+	SetMenu(GetHWND(), menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
 }
 
 
