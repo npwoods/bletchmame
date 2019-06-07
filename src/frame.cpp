@@ -184,12 +184,12 @@ void MameFrame::CreateMenuBar()
 	// create the "File" menu
 	wxMenu *file_menu = new wxMenu();
 	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
-	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause", wxEmptyString, wxITEM_CHECK);
+	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
 	wxMenu *reset_menu = new wxMenu();
 	wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
 	wxMenuItem *hard_reset_menu_item		= reset_menu->Append(id++, "Hard Reset");
 	file_menu->AppendSubMenu(reset_menu, "Reset");
-	wxMenuItem *exit_menu_item				= file_menu->Append(wxID_EXIT, "E&xit\tAlt-X");
+	wxMenuItem *exit_menu_item				= file_menu->Append(wxID_EXIT, "E&xit\tCtrl+Alt+X");
 
 	// create the "Devices" menu
 	wxMenu *devices_menu = new wxMenu();
@@ -198,9 +198,9 @@ void MameFrame::CreateMenuBar()
 	wxMenu *options_menu = new wxMenu();
 	wxMenu *throttle_menu = new wxMenu();
 	throttle_menu->AppendSeparator();	// throttle menu items are added later
-	wxMenuItem *increase_speed_menu_item	= throttle_menu->Append(id++, "Increase Speed");
-	wxMenuItem *decrease_speed_menu_item	= throttle_menu->Append(id++, "Decrease Speed");
-	wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode", wxEmptyString, wxITEM_CHECK);
+	wxMenuItem *increase_speed_menu_item	= throttle_menu->Append(id++, "Increase Speed\tF9");
+	wxMenuItem *decrease_speed_menu_item	= throttle_menu->Append(id++, "Decrease Speed\tF8");
+	wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode\tF10", wxEmptyString, wxITEM_CHECK);
 	options_menu->AppendSubMenu(throttle_menu, "Throttle");
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
