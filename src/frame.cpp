@@ -84,6 +84,7 @@ namespace
 
 		void CreateMenuBar();
 		bool IsEmulationSessionActive() const;
+		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = "BletchMAME");
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event);
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
 		void UpdateMachineList();
@@ -280,6 +281,27 @@ bool MameFrame::IsEmulationSessionActive() const
 
 
 //-------------------------------------------------
+//  MessageBox
+//-------------------------------------------------
+
+int MameFrame::MessageBox(const wxString &message, long style, const wxString &caption)
+{
+	// if we're running and not pause, pause while the message box is up
+	bool is_running = IsEmulationSessionActive() && !m_status_paused;
+	if (is_running)
+		ChangePaused(true);
+
+	// show the message box
+	int result = wxMessageBox(message, caption, style, this);
+
+	// resume (if appropriate) and return
+	if (is_running)
+		ChangePaused(false);
+	return result;
+}
+
+
+//-------------------------------------------------
 //  OnKeyDown
 //-------------------------------------------------
 
@@ -320,7 +342,7 @@ void MameFrame::OnClose(wxCloseEvent &event)
 		wxString message = "Do you really want to exit?\n"
 			"\n"
 			"All data in emulated RAM will be lost";
-		if (wxMessageBox(message, "BletchMAME", wxYES_NO | wxICON_QUESTION, this) != wxYES)
+		if (MessageBox(message, wxYES_NO | wxICON_QUESTION) != wxYES)
 		{
 			event.Veto();
 			return;
@@ -345,7 +367,7 @@ void MameFrame::OnMenuStop()
 	wxString message = "Do you really want to stop?\n"
 		"\n"
 		"All data in emulated RAM will be lost";
-	if (wxMessageBox(message, "BletchMAME", wxYES_NO | wxICON_QUESTION, this) == wxYES)
+	if (MessageBox(message, wxYES_NO | wxICON_QUESTION) == wxYES)
 		Issue("exit");
 }
 
@@ -366,7 +388,7 @@ void MameFrame::OnMenuAbout()
 			+ "MAME Build: " + m_mame_build;
 	}
 
-	wxMessageBox(message, "About BletchMAME", wxOK | wxICON_INFORMATION, this);
+	MessageBox(message, wxOK | wxICON_INFORMATION, "About BletchMAME");
 }
 
 
