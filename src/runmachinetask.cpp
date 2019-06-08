@@ -32,9 +32,10 @@ wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(wxString &&machine_name, wxString &&target)
-    : m_machine_name(std::move(machine_name))
-    , m_target(std::move(target))
+RunMachineTask::RunMachineTask(const wxString &machine_name, const wxString &machine_description, wxWindow &target_window)
+    : m_machine_name(machine_name)
+	, m_machine_description(machine_description)
+    , m_target_window((std::uintptr_t)target_window.GetHWND())
 {
 }
 
@@ -60,7 +61,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"-keyboardprovider",
 		"dinput",
 		"-slave_ui",
-		m_target,
+		std::to_string(m_target_window),
 		"-skip_gameinfo"
 	};
 }

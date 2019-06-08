@@ -51,6 +51,8 @@ public:
 		return dynamic_cast<const T*>(m_task.get());
 	}
 
+	bool IsTaskActive() const { return m_task.get() != nullptr; }
+
 private:
 	wxEvtHandler &					m_event_handler;
 	const Preferences &				m_prefs;

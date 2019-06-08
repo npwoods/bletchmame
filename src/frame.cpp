@@ -71,9 +71,12 @@ namespace
 		wxMenuBar *                 m_menu_bar;
 		wxAcceleratorTable			m_menu_bar_accelerators;
 		wxTimer						m_ping_timer;
-		wxString					m_mame_build;
-		std::vector<Machine>        m_machines;
 		bool						m_pinging;
+
+		// information retrieved by -listxml
+		wxString					m_mame_build;
+		bool						m_last_listxml_succeeded;
+		std::vector<Machine>        m_machines;
 
 		// status of running emulation
 		bool						m_status_paused;
@@ -85,7 +88,8 @@ namespace
 
 		void CreateMenuBar();
 		bool IsEmulationSessionActive() const;
-		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = "BletchMAME");
+		void Run(int machine_index);
+		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event);
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
 		void UpdateMachineList();
@@ -116,7 +120,7 @@ float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1
 //-------------------------------------------------
 
 MameFrame::MameFrame()
-	: wxFrame(nullptr, wxID_ANY, "BletchMAME")
+	: wxFrame(nullptr, wxID_ANY, wxTheApp->GetAppName())
 	, m_client(*this, m_prefs)
 	, m_list_view(nullptr)
 	, m_menu_bar(nullptr)
@@ -287,6 +291,42 @@ bool MameFrame::IsEmulationSessionActive() const
 
 
 //-------------------------------------------------
+//  Run
+//-------------------------------------------------
+
+void MameFrame::Run(int machine_index)
+{
+	// we need to have full information to support the emulation session; retrieve
+	// it if appropriate
+	if (m_machines[machine_index].m_light)
+	{
+		// invoke the task
+		Task::ptr task = create_list_xml_task(false, m_machines[machine_index].m_name);
+		m_client.Launch(std::move(task));
+
+		// yield until the task is completed
+		while (m_client.IsTaskActive())
+			wxYield();
+
+		// bail if we have not gotten full info
+		if (m_machines[machine_index].m_light)
+		{
+			MessageBox("Error retrieving full information", wxOK);
+			return;
+		}
+	}
+
+	// run the emulation
+	Task::ptr task = std::make_unique<RunMachineTask>(
+		m_machines[machine_index].m_name,
+		m_machines[machine_index].m_description,
+		*this);
+	m_client.Launch(std::move(task));
+	UpdateEmulationSession();
+}
+
+
+//-------------------------------------------------
 //  MessageBox
 //-------------------------------------------------
 
@@ -391,7 +431,7 @@ void MameFrame::OnMenuStop()
 void MameFrame::OnMenuAbout()
 {
 	const wxString eoln = wxTextFile::GetEOL();
-	wxString message = wxT("BletchMAME")
+	wxString message = wxTheApp->GetAppName()
 		+ eoln
 		+ eoln;
 
@@ -429,17 +469,42 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked)
 
 void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 {
+	ListXmlResult &payload(event.Payload());
+
 	// identify the results
-	if (!event.Payload().m_success)
+	if (!payload.m_success)
 		return;
 
-	// take over the machine list
-	m_mame_build = std::move(event.Payload().m_build);
-	m_machines = std::move(event.Payload().m_machines);
+	// this is universal; always get it
+	m_mame_build = std::move(payload.m_build);
 
-	// update!
-	UpdateMachineList();
+	// is this a targetted load?
+	if (payload.m_target.IsEmpty())
+	{
+		// if so, take over the machine list
+		m_machines = std::move(payload.m_machines);
 
+		// and update the machine list
+		UpdateMachineList();
+	}
+	else
+	{
+		// it isn't, cherry pick entries out
+		for (auto payload_iter = payload.m_machines.begin(); payload_iter != payload.m_machines.end(); payload_iter++)
+		{
+			// find our entry
+			auto local_iter = std::find_if(m_machines.begin(), m_machines.end(), [payload_iter](const Machine &m)
+			{
+				return m.m_name == payload_iter->m_name;
+			});
+
+			// and update it if it is there
+			if (local_iter != m_machines.end())
+				*local_iter = std::move(*payload_iter);
+		}
+	}
+
+	// we're done; reset the client
 	m_client.Reset();
 }
 
@@ -518,13 +583,13 @@ void MameFrame::OnListItemSelected(wxListEvent &evt)
 
 void MameFrame::OnListItemActivated(wxListEvent &evt)
 {
+	// get the index
 	long index = evt.GetIndex();
 	if (index < 0 || index >= (long)m_machines.size())
 		return;
 
-	Task::ptr task = std::make_unique<RunMachineTask>(wxString(m_machines[index].m_name), GetTarget());
-	m_client.Launch(std::move(task));
-	UpdateEmulationSession();
+	// and run the machine
+	Run(index);
 }
 
 
@@ -599,14 +664,23 @@ wxString MameFrame::GetListItemText(size_t item, long column) const
 
 void MameFrame::UpdateEmulationSession()
 {
+	// is the emulation session active?
 	bool is_active = IsEmulationSessionActive();
 
+	// if so, hide the list view...
 	m_list_view->Show(!is_active);
 
+	// ...and enable pinging
 	if (is_active)
 		m_ping_timer.Start(500);
 	else
 		m_ping_timer.Stop();
+
+	// ...and set the title bar appropriately
+	wxString title_text = wxTheApp->GetAppName();
+	if (is_active)
+		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->MachineDescription();
+	SetLabel(title_text);
 
 	UpdateMenuBar();
 }
@@ -629,16 +703,6 @@ void MameFrame::UpdateMenuBar()
 #else
 	throw false;
 #endif
-}
-
-
-//-------------------------------------------------
-//  GetTarget
-//-------------------------------------------------
-
-wxString MameFrame::GetTarget()
-{
-	return std::to_string((std::int64_t)GetHWND());
 }
 
 

@@ -48,9 +48,10 @@ wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 class RunMachineTask : public Task
 {
 public:
-    RunMachineTask(wxString &&machine_name, wxString &&target);
+    RunMachineTask(const wxString &machine_name, const wxString &machine_description, wxWindow &target_window);
 
     void Post(std::string &&command);
+	const wxString &MachineDescription() const { return m_machine_description; }
 
 protected:
 	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
@@ -74,9 +75,10 @@ private:
 		emu_error					m_status;
     };
 
-	wxString						m_machine_name;
-	wxString						m_target;
-    wxMessageQueue<Message>         m_message_queue;
+	const wxString &				m_machine_name;
+	const wxString &				m_machine_description;
+	std::uintptr_t					m_target_window;
+	wxMessageQueue<Message>         m_message_queue;
 
 	void InternalPost(Message::type type, std::string &&command, emu_error status = emu_error::INVALID);
     static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
