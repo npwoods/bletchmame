@@ -390,15 +390,17 @@ void MameFrame::OnMenuStop()
 
 void MameFrame::OnMenuAbout()
 {
-	wxString message = "BletchMAME";
+	const wxString eoln = wxTextFile::GetEOL();
+	wxString message = wxT("BletchMAME")
+		+ eoln
+		+ eoln;
 
+	// MAME version
 	if (!m_mame_build.IsEmpty())
-	{
-		wxString eoln = wxTextFile::GetEOL();
-		message += eoln
-			+ eoln
-			+ "MAME Build: " + m_mame_build;
-	}
+		message += wxT("MAME ") + m_mame_build + eoln;
+
+	// wxWidgets version
+	message += wxVERSION_STRING;
 
 	MessageBox(message, wxOK | wxICON_INFORMATION, "About BletchMAME");
 }
