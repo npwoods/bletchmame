@@ -27,14 +27,13 @@ public:
 		Attributes() = delete;
 		~Attributes() = delete;
 
-		wxString operator[](const char *attribute) const;
 		bool Get(const char *attribute, int &value) const;
 		bool Get(const char *attribute, bool &value) const;
 		bool Get(const char *attribute, float &value) const;
 		bool Get(const char *attribute, wxString &value) const;
 
 	private:
-		const char *InternalGet(const char *attribute) const;
+		const char *InternalGet(const char *attribute, bool return_null = false) const;
 	};
 
 	// ctor/dtor

@@ -100,10 +100,14 @@ bool Preferences::Load()
 	});
 	xml.OnElement({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
-		auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), attributes["type"]);
-		type = iter != s_path_names.cend()
-			? static_cast<path_type>(iter - s_path_names.cbegin())
-			: path_type::count;
+		wxString type_string;
+		if (attributes.Get("type", type_string))
+		{
+			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), type_string);
+			type = iter != s_path_names.cend()
+				? static_cast<path_type>(iter - s_path_names.cbegin())
+				: path_type::count;
+		}
 	});
 	xml.OnElement({ "preferences", "path" }, [&](wxString &&content)
 	{

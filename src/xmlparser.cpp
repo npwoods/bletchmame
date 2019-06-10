@@ -257,16 +257,6 @@ void XmlParser::CharacterDataHandler(void *user_data, const char *s, int len)
 //**************************************************************************
 
 //-------------------------------------------------
-//  Attributes::operator[]
-//-------------------------------------------------
-
-wxString XmlParser::Attributes::operator[](const char *attribute) const
-{
-	return InternalGet(attribute);
-}
-
-
-//-------------------------------------------------
 //  Attributes::Get
 //-------------------------------------------------
 
@@ -325,8 +315,12 @@ bool XmlParser::Attributes::Get(const char *attribute, float &value) const
 
 bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
 {
-	value = (*this)[attribute];
-	return !value.IsEmpty();
+    const char *s = InternalGet(attribute, true);
+    if (s)
+        value = s;
+    else
+        value.clear();
+    return s != nullptr;
 }
 
 
@@ -334,7 +328,7 @@ bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
 //  Attributes::InternalGet
 //-------------------------------------------------
 
-const char *XmlParser::Attributes::InternalGet(const char *attribute) const
+const char *XmlParser::Attributes::InternalGet(const char *attribute, bool return_null) const
 {
 	const char **actual_attribute = reinterpret_cast<const char **>(const_cast<Attributes *>(this));
 
@@ -344,7 +338,7 @@ const char *XmlParser::Attributes::InternalGet(const char *attribute) const
 			return actual_attribute[i + 1];
 	}
 
-	return "";
+	return return_null ? nullptr : "";
 }
 
 

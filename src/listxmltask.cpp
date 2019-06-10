@@ -102,17 +102,17 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	std::vector<Device>::iterator					current_device;
 	xml.OnElement({ "mame" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_build = attributes["build"];
+		attributes.Get("build", result.m_build);
 	});
 	xml.OnElement({ "mame", "machine" }, [&](const XmlParser::Attributes &attributes)
 	{
 		result.m_machines.emplace_back();
 		current_machine = result.m_machines.end() - 1;
 		current_machine->m_light		= m_light;
-		current_machine->m_name			= attributes["name"];
-		current_machine->m_sourcefile	= attributes["sourcefile"];
-		current_machine->m_clone_of		= attributes["cloneof"];
-		current_machine->m_rom_of		= attributes["romof"];
+		attributes.Get("name",          current_machine->m_name);
+		attributes.Get("sourcefile",    current_machine->m_sourcefile);
+		attributes.Get("cloneof",       current_machine->m_clone_of);
+		attributes.Get("romof",         current_machine->m_rom_of);
 	});
 	xml.OnElement({ "mame", "machine" }, [&](wxString &&)
 	{
@@ -134,8 +134,8 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	{
 		current_machine->m_configurations.emplace_back();
 		current_configuration = current_machine->m_configurations.end() - 1;
-		current_configuration->m_name	= attributes["name"];
-		current_configuration->m_tag	= attributes["tag"];
+		attributes.Get("name",  current_configuration->m_name);
+		attributes.Get("tag",   current_configuration->m_tag);
 	});
 	xml.OnElement({ "mame", "machine", "configuration", "confsetting" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -166,7 +166,9 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	});
 	xml.OnElement({ "mame", "machine", "device", "extension" }, [&](const XmlParser::Attributes &attributes)
 	{
-		current_device->m_extensions.push_back(attributes["name"]);
+		wxString name;
+		if (attributes.Get("name", name))
+			current_device->m_extensions.push_back(name);
 	});
 	result.m_success = xml.Parse(input);
 
