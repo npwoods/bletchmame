@@ -31,7 +31,7 @@ OBJECTFILES=\
 	$(OBJ)/bletchmame.res.o		\
 
 $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)/dir.txt
-	g++ -static -static-libgcc -static-libstdc++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -o $@
+	g++ -static -static-libgcc -static-libstdc++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -mwindows -o $@
 	strip $@
 
 $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
