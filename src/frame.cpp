@@ -13,6 +13,7 @@
 
 #include "frame.h"
 #include "client.h"
+#include "dlgimages.h"
 #include "dlgpaths.h"
 #include "prefs.h"
 #include "listxmltask.h"
@@ -42,6 +43,36 @@ wxDEFINE_EVENT(EVT_SPECIFY_MAME_PATH, wxCommandEvent);
 
 namespace
 {
+	// I really want to use std::optional<bool>
+	class tri_state
+	{
+	public:
+		tri_state(bool b)
+			: m_i(b ? 1 : 0)
+		{
+		}
+
+		tri_state(void *p)
+			: m_i(-1)
+		{
+			assert(!p);
+		}
+
+		operator bool() const
+		{
+			assert(has_value());
+			return m_i ? true : false;
+		}
+
+		bool has_value() const
+		{
+			return m_i >= 0;
+		}
+
+	private:
+		int m_i;
+	};
+
 	class MameFrame : public wxFrame
 	{
 	public:
@@ -53,6 +84,7 @@ namespace
 		void OnSize(wxSizeEvent &event);
 		void OnClose(wxCloseEvent &event);
 		void OnMenuStop();
+		void OnMenuImages();
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
@@ -94,6 +126,7 @@ namespace
 		wxString					m_status_frameskip;
 		bool						m_status_throttled;
 		float						m_status_throttle_rate;
+		std::vector<Image>			m_status_images;
 
 		static float s_throttle_rates[];
 
@@ -101,8 +134,7 @@ namespace
 		bool IsEmulationSessionActive() const;
 		void Run(int machine_index);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
-		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event);
-		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked);
+		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, tri_state checked = nullptr, bool enabled = true);
 		void UpdateMachineList();
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
@@ -209,9 +241,6 @@ void MameFrame::CreateMenuBar()
 	file_menu->AppendSubMenu(reset_menu, "Reset");
 	wxMenuItem *exit_menu_item				= file_menu->Append(wxID_EXIT, "E&xit\tCtrl+Alt+X");
 
-	// create the "Devices" menu
-	wxMenu *devices_menu = new wxMenu();
-
 	// create the "Options" menu
 	wxMenu *options_menu = new wxMenu();
 	wxMenu *throttle_menu = new wxMenu();
@@ -222,6 +251,7 @@ void MameFrame::CreateMenuBar()
 	options_menu->AppendSubMenu(throttle_menu, "Throttle");
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
+	wxMenuItem *images_menu_item			= options_menu->Append(id++, "Images...", wxEmptyString, wxITEM_CHECK);
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
@@ -234,7 +264,6 @@ void MameFrame::CreateMenuBar()
 	// now append the freshly created menu to the menu bar...
 	m_menu_bar = new wxMenuBar();
 	m_menu_bar->Append(file_menu, "&File");
-	m_menu_bar->Append(devices_menu, "&Devices");
 	m_menu_bar->Append(options_menu, "&Options");
 	m_menu_bar->Append(settings_menu, "&Settings");
 	m_menu_bar->Append(help_menu, "&Help");
@@ -254,17 +283,19 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();						}, images_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);			}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();						}, about_menu_item->GetId());
 
 	// Bind UI update events
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, stop_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);		}, pause_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, hard_reset_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, increase_speed_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);						}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);	}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, stop_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);					}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, hard_reset_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, increase_speed_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, decrease_speed_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);				}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, false, !m_status_images.empty());	}, images_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -297,7 +328,7 @@ void MameFrame::CreateMenuBar()
 
 bool MameFrame::IsEmulationSessionActive() const
 {
-	return m_client.GetCurrentTask<RunMachineTask>() != nullptr;
+	return m_client.IsTaskActive<RunMachineTask>();
 }
 
 
@@ -334,6 +365,9 @@ void MameFrame::Run(int machine_index)
 		*this);
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
+
+	// unpause
+	ChangePaused(false);
 }
 
 
@@ -426,6 +460,17 @@ void MameFrame::OnMenuStop()
 
 
 //-------------------------------------------------
+//  OnMenuImages
+//-------------------------------------------------
+
+void MameFrame::OnMenuImages()
+{
+	Pauser pauser(*this);
+	show_images_dialog(m_status_images, m_client.GetCurrentTask<RunMachineTask>());
+}
+
+
+//-------------------------------------------------
 //  OnMenuAbout
 //-------------------------------------------------
 
@@ -451,16 +496,13 @@ void MameFrame::OnMenuAbout()
 //  OnEmuMenuUpdateUI
 //-------------------------------------------------
 
-void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event)
+void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, tri_state checked, bool enabled)
 {
-	event.Enable(IsEmulationSessionActive());
-}
+	bool is_active = IsEmulationSessionActive();
+	event.Enable(is_active && enabled);
 
-
-void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, bool checked)
-{
-	OnEmuMenuUpdateUI(event);
-	event.Check(checked && IsEmulationSessionActive());
+	if (checked.has_value())
+		event.Check(is_active && (bool)checked);
 }
 
 
@@ -535,7 +577,7 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 
 void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 {
-	const StatusUpdate &payload(event.Payload());
+	StatusUpdate &payload(event.Payload());
 
 	if (payload.m_paused_specified)
 		m_status_paused = payload.m_paused;
@@ -547,6 +589,8 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttled = payload.m_throttled;
 	if (payload.m_throttle_rate_specified)
 		m_status_throttle_rate = payload.m_throttle_rate;
+	if (payload.m_images_specified)
+		m_status_images = std::move(payload.m_images);
 
 	m_pinging = false;
 }
@@ -721,7 +765,7 @@ void MameFrame::UpdateMenuBar()
 
 void MameFrame::Issue(std::string &&command)
 {
-	RunMachineTask *task = m_client.GetCurrentTask<RunMachineTask>();
+	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
 	if (!task)
 		return;
 

@@ -227,6 +227,7 @@
   <ItemGroup>
     <ClCompile Include="app.cpp" />
     <ClCompile Include="client.cpp" />
+    <ClCompile Include="dlgimages.cpp" />
     <ClCompile Include="dlgpaths.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="job.cpp" />
@@ -244,6 +245,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="client.h" />
+    <ClInclude Include="dlgimages.h" />
     <ClInclude Include="dlgpaths.h" />
     <ClInclude Include="frame.h" />
     <ClInclude Include="job.h" />

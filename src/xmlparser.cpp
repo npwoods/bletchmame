@@ -93,10 +93,14 @@ bool XmlParser::InternalParse(wxInputStream &input)
 
 	while (!done)
 	{
+		// read data
 		input.Read(buffer, sizeof(buffer));
 
+		// figure out how much we actually read, and if we're done
 		int last_read = static_cast<int>(input.LastRead());
 		done = last_read == 0;
+
+		// and feed this into expat
 		if (!XML_Parse(m_parser, buffer, last_read, done))
 		{
 			// an error happened; bail out

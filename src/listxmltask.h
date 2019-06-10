@@ -42,6 +42,7 @@ struct Device
 	wxString							m_tag;
 	wxString							m_instance_name;
 	std::vector<wxString>				m_extensions;
+	bool								m_mandatory;
 };
 
 struct Machine
@@ -61,6 +62,7 @@ struct Machine
 struct ListXmlResult
 {
 	bool                    m_success;
+	wxString				m_error_message;
 	wxString				m_target;
 	wxString                m_build;
 	std::vector<Machine>    m_machines;

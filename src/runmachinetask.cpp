@@ -206,9 +206,8 @@ void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &i
 	// did we get a status reponse
 	if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
 	{
-		StatusUpdate status_update;
-		if (ReadStatusUpdate(input, status_update))
-			util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
+		StatusUpdate status_update = ReadStatusUpdate(input);
+		util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
 	}
 }
 
@@ -217,13 +216,15 @@ void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &i
 //  ReadStatusUpdate
 //-------------------------------------------------
 
-bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result)
+StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 {
+	StatusUpdate result;
 	result.m_paused_specified = false;
 	result.m_frameskip_specified = false;
 	result.m_speed_text_specified = false;
 	result.m_throttled_specified = false;
 	result.m_throttle_rate_specified = false;
+	result.m_images_specified = false;
 
 	XmlParser xml;
 	xml.OnElement({ "status" }, [&](const XmlParser::Attributes &attributes)
@@ -236,6 +237,22 @@ bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &re
 		result.m_speed_text_specified = attributes.Get("speed_text", result.m_speed_text);
 		result.m_throttled_specified = attributes.Get("throttled", result.m_throttled);
 		result.m_throttle_rate_specified = attributes.Get("throttle_rate", result.m_throttle_rate);
+	});
+	xml.OnElement({ "status", "images" }, [&](const XmlParser::Attributes &)
+	{
+		result.m_images_specified = true;
+	});
+	xml.OnElement({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
+	{
+		Image image;
+		attributes.Get("tag",				image.m_tag);
+		attributes.Get("instance_name",		image.m_instance_name);
+		attributes.Get("is_readable",		image.m_is_readable, false);
+		attributes.Get("is_writeable",		image.m_is_writeable, false);
+		attributes.Get("is_createable",		image.m_is_createable, false);
+		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
+		attributes.Get("file_name",			image.m_file_name);
+		result.m_images.push_back(std::move(image));
 	});
 
 	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
@@ -251,6 +268,14 @@ bool RunMachineTask::ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &re
 			done = true;
 	}
 
+	// parse the XML
 	wxStringInputStream input_buffer(buffer);
-	return xml.Parse(input_buffer);
+	result.m_success = xml.Parse(input_buffer);
+
+	// this should not happen unless there is a bug
+	if (!result.m_success)
+		result.m_parse_error = xml.ErrorMessage();
+
+	// and return it
+	return result;
 }

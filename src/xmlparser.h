@@ -33,6 +33,15 @@ public:
 		bool Get(const char *attribute, wxString &value) const;
 		bool Get(const char *attribute, std::string &value) const;
 
+		template<typename T>
+		bool Get(const char *attribute, T &value, T &&default_value) const
+		{
+			bool result = Get(attribute, value);
+			if (!result)
+				value = std::move(default_value);
+			return result;
+		}
+
 	private:
 		const char *InternalGet(const char *attribute, bool return_null = false) const;
 	};

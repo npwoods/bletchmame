@@ -42,16 +42,14 @@ public:
 	void Launch(Task::ptr &&task);
 	void Reset();
 
-	template<class T> T *GetCurrentTask()
+	template<class T> std::shared_ptr<T> GetCurrentTask()
 	{
-		return dynamic_cast<T*>(m_task.get());
-	}
-	template<class T> const T *GetCurrentTask() const
-	{
-		return dynamic_cast<const T*>(m_task.get());
+		return std::dynamic_pointer_cast<T>(m_task);
 	}
 
 	bool IsTaskActive() const { return m_task.get() != nullptr; }
+
+	template<class T> bool IsTaskActive() const { return dynamic_cast<T *>(m_task.get()) != nullptr; }
 
 private:
 	wxEvtHandler &					m_event_handler;

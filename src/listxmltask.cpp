@@ -157,8 +157,10 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	{
 		current_machine->m_devices.emplace_back();
 		current_device = current_machine->m_devices.end() - 1;
-		attributes.Get("type",	current_device->m_type);
-		attributes.Get("tag",	current_device->m_tag);
+		current_device->m_mandatory = false;
+		attributes.Get("type",		current_device->m_type);
+		attributes.Get("tag",		current_device->m_tag);
+		attributes.Get("mandatory",	current_device->m_mandatory);
 	});
 	xml.OnElement({ "mame", "machine", "device", "instance" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -172,8 +174,14 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	});
 	result.m_success = xml.Parse(input);
 
-	// we're done processing!  shrink the vector and move on
+	// after we're done processing, we want to shrink the vector, because we can
 	result.m_machines.shrink_to_fit();
+
+	// record any error messages
+	if (!result.m_success)
+		result.m_error_message = xml.ErrorMessage();
+
+	// and return!
 	return result;
 }
 

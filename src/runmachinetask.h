@@ -27,8 +27,24 @@ struct RunMachineResult
     wxString    m_error_message;
 };
 
+struct Image
+{
+	wxString			m_tag;
+	wxString			m_instance_name;
+	bool				m_is_readable;
+	bool				m_is_writeable;
+	bool				m_is_createable;
+	bool				m_must_be_loaded;
+	wxString			m_file_name;
+};
+
 struct StatusUpdate
 {
+	// did we have problems reading the response from MAME?
+	bool				m_success;
+	wxString			m_parse_error;
+
+	// the actual data
 	bool				m_paused;
 	bool				m_paused_specified;
 	wxString			m_frameskip;
@@ -39,6 +55,8 @@ struct StatusUpdate
 	bool				m_throttled_specified;
 	float				m_throttle_rate;
 	bool				m_throttle_rate_specified;
+	std::vector<Image>	m_images;
+	bool				m_images_specified;
 };
 
 wxDECLARE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
@@ -81,7 +99,7 @@ private:
 	wxMessageQueue<Message>         m_message_queue;
 
 	void InternalPost(Message::type type, std::string &&command, emu_error status = emu_error::INVALID);
-    static bool ReadStatusUpdate(wxTextInputStream &input, StatusUpdate &result);
+    static StatusUpdate ReadStatusUpdate(wxTextInputStream &input);
 	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
 };
 
