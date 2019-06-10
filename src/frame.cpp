@@ -65,6 +65,17 @@ namespace
 		void OnSpecifyMamePath();
 
 	private:
+		class Pauser
+		{
+		public:
+			Pauser(MameFrame &host);
+			~Pauser();
+
+		private:
+			MameFrame & m_host;
+			bool		m_is_running;
+		};
+
 		MameClient                  m_client;
 		Preferences                 m_prefs;
 		VirtualListView *           m_list_view;
@@ -332,18 +343,8 @@ void MameFrame::Run(int machine_index)
 
 int MameFrame::MessageBox(const wxString &message, long style, const wxString &caption)
 {
-	// if we're running and not pause, pause while the message box is up
-	bool is_running = IsEmulationSessionActive() && !m_status_paused;
-	if (is_running)
-		ChangePaused(true);
-
-	// show the message box
-	int result = wxMessageBox(message, caption, style, this);
-
-	// resume (if appropriate) and return
-	if (is_running)
-		ChangePaused(false);
-	return result;
+	Pauser pauser(*this);
+	return wxMessageBox(message, caption, style, this);
 }
 
 
@@ -794,6 +795,35 @@ void MameFrame::ChangeThrottleRate(int adjustment)
 
 	// and change the throttle rate
 	ChangeThrottleRate(s_throttle_rates[index]);
+}
+
+
+//**************************************************************************
+//  PAUSER
+//**************************************************************************
+
+//-------------------------------------------------
+//  Pauser ctor
+//-------------------------------------------------
+
+MameFrame::Pauser::Pauser(MameFrame &host)
+	: m_host(host)
+{
+	// if we're running and not pause, pause while the message box is up
+	m_is_running = m_host.IsEmulationSessionActive() && !m_host.m_status_paused;
+	if (m_is_running)
+		m_host.ChangePaused(true);
+}
+
+
+//-------------------------------------------------
+//  Pauser dtor
+//-------------------------------------------------
+
+MameFrame::Pauser::~Pauser()
+{
+	if (m_is_running)
+		m_host.ChangePaused(false);
 }
 
 
