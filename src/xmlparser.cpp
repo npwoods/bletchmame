@@ -315,12 +315,27 @@ bool XmlParser::Attributes::Get(const char *attribute, float &value) const
 
 bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
 {
-    const char *s = InternalGet(attribute, true);
-    if (s)
-        value = s;
-    else
-        value.clear();
-    return s != nullptr;
+	const char *s = InternalGet(attribute, true);
+	if (s)
+		value = s;
+	else
+		value.clear();
+	return s != nullptr;
+}
+
+
+//-------------------------------------------------
+//  Attributes::Get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::Get(const char *attribute, std::string &value) const
+{
+	const char *s = InternalGet(attribute, true);
+	if (s)
+		value = s;
+	else
+		value.clear();
+	return s != nullptr;
 }
 
 

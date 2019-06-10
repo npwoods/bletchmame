@@ -31,6 +31,15 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 };
 
 
+static std::array<const char *, Preferences::COLUMN_COUNT> s_column_ids =
+{
+    "name",
+    "description",
+    "year",
+    "manufacturer"
+};
+
+
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
@@ -136,15 +145,21 @@ bool Preferences::Load()
 	});
 	xml.OnElement({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		int index, width, order;
-		if (attributes.Get("index", index))
+		std::string id;
+		if (attributes.Get("id", id))
 		{
-			if (attributes.Get("width", width) && IsValidDimension(width))
-				SetColumnWidth(index, width);
-			if (attributes.Get("order", order) && order >= 0 && order < column_order.size())
-				column_order[index] = order;
-		}
+			auto iter = std::find(s_column_ids.begin(), s_column_ids.end(), id); 
+			if (iter != s_column_ids.end())
+			{
+				int index = iter - s_column_ids.begin();
+				int width, order;
 
+				if (attributes.Get("width", width) && IsValidDimension(width))
+					SetColumnWidth(index, width);
+				if (attributes.Get("order", order) && order >= 0 && order < column_order.size())
+					column_order[index] = order;
+			}
+		}
 	});
 	bool success = xml.Parse(file_name);
 
@@ -194,7 +209,7 @@ void Preferences::Save(std::ostream &output)
 	if (!m_selected_machine.IsEmpty())
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
 	for (size_t i = 0; i < m_column_widths.size(); i++)
-		output << "\t<column index=\"" << i << "\" width=\"" << m_column_widths[i] << "\" order=\"" << m_column_order[i] << "\"/>" << std::endl;
+		output << "\t<column id=\"" << s_column_ids[i] << "\" width=\"" << m_column_widths[i] << "\" order=\"" << m_column_order[i] << "\"/>" << std::endl;
 	output << std::endl;
 
 	output << "</preferences>" << std::endl;

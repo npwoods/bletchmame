@@ -31,6 +31,7 @@ public:
 		bool Get(const char *attribute, bool &value) const;
 		bool Get(const char *attribute, float &value) const;
 		bool Get(const char *attribute, wxString &value) const;
+		bool Get(const char *attribute, std::string &value) const;
 
 	private:
 		const char *InternalGet(const char *attribute, bool return_null = false) const;
