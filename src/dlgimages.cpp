@@ -36,12 +36,22 @@ namespace
 			// user IDs
 			ID_LOAD_IMAGE = wxID_HIGHEST + 1,
 			ID_UNLOAD_IMAGE,
-			ID_LAST
+			ID_GRID_CONTROLS
 		};
 
-		IImagesHost &	m_host;
-		wxMenu			m_popup_menu;
-		int				m_popup_menu_result;
+		enum
+		{
+			IDOFFSET_STATIC,
+			IDOFFSET_TEXT,
+			IDOFFSET_BUTTON
+		};
+
+		static const int COLUMN_COUNT = 3;
+
+		IImagesHost &		m_host;
+		wxFlexGridSizer *	m_grid_sizer;
+		wxMenu				m_popup_menu;
+		int					m_popup_menu_result;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
@@ -50,6 +60,7 @@ namespace
 		bool ImageMenu(const wxButton &button, const wxString &tag);
 		bool LoadImage(const wxString &tag);
 		bool UnloadImage(const wxString &tag);
+		void UpdateImageGrid();
 	};
 };
 
@@ -65,38 +76,77 @@ namespace
 ImagesDialog::ImagesDialog(IImagesHost &host)
 	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(400, 300))
 	, m_host(host)
+	, m_grid_sizer(nullptr)
 {
-	int id = ID_LAST;
-	
+	// host interactions
+	m_host.SetOnImagesChanged([this] { UpdateImageGrid(); });
+
+	// setup popup menu
+	AppendToPopupMenu(ID_LOAD_IMAGE, "Load...");
+	AppendToPopupMenu(ID_UNLOAD_IMAGE, "Unload");
+
 	// main grid
-	auto grid_sizer = std::make_unique<wxFlexGridSizer>(3);
-	grid_sizer->AddGrowableCol(1);
-	for (const Image &image : m_host.GetImages())
-	{
-		wxStaticText &static_text	= AddControl<wxStaticText>	(*grid_sizer, wxALL,			id++, image.m_tag);
-		wxTextCtrl &text_ctrl		= AddControl<wxTextCtrl>	(*grid_sizer, wxALL | wxEXPAND,	id++, image.m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-		wxButton &image_button		= AddControl<wxButton>		(*grid_sizer, wxALL,			id++, "...", wxDefaultPosition, wxSize(20, 20));
-
-		wxString tag = image.m_tag;
-		Bind(wxEVT_BUTTON, [this, &image_button, tag](auto &) { ImageMenu(image_button, tag); }, image_button.GetId());
-
-		(void)static_text;
-		(void)text_ctrl;
-	}
+	m_grid_sizer = new wxFlexGridSizer(COLUMN_COUNT);
+	m_grid_sizer->AddGrowableCol(1);
 
 	// buttons
-	auto button_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
+	wxBoxSizer *button_sizer = new wxBoxSizer(wxVERTICAL);
 	AddControl<wxButton>(*button_sizer, wxALL, wxID_OK, wxT("OK"));
 
 	// overall layout
-	auto sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-	sizer->Add(grid_sizer.release(), 1, wxALL | wxEXPAND);
-	sizer->Add(button_sizer.release(), 1, wxALL | wxALIGN_RIGHT);
-	SetSizer(sizer.release());
+	wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
+	main_sizer->Add(m_grid_sizer, 1, wxALL | wxEXPAND);
+	main_sizer->Add(button_sizer, 1, wxALL | wxALIGN_RIGHT);
+	SetSizer(main_sizer);
 
-	// popup menu
-	AppendToPopupMenu(ID_LOAD_IMAGE, "Load...");
-	AppendToPopupMenu(ID_UNLOAD_IMAGE, "Unload");
+	UpdateImageGrid();
+}
+
+
+//-------------------------------------------------
+//  UpdateImageGrid
+//-------------------------------------------------
+
+void ImagesDialog::UpdateImageGrid()
+{
+	// get the list of images
+	const std::vector<Image> &images(m_host.GetImages());
+
+	// iterate through the vector of images
+	for (int i = 0; i < images.size(); i++)
+	{
+		int id = ID_GRID_CONTROLS + (i * COLUMN_COUNT);
+
+		// do we have to create new rows?
+		if (m_grid_sizer->GetRows() <= i)
+		{
+			// we do - add controls
+			wxStaticText &static_text	= AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_tag);
+			wxTextCtrl &text_ctrl		= AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+			wxButton &image_button		= AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
+
+			wxString tag = images[i].m_tag;
+			Bind(wxEVT_BUTTON, [this, &image_button, tag](auto &) { ImageMenu(image_button, tag); }, image_button.GetId());
+
+			(void)static_text;
+			(void)text_ctrl;
+		}
+		else
+		{
+			// reuse existing controls
+			dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC))->SetLabel(images[i].m_tag);
+			dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT))->SetLabel(images[i].m_file_name);
+		}
+	}
+
+	// remove extra controls
+	for (int i = ID_GRID_CONTROLS + images.size() * COLUMN_COUNT; i < ID_GRID_CONTROLS + m_grid_sizer->GetRows() * COLUMN_COUNT; i++)
+	{
+		FindWindowById(i)->Destroy();
+	}
+
+	// update the sizer's row count
+	m_grid_sizer->SetRows(images.size());
 }
 
 

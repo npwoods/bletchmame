@@ -8,6 +8,8 @@
 
 #include "wx/wxprec.h"
 
+#include <algorithm>
+
 #include <wx/listctrl.h>
 #include <wx/textfile.h>
 
@@ -131,6 +133,7 @@ namespace
 		wxAcceleratorTable			m_menu_bar_accelerators;
 		wxTimer						m_ping_timer;
 		bool						m_pinging;
+		std::function<void()>		m_on_images_changed;
 
 		// information retrieved by -listxml
 		wxString					m_mame_build;
@@ -607,8 +610,16 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttled = payload.m_throttled;
 	if (payload.m_throttle_rate_specified)
 		m_status_throttle_rate = payload.m_throttle_rate;
-	if (payload.m_images_specified)
+
+	// only read the data in if image data is specified, and has changed
+	if (payload.m_images_specified && !std::equal(
+		m_status_images.begin(), m_status_images.end(),
+		payload.m_images.begin(), payload.m_images.end()))
+	{
 		m_status_images = std::move(payload.m_images);
+		if (m_on_images_changed)
+			m_on_images_changed();
+	}
 
 	m_pinging = false;
 }
@@ -916,6 +927,7 @@ MameFrame::ImagesHost::ImagesHost(MameFrame &host)
 
 MameFrame::ImagesHost::~ImagesHost()
 {
+	m_host.m_on_images_changed = 0;
 }
 
 
@@ -933,8 +945,9 @@ const std::vector<Image> MameFrame::ImagesHost::GetImages()
 //  SetOnImagesChanged
 //-------------------------------------------------
 
-void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&)
+void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&func)
 {
+	m_host.m_on_images_changed = std::move(func);
 }
 
 

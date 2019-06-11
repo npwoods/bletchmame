@@ -36,6 +36,17 @@ struct Image
 	bool				m_is_createable;
 	bool				m_must_be_loaded;
 	wxString			m_file_name;
+
+	bool operator==(const Image &that) const
+	{
+		return m_tag			== that.m_tag
+			&& m_instance_name	== that.m_instance_name
+			&& m_is_readable	== that.m_is_readable
+			&& m_is_writeable	== that.m_is_writeable
+			&& m_is_createable	== that.m_is_createable
+			&& m_must_be_loaded	== that.m_must_be_loaded
+			&& m_file_name		== that.m_file_name;
+	}
 };
 
 struct StatusUpdate
