@@ -43,7 +43,7 @@ namespace
 		wxMenu							m_popup_menu;
 		int								m_popup_menu_result;
 
-		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, TArgs&&... args);
+		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
 		void AppendToPopupMenu(int id, const wxString &text);
 
@@ -70,25 +70,29 @@ ImagesDialog::ImagesDialog(const std::vector<Image> &images, std::shared_ptr<Run
 	int id = ID_LAST;
 	
 	// main grid
-	auto grid_sizer = std::make_unique<wxGridSizer>(3);
+	auto grid_sizer = std::make_unique<wxFlexGridSizer>(3);
+	grid_sizer->AddGrowableCol(1);
 	for (const Image &image : images)
 	{
-		AddControl<wxStaticText>(*grid_sizer, id++, image.m_tag);
-		AddControl<wxTextCtrl>(*grid_sizer, id++, image.m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-		wxButton &image_button = AddControl<wxButton>(*grid_sizer, id++, "...");
+		wxStaticText &static_text	= AddControl<wxStaticText>	(*grid_sizer, wxALL,			id++, image.m_tag);
+		wxTextCtrl &text_ctrl		= AddControl<wxTextCtrl>	(*grid_sizer, wxALL | wxEXPAND,	id++, image.m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+		wxButton &image_button		= AddControl<wxButton>		(*grid_sizer, wxALL,			id++, "...", wxDefaultPosition, wxSize(20, 20));
 
 		wxString tag = image.m_tag;
 		Bind(wxEVT_BUTTON, [this, &image_button, tag](auto &) { ImageMenu(image_button, tag); }, image_button.GetId());
+
+		(void)static_text;
+		(void)text_ctrl;
 	}
 
 	// buttons
 	auto button_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-	AddControl<wxButton>(*button_sizer, wxID_OK, wxT("OK"));
+	AddControl<wxButton>(*button_sizer, wxALL, wxID_OK, wxT("OK"));
 
 	// overall layout
 	auto sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-	sizer->Add(grid_sizer.release());
-	sizer->Add(button_sizer.release());
+	sizer->Add(grid_sizer.release(), 1, wxALL | wxEXPAND);
+	sizer->Add(button_sizer.release(), 1, wxALL | wxALIGN_RIGHT);
 	SetSizer(sizer.release());
 
 	// popup menu
@@ -102,10 +106,10 @@ ImagesDialog::ImagesDialog(const std::vector<Image> &images, std::shared_ptr<Run
 //-------------------------------------------------
 
 template<typename TControl, typename... TArgs>
-TControl &ImagesDialog::AddControl(wxSizer &sizer, TArgs&&... args)
+TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
 {
 	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer.Add(control, 0, wxTOP | wxRIGHT | wxLEFT | wxBOTTOM, 4);
+	sizer.Add(control, 0, flags, 4);
 	return *control;
 }
 
