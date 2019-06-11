@@ -55,12 +55,7 @@ namespace
 
 bool MameApp::OnInit()
 {
-#ifdef _DEBUG
-	const bool run_validity_checks = true;
-#else
-	const bool run_validity_checks = false;
-#endif
-	if (run_validity_checks && !validity_checks())
+	if (!validity_check::run_all())
 		return false;
 
     // call the base class initialization method, currently it only parses a

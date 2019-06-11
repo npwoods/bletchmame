@@ -13,6 +13,8 @@
 #include <wx/wfstream.h>
 
 #include "xmlparser.h"
+#include "validity.h"
+
 
 //**************************************************************************
 //  IMPLEMENTATION
@@ -382,3 +384,46 @@ bool XmlParser::StringCompare::operator()(const char *s1, const char *s2) const
 {
 	return !strcmp(s1, s2);
 }
+
+
+//**************************************************************************
+//  VALIDITY CHECKS
+//**************************************************************************
+
+//-------------------------------------------------
+//  test
+//-------------------------------------------------
+
+static void test()
+{
+	XmlParser xml;
+	wxString charlie_value;
+	int foxtrot_value = 0;
+	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		assert(attributes.Get("charlie", charlie_value));
+	});
+	xml.OnElement({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		assert(attributes.Get("foxtrot", foxtrot_value));
+	});
+
+	bool result = xml.ParseXml(
+		"<alpha>"
+		"<bravo charlie=\"delta\"/>"
+		"<echo foxtrot=\"42\"/>"
+		"</alpha>");
+	assert(result);
+	assert(charlie_value == "delta");
+	assert(foxtrot_value == 42);
+}
+
+
+//-------------------------------------------------
+//  validity_checks
+//-------------------------------------------------
+
+static validity_check validity_checks[] =
+{
+	test
+};

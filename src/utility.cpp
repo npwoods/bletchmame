@@ -6,8 +6,10 @@
 
 ***************************************************************************/
 
-#include "utility.h"
+#include <sstream>
 
+#include "utility.h"
+#include "validity.h"
 
 //-------------------------------------------------
 //  append_conditionally_quoted
@@ -46,3 +48,34 @@ wxString util::build_command_line(const wxString &executable, const std::vector<
 	}
 	return result;
 }
+
+
+//-------------------------------------------------
+//  test_string_split
+//-------------------------------------------------
+
+template<typename TStr>
+static void test_string_split()
+{
+	// get the string into a TStr
+	const char *string = "Alpha,Bravo,Charlie";
+	TStr str;
+	for (int i = 0; string[i]; i++)
+		str += string[i];
+
+	auto result = util::string_split(str, [](auto ch) { return ch == ','; });
+	assert(result[0] == "Alpha");
+	assert(result[1] == "Bravo");
+	assert(result[2] == "Charlie");
+}
+
+
+//-------------------------------------------------
+//  validity_checks
+//-------------------------------------------------
+
+static validity_check validity_checks[] =
+{
+	test_string_split<std::string>,
+	test_string_split<std::wstring>
+};
