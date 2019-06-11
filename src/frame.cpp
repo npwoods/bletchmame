@@ -109,6 +109,21 @@ namespace
 			bool		m_is_running;
 		};
 
+		class ImagesHost : public IImagesHost
+		{
+		public:
+			ImagesHost(MameFrame &host);
+			~ImagesHost();
+
+			virtual const std::vector<Image> GetImages();
+			virtual void SetOnImagesChanged(std::function<void()> &&func);
+			virtual void LoadImage(const wxString &tag, wxString &&path);
+			virtual void UnloadImage(const wxString &tag);
+
+		private:
+			MameFrame &m_host;
+		};
+
 		MameClient                  m_client;
 		Preferences                 m_prefs;
 		VirtualListView *           m_list_view;
@@ -468,7 +483,8 @@ void MameFrame::OnMenuStop()
 void MameFrame::OnMenuImages()
 {
 	Pauser pauser(*this);
-	show_images_dialog(m_status_images, m_client.GetCurrentTask<RunMachineTask>());
+	ImagesHost images_host(*this);
+	show_images_dialog(images_host);
 }
 
 
@@ -877,6 +893,68 @@ MameFrame::Pauser::~Pauser()
 {
 	if (m_is_running)
 		m_host.ChangePaused(false);
+}
+
+
+//**************************************************************************
+//  ImagesHost
+//**************************************************************************
+
+//-------------------------------------------------
+//  ImagesHost ctor
+//-------------------------------------------------
+
+MameFrame::ImagesHost::ImagesHost(MameFrame &host)
+	: m_host(host)
+{
+}
+
+
+//-------------------------------------------------
+//  ImagesHost dtor
+//-------------------------------------------------
+
+MameFrame::ImagesHost::~ImagesHost()
+{
+}
+
+
+//-------------------------------------------------
+//  GetImages
+//-------------------------------------------------
+
+const std::vector<Image> MameFrame::ImagesHost::GetImages()
+{
+	return m_host.m_status_images;
+}
+
+
+//-------------------------------------------------
+//  SetOnImagesChanged
+//-------------------------------------------------
+
+void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&)
+{
+}
+
+
+//-------------------------------------------------
+//  LoadImage
+//-------------------------------------------------
+
+void MameFrame::ImagesHost::LoadImage(const wxString &tag, wxString &&path)
+{
+	m_host.Issue({ "load", tag, std::move(path) });
+}
+
+
+//-------------------------------------------------
+//  UnloadImage
+//-------------------------------------------------
+
+void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
+{
+	m_host.Issue({ "unload", tag });
 }
 
 

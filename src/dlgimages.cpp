@@ -28,7 +28,7 @@ namespace
 	class ImagesDialog : public wxDialog
 	{
 	public:
-		ImagesDialog(const std::vector<Image> &images, std::shared_ptr<RunMachineTask> &&run_machine_task);
+		ImagesDialog(IImagesHost &host);
 
 	private:
 		enum
@@ -39,9 +39,9 @@ namespace
 			ID_LAST
 		};
 
-		std::shared_ptr<RunMachineTask>	m_run_machine_task;
-		wxMenu							m_popup_menu;
-		int								m_popup_menu_result;
+		IImagesHost &	m_host;
+		wxMenu			m_popup_menu;
+		int				m_popup_menu_result;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
@@ -50,7 +50,6 @@ namespace
 		bool ImageMenu(const wxButton &button, const wxString &tag);
 		bool LoadImage(const wxString &tag);
 		bool UnloadImage(const wxString &tag);
-		void Issue(const std::initializer_list<wxString> &args);
 	};
 };
 
@@ -63,16 +62,16 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-ImagesDialog::ImagesDialog(const std::vector<Image> &images, std::shared_ptr<RunMachineTask> &&run_machine_task)
+ImagesDialog::ImagesDialog(IImagesHost &host)
 	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(400, 300))
-	, m_run_machine_task(std::move(run_machine_task))
+	, m_host(host)
 {
 	int id = ID_LAST;
 	
 	// main grid
 	auto grid_sizer = std::make_unique<wxFlexGridSizer>(3);
 	grid_sizer->AddGrowableCol(1);
-	for (const Image &image : images)
+	for (const Image &image : m_host.GetImages())
 	{
 		wxStaticText &static_text	= AddControl<wxStaticText>	(*grid_sizer, wxALL,			id++, image.m_tag);
 		wxTextCtrl &text_ctrl		= AddControl<wxTextCtrl>	(*grid_sizer, wxALL | wxEXPAND,	id++, image.m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
@@ -163,7 +162,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 	if (dialog.ShowModal() != wxID_OK)
 		return false;
 	
-	Issue({ "load", tag, dialog.GetPath() });
+	m_host.LoadImage(tag, dialog.GetPath());
 	return true;
 }
 
@@ -174,18 +173,8 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 
 bool ImagesDialog::UnloadImage(const wxString &tag)
 {
-	Issue({ "unload", tag });
+	m_host.UnloadImage(tag);
 	return false;
-}
-
-
-//-------------------------------------------------
-//  Issue
-//-------------------------------------------------
-
-void ImagesDialog::Issue(const std::initializer_list<wxString> &args)
-{
-	m_run_machine_task->Issue(args);
 }
 
 
@@ -193,8 +182,8 @@ void ImagesDialog::Issue(const std::initializer_list<wxString> &args)
 //  show_images_dialog
 //-------------------------------------------------
 
-bool show_images_dialog(const std::vector<Image> &images, std::shared_ptr<RunMachineTask> run_machine_task)
+bool show_images_dialog(IImagesHost &host)
 {
-	ImagesDialog dialog(images, std::move(run_machine_task));
+	ImagesDialog dialog(host);
 	return dialog.ShowModal() == wxID_OK;
 }
