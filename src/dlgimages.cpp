@@ -50,7 +50,7 @@ namespace
 		bool ImageMenu(const wxButton &button, const wxString &tag);
 		bool LoadImage(const wxString &tag);
 		bool UnloadImage(const wxString &tag);
-		void Issue(wxString &&command);
+		void Issue(const std::initializer_list<wxString> &args);
 	};
 };
 
@@ -159,7 +159,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 	if (dialog.ShowModal() != wxID_OK)
 		return false;
 	
-	Issue(wxString("load ") + tag + " \"" + dialog.GetPath() + wxT("\""));
+	Issue({ "load", tag, dialog.GetPath() });
 	return true;
 }
 
@@ -170,7 +170,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 
 bool ImagesDialog::UnloadImage(const wxString &tag)
 {
-	Issue(wxString("unload ") + tag);
+	Issue({ "unload", tag });
 	return false;
 }
 
@@ -179,10 +179,9 @@ bool ImagesDialog::UnloadImage(const wxString &tag)
 //  Issue
 //-------------------------------------------------
 
-void ImagesDialog::Issue(wxString &&command)
+void ImagesDialog::Issue(const std::initializer_list<wxString> &args)
 {
-	// TODO - handle string conversion issues
-	m_run_machine_task->Post(command.ToStdString());
+	m_run_machine_task->Issue(args);
 }
 
 

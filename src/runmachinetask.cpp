@@ -18,10 +18,41 @@
 #include "runmachinetask.h"
 #include "utility.h"
 #include "prefs.h"
+#include "validity.h"
 #include "xmlparser.h"
 
 wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
+
+
+//**************************************************************************
+//  UTILITY
+//**************************************************************************
+
+//-------------------------------------------------
+//  BuildCommand
+//-------------------------------------------------
+
+wxString BuildCommand(const std::initializer_list<wxString> &args)
+{
+	wxString command;
+	for (const wxString &arg : args)
+	{
+		if (!command.IsEmpty())
+			command += " ";
+
+		bool has_space = arg.find(' ') != wxString::npos;
+		if (has_space)
+			command += "\"";
+
+		command += arg;
+
+		if (has_space)
+			command += "\"";
+	}
+	command += "\r\n";
+	return command;
+}
 
 
 //**************************************************************************
@@ -73,7 +104,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 
 void RunMachineTask::Abort()
 {
-	Post("exit");
+	Issue({ "exit" });
 }
 
 
@@ -98,11 +129,12 @@ void RunMachineTask::OnChildProcessKilled()
 
 
 //-------------------------------------------------
-//  Post
+//  Issue
 //-------------------------------------------------
 
-void RunMachineTask::Post(std::string &&command)
+void RunMachineTask::Issue(const std::initializer_list<wxString> &args)
 {
+	wxString command = BuildCommand(args);
 	InternalPost(Message::type::COMMAND, std::move(command));
 }
 
@@ -111,7 +143,7 @@ void RunMachineTask::Post(std::string &&command)
 //  InternalPost
 //-------------------------------------------------
 
-void RunMachineTask::InternalPost(Message::type type, std::string &&command, emu_error status)
+void RunMachineTask::InternalPost(Message::type type, wxString &&command, emu_error status)
 {
 	Message message;
 	message.m_type = type;
@@ -156,7 +188,6 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 			// emit this command to MAME
 			wxLogDebug("MAME <== [%s]", message.m_command);
 			output.WriteString(message.m_command);
-			output.WriteString("\r\n");
 
 			// and receive a response from MAME
 			ReceiveResponse(handler, input);
@@ -279,3 +310,28 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	// and return it
 	return result;
 }
+
+
+//**************************************************************************
+//  VALIDITY CHECKS
+//**************************************************************************
+
+//-------------------------------------------------
+//  test
+//-------------------------------------------------
+
+static void test()
+{
+	wxString command = BuildCommand({ "alpha", "bravo", "charlie" });
+	assert(command == "alpha bravo charlie\r\n");
+}
+
+
+//-------------------------------------------------
+//  checks
+//-------------------------------------------------
+
+static const validity_check checks[] =
+{
+	test
+};

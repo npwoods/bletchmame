@@ -143,7 +143,8 @@ namespace
 		wxString GetTarget();
 
 		// Runtime Control
-		void Issue(std::string &&command);
+		void Issue(const std::initializer_list<wxString> &args);
+		void Issue(const char *command);
 		void InvokePing();
 		void ChangePaused(bool paused);
 		void ChangeThrottled(bool throttled);
@@ -277,7 +278,7 @@ void MameFrame::CreateMenuBar()
 	m_menu_bar_accelerators = *m_menu_bar->GetAcceleratorTable();
 
 	// Bind menu item selected events
-	Bind(wxEVT_MENU, [this](auto &)	{ Issue("soft_reset");					}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();							}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);		}, pause_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);							}, exit_menu_item->GetId());
@@ -317,7 +318,7 @@ void MameFrame::CreateMenuBar()
 		std::string value	= i == -1 ? "auto" : std::to_string(i);
 		std::string command = "frameskip " + value;
 
-		Bind(wxEVT_MENU,		[this, command](auto &)		{ Issue(std::string(command));								}, item->GetId());
+		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });							}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
 	}
 }
@@ -764,13 +765,20 @@ void MameFrame::UpdateMenuBar()
 //  Issue
 //-------------------------------------------------
 
-void MameFrame::Issue(std::string &&command)
+void MameFrame::Issue(const std::initializer_list<wxString> &args)
 {
 	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
 	if (!task)
 		return;
 
-	task->Post(std::move(command));
+	task->Issue(args);
+}
+
+
+void MameFrame::Issue(const char *command)
+{
+	wxString command_string = command;
+	Issue({ command_string });
 }
 
 
@@ -805,7 +813,7 @@ void MameFrame::ChangePaused(bool paused)
 
 void MameFrame::ChangeThrottled(bool throttled)
 {
-	Issue("throttled " + std::to_string(throttled ? 1 : 0));
+	Issue({ "throttled", std::to_string(throttled ? 1 : 0) });
 }
 
 
@@ -815,7 +823,7 @@ void MameFrame::ChangeThrottled(bool throttled)
 
 void MameFrame::ChangeThrottleRate(float throttle_rate)
 {
-	Issue("throttle_rate " + std::to_string(throttle_rate));
+	Issue({ "throttle_rate", std::to_string(throttle_rate) });
 }
 
 
