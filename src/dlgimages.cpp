@@ -83,7 +83,7 @@ ImagesDialog::ImagesDialog(const std::vector<Image> &images, std::shared_ptr<Run
 
 	// buttons
 	auto button_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-	AddControl<wxButton>(*button_sizer, wxOK, wxT("OK"));
+	AddControl<wxButton>(*button_sizer, wxID_OK, wxT("OK"));
 
 	// overall layout
 	auto sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
