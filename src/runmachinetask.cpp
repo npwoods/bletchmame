@@ -282,7 +282,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("is_writeable",		image.m_is_writeable, false);
 		attributes.Get("is_createable",		image.m_is_createable, false);
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
-		attributes.Get("file_name",			image.m_file_name);
+		attributes.Get("filename",			image.m_file_name);
 		result.m_images.push_back(std::move(image));
 	});
 

@@ -74,7 +74,7 @@ namespace
 //-------------------------------------------------
 
 ImagesDialog::ImagesDialog(IImagesHost &host)
-	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(400, 300))
+	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(550, 300))
 	, m_host(host)
 	, m_grid_sizer(nullptr)
 {
