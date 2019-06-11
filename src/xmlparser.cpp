@@ -401,10 +401,12 @@ static void test()
 	int foxtrot_value = 0;
 	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
+		(void)attributes;
 		assert(attributes.Get("charlie", charlie_value));
 	});
 	xml.OnElement({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
 	{
+		(void)attributes;
 		assert(attributes.Get("foxtrot", foxtrot_value));
 	});
 
@@ -416,6 +418,9 @@ static void test()
 	assert(result);
 	assert(charlie_value == "delta");
 	assert(foxtrot_value == 42);
+
+	(void)result;
+	(void)foxtrot_value;
 }
 
 

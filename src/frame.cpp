@@ -55,6 +55,7 @@ namespace
 		tri_state(void *p)
 			: m_i(-1)
 		{
+			(void)p;
 			assert(!p);
 		}
 
