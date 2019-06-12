@@ -67,6 +67,8 @@ public:
 	bool ParseXml(const wxString &xml_text);
 	wxString ErrorMessage() const;
 
+	static std::string Escape(const wxString &str);
+
 private:
 	struct StringHash
 	{

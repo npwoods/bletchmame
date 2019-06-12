@@ -15,6 +15,7 @@
 #include <wx/gdicmn.h>
 #include <array>
 #include <ostream>
+#include <map>
 
 class Preferences
 {
@@ -59,6 +60,9 @@ public:
 	bool GetMenuBarShown() const							{ return m_menu_bar_shown; }
 	void SetMenuBarShown(bool menu_bar_shown)				{ m_menu_bar_shown = menu_bar_shown; }
 
+	const wxString &GetWorkingDirectory(const wxString &machine_name) const;
+	void SetWorkingDirectory(const wxString &machine_name, wxString &&dir);
+
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
 
 	bool Load();
@@ -71,6 +75,7 @@ private:
 	wxSize																m_size;
 	std::array<int, COLUMN_COUNT>										m_column_widths;
 	std::array<int, COLUMN_COUNT>										m_column_order;
+	std::map<wxString, wxString>										m_working_directories;
 	wxString															m_selected_machine;
 	bool																m_menu_bar_shown;
 

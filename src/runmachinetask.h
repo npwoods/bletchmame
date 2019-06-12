@@ -80,6 +80,7 @@ public:
 	RunMachineTask(const wxString &machine_name, const wxString &machine_description, wxWindow &target_window);
 
 	void Issue(const std::initializer_list<wxString> &args);
+	const wxString &MachineName() const { return m_machine_name; }
 	const wxString &MachineDescription() const { return m_machine_description; }
 
 protected:

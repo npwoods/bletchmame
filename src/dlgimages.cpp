@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <wx/filename.h>
 #include <wx/dialog.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
@@ -231,11 +232,27 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag)
 
 bool ImagesDialog::LoadImage(const wxString &tag)
 {
-	wxFileDialog dialog(this, wxFileSelectorPromptStr, wxEmptyString, wxEmptyString, wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	// show the dialog
+	wxFileDialog dialog(
+		this,
+		wxFileSelectorPromptStr,
+		m_host.GetWorkingDirectory(),
+		wxEmptyString,
+		wxFileSelectorDefaultWildcardStr,
+		wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 	if (dialog.ShowModal() != wxID_OK)
 		return false;
-	
-	m_host.LoadImage(tag, dialog.GetPath());
+
+	// get the result from the dialog
+	wxString path = dialog.GetPath();
+
+	// update our host's working directory
+	wxString dir;
+	wxFileName::SplitPath(path, &dir, nullptr, nullptr);
+	m_host.SetWorkingDirectory(std::move(dir));
+
+	// and load the image
+	m_host.LoadImage(tag, std::move(path));
 	return true;
 }
 

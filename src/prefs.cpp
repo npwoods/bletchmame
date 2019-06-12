@@ -78,6 +78,30 @@ Preferences::Preferences()
 
 
 //-------------------------------------------------
+//  GetWorkingDirectory
+//-------------------------------------------------
+
+const wxString &Preferences::GetWorkingDirectory(const wxString &machine_name) const
+{
+	static const wxString empty_string;
+	auto iter = m_working_directories.find(machine_name);
+	return iter != m_working_directories.end()
+		? iter->second
+		: empty_string;
+}
+
+
+//-------------------------------------------------
+//  SetWorkingDirectory
+//-------------------------------------------------
+
+void Preferences::SetWorkingDirectory(const wxString &machine_name, wxString &&dir)
+{
+	m_working_directories[machine_name] = std::move(dir);
+}
+
+
+//-------------------------------------------------
 //  Load
 //-------------------------------------------------
 
@@ -166,6 +190,16 @@ bool Preferences::Load(wxInputStream &input)
 			}
 		}
 	});
+	xml.OnElement({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
+	{
+		wxString name;
+		if (attributes.Get("name", name))
+		{
+			wxString dir;
+			if (attributes.Get("working_directory", dir))
+				SetWorkingDirectory(name, std::move(dir));
+		}
+	});
 	bool success = xml.Parse(input);
 
 	// we're merging in the column order here because we want to make sure that
@@ -207,7 +241,7 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetPath(static_cast<path_type>(i)) << "</path>" << std::endl;
 	output << std::endl;
 
-	output << "\t<!-- Other -->" << std::endl;
+	output << "\t<!-- Miscellaneous -->" << std::endl;
 	if (!m_mame_extra_arguments.IsEmpty())
 		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
@@ -215,6 +249,16 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
 	for (size_t i = 0; i < m_column_widths.size(); i++)
 		output << "\t<column id=\"" << s_column_ids[i] << "\" width=\"" << m_column_widths[i] << "\" order=\"" << m_column_order[i] << "\"/>" << std::endl;
+	output << std::endl;
+
+	output << "\t<!-- Machines -->" << std::endl;
+	for (const auto &pair : m_working_directories)
+	{
+		if (!pair.first.IsEmpty() && !pair.second.IsEmpty())
+		{
+			output << "\t<machine name=\"" << XmlParser::Escape(pair.first) << "\" working_directory=\"" << XmlParser::Escape(pair.second) << "\"/>" << std::endl;
+		}
+	}
 	output << std::endl;
 
 	output << "</preferences>" << std::endl;
@@ -276,6 +320,8 @@ static void test()
 			"<column id=\"description\" width=\"165\" order=\"1\" />"
 			"<column id=\"year\" width=\"50\" order=\"2\" />"
 			"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
+
+			"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" />"
 		"</preferences>";
 
 	wxMemoryInputStream input(xml, strlen(xml));
@@ -287,6 +333,9 @@ static void test()
 	assert(prefs.GetPath(Preferences::path_type::samples)			== "C:\\samples");
 	assert(prefs.GetPath(Preferences::path_type::config)			== "C:\\cfg");
 	assert(prefs.GetPath(Preferences::path_type::nvram)				== "C:\\nvram");
+
+	assert(prefs.GetWorkingDirectory("echo")						== "C:\\MyEchoGames");
+	assert(prefs.GetWorkingDirectory("foxtrot")						== "");
 }
 
 

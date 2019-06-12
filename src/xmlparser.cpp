@@ -222,6 +222,40 @@ void XmlParser::CharacterData(const char *s, int len)
 }
 
 
+//-------------------------------------------------
+//  Escape
+//-------------------------------------------------
+
+std::string XmlParser::Escape(const wxString &str)
+{
+	std::wstring wstr = str.ToStdWstring();
+
+	std::string result;
+	for (wchar_t ch : wstr)
+	{
+		switch (ch)
+		{
+		case '<':
+			result += "&lt;";
+			break;
+		case '>':
+			result += "&gt;";
+			break;
+		case '\"':
+			result += "&quot;";
+			break;
+		default:
+			if (ch >= 0 && ch <= 127)
+				result += (char)ch;
+			else
+				result += "&#" + std::to_string((int)ch) + ";";
+			break;
+		}
+	}
+	return result;
+}
+
+
 //**************************************************************************
 //  TRAMPOLINES
 //**************************************************************************

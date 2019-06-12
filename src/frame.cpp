@@ -120,11 +120,15 @@ namespace
 
 			virtual const std::vector<Image> GetImages();
 			virtual void SetOnImagesChanged(std::function<void()> &&func);
+			virtual const wxString &GetWorkingDirectory();
+			virtual void SetWorkingDirectory(wxString &&dir);
 			virtual void LoadImage(const wxString &tag, wxString &&path);
 			virtual void UnloadImage(const wxString &tag);
 
 		private:
 			MameFrame &m_host;
+
+			const wxString &GetMachineName() const;
 		};
 
 		MameClient                  m_client;
@@ -989,6 +993,26 @@ void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&func)
 
 
 //-------------------------------------------------
+//  GetWorkingDirectory
+//-------------------------------------------------
+
+const wxString &MameFrame::ImagesHost::GetWorkingDirectory()
+{
+	return m_host.m_prefs.GetWorkingDirectory(GetMachineName());
+}
+
+
+//-------------------------------------------------
+//  SetWorkingDirectory
+//-------------------------------------------------
+
+void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
+{
+	m_host.m_prefs.SetWorkingDirectory(GetMachineName(), std::move(dir));
+}
+
+
+//-------------------------------------------------
 //  LoadImage
 //-------------------------------------------------
 
@@ -1005,6 +1029,17 @@ void MameFrame::ImagesHost::LoadImage(const wxString &tag, wxString &&path)
 void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
 {
 	m_host.Issue({ "unload", tag });
+}
+
+
+//-------------------------------------------------
+//  GetMachineName
+//-------------------------------------------------
+
+const wxString &MameFrame::ImagesHost::GetMachineName() const
+{
+	std::shared_ptr<RunMachineTask> task = m_host.m_client.GetCurrentTask<RunMachineTask>();
+	return task->MachineName();
 }
 
 
