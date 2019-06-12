@@ -35,7 +35,6 @@ public:
 	Preferences();
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
-	~Preferences();
 
 	const wxString &GetPath(path_type type) const			{ return m_paths[static_cast<size_t>(type)]; }
 	void SetPath(path_type type, wxString &&path)			{ m_paths[static_cast<size_t>(type)] = std::move(path); }
@@ -62,6 +61,10 @@ public:
 
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
 
+	bool Load();
+	bool Load(wxInputStream &input);
+	void Save();
+
 private:
 	std::array<wxString, static_cast<size_t>(path_type::count)>			m_paths;
 	wxString															m_mame_extra_arguments;
@@ -71,8 +74,6 @@ private:
 	wxString															m_selected_machine;
 	bool																m_menu_bar_shown;
 
-	bool Load();
-	void Save();
 	void Save(std::ostream &output);
 	wxString GetFileName(bool ensure_directory_exists);
 };

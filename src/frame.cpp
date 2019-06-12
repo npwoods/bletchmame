@@ -81,6 +81,7 @@ namespace
 	public:
 		// ctor(s)
 		MameFrame();
+		~MameFrame();
 
 		// event handlers (these functions should _not_ be virtual)
 		void OnKeyDown(wxKeyEvent &event);
@@ -193,7 +194,8 @@ MameFrame::MameFrame()
 	// set the frame icon
 	SetIcon(wxICON(bletchmame));
 
-	// set the size
+	// initial preferences read
+	m_prefs.Load();
 	SetSize(m_prefs.GetSize());
 
 	// create the menu bar
@@ -240,6 +242,16 @@ MameFrame::MameFrame()
 		// Can't find MAME; ask the user
 		util::PostEvent(*this, EVT_SPECIFY_MAME_PATH);
 	}
+}
+
+
+//-------------------------------------------------
+//  dtor
+//-------------------------------------------------
+
+MameFrame::~MameFrame()
+{
+	m_prefs.Save();
 }
 
 

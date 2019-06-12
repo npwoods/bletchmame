@@ -8,6 +8,8 @@
 
 #include <wx/stdpaths.h>
 #include <wx/filename.h>
+#include <wx/wfstream.h>
+#include <wx/mstream.h>
 #include <wx/dir.h>
 #include <fstream>
 #include <functional>
@@ -15,6 +17,7 @@
 #include "prefs.h"
 #include "utility.h"
 #include "xmlparser.h"
+#include "validity.h"
 
 
 //**************************************************************************
@@ -75,16 +78,6 @@ Preferences::Preferences()
 
 
 //-------------------------------------------------
-//  dtor
-//-------------------------------------------------
-
-Preferences::~Preferences()
-{
-    Save();
-}
-
-
-//-------------------------------------------------
 //  Load
 //-------------------------------------------------
 
@@ -98,9 +91,21 @@ bool Preferences::Load()
 	if (!wxFileExists(file_name))
 		return false;
 
+	wxFileInputStream input(file_name);
+	return Load(input);
+}
+
+
+//-------------------------------------------------
+//  Load
+//-------------------------------------------------
+
+bool Preferences::Load(wxInputStream &input)
+{
 	XmlParser xml;
 	path_type type = path_type::count;
-	std::array<int, COLUMN_COUNT> column_order;
+	std::array<int, COLUMN_COUNT> column_order = { 0, };
+
 	xml.OnElement({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
 		bool menu_bar_shown;
@@ -161,7 +166,7 @@ bool Preferences::Load()
 			}
 		}
 	});
-	bool success = xml.Parse(file_name);
+	bool success = xml.Parse(input);
 
 	// we're merging in the column order here because we want to make sure that
 	// the columns are specified if and only if each column is present
@@ -245,3 +250,51 @@ wxString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 
 	return directory;
 }
+
+
+//**************************************************************************
+//  VALIDITY CHECKS
+//**************************************************************************
+
+//-------------------------------------------------
+//  test
+//-------------------------------------------------
+
+static void test()
+{
+	const char *xml =
+		"<preferences menu_bar_shown=\"1\">"
+			"<path type=\"emu\">C:\\mame64.exe</path>"
+			"<path type=\"roms\">C:\\roms</path>"
+			"<path type=\"samples\">C:\\samples</path>"
+			"<path type=\"config\">C:\\cfg</path>"
+			"<path type=\"nvram\">C:\\nvram</path>"
+
+			"<size width=\"1230\" height=\"765\"/>"
+			"<selectedmachine>nes</selectedmachine>"
+			"<column id=\"name\" width=\"84\" order=\"0\" />"
+			"<column id=\"description\" width=\"165\" order=\"1\" />"
+			"<column id=\"year\" width=\"50\" order=\"2\" />"
+			"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
+		"</preferences>";
+
+	wxMemoryInputStream input(xml, strlen(xml));
+	Preferences prefs;
+	prefs.Load(input);
+
+	assert(prefs.GetPath(Preferences::path_type::emu_exectuable)	== "C:\\mame64.exe");
+	assert(prefs.GetPath(Preferences::path_type::roms)				== "C:\\roms");
+	assert(prefs.GetPath(Preferences::path_type::samples)			== "C:\\samples");
+	assert(prefs.GetPath(Preferences::path_type::config)			== "C:\\cfg");
+	assert(prefs.GetPath(Preferences::path_type::nvram)				== "C:\\nvram");
+}
+
+
+//-------------------------------------------------
+//  validity_checks
+//-------------------------------------------------
+
+static validity_check validity_checks[] =
+{
+	test
+};
