@@ -10,7 +10,6 @@
 
 #include "validity.h"
 #include "utility.h"
-#include "xmlparser.h"
 
 
 //**************************************************************************
