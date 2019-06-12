@@ -50,6 +50,7 @@ namespace
 
 		IImagesHost &		m_host;
 		wxFlexGridSizer *	m_grid_sizer;
+		wxButton *			m_ok_button;
 		wxMenu				m_popup_menu;
 		int					m_popup_menu_result;
 
@@ -77,6 +78,7 @@ ImagesDialog::ImagesDialog(IImagesHost &host)
 	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(550, 300))
 	, m_host(host)
 	, m_grid_sizer(nullptr)
+	, m_ok_button(nullptr)
 {
 	// host interactions
 	m_host.SetOnImagesChanged([this] { UpdateImageGrid(); });
@@ -91,7 +93,7 @@ ImagesDialog::ImagesDialog(IImagesHost &host)
 
 	// buttons
 	wxBoxSizer *button_sizer = new wxBoxSizer(wxVERTICAL);
-	AddControl<wxButton>(*button_sizer, wxALL, wxID_OK, wxT("OK"));
+	m_ok_button = &AddControl<wxButton>(*button_sizer, wxALL, wxID_OK, wxT("OK"));
 
 	// overall layout
 	wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
@@ -109,6 +111,8 @@ ImagesDialog::ImagesDialog(IImagesHost &host)
 
 void ImagesDialog::UpdateImageGrid()
 {
+	bool ok_enabled = true;
+
 	// get the list of images
 	const std::vector<Image> &images(m_host.GetImages());
 
@@ -116,26 +120,42 @@ void ImagesDialog::UpdateImageGrid()
 	for (int i = 0; i < images.size(); i++)
 	{
 		int id = ID_GRID_CONTROLS + (i * COLUMN_COUNT);
+		wxStaticText *static_text;
+		wxTextCtrl *text_ctrl;
+		wxButton *image_button;
 
 		// do we have to create new rows?
 		if (m_grid_sizer->GetRows() <= i)
 		{
 			// we do - add controls
-			wxStaticText &static_text	= AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_tag);
-			wxTextCtrl &text_ctrl		= AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-			wxButton &image_button		= AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
+			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_tag);
+			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
 			wxString tag = images[i].m_tag;
-			Bind(wxEVT_BUTTON, [this, &image_button, tag](auto &) { ImageMenu(image_button, tag); }, image_button.GetId());
-
-			(void)static_text;
-			(void)text_ctrl;
+			Bind(wxEVT_BUTTON, [this, image_button, tag](auto &) { ImageMenu(*image_button, tag); }, image_button->GetId());
 		}
 		else
 		{
 			// reuse existing controls
-			dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC))->SetLabel(images[i].m_tag);
-			dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT))->SetLabel(images[i].m_file_name);
+			static_text = dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC));
+			text_ctrl = dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT));
+			static_text->SetLabel(images[i].m_tag);
+			text_ctrl->SetLabel(images[i].m_file_name);
+		}
+
+		// if this is an image that must be loaded, make it black and disable "ok"
+		const wxColour *static_text_color = wxBLACK;
+		if (images[i].m_must_be_loaded && images[i].m_file_name.IsEmpty())
+		{
+			static_text_color = wxRED;
+			ok_enabled = false;
+		}
+		if (static_text->GetForegroundColour() != *static_text_color)
+		{
+			// refreshing should not be necessary, but c'est la vie
+			static_text->SetForegroundColour(*static_text_color);
+			static_text->Refresh();
 		}
 	}
 
@@ -147,6 +167,9 @@ void ImagesDialog::UpdateImageGrid()
 
 	// update the sizer's row count
 	m_grid_sizer->SetRows(images.size());
+
+	// update the "OK" button
+	m_ok_button->Enable(ok_enabled);
 }
 
 
