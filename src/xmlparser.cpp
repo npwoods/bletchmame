@@ -217,7 +217,8 @@ void XmlParser::EndElement(const char *)
 
 void XmlParser::CharacterData(const char *s, int len)
 {
-	m_current_content.append(s, len);
+	wxString text = wxString::FromUTF8(s, len);
+	m_current_content.Append(std::move(text));
 }
 
 
@@ -323,7 +324,7 @@ bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
 {
 	const char *s = InternalGet(attribute, true);
 	if (s)
-		value = s;
+		value = wxString::FromUTF8(s);
 	else
 		value.clear();
 	return s != nullptr;
@@ -425,10 +426,42 @@ static void test()
 
 
 //-------------------------------------------------
+//  unicode
+//-------------------------------------------------
+
+static void unicode()
+{
+	XmlParser xml;
+	wxString bravo_value;
+	wxString charlie_value;
+	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		bool result = attributes.Get("charlie", charlie_value);
+		assert(result);
+		(void)result;
+	});
+	xml.OnElement({ "alpha", "bravo" }, [&](wxString &&value)
+	{
+		bravo_value = std::move(value);
+	});
+
+	bool result = xml.ParseXml("<alpha><bravo charlie=\"&#x6B7B;\">&#x60AA;</bravo></alpha>");
+	assert(result);
+	assert(bravo_value.ToStdWstring() == L"\u60AA");
+	assert(charlie_value.ToStdWstring() == L"\u6B7B");
+
+	(void)result;
+	(void)bravo_value;
+	(void)charlie_value;
+}
+
+
+//-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
 
 static validity_check validity_checks[] =
 {
-	test
+	test,
+	unicode
 };
