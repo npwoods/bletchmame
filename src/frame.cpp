@@ -386,6 +386,31 @@ void MameFrame::Run(int machine_index)
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
 
+	// wait for first ping
+	m_pinging = true;
+	while (m_pinging)
+	{
+		if (!IsEmulationSessionActive())
+			return;
+		wxYield();
+	}
+
+	// do we have any images that require images?
+	auto iter = std::find_if(m_status_images.cbegin(), m_status_images.cend(), [](const Image &image)
+	{
+		return image.m_must_be_loaded && image.m_file_name.IsEmpty();
+	});
+	if (iter != m_status_images.cend())
+	{
+		// if so, show the dialog
+		ImagesHost images_host(*this);
+		if (!show_images_dialog(images_host))
+		{
+			Issue("exit");
+			return;
+		}
+	}
+
 	// unpause
 	ChangePaused(false);
 }
