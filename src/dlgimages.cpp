@@ -76,7 +76,7 @@ namespace
 //-------------------------------------------------
 
 ImagesDialog::ImagesDialog(IImagesHost &host)
-	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(550, 300))
+	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(550, 300), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_host(host)
 	, m_grid_sizer(nullptr)
 	, m_ok_button(nullptr)
@@ -102,6 +102,7 @@ ImagesDialog::ImagesDialog(IImagesHost &host)
 	main_sizer->Add(button_sizer, 1, wxALL | wxALIGN_RIGHT);
 	SetSizer(main_sizer);
 
+	// initial update of image grid
 	UpdateImageGrid();
 }
 
