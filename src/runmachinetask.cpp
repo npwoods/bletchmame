@@ -15,6 +15,7 @@
 #include <iostream>
 #include <thread>
 
+#include "listxmltask.h"
 #include "runmachinetask.h"
 #include "utility.h"
 #include "prefs.h"
@@ -63,9 +64,8 @@ wxString BuildCommand(const std::initializer_list<wxString> &args)
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(const wxString &machine_name, const wxString &machine_description, wxWindow &target_window)
-    : m_machine_name(machine_name)
-	, m_machine_description(machine_description)
+RunMachineTask::RunMachineTask(const Machine &machine, wxWindow &target_window)
+    : m_machine(machine)
     , m_target_window((std::uintptr_t)target_window.GetHWND())
 {
 }
@@ -79,7 +79,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 {
 	return
 	{
-		m_machine_name,
+		GetMachine().m_name,
 		"-rompath",
 		prefs.GetPath(Preferences::path_type::roms),
 		"-samplepath",

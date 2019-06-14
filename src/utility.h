@@ -59,8 +59,8 @@ std::vector<TStr> string_split(const TStr &str, TFunc &&is_delim)
 //  string_join
 //-------------------------------------------------
 
-template<typename TStr, typename TColl>
-TStr string_join(const TStr &delim, const TColl &collection)
+template<typename TStr, typename TColl, typename TFunc>
+TStr string_join(const TStr &delim, const TColl &collection, TFunc func)
 {
 	TStr result;
 	bool is_first = true;
@@ -71,11 +71,17 @@ TStr string_join(const TStr &delim, const TColl &collection)
 			is_first = false;
 		else
 			result += delim;
-		result += member;
+		result += func(member);
 	}
 	return result;
 }
 
+
+template<typename TStr, typename TColl>
+TStr string_join(const TStr &delim, const TColl &collection)
+{
+	return string_join(delim, collection, [](const TStr &s) { return s; });
+}
 
 //-------------------------------------------------
 //  string_truncate

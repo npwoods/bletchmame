@@ -18,6 +18,7 @@
 #include "dlgimages.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -62,6 +63,7 @@ namespace
 		bool ImageMenu(const wxButton &button, const wxString &tag);
 		bool LoadImage(const wxString &tag);
 		bool UnloadImage(const wxString &tag);
+		wxString GetWildcardString(const wxString &tag) const;
 		void UpdateImageGrid();
 	};
 };
@@ -126,15 +128,21 @@ void ImagesDialog::UpdateImageGrid()
 		wxTextCtrl *text_ctrl;
 		wxButton *image_button;
 
+		// identify the tag (and drop the first colon)
+		assert(!images[i].m_tag.IsEmpty());
+		wxString tag = images[i].m_tag[0] == ':'
+			? images[i].m_tag.SubString(1, images[i].m_tag.size() - 1)
+			: images[i].m_tag;
+
 		// do we have to create new rows?
 		if (m_grid_sizer->GetRows() <= i)
 		{
+
 			// we do - add controls
-			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_tag);
+			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, tag);
 			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
-			wxString tag = images[i].m_tag;
 			Bind(wxEVT_BUTTON, [this, image_button, tag](auto &) { ImageMenu(*image_button, tag); }, image_button->GetId());
 		}
 		else
@@ -142,7 +150,7 @@ void ImagesDialog::UpdateImageGrid()
 			// reuse existing controls
 			static_text = dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC));
 			text_ctrl = dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT));
-			static_text->SetLabel(images[i].m_tag);
+			static_text->SetLabel(tag);
 			text_ctrl->SetLabel(images[i].m_file_name);
 		}
 
@@ -239,7 +247,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 		wxFileSelectorPromptStr,
 		m_host.GetWorkingDirectory(),
 		wxEmptyString,
-		wxFileSelectorDefaultWildcardStr,
+		GetWildcardString(tag),
 		wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 	if (dialog.ShowModal() != wxID_OK)
 		return false;
@@ -266,6 +274,37 @@ bool ImagesDialog::UnloadImage(const wxString &tag)
 {
 	m_host.UnloadImage(tag);
 	return false;
+}
+
+
+//-------------------------------------------------
+//  GetWildcardString
+//-------------------------------------------------
+
+wxString ImagesDialog::GetWildcardString(const wxString &tag) const
+{
+	// get the list of extensions
+	std::vector<wxString> extensions = m_host.GetExtensions(tag);
+
+	// append zip
+	extensions.push_back("zip");
+
+	// figure out the "general" wildcard part for all devices
+	wxString all_extensions = util::string_join(wxString(";"), extensions, [](wxString ext) { return wxString::Format("*.%s", ext); });
+	wxString result = wxString::Format("Device files (%s)|%s", all_extensions, all_extensions);
+
+	// now break out each extension
+	for (const wxString &ext : extensions)
+	{
+		result += wxString::Format("|%s files (*.%s)|*.%s",
+			ext.Upper(),
+			ext,
+			ext);
+	}
+
+	// and all files
+	result += "|All files (*.*)|*.*";
+	return result;
 }
 
 

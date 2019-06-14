@@ -73,15 +73,15 @@ struct StatusUpdate
 wxDECLARE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 
+struct Machine;
 
 class RunMachineTask : public Task
 {
 public:
-	RunMachineTask(const wxString &machine_name, const wxString &machine_description, wxWindow &target_window);
+	RunMachineTask(const Machine &machine, wxWindow &target_window);
 
 	void Issue(const std::initializer_list<wxString> &args);
-	const wxString &MachineName() const { return m_machine_name; }
-	const wxString &MachineDescription() const { return m_machine_description; }
+	const Machine &GetMachine() const { return m_machine; }
 
 protected:
 	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
@@ -105,8 +105,7 @@ private:
 		emu_error					m_status;
     };
 
-	const wxString &				m_machine_name;
-	const wxString &				m_machine_description;
+	const Machine &					m_machine;
 	std::uintptr_t					m_target_window;
 	wxMessageQueue<Message>         m_message_queue;
 

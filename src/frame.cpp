@@ -120,8 +120,9 @@ namespace
 
 			virtual const std::vector<Image> GetImages();
 			virtual void SetOnImagesChanged(std::function<void()> &&func);
-			virtual const wxString &GetWorkingDirectory();
+			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
+			virtual const std::vector<wxString> &GetExtensions(const wxString &tag) const;
 			virtual void LoadImage(const wxString &tag, wxString &&path);
 			virtual void UnloadImage(const wxString &tag);
 
@@ -156,6 +157,7 @@ namespace
 
 		void CreateMenuBar();
 		bool IsEmulationSessionActive() const;
+		const Machine &GetRunningMachine() const;
 		void Run(int machine_index);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, tri_state checked = nullptr, bool enabled = true);
@@ -369,6 +371,24 @@ bool MameFrame::IsEmulationSessionActive() const
 
 
 //-------------------------------------------------
+//  GetRunningMachine
+//-------------------------------------------------
+
+const Machine &MameFrame::GetRunningMachine() const
+{
+	// get the currently running machine
+	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
+
+	// this call is only valid if we have a running machine
+	assert(task);
+
+	// return the machine
+	return task->GetMachine();
+
+}
+
+
+//-------------------------------------------------
 //  Run
 //-------------------------------------------------
 
@@ -396,8 +416,7 @@ void MameFrame::Run(int machine_index)
 
 	// run the emulation
 	Task::ptr task = std::make_unique<RunMachineTask>(
-		m_machines[machine_index].m_name,
-		m_machines[machine_index].m_description,
+		m_machines[machine_index],
 		*this);
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
@@ -794,7 +813,7 @@ void MameFrame::UpdateEmulationSession()
 	// ...and set the title bar appropriately
 	wxString title_text = wxTheApp->GetAppName();
 	if (is_active)
-		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->MachineDescription();
+		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().m_description;
 	SetLabel(title_text);
 
 	UpdateMenuBar();
@@ -996,7 +1015,7 @@ void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&func)
 //  GetWorkingDirectory
 //-------------------------------------------------
 
-const wxString &MameFrame::ImagesHost::GetWorkingDirectory()
+const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 {
 	return m_host.m_prefs.GetWorkingDirectory(GetMachineName());
 }
@@ -1009,6 +1028,25 @@ const wxString &MameFrame::ImagesHost::GetWorkingDirectory()
 void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 {
 	m_host.m_prefs.SetWorkingDirectory(GetMachineName(), std::move(dir));
+}
+
+
+//-------------------------------------------------
+//  GetExtensions
+//-------------------------------------------------
+
+const std::vector<wxString> &MameFrame::ImagesHost::GetExtensions(const wxString &tag) const
+{
+	// find the device declaration
+	const Machine &machine(m_host.GetRunningMachine());
+	auto iter = std::find_if(machine.m_devices.begin(), machine.m_devices.end(), [&tag](const Device &dev)
+	{
+		return dev.m_tag == tag;
+	});
+	assert(iter != machine.m_devices.end());
+
+	// and return it!
+	return iter->m_extensions;
 }
 
 
@@ -1038,8 +1076,7 @@ void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
 
 const wxString &MameFrame::ImagesHost::GetMachineName() const
 {
-	std::shared_ptr<RunMachineTask> task = m_host.m_client.GetCurrentTask<RunMachineTask>();
-	return task->MachineName();
+	return m_host.GetRunningMachine().m_name;
 }
 
 

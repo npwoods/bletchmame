@@ -46,6 +46,10 @@ public:
 	{
 		return std::dynamic_pointer_cast<T>(m_task);
 	}
+	template<class T> std::shared_ptr<const T> GetCurrentTask() const
+	{
+		return std::dynamic_pointer_cast<const T>(m_task);
+	}
 
 	bool IsTaskActive() const { return m_task.get() != nullptr; }
 
