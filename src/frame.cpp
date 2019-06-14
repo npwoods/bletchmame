@@ -439,7 +439,7 @@ void MameFrame::Run(int machine_index)
 	{
 		// if so, show the dialog
 		ImagesHost images_host(*this);
-		if (!show_images_dialog(images_host))
+		if (!show_images_dialog_cancellable(images_host))
 		{
 			Issue("exit");
 			return;

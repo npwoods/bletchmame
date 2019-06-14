@@ -30,7 +30,7 @@ namespace
 	class ImagesDialog : public wxDialog
 	{
 	public:
-		ImagesDialog(IImagesHost &host);
+		ImagesDialog(IImagesHost &host, bool has_cancel_button);
 
 	private:
 		enum
@@ -77,7 +77,7 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-ImagesDialog::ImagesDialog(IImagesHost &host)
+ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(550, 300), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_host(host)
 	, m_grid_sizer(nullptr)
@@ -95,13 +95,15 @@ ImagesDialog::ImagesDialog(IImagesHost &host)
 	m_grid_sizer->AddGrowableCol(1);
 
 	// buttons
-	wxBoxSizer *button_sizer = new wxBoxSizer(wxVERTICAL);
-	m_ok_button = &AddControl<wxButton>(*button_sizer, wxALL, wxID_OK, wxT("OK"));
+	wxSizer *button_sizer = CreateButtonSizer(has_cancel_button ? (wxOK | wxCANCEL) : wxOK);
+	if (button_sizer)
+		m_ok_button = dynamic_cast<wxButton *>(FindWindow(wxID_OK));
 
 	// overall layout
 	wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
 	main_sizer->Add(m_grid_sizer, 1, wxALL | wxEXPAND);
-	main_sizer->Add(button_sizer, 1, wxALL | wxALIGN_RIGHT);
+	if (button_sizer)
+		main_sizer->Add(button_sizer, 1, wxALL | wxALIGN_RIGHT);
 	SetSizer(main_sizer);
 
 	// initial update of image grid
@@ -312,8 +314,19 @@ wxString ImagesDialog::GetWildcardString(const wxString &tag) const
 //  show_images_dialog
 //-------------------------------------------------
 
-bool show_images_dialog(IImagesHost &host)
+void show_images_dialog(IImagesHost &host)
 {
-	ImagesDialog dialog(host);
+	ImagesDialog dialog(host, false);
+	dialog.ShowModal();
+}
+
+
+//-------------------------------------------------
+//  show_images_dialog_cancellable
+//-------------------------------------------------
+
+bool show_images_dialog_cancellable(IImagesHost &host)
+{
+	ImagesDialog dialog(host, true);
 	return dialog.ShowModal() == wxID_OK;
 }

@@ -33,6 +33,7 @@ public:
 };
 
 
-bool show_images_dialog(IImagesHost &host);
+void show_images_dialog(IImagesHost &host);
+bool show_images_dialog_cancellable(IImagesHost &host);
 
 #endif // DLGIMAGES_H
