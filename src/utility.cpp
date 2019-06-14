@@ -22,7 +22,7 @@ static void append_conditionally_quoted(wxString &buffer, const wxString &text)
 		return ch == ' ';
 	});
 	bool has_spaces = iter != text.end();
-	bool need_quotes = buffer.IsEmpty() || has_spaces;
+	bool need_quotes = text.IsEmpty() || has_spaces;
 
 	if (need_quotes)
 		buffer += "\"";
@@ -71,11 +71,23 @@ static void test_string_split()
 
 
 //-------------------------------------------------
+//  test_build_command_line
+//-------------------------------------------------
+
+static void test_build_command_line()
+{
+	wxString result = util::build_command_line("C:\\mame64.exe", { "foobar", "-rompath", "C:\\MyRoms", "-samplepath", "" });
+	assert(result == "C:\\mame64.exe foobar -rompath C:\\MyRoms -samplepath \"\"");
+}
+
+
+//-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
 
 static validity_check validity_checks[] =
 {
 	test_string_split<std::string>,
-	test_string_split<std::wstring>
+	test_string_split<std::wstring>,
+	test_build_command_line
 };
