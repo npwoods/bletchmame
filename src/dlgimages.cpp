@@ -139,7 +139,6 @@ void ImagesDialog::UpdateImageGrid()
 		// do we have to create new rows?
 		if (m_grid_sizer->GetRows() <= i)
 		{
-
 			// we do - add controls
 			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, tag);
 			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
