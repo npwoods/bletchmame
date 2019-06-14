@@ -148,7 +148,7 @@ PathsDialog::PathsDialog(Preferences &prefs)
 	Bind(wxEVT_BUTTON,					[this](auto &)		{ BrowseForPath();									}, browse_button.GetId());
 	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnInsert();										}, insert_button.GetId());
 	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnDelete();										}, delete_button.GetId());
-	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(false);								}, insert_button.GetId());
+	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath());						}, insert_button.GetId());
 	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button.GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { BrowseForPath(event.GetIndex());					});
 	Bind(wxEVT_LIST_BEGIN_LABEL_EDIT,	[this](auto &event) { OnListBeginLabelEdit(event.GetIndex());			});
@@ -230,10 +230,15 @@ void PathsDialog::OnListEndLabelEdit(long item)
 	wxTextCtrl *edit_control = m_list_view->GetEditControl();
 	const wxString value = edit_control->GetValue();
 
-	// canonicalize it (for some reason, on Windows this seems to only canonicalize the
-	// leaf filename, so more to do)
-	wxFileName file_name(value);
-	wxString canonicalized_value = file_name.GetLongPath();
+	// is this value not empty?  if so, we need to canonicalize
+	wxString canonicalized_value;
+	if (!value.IsEmpty())
+	{
+		// canonicalize it (for some reason, on Windows this seems to only canonicalize the
+		// leaf filename, so more to do)
+		wxFileName file_name(value);
+		canonicalized_value = file_name.GetLongPath();
+	}
 
 	// and specify it
 	SetPathValue(static_cast<size_t>(item), std::move(canonicalized_value));
@@ -246,10 +251,20 @@ void PathsDialog::OnListEndLabelEdit(long item)
 
 void PathsDialog::SetPathValue(size_t item, wxString &&value)
 {
-	if (item == m_current_path_list.size())
-		m_current_path_list.push_back(std::move(value));
+	if (!value.IsEmpty())
+	{
+		// we have a value - modify it or append it if we're extending the list
+		if (item == m_current_path_list.size())
+			m_current_path_list.push_back(std::move(value));
+		else
+			m_current_path_list[item] = std::move(value);
+	}
 	else
-		m_current_path_list[item] = std::move(value);
+	{
+		// we do not have a value - delete it
+		if (item < m_current_path_list.size())
+			m_current_path_list.erase(m_current_path_list.begin() + item);
+	}
 	CurrentPathListChanged();
 }
 
@@ -260,7 +275,14 @@ void PathsDialog::SetPathValue(size_t item, wxString &&value)
 
 void PathsDialog::OnInsert()
 {
-	throw false;
+	long focused_item = m_list_view->GetFocusedItem();
+	long item_to_edit = focused_item >= 0
+		? focused_item
+		: m_list_view->GetItemCount() - 1;
+
+	m_current_path_list.insert(m_current_path_list.begin() + item_to_edit, wxEmptyString);
+	m_list_view->EditLabel(item_to_edit);
+	m_list_view->Refresh();
 }
 
 
