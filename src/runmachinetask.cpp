@@ -204,16 +204,21 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 		}
 	}
 
-	// read until the end of the stream
+	// was there an error?  if so capture it
 	wxString error_message;
 	if (status != emu_error::NONE)
 	{
+		// read until the end of the stream
 		wxString s;
 		while ((s = error.ReadLine()), !s.IsEmpty())
 		{
 			error_message += s;
 			error_message += "\r\n";
 		}
+
+		// if we were not able to collect any info, show something
+		if (error_message.IsEmpty())
+			error_message = wxString::Format("Error %d running MAME", (int)status);
 	}
 	result.m_error_message = std::move(error_message);
 
