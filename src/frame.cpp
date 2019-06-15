@@ -153,7 +153,8 @@ namespace
 		float						m_status_throttle_rate;
 		std::vector<Image>			m_status_images;
 
-		static float s_throttle_rates[];
+		static const float s_throttle_rates[];
+		static const wxString s_saved_state_wildcard_string;
 
 		void CreateMenuBar();
 		bool IsEmulationSessionActive() const;
@@ -165,7 +166,7 @@ namespace
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
 		void UpdateMenuBar();
-		wxString GetTarget();
+		void SavedStateDialog(wxString &&command, long style);
 
 		// Runtime Control
 		void Issue(const std::initializer_list<wxString> &args);
@@ -183,7 +184,9 @@ namespace
 //  MAIN IMPLEMENTATION
 //**************************************************************************
 
-float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1f };
+const float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1f };
+
+const wxString MameFrame::s_saved_state_wildcard_string = wxT("MAME Saved State Files (*.sta)|*.sta|All Files (*.*)|*.*");
 
 //-------------------------------------------------
 //  ctor
@@ -273,6 +276,10 @@ void MameFrame::CreateMenuBar()
 	wxMenu *file_menu = new wxMenu();
 	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
 	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
+	file_menu->AppendSeparator();
+	wxMenuItem *load_state_menu_item		= file_menu->Append(id++, "Load State...\tF7");
+	wxMenuItem *save_state_menu_item		= file_menu->Append(id++, "Save State...\tShift+F7");
+	file_menu->AppendSeparator();
 	wxMenu *reset_menu = new wxMenu();
 	wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
 	wxMenuItem *hard_reset_menu_item		= reset_menu->Append(id++, "Hard Reset");
@@ -313,22 +320,29 @@ void MameFrame::CreateMenuBar()
 	// we toggle the menu bar
 	m_menu_bar_accelerators = *m_menu_bar->GetAcceleratorTable();
 
+
+	// SavedStateDialog("state_load", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
 	// Bind menu item selected events
-	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");					}, hard_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();							}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);		}, pause_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);							}, exit_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);				}, increase_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);				}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);	}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();						}, images_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);			}, show_paths_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();						}, about_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();															}, stop_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);										}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { SavedStateDialog("state_load", wxFD_OPEN | wxFD_FILE_MUST_EXIST);		}, load_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { SavedStateDialog("state_save", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);	}, save_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");													}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");													}, hard_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);															}, exit_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);												}, increase_speed_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);												}, decrease_speed_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);									}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();														}, images_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);											}, show_paths_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();														}, about_menu_item->GetId());
 
 	// Bind UI update events
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, stop_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);					}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, load_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, increase_speed_menu_item->GetId());
@@ -537,6 +551,28 @@ void MameFrame::OnMenuStop()
 		"All data in emulated RAM will be lost";
 	if (MessageBox(message, wxYES_NO | wxICON_QUESTION) == wxYES)
 		Issue("exit");
+}
+
+
+//-------------------------------------------------
+//  SavedStateDialog
+//-------------------------------------------------
+
+void MameFrame::SavedStateDialog(wxString &&command, long style)
+{
+	Pauser pauser(*this);
+
+	wxFileDialog dialog(
+		this,
+		wxFileSelectorPromptStr,
+		wxEmptyString,
+		wxEmptyString,
+		s_saved_state_wildcard_string,
+		style);
+	if (dialog.ShowModal() != wxID_OK)
+		return;
+
+	Issue({ std::move(command), dialog.GetPath() });
 }
 
 
