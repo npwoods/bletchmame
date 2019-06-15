@@ -12,6 +12,7 @@
 
 #include <wx/listctrl.h>
 #include <wx/textfile.h>
+#include <wx/filename.h>
 
 #include "frame.h"
 #include "client.h"
@@ -88,6 +89,9 @@ namespace
 		void OnSize(wxSizeEvent &event);
 		void OnClose(wxCloseEvent &event);
 		void OnMenuStop();
+		void OnMenuStateLoad();
+		void OnMenuStateSave();
+		void OnMenuSnapshotSave();
 		void OnMenuImages();
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
@@ -173,9 +177,7 @@ namespace
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
 		void UpdateMenuBar();
-		void LoadFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string);
-		void SaveFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string);
-		void FileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string, long style);
+		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 
 		// Runtime Control
 		void Issue(const std::vector<wxString> &args);
@@ -335,9 +337,9 @@ void MameFrame::CreateMenuBar()
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();															}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);										}, pause_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { LoadFileDialogCommand({ "state_load" }, s_wc_saved_state);			}, load_state_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { SaveFileDialogCommand({ "state_save" }, s_wc_saved_state);			}, save_state_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { SaveFileDialogCommand({ "save_snapshot", "0" }, s_wc_save_snapshot);	}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();													}, load_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();													}, save_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();													}, save_screenshot_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");													}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");													}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);															}, exit_menu_item->GetId());
@@ -566,6 +568,51 @@ void MameFrame::OnMenuStop()
 
 
 //-------------------------------------------------
+//  OnMenuStateLoad
+//-------------------------------------------------
+
+void MameFrame::OnMenuStateLoad()
+{
+	FileDialogCommand(
+		{ "state_load" },
+		Preferences::machine_path_type::last_save_state,
+		true,
+		s_wc_saved_state,
+		file_dialog_type::LOAD);
+}
+
+
+//-------------------------------------------------
+//  OnMenuStateSave
+//-------------------------------------------------
+
+void MameFrame::OnMenuStateSave()
+{
+	FileDialogCommand(
+		{ "state_save" },
+		Preferences::machine_path_type::last_save_state,
+		true,
+		s_wc_saved_state,
+		file_dialog_type::SAVE);
+}
+
+
+//-------------------------------------------------
+//  OnMenuSnapshotSave
+//-------------------------------------------------
+
+void MameFrame::OnMenuSnapshotSave()
+{
+	FileDialogCommand(
+		{ "save_snapshot", "0" },
+		Preferences::machine_path_type::working_directory,
+		false,
+		s_wc_save_snapshot,
+		file_dialog_type::SAVE);
+}
+
+
+//-------------------------------------------------
 //  OnMenuImages
 //-------------------------------------------------
 
@@ -727,45 +774,62 @@ void MameFrame::OnSpecifyMamePath()
 
 
 //-------------------------------------------------
-//  LoadFileDialogCommand
-//-------------------------------------------------
-
-void MameFrame::LoadFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string)
-{
-	FileDialogCommand(std::move(commands), wildcard_string, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-}
-
-
-//-------------------------------------------------
-//  SaveFileDialogCommand
-//-------------------------------------------------
-
-void MameFrame::SaveFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string)
-{
-	FileDialogCommand(std::move(commands), wildcard_string, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-}
-
-
-//-------------------------------------------------
 //  FileDialogCommand
 //-------------------------------------------------
 
-void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string, long style)
+void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, MameFrame::file_dialog_type dlgtype)
 {
+	// determine the style
+	long style;
+	switch (dlgtype)
+	{
+	case MameFrame::file_dialog_type::LOAD:
+		style = wxFD_OPEN | wxFD_FILE_MUST_EXIST;
+		break;
+	case MameFrame::file_dialog_type::SAVE:
+		style = wxFD_SAVE | wxFD_OVERWRITE_PROMPT;
+		break;
+	default:
+		throw false;
+	}
+
+	// prepare the default dir/file
+	const wxString &running_machine_name(GetRunningMachine().m_name);
+	const wxString &default_path(m_prefs.GetMachinePath(running_machine_name, path_type));
+	wxString default_dir;
+	wxString default_file;
+	wxString default_ext;
+	wxFileName::SplitPath(default_path, &default_dir, &default_file, &default_ext);
+	if (!default_ext.IsEmpty())
+		default_file += "." + default_ext;
+
 	// show the dialog
 	Pauser pauser(*this);
 	wxFileDialog dialog(
 		this,
 		wxFileSelectorPromptStr,
-		wxEmptyString,
-		wxEmptyString,
+		default_dir,
+		default_file,
 		wildcard_string,
 		style);
 	if (dialog.ShowModal() != wxID_OK)
 		return;
+	wxString path = dialog.GetPath();
 
-	// append the resulting path
-	commands.push_back(dialog.GetPath());
+	// append the resulting path to the command list
+	commands.push_back(path);
+
+	// put back the default
+	if (path_is_file)
+	{
+		m_prefs.SetMachinePath(running_machine_name, path_type, std::move(path));
+	}
+	else
+	{
+		wxString new_dir;
+		wxFileName::SplitPath(path, &new_dir, nullptr, nullptr);
+		m_prefs.SetMachinePath(running_machine_name, path_type, std::move(new_dir));
+	}
 
 	// finally issue the actual commands
 	Issue(commands);
@@ -1095,7 +1159,7 @@ void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&func)
 
 const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 {
-	return m_host.m_prefs.GetWorkingDirectory(GetMachineName());
+	return m_host.m_prefs.GetMachinePath(GetMachineName(), Preferences::machine_path_type::working_directory);
 }
 
 
@@ -1105,7 +1169,7 @@ const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 
 void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 {
-	m_host.m_prefs.SetWorkingDirectory(GetMachineName(), std::move(dir));
+	m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::working_directory, std::move(dir));
 }
 
 

@@ -78,26 +78,46 @@ Preferences::Preferences()
 
 
 //-------------------------------------------------
-//  GetWorkingDirectory
+//  GetMachinePath
 //-------------------------------------------------
 
-const wxString &Preferences::GetWorkingDirectory(const wxString &machine_name) const
+const wxString &Preferences::GetMachinePath(const wxString &machine_name, machine_path_type path_type) const
 {
+	// find the machine path entry
 	static const wxString empty_string;
-	auto iter = m_working_directories.find(machine_name);
-	return iter != m_working_directories.end()
-		? iter->second
-		: empty_string;
+	auto iter = m_machine_paths.find(machine_name);
+	if (iter == m_machine_paths.end())
+		return empty_string;
+
+	switch (path_type)
+	{
+	case machine_path_type::working_directory:
+		return iter->second.m_working_directory;
+	case machine_path_type::last_save_state:
+		return iter->second.m_last_save_state;
+	default:
+		throw false;
+	}
 }
 
 
 //-------------------------------------------------
-//  SetWorkingDirectory
+//  SetMachinePath
 //-------------------------------------------------
 
-void Preferences::SetWorkingDirectory(const wxString &machine_name, wxString &&dir)
+void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path)
 {
-	m_working_directories[machine_name] = std::move(dir);
+	switch (path_type)
+	{
+	case machine_path_type::working_directory:
+		m_machine_paths[machine_name].m_working_directory = std::move(path);
+		break;
+	case machine_path_type::last_save_state:
+		m_machine_paths[machine_name].m_last_save_state = std::move(path);
+		break;
+	default:
+		throw false;
+	}
 }
 
 
@@ -195,9 +215,11 @@ bool Preferences::Load(wxInputStream &input)
 		wxString name;
 		if (attributes.Get("name", name))
 		{
-			wxString dir;
-			if (attributes.Get("working_directory", dir))
-				SetWorkingDirectory(name, std::move(dir));
+			wxString path;
+			if (attributes.Get("working_directory", path))
+				SetMachinePath(name, machine_path_type::working_directory, std::move(path));
+			if (attributes.Get("last_save_state", path))
+				SetMachinePath(name, machine_path_type::last_save_state, std::move(path));
 		}
 	});
 	bool success = xml.Parse(input);
@@ -252,11 +274,17 @@ void Preferences::Save(std::ostream &output)
 	output << std::endl;
 
 	output << "\t<!-- Machines -->" << std::endl;
-	for (const auto &pair : m_working_directories)
+	for (const auto &pair : m_machine_paths)
 	{
-		if (!pair.first.IsEmpty() && !pair.second.IsEmpty())
+		if (!pair.first.IsEmpty() && (!pair.second.m_working_directory.IsEmpty() || !pair.second.m_last_save_state.IsEmpty()))
 		{
-			output << "\t<machine name=\"" << XmlParser::Escape(pair.first) << "\" working_directory=\"" << XmlParser::Escape(pair.second) << "\"/>" << std::endl;
+			output << "\t<machine name=\"" << XmlParser::Escape(pair.first) << "\"";
+			
+			if (!pair.second.m_working_directory.IsEmpty())
+				output << " working_directory=\"" << XmlParser::Escape(pair.second.m_working_directory) << "\"";
+			if (!pair.second.m_last_save_state.IsEmpty())
+				output << " last_save_state=\"" << XmlParser::Escape(pair.second.m_last_save_state) << "\"";
+			output << "/>" << std::endl;
 		}
 	}
 	output << std::endl;
@@ -321,7 +349,7 @@ static void test()
 			"<column id=\"year\" width=\"50\" order=\"2\" />"
 			"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
 
-			"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" />"
+			"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" last_save_state=\"C:\\MyLastState.sta\" />"
 		"</preferences>";
 
 	wxMemoryInputStream input(xml, strlen(xml));
@@ -334,8 +362,10 @@ static void test()
 	assert(prefs.GetPath(Preferences::path_type::config)			== "C:\\cfg");
 	assert(prefs.GetPath(Preferences::path_type::nvram)				== "C:\\nvram");
 
-	assert(prefs.GetWorkingDirectory("echo")						== "C:\\MyEchoGames");
-	assert(prefs.GetWorkingDirectory("foxtrot")						== "");
+	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::working_directory)		== "C:\\MyEchoGames");
+	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::last_save_state)		== "C:\\MyLastState.sta");
+	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::working_directory)	== "");
+	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::last_save_state)		== "");
 }
 
 

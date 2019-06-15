@@ -31,6 +31,14 @@ public:
 		count
 	};
 
+	enum class machine_path_type
+	{
+		working_directory,
+		last_save_state,
+
+		count
+	};
+
 	static const int COLUMN_COUNT = 4;
 
 	Preferences();
@@ -60,8 +68,8 @@ public:
 	bool GetMenuBarShown() const							{ return m_menu_bar_shown; }
 	void SetMenuBarShown(bool menu_bar_shown)				{ m_menu_bar_shown = menu_bar_shown; }
 
-	const wxString &GetWorkingDirectory(const wxString &machine_name) const;
-	void SetWorkingDirectory(const wxString &machine_name, wxString &&dir);
+	const wxString &GetMachinePath(const wxString &machine_name, machine_path_type path_type) const;
+	void SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path);
 
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
 
@@ -70,12 +78,18 @@ public:
 	void Save();
 
 private:
+	struct MachinePath
+	{
+		wxString	m_working_directory;
+		wxString	m_last_save_state;
+	};
+
 	std::array<wxString, static_cast<size_t>(path_type::count)>			m_paths;
 	wxString															m_mame_extra_arguments;
 	wxSize																m_size;
 	std::array<int, COLUMN_COUNT>										m_column_widths;
 	std::array<int, COLUMN_COUNT>										m_column_order;
-	std::map<wxString, wxString>										m_working_directories;
+	std::map<wxString, MachinePath>										m_machine_paths;
 	wxString															m_selected_machine;
 	bool																m_menu_bar_shown;
 
