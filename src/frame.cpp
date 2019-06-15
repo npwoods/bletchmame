@@ -129,6 +129,7 @@ namespace
 		wxAcceleratorTable			m_menu_bar_accelerators;
 		wxTimer						m_ping_timer;
 		bool						m_pinging;
+		bool						m_self_paused;
 		std::function<void()>		m_on_images_changed;
 
 		// information retrieved by -listxml
@@ -177,6 +178,7 @@ namespace
 		void UpdateMachineList();
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
+		void UpdateTitleBar();
 		void UpdateMenuBar();
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 
@@ -213,6 +215,7 @@ MameFrame::MameFrame()
 	, m_menu_bar(nullptr)
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
+	, m_self_paused(false)
 {
 	// set the frame icon
 	SetIcon(wxICON(bletchmame));
@@ -449,6 +452,7 @@ void MameFrame::Run(int machine_index)
 		*this);
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
+	m_self_paused = true;
 
 	// wait for first ping
 	m_pinging = true;
@@ -477,6 +481,7 @@ void MameFrame::Run(int machine_index)
 
 	// unpause
 	ChangePaused(false);
+	m_self_paused = false;
 }
 
 
@@ -734,8 +739,6 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 {
 	StatusUpdate &payload(event.Payload());
 
-	if (payload.m_paused_specified)
-		m_status_paused = payload.m_paused;
 	if (payload.m_frameskip_specified)
 		m_status_frameskip = payload.m_frameskip;
 	if (payload.m_speed_text_specified)
@@ -744,6 +747,13 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttled = payload.m_throttled;
 	if (payload.m_throttle_rate_specified)
 		m_status_throttle_rate = payload.m_throttle_rate;
+
+	// pause changes can update the title bar
+	if (payload.m_paused_specified && m_status_paused != payload.m_paused)
+	{
+		m_status_paused = payload.m_paused;
+		UpdateTitleBar();
+	}
 
 	// only read the data in if image data is specified, and has changed
 	if (payload.m_images_specified && !std::equal(
@@ -947,13 +957,28 @@ void MameFrame::UpdateEmulationSession()
 	else
 		m_ping_timer.Stop();
 
-	// ...and set the title bar appropriately
-	wxString title_text = wxTheApp->GetAppName();
-	if (is_active)
-		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().m_description;
-	SetLabel(title_text);
-
+	// ...and cascade other updates
+	UpdateTitleBar();
 	UpdateMenuBar();
+}
+
+
+//-------------------------------------------------
+//  UpdateTitleBar
+//-------------------------------------------------
+
+void MameFrame::UpdateTitleBar()
+{
+	wxString title_text = wxTheApp->GetAppName();
+	if (IsEmulationSessionActive())
+	{
+		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().m_description;
+
+		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
+		if (m_status_paused && !m_self_paused)
+			title_text += " PAUSED";
+	}
+	SetLabel(title_text);
 }
 
 
@@ -1095,7 +1120,10 @@ MameFrame::Pauser::Pauser(MameFrame &host)
 	// if we're running and not pause, pause while the message box is up
 	m_is_running = m_host.IsEmulationSessionActive() && !m_host.m_status_paused;
 	if (m_is_running)
+	{
 		m_host.ChangePaused(true);
+		m_host.m_self_paused = true;
+	}
 }
 
 
@@ -1106,7 +1134,10 @@ MameFrame::Pauser::Pauser(MameFrame &host)
 MameFrame::Pauser::~Pauser()
 {
 	if (m_is_running)
+	{
 		m_host.ChangePaused(false);
+		m_host.m_self_paused = false;
+	}
 }
 
 
