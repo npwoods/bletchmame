@@ -315,6 +315,7 @@ void MameFrame::CreateMenuBar()
 
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");					}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");					}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();							}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);		}, pause_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);							}, exit_menu_item->GetId());
