@@ -84,26 +84,6 @@ namespace
 		MameFrame();
 		~MameFrame();
 
-		// event handlers (these functions should _not_ be virtual)
-		void OnKeyDown(wxKeyEvent &event);
-		void OnSize(wxSizeEvent &event);
-		void OnClose(wxCloseEvent &event);
-		void OnMenuStop();
-		void OnMenuStateLoad();
-		void OnMenuStateSave();
-		void OnMenuSnapshotSave();
-		void OnMenuImages();
-		void OnMenuAbout();
-		void OnListItemSelected(wxListEvent &event);
-		void OnListItemActivated(wxListEvent &event);
-		void OnListColumnResized(wxListEvent &event);
-
-		// Task notifications
-		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
-		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
-		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
-		void OnSpecifyMamePath();
-
 	private:
 		enum class file_dialog_type
 		{
@@ -167,6 +147,27 @@ namespace
 		static const wxString s_wc_saved_state;
 		static const wxString s_wc_save_snapshot;
 
+		// event handlers (these functions should _not_ be virtual)
+		void OnKeyDown(wxKeyEvent &event);
+		void OnSize(wxSizeEvent &event);
+		void OnClose(wxCloseEvent &event);
+		void OnMenuStop();
+		void OnMenuStateLoad();
+		void OnMenuStateSave();
+		void OnMenuSnapshotSave();
+		void OnMenuImages();
+		void OnMenuAbout();
+		void OnListItemSelected(wxListEvent &event);
+		void OnListItemActivated(wxListEvent &event);
+		void OnListColumnResized(wxListEvent &event);
+
+		// task notifications
+		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
+		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
+		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
+		void OnSpecifyMamePath();
+
+		// miscellaneous
 		void CreateMenuBar();
 		bool IsEmulationSessionActive() const;
 		const Machine &GetRunningMachine() const;
@@ -179,7 +180,7 @@ namespace
 		void UpdateMenuBar();
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 
-		// Runtime Control
+		// runtime Control
 		void Issue(const std::vector<wxString> &args);
 		void Issue(const std::initializer_list<wxString> &args);
 		void Issue(const char *command);
