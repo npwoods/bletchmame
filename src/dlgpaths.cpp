@@ -195,7 +195,10 @@ bool PathsDialog::BrowseForPath(size_t item)
 		return false;
 
 	// show the file dialog
-	wxString path = show_specify_single_path_dialog(*this, GetCurrentPath(), m_current_path_list[item]);
+	wxString path = show_specify_single_path_dialog(
+		*this,
+		GetCurrentPath(),
+		item < m_current_path_list.size() ? m_current_path_list[item] : "");
 	if (path.IsEmpty())
 		return false;
 
@@ -251,6 +254,10 @@ void PathsDialog::OnListEndLabelEdit(long item)
 
 void PathsDialog::SetPathValue(size_t item, wxString &&value)
 {
+	// sanity checks, and calling with 'item == m_current_path_list.size()' appends
+	assert(item >= 0);
+	assert(item <= m_current_path_list.size());
+
 	if (!value.IsEmpty())
 	{
 		// we have a value - modify it or append it if we're extending the list
