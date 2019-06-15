@@ -34,7 +34,7 @@ wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 //  BuildCommand
 //-------------------------------------------------
 
-wxString BuildCommand(const std::initializer_list<wxString> &args)
+wxString BuildCommand(const std::vector<wxString> &args)
 {
 	wxString command;
 	for (const wxString &arg : args)
@@ -132,7 +132,7 @@ void RunMachineTask::OnChildProcessKilled()
 //  Issue
 //-------------------------------------------------
 
-void RunMachineTask::Issue(const std::initializer_list<wxString> &args)
+void RunMachineTask::Issue(const std::vector<wxString> &args)
 {
 	wxString command = BuildCommand(args);
 	InternalPost(Message::type::COMMAND, std::move(command));

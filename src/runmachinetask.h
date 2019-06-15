@@ -80,7 +80,7 @@ class RunMachineTask : public Task
 public:
 	RunMachineTask(const Machine &machine, wxWindow &target_window);
 
-	void Issue(const std::initializer_list<wxString> &args);
+	void Issue(const std::vector<wxString> &args);
 	const Machine &GetMachine() const { return m_machine; }
 
 protected:

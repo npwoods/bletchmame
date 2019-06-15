@@ -101,6 +101,12 @@ namespace
 		void OnSpecifyMamePath();
 
 	private:
+		enum class file_dialog_type
+		{
+			LOAD,
+			SAVE
+		};
+
 		class Pauser
 		{
 		public:
@@ -154,7 +160,8 @@ namespace
 		std::vector<Image>			m_status_images;
 
 		static const float s_throttle_rates[];
-		static const wxString s_saved_state_wildcard_string;
+		static const wxString s_wc_saved_state;
+		static const wxString s_wc_save_snapshot;
 
 		void CreateMenuBar();
 		bool IsEmulationSessionActive() const;
@@ -166,9 +173,12 @@ namespace
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
 		void UpdateMenuBar();
-		void SavedStateDialog(wxString &&command, long style);
+		void LoadFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string);
+		void SaveFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string);
+		void FileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string, long style);
 
 		// Runtime Control
+		void Issue(const std::vector<wxString> &args);
 		void Issue(const std::initializer_list<wxString> &args);
 		void Issue(const char *command);
 		void InvokePing();
@@ -186,7 +196,8 @@ namespace
 
 const float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1f };
 
-const wxString MameFrame::s_saved_state_wildcard_string = wxT("MAME Saved State Files (*.sta)|*.sta|All Files (*.*)|*.*");
+const wxString MameFrame::s_wc_saved_state = wxT("MAME Saved State Files (*.sta)|*.sta|All Files (*.*)|*.*");
+const wxString MameFrame::s_wc_save_snapshot = wxT("PNG Files (*.png)|*.png|All Files (*.*)|*.*");
 
 //-------------------------------------------------
 //  ctor
@@ -279,6 +290,7 @@ void MameFrame::CreateMenuBar()
 	file_menu->AppendSeparator();
 	wxMenuItem *load_state_menu_item		= file_menu->Append(id++, "Load State...\tF7");
 	wxMenuItem *save_state_menu_item		= file_menu->Append(id++, "Save State...\tShift+F7");
+	wxMenuItem *save_screenshot_menu_item   = file_menu->Append(id++, "Save Screenshot...\tF12");
 	file_menu->AppendSeparator();
 	wxMenu *reset_menu = new wxMenu();
 	wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
@@ -320,14 +332,12 @@ void MameFrame::CreateMenuBar()
 	// we toggle the menu bar
 	m_menu_bar_accelerators = *m_menu_bar->GetAcceleratorTable();
 
-
-	// SavedStateDialog("state_load", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();															}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);										}, pause_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { SavedStateDialog("state_load", wxFD_OPEN | wxFD_FILE_MUST_EXIST);		}, load_state_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { SavedStateDialog("state_save", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);	}, save_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { LoadFileDialogCommand({ "state_load" }, s_wc_saved_state);			}, load_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { SaveFileDialogCommand({ "state_save" }, s_wc_saved_state);			}, save_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { SaveFileDialogCommand({ "save_snapshot", "0" }, s_wc_save_snapshot);	}, save_screenshot_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");													}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");													}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);															}, exit_menu_item->GetId());
@@ -343,6 +353,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);					}, pause_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, load_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, save_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, save_screenshot_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, increase_speed_menu_item->GetId());
@@ -555,28 +566,6 @@ void MameFrame::OnMenuStop()
 
 
 //-------------------------------------------------
-//  SavedStateDialog
-//-------------------------------------------------
-
-void MameFrame::SavedStateDialog(wxString &&command, long style)
-{
-	Pauser pauser(*this);
-
-	wxFileDialog dialog(
-		this,
-		wxFileSelectorPromptStr,
-		wxEmptyString,
-		wxEmptyString,
-		s_saved_state_wildcard_string,
-		style);
-	if (dialog.ShowModal() != wxID_OK)
-		return;
-
-	Issue({ std::move(command), dialog.GetPath() });
-}
-
-
-//-------------------------------------------------
 //  OnMenuImages
 //-------------------------------------------------
 
@@ -738,6 +727,52 @@ void MameFrame::OnSpecifyMamePath()
 
 
 //-------------------------------------------------
+//  LoadFileDialogCommand
+//-------------------------------------------------
+
+void MameFrame::LoadFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string)
+{
+	FileDialogCommand(std::move(commands), wildcard_string, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+}
+
+
+//-------------------------------------------------
+//  SaveFileDialogCommand
+//-------------------------------------------------
+
+void MameFrame::SaveFileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string)
+{
+	FileDialogCommand(std::move(commands), wildcard_string, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+}
+
+
+//-------------------------------------------------
+//  FileDialogCommand
+//-------------------------------------------------
+
+void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, const wxString &wildcard_string, long style)
+{
+	// show the dialog
+	Pauser pauser(*this);
+	wxFileDialog dialog(
+		this,
+		wxFileSelectorPromptStr,
+		wxEmptyString,
+		wxEmptyString,
+		wildcard_string,
+		style);
+	if (dialog.ShowModal() != wxID_OK)
+		return;
+
+	// append the resulting path
+	commands.push_back(dialog.GetPath());
+
+	// finally issue the actual commands
+	Issue(commands);
+}
+
+
+//-------------------------------------------------
 //  OnListItemSelected
 //-------------------------------------------------
 
@@ -889,13 +924,19 @@ void MameFrame::UpdateMenuBar()
 //  Issue
 //-------------------------------------------------
 
-void MameFrame::Issue(const std::initializer_list<wxString> &args)
+void MameFrame::Issue(const std::vector<wxString> &args)
 {
 	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
 	if (!task)
 		return;
 
 	task->Issue(args);
+}
+
+
+void MameFrame::Issue(const std::initializer_list<wxString> &args)
+{
+	Issue(std::vector<wxString>(args));
 }
 
 
