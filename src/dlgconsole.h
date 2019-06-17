@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlginvoke.h
+    dlgconsole.h
 
     Arbitrary command invocation dialog (essentially a development feature)
 
@@ -8,20 +8,20 @@
 
 #pragma once
 
-#ifndef DLGINVOKE_H
-#define DLGINVOKE_H
+#ifndef DLGCONSOLE_H
+#define DLGCONSOLE_H
 
 #include <wx/window.h>
 #include "client.h"
 
 struct Chatter;
 
-class IInvokeArbitraryCommandDialogHost
+class IConsoleDialogHost
 {
 public:
 	virtual void SetChatterListener(std::function<void(Chatter &&chatter)> &&func) = 0;
 };
 
-bool show_invoke_arbitrary_command_dialog(wxWindow &parent, MameClient &client, IInvokeArbitraryCommandDialogHost &host);
+bool show_console_dialog(wxWindow &parent, MameClient &client, IConsoleDialogHost &host);
 
-#endif // DLGINVOKE_H
+#endif // DLGCONSOLE_H

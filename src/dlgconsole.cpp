@@ -1,8 +1,8 @@
 /***************************************************************************
 
-    dlginvoke.cpp
+    dlgconsole.cpp
 
-    Arbitrary command invocation dialog (essentially a development feature)
+    Arbitrary command console dialog (essentially a development feature)
 
 ***************************************************************************/
 
@@ -12,7 +12,7 @@
 #include <wx/sizer.h>
 #include <wx/checkbox.h>
 
-#include "dlginvoke.h"
+#include "dlgconsole.h"
 #include "runmachinetask.h"
 
 
@@ -22,14 +22,14 @@
 
 namespace
 {
-	class InvokeArbitraryCommandDialog : public wxDialog
+	class ConsoleDialog : public wxDialog
 	{
 	public:
-		InvokeArbitraryCommandDialog(wxWindow &parent, std::shared_ptr<RunMachineTask> &&task, IInvokeArbitraryCommandDialogHost &host);
-		~InvokeArbitraryCommandDialog();
+		ConsoleDialog(wxWindow &parent, std::shared_ptr<RunMachineTask> &&task, IConsoleDialogHost &host);
+		~ConsoleDialog();
 
 	private:
-		IInvokeArbitraryCommandDialogHost & m_host;
+		IConsoleDialogHost & m_host;
 		std::shared_ptr<RunMachineTask>		m_task;
 		wxTextCtrl *						m_display_control;
 		wxTextCtrl *						m_input_control;
@@ -53,8 +53,8 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-InvokeArbitraryCommandDialog::InvokeArbitraryCommandDialog(wxWindow &parent, std::shared_ptr<RunMachineTask> &&task, IInvokeArbitraryCommandDialogHost &host)
-	: wxDialog(&parent, wxID_ANY, "Invoke Arbitrary Command", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+ConsoleDialog::ConsoleDialog(wxWindow &parent, std::shared_ptr<RunMachineTask> &&task, IConsoleDialogHost &host)
+	: wxDialog(&parent, wxID_ANY, "Console", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_host(host)
 	, m_task(std::move(task))
 	, m_display_control(nullptr)
@@ -99,7 +99,7 @@ InvokeArbitraryCommandDialog::InvokeArbitraryCommandDialog(wxWindow &parent, std
 //  dtor
 //-------------------------------------------------
 
-InvokeArbitraryCommandDialog::~InvokeArbitraryCommandDialog()
+ConsoleDialog::~ConsoleDialog()
 {
 	m_task->SetChatterEnabled(false);
 	m_host.SetChatterListener(nullptr);
@@ -111,7 +111,7 @@ InvokeArbitraryCommandDialog::~InvokeArbitraryCommandDialog()
 //-------------------------------------------------
 
 template<typename TControl, typename... TArgs>
-TControl &InvokeArbitraryCommandDialog::AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args)
+TControl &ConsoleDialog::AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args)
 {
 	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
 	sizer->Add(control, proportion, flags, 4);
@@ -123,10 +123,16 @@ TControl &InvokeArbitraryCommandDialog::AddControl(std::unique_ptr<wxBoxSizer> &
 //  OnInvoke
 //-------------------------------------------------
 
-void InvokeArbitraryCommandDialog::OnInvoke()
+void ConsoleDialog::OnInvoke()
 {
-	// issue the command
+	// get the command line, and ensure that it is not blank or whitespace
 	wxString command_line = m_input_control->GetValue();
+
+	// if this just white space, bail
+	if (std::find_if(command_line.begin(), command_line.end(), [](auto ch) { return ch != ' '; }) == command_line.end())
+		return;
+
+	// issue the command
 	m_task->IssueFullCommandLine(command_line);
 
 	// and clear
@@ -138,7 +144,7 @@ void InvokeArbitraryCommandDialog::OnInvoke()
 //  OnChatter
 //-------------------------------------------------
 
-void InvokeArbitraryCommandDialog::OnChatter(Chatter &&chatter)
+void ConsoleDialog::OnChatter(Chatter &&chatter)
 {
 	// remove line endings
 	while (chatter.m_text.EndsWith("\r") || chatter.m_text.EndsWith("\n"))
@@ -170,7 +176,7 @@ void InvokeArbitraryCommandDialog::OnChatter(Chatter &&chatter)
 //  IsChatterPing
 //-------------------------------------------------
 
-bool InvokeArbitraryCommandDialog::IsChatterPing(const Chatter &chatter)
+bool ConsoleDialog::IsChatterPing(const Chatter &chatter)
 {
 	// hack, but good enough for now
 	return (chatter.m_type == Chatter::chatter_type::COMMAND_LINE && chatter.m_text == "ping")
@@ -179,11 +185,11 @@ bool InvokeArbitraryCommandDialog::IsChatterPing(const Chatter &chatter)
 
 
 //-------------------------------------------------
-//  show_invoke_arbitrary_command_dialog
+//  show_console_dialog
 //-------------------------------------------------
 
-bool show_invoke_arbitrary_command_dialog(wxWindow &parent, MameClient &client, IInvokeArbitraryCommandDialogHost &host)
+bool show_console_dialog(wxWindow &parent, MameClient &client, IConsoleDialogHost &host)
 {
-	InvokeArbitraryCommandDialog dialog(parent, client.GetCurrentTask<RunMachineTask>(), host);
+	ConsoleDialog dialog(parent, client.GetCurrentTask<RunMachineTask>(), host);
 	return dialog.ShowModal() == wxID_OK;
 }

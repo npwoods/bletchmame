@@ -18,7 +18,7 @@ OBJECTFILES=\
 	$(OBJ)/app.o				\
 	$(OBJ)/client.o				\
 	$(OBJ)/dlgimages.o			\
-	$(OBJ)/dlginvoke.o			\
+	$(OBJ)/dlgconsole.o			\
 	$(OBJ)/dlgpaths.o			\
 	$(OBJ)/frame.o				\
 	$(OBJ)/job.o				\

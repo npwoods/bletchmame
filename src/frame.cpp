@@ -17,7 +17,7 @@
 #include "frame.h"
 #include "client.h"
 #include "dlgimages.h"
-#include "dlginvoke.h"
+#include "dlgconsole.h"
 #include "dlgpaths.h"
 #include "prefs.h"
 #include "listxmltask.h"
@@ -78,7 +78,7 @@ namespace
 		int m_i;
 	};
 
-	class MameFrame : public wxFrame, private IInvokeArbitraryCommandDialogHost
+	class MameFrame : public wxFrame, private IConsoleDialogHost
 	{
 	public:
 		// ctor(s)
@@ -295,12 +295,6 @@ void MameFrame::CreateMenuBar()
 {
 	int id = ID_LAST;
 
-#ifdef _DEBUG
-	const bool has_invoke_command = true;
-#else
-	const bool has_invoke_command = false;
-#endif
-
 	// create the "File" menu
 	wxMenu *file_menu = new wxMenu();
 	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
@@ -327,9 +321,8 @@ void MameFrame::CreateMenuBar()
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 	wxMenuItem *images_menu_item			= options_menu->Append(id++, "Images...", wxEmptyString, wxITEM_CHECK);
-	wxMenuItem *invoke_menu_item			= has_invoke_command
-											? options_menu->Append(id++, "Invoke Arbitrary Command...")
-											: nullptr;
+	options_menu->AppendSeparator();
+	wxMenuItem *console_menu_item			= options_menu->Append(id++, "Console...");
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
@@ -366,6 +359,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);												}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);									}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();														}, images_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);							}, console_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);											}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();														}, about_menu_item->GetId());
 
@@ -381,6 +375,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);				}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, false, !m_status_images.empty());	}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, console_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -403,13 +398,6 @@ void MameFrame::CreateMenuBar()
 
 		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });							}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
-	}
-
-	// invoke arbitrary command is optional, behave appropriately
-	if (invoke_menu_item)
-	{
-		Bind(wxEVT_MENU,		[this](auto &)		{ show_invoke_arbitrary_command_dialog(*this, m_client, *this);	}, invoke_menu_item->GetId());
-		Bind(wxEVT_UPDATE_UI,	[this](auto &event)	{ OnEmuMenuUpdateUI(event);										}, invoke_menu_item->GetId());
 	}
 }
 
