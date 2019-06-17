@@ -94,12 +94,13 @@ namespace
 		class Pauser
 		{
 		public:
-			Pauser(MameFrame &host);
+			Pauser(MameFrame &host, bool actually_pause = true);
 			~Pauser();
 
 		private:
-			MameFrame & m_host;
-			bool		m_is_running;
+			MameFrame &		m_host;
+			const Pauser *	m_last_pauser;
+			bool			m_is_running;
 		};
 
 		class ImagesHost : public IImagesHost
@@ -129,7 +130,7 @@ namespace
 		wxAcceleratorTable			m_menu_bar_accelerators;
 		wxTimer						m_ping_timer;
 		bool						m_pinging;
-		bool						m_self_paused;
+		const Pauser *				m_current_pauser;
 		std::function<void()>		m_on_images_changed;
 
 		// information retrieved by -listxml
@@ -215,7 +216,7 @@ MameFrame::MameFrame()
 	, m_menu_bar(nullptr)
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
-	, m_self_paused(false)
+	, m_current_pauser(nullptr)
 {
 	// set the frame icon
 	SetIcon(wxICON(bletchmame));
@@ -446,13 +447,15 @@ void MameFrame::Run(int machine_index)
 		}
 	}
 
+	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
+	Pauser fake_pauser(*this, false);
+
 	// run the emulation
 	Task::ptr task = std::make_unique<RunMachineTask>(
 		m_machines[machine_index],
 		*this);
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
-	m_self_paused = true;
 
 	// wait for first ping
 	m_pinging = true;
@@ -481,7 +484,6 @@ void MameFrame::Run(int machine_index)
 
 	// unpause
 	ChangePaused(false);
-	m_self_paused = false;
 }
 
 
@@ -975,7 +977,7 @@ void MameFrame::UpdateTitleBar()
 		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().m_description;
 
 		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
-		if (m_status_paused && !m_self_paused)
+		if (m_status_paused && !m_current_pauser)
 			title_text += " PAUSED";
 	}
 	SetLabel(title_text);
@@ -1114,16 +1116,17 @@ void MameFrame::ChangeThrottleRate(int adjustment)
 //  Pauser ctor
 //-------------------------------------------------
 
-MameFrame::Pauser::Pauser(MameFrame &host)
+MameFrame::Pauser::Pauser(MameFrame &host, bool actually_pause)
 	: m_host(host)
+	, m_last_pauser(host.m_current_pauser)
 {
 	// if we're running and not pause, pause while the message box is up
-	m_is_running = m_host.IsEmulationSessionActive() && !m_host.m_status_paused;
+	m_is_running = actually_pause && m_host.IsEmulationSessionActive() && !m_host.m_status_paused;
 	if (m_is_running)
-	{
 		m_host.ChangePaused(true);
-		m_host.m_self_paused = true;
-	}
+
+	// track the chain of pausers
+	m_host.m_current_pauser = this;
 }
 
 
@@ -1134,10 +1137,8 @@ MameFrame::Pauser::Pauser(MameFrame &host)
 MameFrame::Pauser::~Pauser()
 {
 	if (m_is_running)
-	{
 		m_host.ChangePaused(false);
-		m_host.m_self_paused = false;
-	}
+	m_host.m_current_pauser = m_last_pauser;
 }
 
 
