@@ -14,6 +14,14 @@
 #include <wx/window.h>
 #include "client.h"
 
-bool show_invoke_arbitrary_command_dialog(wxWindow &parent, MameClient &client);
+struct Chatter;
+
+class IInvokeArbitraryCommandDialogHost
+{
+public:
+	virtual void SetChatterListener(std::function<void(Chatter &&chatter)> &&func) = 0;
+};
+
+bool show_invoke_arbitrary_command_dialog(wxWindow &parent, MameClient &client, IInvokeArbitraryCommandDialogHost &host);
 
 #endif // DLGINVOKE_H

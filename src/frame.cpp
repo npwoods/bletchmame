@@ -78,7 +78,7 @@ namespace
 		int m_i;
 	};
 
-	class MameFrame : public wxFrame
+	class MameFrame : public wxFrame, private IInvokeArbitraryCommandDialogHost
 	{
 	public:
 		// ctor(s)
@@ -124,27 +124,28 @@ namespace
 			const wxString &GetMachineName() const;
 		};
 
-		MameClient                  m_client;
-		Preferences                 m_prefs;
-		VirtualListView *           m_list_view;
-		wxMenuBar *                 m_menu_bar;
-		wxAcceleratorTable			m_menu_bar_accelerators;
-		wxTimer						m_ping_timer;
-		bool						m_pinging;
-		const Pauser *				m_current_pauser;
-		std::function<void()>		m_on_images_changed;
+		MameClient						m_client;
+		Preferences					    m_prefs;
+		VirtualListView *			    m_list_view;
+		wxMenuBar *					    m_menu_bar;
+		wxAcceleratorTable				m_menu_bar_accelerators;
+		wxTimer							m_ping_timer;
+		bool							m_pinging;
+		const Pauser *					m_current_pauser;
+		std::function<void()>			m_on_images_changed;
+		std::function<void(Chatter &&)>	m_on_chatter;
 
 		// information retrieved by -listxml
-		wxString					m_mame_build;
-		bool						m_last_listxml_succeeded;
-		std::vector<Machine>        m_machines;
+		wxString						m_mame_build;
+		bool							m_last_listxml_succeeded;
+		std::vector<Machine>		    m_machines;
 
 		// status of running emulation
-		bool						m_status_paused;
-		wxString					m_status_frameskip;
-		bool						m_status_throttled;
-		float						m_status_throttle_rate;
-		std::vector<Image>			m_status_images;
+		bool							m_status_paused;
+		wxString						m_status_frameskip;
+		bool							m_status_throttled;
+		float							m_status_throttle_rate;
+		std::vector<Image>				m_status_images;
 
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
@@ -169,6 +170,7 @@ namespace
 		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
 		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
 		void OnSpecifyMamePath();
+		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
 		void CreateMenuBar();
@@ -182,6 +184,7 @@ namespace
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
 		void UpdateMenuBar();
+		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 
 		// runtime Control
@@ -238,6 +241,7 @@ MameFrame::MameFrame()
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
 	Bind(EVT_SPECIFY_MAME_PATH,     [this](auto &)      { OnSpecifyMamePath();			});
+	Bind(EVT_CHATTER,				[this](auto &event)	{ OnChatter(event);				});
 	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             });
 	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);				});
 	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);				});
@@ -404,8 +408,8 @@ void MameFrame::CreateMenuBar()
 	// invoke arbitrary command is optional, behave appropriately
 	if (invoke_menu_item)
 	{
-		Bind(wxEVT_MENU,		[this](auto &)		{ show_invoke_arbitrary_command_dialog(*this, m_client);	}, invoke_menu_item->GetId());
-		Bind(wxEVT_UPDATE_UI,	[this](auto &event)	{ OnEmuMenuUpdateUI(event);									}, invoke_menu_item->GetId());
+		Bind(wxEVT_MENU,		[this](auto &)		{ show_invoke_arbitrary_command_dialog(*this, m_client, *this);	}, invoke_menu_item->GetId());
+		Bind(wxEVT_UPDATE_UI,	[this](auto &event)	{ OnEmuMenuUpdateUI(event);										}, invoke_menu_item->GetId());
 	}
 }
 
@@ -800,6 +804,27 @@ void MameFrame::OnSpecifyMamePath()
 
 	m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
 	m_client.Launch(create_list_xml_task());
+}
+
+
+//-------------------------------------------------
+//  FileDialogCommand
+//-------------------------------------------------
+
+void MameFrame::SetChatterListener(std::function<void(Chatter &&chatter)> &&func)
+{
+	m_on_chatter = std::move(func);
+}
+
+
+//-------------------------------------------------
+//  FileDialogCommand
+//-------------------------------------------------
+
+void MameFrame::OnChatter(PayloadEvent<Chatter> &event)
+{
+	if (m_on_chatter)
+		m_on_chatter(std::move(event.Payload()));
 }
 
 

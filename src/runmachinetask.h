@@ -70,8 +70,21 @@ struct StatusUpdate
 	bool				m_images_specified;
 };
 
+struct Chatter
+{
+	enum class chatter_type
+	{
+		COMMAND_LINE,
+		RESPONSE
+	};
+
+	chatter_type		m_type;
+	wxString			m_text;
+};
+
 wxDECLARE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
+wxDECLARE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
 
 struct Machine;
 
@@ -83,6 +96,7 @@ public:
 	void Issue(const std::vector<wxString> &args);
 	void IssueFullCommandLine(const wxString &full_command);
 	const Machine &GetMachine() const { return m_machine; }
+	void SetChatterEnabled(bool enabled) { m_chatter_enabled = enabled; }
 
 protected:
 	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
@@ -109,10 +123,12 @@ private:
 	const Machine &					m_machine;
 	std::uintptr_t					m_target_window;
 	wxMessageQueue<Message>         m_message_queue;
+	volatile bool					m_chatter_enabled;
 
 	void InternalPost(Message::type type, wxString &&command, emu_error status = emu_error::INVALID);
 	static StatusUpdate ReadStatusUpdate(wxTextInputStream &input);
 	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
+	void PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text);
 };
 
 

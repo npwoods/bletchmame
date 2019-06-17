@@ -24,6 +24,7 @@
 
 wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
+wxDEFINE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
 
 
 //**************************************************************************
@@ -67,6 +68,7 @@ wxString BuildCommand(const std::vector<wxString> &args)
 RunMachineTask::RunMachineTask(const Machine &machine, wxWindow &target_window)
     : m_machine(machine)
     , m_target_window((std::uintptr_t)target_window.GetHWND())
+	, m_chatter_enabled(false)
 {
 }
 
@@ -199,6 +201,9 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 			wxLogDebug("MAME <== [%s]", message.m_command);
 			output.WriteString(message.m_command);
 
+			if (m_chatter_enabled)
+				PostChatter(handler, Chatter::chatter_type::COMMAND_LINE, std::move(message.m_command));
+
 			// and receive a response from MAME
 			ReceiveResponse(handler, input);
 			break;
@@ -244,6 +249,10 @@ void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &i
 {
 	wxString str = input.ReadLine();
 	wxLogDebug("MAME ==> %s", str);
+
+	// chatter
+	if (m_chatter_enabled)
+		PostChatter(handler, Chatter::chatter_type::RESPONSE, wxString(str));
 
 	// interpret the response
 	util::string_truncate(str, '#');
@@ -324,6 +333,19 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 
 	// and return it
 	return result;
+}
+
+
+//-------------------------------------------------
+//  PostChatter
+//-------------------------------------------------
+
+void RunMachineTask::PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text)
+{
+	Chatter chatter;
+	chatter.m_type = type;
+	chatter.m_text = std::move(text);
+	util::QueueEvent(handler, EVT_CHATTER, wxID_ANY, std::move(chatter));
 }
 
 
