@@ -81,6 +81,7 @@ public:
 	RunMachineTask(const Machine &machine, wxWindow &target_window);
 
 	void Issue(const std::vector<wxString> &args);
+	void IssueFullCommandLine(const wxString &full_command);
 	const Machine &GetMachine() const { return m_machine; }
 
 protected:

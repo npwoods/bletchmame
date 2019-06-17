@@ -140,6 +140,16 @@ void RunMachineTask::Issue(const std::vector<wxString> &args)
 
 
 //-------------------------------------------------
+//  IssueFullCommandLine
+//-------------------------------------------------
+
+void RunMachineTask::IssueFullCommandLine(const wxString &full_command)
+{
+	InternalPost(Message::type::COMMAND, full_command + "\r\n");
+}
+
+
+//-------------------------------------------------
 //  InternalPost
 //-------------------------------------------------
 

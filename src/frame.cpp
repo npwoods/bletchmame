@@ -17,6 +17,7 @@
 #include "frame.h"
 #include "client.h"
 #include "dlgimages.h"
+#include "dlginvoke.h"
 #include "dlgpaths.h"
 #include "prefs.h"
 #include "listxmltask.h"
@@ -290,6 +291,12 @@ void MameFrame::CreateMenuBar()
 {
 	int id = ID_LAST;
 
+#ifdef _DEBUG
+	const bool has_invoke_command = true;
+#else
+	const bool has_invoke_command = false;
+#endif
+
 	// create the "File" menu
 	wxMenu *file_menu = new wxMenu();
 	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
@@ -316,6 +323,9 @@ void MameFrame::CreateMenuBar()
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 	wxMenuItem *images_menu_item			= options_menu->Append(id++, "Images...", wxEmptyString, wxITEM_CHECK);
+	wxMenuItem *invoke_menu_item			= has_invoke_command
+											? options_menu->Append(id++, "Invoke Arbitrary Command...")
+											: nullptr;
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
@@ -389,6 +399,13 @@ void MameFrame::CreateMenuBar()
 
 		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });							}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
+	}
+
+	// invoke arbitrary command is optional, behave appropriately
+	if (invoke_menu_item)
+	{
+		Bind(wxEVT_MENU,		[this](auto &)		{ show_invoke_arbitrary_command_dialog(*this, m_client);	}, invoke_menu_item->GetId());
+		Bind(wxEVT_UPDATE_UI,	[this](auto &event)	{ OnEmuMenuUpdateUI(event);									}, invoke_menu_item->GetId());
 	}
 }
 
