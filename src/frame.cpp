@@ -146,6 +146,7 @@ namespace
 		bool							m_status_throttled;
 		float							m_status_throttle_rate;
 		std::vector<Image>				m_status_images;
+		std::vector<Input>				m_status_inputs;
 
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
@@ -758,6 +759,8 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttled = payload.m_throttled;
 	if (payload.m_throttle_rate_specified)
 		m_status_throttle_rate = payload.m_throttle_rate;
+	if (payload.m_inputs_specified)
+		m_status_inputs = std::move(payload.m_inputs);
 
 	// pause changes can update the title bar
 	if (payload.m_paused_specified && m_status_paused != payload.m_paused)
