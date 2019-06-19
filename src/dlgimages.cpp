@@ -78,7 +78,7 @@ namespace
 //-------------------------------------------------
 
 ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
-	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxSize(550, 300), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_host(host)
 	, m_grid_sizer(nullptr)
 	, m_ok_button(nullptr)
@@ -103,11 +103,14 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 	wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
 	main_sizer->Add(m_grid_sizer, 1, wxALL | wxEXPAND);
 	if (button_sizer)
-		main_sizer->Add(button_sizer, 1, wxALL | wxALIGN_RIGHT);
+		main_sizer->Add(button_sizer, 0, wxALL | wxALIGN_RIGHT, 10);
 	SetSizer(main_sizer);
 
 	// initial update of image grid
 	UpdateImageGrid();
+
+	// now figure out how big we are
+	Fit();
 }
 
 
