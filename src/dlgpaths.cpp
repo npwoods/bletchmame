@@ -58,7 +58,7 @@ namespace
 		VirtualListView *					m_list_view;
 		wxListItemAttr						m_list_item_attr;
 
-		template<typename TControl, typename... TArgs> TControl &AddControl(wxBoxSizer *sizer, TArgs&&... args);
+		template<typename TControl, typename... TArgs> TControl &AddControl(wxBoxSizer *sizer, int proportion, int flags, TArgs&&... args);
 		static std::array<wxString, PATH_COUNT> BuildComboBoxStrings();
 
 		void UpdateCurrentPathList();
@@ -93,7 +93,7 @@ const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_str
 //-------------------------------------------------
 
 PathsDialog::PathsDialog(Preferences &prefs)
-	: wxDialog(nullptr, wxID_ANY, "Paths", wxDefaultPosition, wxSize(400, 300))
+	: wxDialog(nullptr, wxID_ANY, "Paths", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_prefs(prefs)
 	, m_combo_box(nullptr)
 	, m_list_view(nullptr)
@@ -106,9 +106,11 @@ PathsDialog::PathsDialog(Preferences &prefs)
 
 	// Left column
 	wxBoxSizer *vbox_left = new wxBoxSizer(wxVERTICAL);
-	AddControl<wxStaticText>(vbox_left, id++, "Show Paths For:");
+	AddControl<wxStaticText>(vbox_left, 0, wxALL, id++, "Show Paths For:");
 	m_combo_box = &AddControl<wxComboBox>(
 		vbox_left,
+		0,
+		wxALL,
 		id++,
 		wxEmptyString,
 		wxDefaultPosition,
@@ -116,18 +118,19 @@ PathsDialog::PathsDialog(Preferences &prefs)
 		s_combo_box_strings.size(),
 		s_combo_box_strings.data(),
 		wxCB_READONLY);
-	AddControl<wxStaticText>(vbox_left, id++, "Directories:");
-	m_list_view = &AddControl<VirtualListView>(vbox_left, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS | wxLC_VIRTUAL);
+	AddControl<wxStaticText>(vbox_left, 0, wxALL, id++, "Directories:");
+	m_list_view = &AddControl<VirtualListView>(vbox_left, 1, wxALL | wxEXPAND, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER
+		| wxLC_EDIT_LABELS | wxLC_VIRTUAL);
 	m_list_view->SetOnGetItemText([this](long item, long)	{ return GetListItemText(static_cast<size_t>(item)); });
 	m_list_view->SetOnGetItemAttr([this](long item)			{ return GetListItemAttr(static_cast<size_t>(item)); });
 
 	// Right column
 	wxBoxSizer *vbox_right = new wxBoxSizer(wxVERTICAL);
-	wxButton &ok_button		= AddControl<wxButton>(vbox_right, wxID_OK,		"OK");
-	wxButton &cancel_button = AddControl<wxButton>(vbox_right, wxID_CANCEL,	"Cancel");
-	wxButton &browse_button = AddControl<wxButton>(vbox_right, id++,		"Browse");
-	wxButton &insert_button = AddControl<wxButton>(vbox_right, id++,		"Insert");
-	wxButton &delete_button	= AddControl<wxButton>(vbox_right, id++,		"Delete");
+	wxButton &ok_button		= AddControl<wxButton>(vbox_right, 0, wxALL, wxID_OK,		"OK");
+	wxButton &cancel_button = AddControl<wxButton>(vbox_right, 0, wxALL, wxID_CANCEL,	"Cancel");
+	wxButton &browse_button = AddControl<wxButton>(vbox_right, 0, wxALL, id++,			"Browse");
+	wxButton &insert_button = AddControl<wxButton>(vbox_right, 0, wxALL, id++,			"Insert");
+	wxButton &delete_button	= AddControl<wxButton>(vbox_right, 0, wxALL, id++,			"Delete");
 
 	// Combo box
 	m_combo_box->Select(0);
@@ -139,9 +142,9 @@ PathsDialog::PathsDialog(Preferences &prefs)
 
 	// Overall layout
 	wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-	hbox->Add(vbox_left, 1);
-	hbox->Add(vbox_right, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
-	SetSizer(hbox);
+	hbox->Add(vbox_left, 1, wxEXPAND);
+	hbox->Add(vbox_right, 0, wxALIGN_TOP | wxTOP | wxBOTTOM, 10);
+	SetSizerAndFit(hbox);
 
 	// bind events
 	Bind(wxEVT_COMBOBOX,				[this](auto &)		{ UpdateCurrentPathList(); });
@@ -393,10 +396,10 @@ void PathsDialog::RefreshListView()
 //-------------------------------------------------
 
 template<typename TControl, typename... TArgs>
-TControl &PathsDialog::AddControl(wxBoxSizer *sizer, TArgs&&... args)
+TControl &PathsDialog::AddControl(wxBoxSizer *sizer, int proportion, int flags, TArgs&&... args)
 {
 	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer->Add(control, 0, wxTOP | wxRIGHT | wxLEFT | wxBOTTOM, 4);
+	sizer->Add(control, proportion, flags, 4);
 	return *control;
 }
 
