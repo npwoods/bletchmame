@@ -49,6 +49,20 @@ struct Image
 	}
 };
 
+struct Input
+{
+	enum class input_type
+	{
+		ANALOG,
+		DIGITAL
+	};
+
+	wxString			m_port_tag;
+	wxString			m_name;
+	int					m_mask;
+	input_type			m_type;
+};
+
 struct StatusUpdate
 {
 	// did we have problems reading the response from MAME?
@@ -60,7 +74,7 @@ struct StatusUpdate
 	bool				m_paused_specified;
 	wxString			m_frameskip;
 	bool				m_frameskip_specified;
-    wxString			m_speed_text;
+	wxString			m_speed_text;
 	bool				m_speed_text_specified;
 	bool				m_throttled;
 	bool				m_throttled_specified;
@@ -68,6 +82,8 @@ struct StatusUpdate
 	bool				m_throttle_rate_specified;
 	std::vector<Image>	m_images;
 	bool				m_images_specified;
+	std::vector<Input>	m_inputs;
+	bool				m_inputs_specified;
 };
 
 struct Chatter

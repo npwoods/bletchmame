@@ -22,9 +22,20 @@
 #include "validity.h"
 #include "xmlparser.h"
 
+
+//**************************************************************************
+//  VARIABLES
+//**************************************************************************
+
 wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 wxDEFINE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
+
+static util::enum_parser<Input::input_type> s_input_type_parser =
+{
+	{ "analog", Input::input_type::ANALOG, },
+	{ "digital", Input::input_type::DIGITAL }
+};
 
 
 //**************************************************************************
@@ -308,6 +319,19 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
 		attributes.Get("filename",			image.m_file_name);
 		result.m_images.push_back(std::move(image));
+	});
+	xml.OnElement({ "status", "inputs" }, [&](const XmlParser::Attributes &)
+	{
+		result.m_inputs_specified = true;
+	});
+	xml.OnElement({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
+	{
+		Input input;
+		attributes.Get("port_tag",			input.m_port_tag);
+		attributes.Get("mask",				input.m_mask);
+		attributes.Get("type",				input.m_type, s_input_type_parser);
+		attributes.Get("name",				input.m_name);
+		result.m_inputs.push_back(std::move(input));
 	});
 
 	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
