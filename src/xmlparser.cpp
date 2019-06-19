@@ -17,6 +17,21 @@
 
 
 //**************************************************************************
+//  LOCAL VARIABLES
+//**************************************************************************
+
+static const util::enum_parser<bool> s_bool_parser =
+{
+	{ "0", false },
+	{ "off", false },
+	{ "false", false },
+	{ "1", true },
+	{ "on", true },
+	{ "true", true }
+};
+
+
+//**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
 
@@ -315,26 +330,7 @@ bool XmlParser::Attributes::Get(const char *attribute, int &value) const
 
 bool XmlParser::Attributes::Get(const char *attribute, bool &value) const
 {
-	int int_value;
-	if (Get(attribute, int_value))
-	{
-		value = int_value != 0;
-		return true;
-	}
-
-	const char *string_value = InternalGet(attribute);
-	if (!strcmp(string_value, "false") || !strcmp(string_value, "off"))
-	{
-		value = false;
-		return true;
-	}
-	if (!strcmp(string_value, "true") || !strcmp(string_value, "on"))
-	{
-		value = true;
-		return true;
-	}
-
-	return false;
+	return Get(attribute, value, s_bool_parser);
 }
 
 
@@ -398,29 +394,6 @@ const char *XmlParser::Attributes::InternalGet(const char *attribute, bool retur
 }
 
 
-//-------------------------------------------------
-//  StringHash::operator()
-//-------------------------------------------------
-
-size_t XmlParser::StringHash::operator()(const char *s) const
-{
-	size_t result = 31337;
-	for (size_t i = 0; s[i]; i++)
-		result = ((result << 5) + result) + s[i];
-	return result;
-}
-
-
-//-------------------------------------------------
-//  StringCompare::operator()
-//-------------------------------------------------
-
-bool XmlParser::StringCompare::operator()(const char *s1, const char *s2) const
-{
-	return !strcmp(s1, s2);
-}
-
-
 //**************************************************************************
 //  VALIDITY CHECKS
 //**************************************************************************
@@ -431,31 +404,48 @@ bool XmlParser::StringCompare::operator()(const char *s1, const char *s2) const
 
 static void test()
 {
+	const bool INVALID_BOOL_VALUE = (bool)42;
+
 	XmlParser xml;
 	wxString charlie_value;
-	int foxtrot_value = 0;
+	bool charlie_value_parsed	= INVALID_BOOL_VALUE;
+	int foxtrot_value			= 0;
+	bool foxtrot_value_parsed	= INVALID_BOOL_VALUE;
+	bool golf_value				= INVALID_BOOL_VALUE;
+	bool golf_value_parsed		= INVALID_BOOL_VALUE;
+	bool hotel_value			= INVALID_BOOL_VALUE;
+	bool hotel_value_parsed		= INVALID_BOOL_VALUE;
+	bool india_value			= INVALID_BOOL_VALUE;
+	bool india_value_parsed		= INVALID_BOOL_VALUE;
 	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		(void)attributes;
-		assert(attributes.Get("charlie", charlie_value));
+		charlie_value_parsed	= attributes.Get("charlie", charlie_value);
 	});
 	xml.OnElement({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		(void)attributes;
-		assert(attributes.Get("foxtrot", foxtrot_value));
+		foxtrot_value_parsed	= attributes.Get("foxtrot", foxtrot_value);
+		golf_value_parsed		= attributes.Get("golf", golf_value);
+		hotel_value_parsed		= attributes.Get("hotel", hotel_value);
+		india_value_parsed		= attributes.Get("india", india_value);
 	});
 
 	bool result = xml.ParseXml(
 		"<alpha>"
 		"<bravo charlie=\"delta\"/>"
-		"<echo foxtrot=\"42\"/>"
+		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\"/>"
 		"</alpha>");
 	assert(result);
 	assert(charlie_value == "delta");
+	assert(charlie_value_parsed);
 	assert(foxtrot_value == 42);
-
+	assert(foxtrot_value_parsed);
+	assert(!golf_value);
+	assert(!golf_value_parsed);
+	assert(hotel_value);
+	assert(hotel_value_parsed);
+	assert(!india_value);
+	assert(india_value_parsed);
 	(void)result;
-	(void)foxtrot_value;
 }
 
 
@@ -499,3 +489,4 @@ static validity_check validity_checks[] =
 	test,
 	unicode
 };
+

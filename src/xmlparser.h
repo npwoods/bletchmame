@@ -13,7 +13,8 @@
 
 #include <initializer_list>
 #include <memory>
-#include <unordered_map>
+
+#include "utility.h"
 
 struct XML_ParserStruct;
 class wxInputStream;
@@ -39,6 +40,16 @@ public:
 			bool result = Get(attribute, value);
 			if (!result)
 				value = std::move(default_value);
+			return result;
+		}
+
+		template<typename T, typename TFunc>
+		bool Get(const char *attribute, T &value, TFunc func) const
+		{
+			std::string text;
+			bool result = Get(attribute, text) && func(text, value);
+			if (!result)
+				value = T();
 			return result;
 		}
 
@@ -70,21 +81,11 @@ public:
 	static std::string Escape(const wxString &str);
 
 private:
-	struct StringHash
-	{
-		size_t operator()(const char *s) const;
-	};
-
-	struct StringCompare
-	{
-		bool operator()(const char *s1, const char *s2) const;
-	};
-
 	struct Node
 	{
 		typedef std::shared_ptr<Node> ptr;
 		typedef std::weak_ptr<Node> weak_ptr;
-		typedef std::unordered_map<const char *, Node::ptr, StringHash, StringCompare> Map;
+		typedef std::unordered_map<const char *, Node::ptr, util::string_hash, util::string_compare> Map;
 
 		OnBeginElementCallback	m_begin_func;
 		OnEndElementCallback	m_end_func;

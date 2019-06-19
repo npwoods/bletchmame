@@ -11,6 +11,34 @@
 #include "utility.h"
 #include "validity.h"
 
+
+//**************************************************************************
+//  IMPLEMENTATION
+//**************************************************************************
+
+//-------------------------------------------------
+//  string_hash::operator()
+//-------------------------------------------------
+
+size_t util::string_hash::operator()(const char *s) const
+{
+	size_t result = 31337;
+	for (size_t i = 0; s[i]; i++)
+		result = ((result << 5) + result) + s[i];
+	return result;
+}
+
+
+//-------------------------------------------------
+//  string_compare::operator()
+//-------------------------------------------------
+
+bool util::string_compare::operator()(const char *s1, const char *s2) const
+{
+	return !strcmp(s1, s2);
+}
+
+
 //-------------------------------------------------
 //  append_conditionally_quoted
 //-------------------------------------------------
@@ -82,6 +110,35 @@ static void test_build_command_line()
 
 
 //-------------------------------------------------
+//  test_enum_parser
+//-------------------------------------------------
+
+static void test_enum_parser()
+{
+	static const util::enum_parser<int> parser =
+	{
+		{ "fourtytwo", 42 },
+		{ "twentyone", 21 }
+	};
+
+	bool result;
+	int value;
+
+	result = parser(std::string("fourtytwo"), value);
+	assert(result);
+	assert(value == 42);
+
+	result = parser(std::string("twentyone"), value);
+	assert(result);
+	assert(value == 21);
+
+	result = parser(std::string("invalid"), value);
+	assert(!result);
+	assert(value == 0);
+}
+
+
+//-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
 
@@ -89,5 +146,6 @@ static validity_check validity_checks[] =
 {
 	test_string_split<std::string>,
 	test_string_split<std::wstring>,
-	test_build_command_line
+	test_build_command_line,
+	test_enum_parser
 };

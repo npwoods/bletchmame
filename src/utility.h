@@ -12,8 +12,49 @@
 #define UTILITY_H
 
 #include <wx/event.h>
+#include <unordered_map>
 
 namespace util {
+
+//**************************************************************************
+//  PARSING UTILITY CLASSES
+//**************************************************************************
+
+class string_hash
+{
+public:
+	size_t operator()(const char *s) const;
+};
+
+
+class string_compare
+{
+public:
+	bool operator()(const char *s1, const char *s2) const;
+};
+
+
+template<typename T>
+class enum_parser
+{
+public:
+	enum_parser(std::initializer_list<std::pair<const char *, T>> values)
+		: m_map(values.begin(), values.end())
+	{
+	}
+
+	bool operator()(const std::string &text, T &value) const
+	{
+		auto iter = m_map.find(text.c_str());
+		bool success = iter != m_map.end();
+		value = success ? iter->second : T();
+		return success;
+	}
+
+private:
+	const std::unordered_map<const char *, T, string_hash, string_compare> m_map;
+};
+
 
 //**************************************************************************
 //  STRING UTILITIES
