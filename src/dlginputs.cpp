@@ -29,6 +29,8 @@ namespace
 
 	private:
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
+
+		void StartInputPoll(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
 	};
 };
 
@@ -86,8 +88,15 @@ InputsDialog::InputsDialog(wxWindow &parent, const std::vector<Input> &inputs)
 				throw false;
 			}
 
-			AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
-			AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, input_seq.m_text);
+			wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
+			wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, input_seq.m_text);
+
+			wxString port_tag = input.m_port_tag;
+			int mask = input.m_mask;
+			InputSeq::inputseq_type seq_type = input_seq.m_type;
+			Bind(wxEVT_BUTTON, [this, port_tag, mask, seq_type](auto &) { StartInputPoll(port_tag, mask, seq_type); }, button.GetId());
+
+			(void)static_text;
 		}
 	}
 
@@ -114,6 +123,18 @@ TControl &InputsDialog::AddControl(wxWindow &parent, wxSizer &sizer, int proport
 	TControl *control = new TControl(&parent, std::forward<TArgs>(args)...);
 	sizer.Add(control, proportion, flags, 4);
 	return *control;
+}
+
+
+//-------------------------------------------------
+//  StartInputPoll
+//-------------------------------------------------
+
+void InputsDialog::StartInputPoll(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type)
+{
+	(void)port_tag;
+	(void)mask;
+	(void)seq_type;
 }
 
 
