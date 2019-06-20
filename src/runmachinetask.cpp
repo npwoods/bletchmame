@@ -31,10 +31,17 @@ wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 wxDEFINE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
 
-static util::enum_parser<Input::input_type> s_input_type_parser =
+static const util::enum_parser<Input::input_type> s_input_type_parser =
 {
 	{ "analog", Input::input_type::ANALOG, },
 	{ "digital", Input::input_type::DIGITAL }
+};
+
+static const util::enum_parser<InputSeq::inputseq_type> s_inputseq_type_parser =
+{
+	{ "standard", InputSeq::inputseq_type::STANDARD },
+	{ "increment", InputSeq::inputseq_type::INCREMENT },
+	{ "decrement", InputSeq::inputseq_type::DECREMENT }
 };
 
 
@@ -332,6 +339,14 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("type",				input.m_type, s_input_type_parser);
 		attributes.Get("name",				input.m_name);
 		result.m_inputs.push_back(std::move(input));
+	});
+	xml.OnElement({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
+	{
+		Input current_input(*(result.m_inputs.end() - 1));
+		InputSeq seq;
+		attributes.Get("type",				seq.m_type, s_inputseq_type_parser);
+		attributes.Get("text",				seq.m_text);
+		current_input.m_seqs.push_back(std::move(seq));
 	});
 
 	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this

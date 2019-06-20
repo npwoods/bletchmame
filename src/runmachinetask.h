@@ -49,6 +49,19 @@ struct Image
 	}
 };
 
+struct InputSeq
+{
+	enum class inputseq_type
+	{
+		STANDARD,
+		INCREMENT,
+		DECREMENT
+	};
+
+	inputseq_type			m_type;
+	wxString				m_text;
+};
+
 struct Input
 {
 	enum class input_type
@@ -57,10 +70,11 @@ struct Input
 		DIGITAL
 	};
 
-	wxString			m_port_tag;
-	wxString			m_name;
-	int					m_mask;
-	input_type			m_type;
+	wxString				m_port_tag;
+	wxString				m_name;
+	int						m_mask;
+	input_type				m_type;
+	std::vector<InputSeq>	m_seqs;
 };
 
 struct StatusUpdate
