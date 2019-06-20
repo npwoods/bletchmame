@@ -17,8 +17,9 @@ LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lw
 OBJECTFILES=\
 	$(OBJ)/app.o				\
 	$(OBJ)/client.o				\
-	$(OBJ)/dlgimages.o			\
 	$(OBJ)/dlgconsole.o			\
+	$(OBJ)/dlgimages.o			\
+	$(OBJ)/dlginputs.o			\
 	$(OBJ)/dlgpaths.o			\
 	$(OBJ)/frame.o				\
 	$(OBJ)/job.o				\

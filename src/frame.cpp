@@ -16,8 +16,9 @@
 
 #include "frame.h"
 #include "client.h"
-#include "dlgimages.h"
 #include "dlgconsole.h"
+#include "dlgimages.h"
+#include "dlginputs.h"
 #include "dlgpaths.h"
 #include "prefs.h"
 #include "listxmltask.h"
@@ -298,36 +299,37 @@ void MameFrame::CreateMenuBar()
 
 	// create the "File" menu
 	wxMenu *file_menu = new wxMenu();
-	wxMenuItem *stop_menu_item				= file_menu->Append(id++, "Stop");
-	wxMenuItem *pause_menu_item				= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
+	wxMenuItem *stop_menu_item					= file_menu->Append(id++, "Stop");
+	wxMenuItem *pause_menu_item					= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
 	file_menu->AppendSeparator();
-	wxMenuItem *load_state_menu_item		= file_menu->Append(id++, "Load State...\tF7");
-	wxMenuItem *save_state_menu_item		= file_menu->Append(id++, "Save State...\tShift+F7");
-	wxMenuItem *save_screenshot_menu_item   = file_menu->Append(id++, "Save Screenshot...\tF12");
+	wxMenuItem *load_state_menu_item			= file_menu->Append(id++, "Load State...\tF7");
+	wxMenuItem *save_state_menu_item			= file_menu->Append(id++, "Save State...\tShift+F7");
+	wxMenuItem *save_screenshot_menu_item		= file_menu->Append(id++, "Save Screenshot...\tF12");
 	file_menu->AppendSeparator();
 	wxMenu *reset_menu = new wxMenu();
-	wxMenuItem *soft_reset_menu_item		= reset_menu->Append(id++, "Soft Reset");
-	wxMenuItem *hard_reset_menu_item		= reset_menu->Append(id++, "Hard Reset");
+	wxMenuItem *soft_reset_menu_item			= reset_menu->Append(id++, "Soft Reset");
+	wxMenuItem *hard_reset_menu_item			= reset_menu->Append(id++, "Hard Reset");
 	file_menu->AppendSubMenu(reset_menu, "Reset");
-	wxMenuItem *exit_menu_item				= file_menu->Append(wxID_EXIT, "E&xit\tCtrl+Alt+X");
+	wxMenuItem *exit_menu_item					= file_menu->Append(wxID_EXIT, "E&xit\tCtrl+Alt+X");
 
 	// create the "Options" menu
 	wxMenu *options_menu = new wxMenu();
 	wxMenu *throttle_menu = new wxMenu();
 	throttle_menu->AppendSeparator();	// throttle menu items are added later
-	wxMenuItem *increase_speed_menu_item	= throttle_menu->Append(id++, "Increase Speed\tF9");
-	wxMenuItem *decrease_speed_menu_item	= throttle_menu->Append(id++, "Decrease Speed\tF8");
-	wxMenuItem *warp_mode_menu_item			= throttle_menu->Append(id++, "Warp Mode\tF10", wxEmptyString, wxITEM_CHECK);
+	wxMenuItem *increase_speed_menu_item		= throttle_menu->Append(id++, "Increase Speed\tF9");
+	wxMenuItem *decrease_speed_menu_item		= throttle_menu->Append(id++, "Decrease Speed\tF8");
+	wxMenuItem *warp_mode_menu_item				= throttle_menu->Append(id++, "Warp Mode\tF10", wxEmptyString, wxITEM_CHECK);
 	options_menu->AppendSubMenu(throttle_menu, "Throttle");
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
-	wxMenuItem *images_menu_item			= options_menu->Append(id++, "Images...", wxEmptyString, wxITEM_CHECK);
+	wxMenuItem *images_menu_item				= options_menu->Append(id++, "Images...");
 	options_menu->AppendSeparator();
-	wxMenuItem *console_menu_item			= options_menu->Append(id++, "Console...");
+	wxMenuItem *console_menu_item				= options_menu->Append(id++, "Console...");
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
-	wxMenuItem *show_paths_dialog_menu_item	= settings_menu->Append(id++, "Paths...");
+	wxMenuItem *show_paths_dialog_menu_item		= settings_menu->Append(id++, "Paths...");
+	wxMenuItem *show_inputs_dialog_menu_item	= settings_menu->Append(id++, "Inputs...");
 
 	// the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
 	wxMenu *help_menu = new wxMenu();
@@ -348,35 +350,37 @@ void MameFrame::CreateMenuBar()
 	m_menu_bar_accelerators = *m_menu_bar->GetAcceleratorTable();
 
 	// Bind menu item selected events
-	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();															}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);										}, pause_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();													}, load_state_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();													}, save_state_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();													}, save_screenshot_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");													}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");													}, hard_reset_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);															}, exit_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);												}, increase_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);												}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);									}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();														}, images_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);							}, console_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);											}, show_paths_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();														}, about_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();																}, stop_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);											}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();														}, save_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();														}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");														}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");														}, hard_reset_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);																}, exit_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);													}, increase_speed_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);													}, decrease_speed_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);										}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { show_paths_dialog(m_prefs);												}, show_paths_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Pauser pauser(*this); show_inputs_dialog(*this, m_status_inputs);			}, show_inputs_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
-	// Bind UI update events
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, stop_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);					}, pause_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, load_state_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, save_state_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, save_screenshot_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, hard_reset_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, increase_speed_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);				}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, false, !m_status_images.empty());	}, images_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);									}, console_menu_item->GetId());
+	// Bind UI update events	
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, stop_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);						}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, load_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, save_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, hard_reset_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, increase_speed_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, decrease_speed_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);					}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_images.empty());	}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_inputs.empty());	}, show_inputs_dialog_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
