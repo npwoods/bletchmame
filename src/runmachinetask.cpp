@@ -342,7 +342,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	});
 	xml.OnElement({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
-		Input current_input(*(result.m_inputs.end() - 1));
+		Input &current_input(*(result.m_inputs.end() - 1));
 		InputSeq seq;
 		attributes.Get("type",				seq.m_type, s_inputseq_type_parser);
 		attributes.Get("text",				seq.m_text);
