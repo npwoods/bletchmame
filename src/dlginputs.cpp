@@ -59,21 +59,21 @@ InputsDialog::InputsDialog(wxWindow &parent, const std::vector<Input> &inputs)
 			switch (input_seq.m_type)
 			{
 			case InputSeq::inputseq_type::STANDARD:
-				name = &input_seq.m_text;
+				name = &input.m_name;
 				break;
 			case InputSeq::inputseq_type::INCREMENT:
-				buffer = input_seq.m_text + " Inc";
+				buffer = input.m_name + " Inc";
 				name = &buffer;
 				break;
 			case InputSeq::inputseq_type::DECREMENT:
-				buffer = input_seq.m_text + " Dec";
+				buffer = input.m_name + " Dec";
 				name = &buffer;
 				break;
 			default:
 				throw false;
 			}
 
-			AddControl<wxButton>(*grid_sizer, wxALL, id++, *name);
+			AddControl<wxButton>(*grid_sizer, wxALL | wxEXPAND, id++, *name);
 			AddControl<wxStaticText>(*grid_sizer, wxALL, id++, input_seq.m_text);
 		}
 	}
