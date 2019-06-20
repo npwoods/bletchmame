@@ -35,7 +35,7 @@ namespace
 	class PathsDialog : public wxDialog
 	{
 	public:
-		PathsDialog(Preferences &prefs);
+		PathsDialog(wxWindow &parent, Preferences &prefs);
 
 		void Persist();
 
@@ -92,8 +92,8 @@ const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_str
 //  ctor
 //-------------------------------------------------
 
-PathsDialog::PathsDialog(Preferences &prefs)
-	: wxDialog(nullptr, wxID_ANY, "Paths", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
+	: wxDialog(&parent, wxID_ANY, "Paths", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_prefs(prefs)
 	, m_combo_box(nullptr)
 	, m_list_view(nullptr)
@@ -496,9 +496,9 @@ wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_typ
 //  show_paths_dialog
 //-------------------------------------------------
 
-bool show_paths_dialog(Preferences &prefs)
+bool show_paths_dialog(wxWindow &parent, Preferences &prefs)
 {
-	PathsDialog dialog(prefs);
+	PathsDialog dialog(parent, prefs);
 	bool result = dialog.ShowModal() == wxID_OK;
 	if (result)
 	{
