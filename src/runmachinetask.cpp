@@ -293,16 +293,19 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 {
 	StatusUpdate result;
 	result.m_paused_specified = false;
+	result.m_polling_input_seq_specified = false;
 	result.m_frameskip_specified = false;
 	result.m_speed_text_specified = false;
 	result.m_throttled_specified = false;
 	result.m_throttle_rate_specified = false;
 	result.m_images_specified = false;
+	result.m_inputs_specified = false;
 
 	XmlParser xml;
 	xml.OnElement({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
 		result.m_paused_specified = attributes.Get("paused", result.m_paused);
+		result.m_polling_input_seq_specified = attributes.Get("polling_input_seq", result.m_polling_input_seq);
 	});
 	xml.OnElement({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{

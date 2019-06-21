@@ -25,12 +25,17 @@ namespace
 	class InputsDialog : public wxDialog
 	{
 	public:
-		InputsDialog(wxWindow &parent, const std::vector<Input> &inputs);
+		InputsDialog(wxWindow &parent, IInputsHost &host);
+		~InputsDialog();
 
 	private:
+		IInputsHost &	m_host;
+		wxDialog *		m_current_dialog;
+
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 
-		void StartInputPoll(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
+		void StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
+		void OnPollingSeqChanged(bool new_value);
 	};
 };
 
@@ -43,8 +48,10 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-InputsDialog::InputsDialog(wxWindow &parent, const std::vector<Input> &inputs)
+InputsDialog::InputsDialog(wxWindow &parent, IInputsHost &host)
 	: wxDialog(&parent, wxID_ANY, "Inputs", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+	, m_host(host)
+	, m_current_dialog(nullptr)
 {
 	int id = wxID_LAST + 1;
 
@@ -66,7 +73,7 @@ InputsDialog::InputsDialog(wxWindow &parent, const std::vector<Input> &inputs)
 
 	// build controls
 	wxString buffer;
-	for (const Input &input : inputs)
+	for (const Input &input : host.GetInputs())
 	{
 		for (const InputSeq &input_seq : input.m_seqs)
 		{
@@ -94,9 +101,7 @@ InputsDialog::InputsDialog(wxWindow &parent, const std::vector<Input> &inputs)
 			wxString port_tag = input.m_port_tag;
 			int mask = input.m_mask;
 			InputSeq::inputseq_type seq_type = input_seq.m_type;
-			Bind(wxEVT_BUTTON, [this, port_tag, mask, seq_type](auto &) { StartInputPoll(port_tag, mask, seq_type); }, button.GetId());
-
-			(void)static_text;
+			Bind(wxEVT_BUTTON, [this, &button, &static_text, port_tag, mask, seq_type](auto &) { StartInputPoll(button, static_text, port_tag, mask, seq_type); }, button.GetId());
 		}
 	}
 
@@ -108,8 +113,21 @@ InputsDialog::InputsDialog(wxWindow &parent, const std::vector<Input> &inputs)
 	// finally set the outer sizer
 	SetSizer(outer_sizer.release());
 
+	// observe
+	m_host.SetOnPollingSeqChanged([this](bool new_value) { OnPollingSeqChanged(new_value); });
+
 	// appease compiler
 	(void)ok_button;
+}
+
+
+//-------------------------------------------------
+//  dtor
+//-------------------------------------------------
+
+InputsDialog::~InputsDialog()
+{
+	m_host.SetOnPollingSeqChanged(nullptr);
 }
 
 
@@ -130,11 +148,48 @@ TControl &InputsDialog::AddControl(wxWindow &parent, wxSizer &sizer, int proport
 //  StartInputPoll
 //-------------------------------------------------
 
-void InputsDialog::StartInputPoll(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type)
+void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type)
 {
-	(void)port_tag;
-	(void)mask;
-	(void)seq_type;
+	// start polling
+	m_host.StartPolling(port_tag, mask, seq_type);
+
+	// present the dialog
+	wxDialog dialog(this, wxID_ANY, "Press key for " + button.GetLabel(), wxDefaultPosition, wxSize(250, 100));
+	m_current_dialog = &dialog;
+	dialog.ShowModal();
+	m_current_dialog = nullptr;
+
+	// stop polling (though this might have happened implicitly)
+	m_host.StopPolling();
+
+	// update the text (by now we expect the text to have been updated)
+	const std::vector<Input> &inputs(m_host.GetInputs());
+	auto input_iter = std::find_if(inputs.begin(), inputs.end(), [&port_tag, mask](const Input &input)
+	{
+		return input.m_port_tag == port_tag && input.m_mask == mask;
+	});
+	if (input_iter != inputs.end())
+	{
+		auto seq_iter = std::find_if(input_iter->m_seqs.begin(), input_iter->m_seqs.end(), [seq_type](const InputSeq &seq)
+		{
+			return seq.m_type == seq_type;
+		});
+		if (seq_iter != input_iter->m_seqs.end())
+		{
+			static_text.SetLabel(seq_iter->m_text);
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  OnPollingSeqChanged
+//-------------------------------------------------
+
+void InputsDialog::OnPollingSeqChanged(bool new_value)
+{
+	if (!new_value && m_current_dialog)
+		m_current_dialog->Close();
 }
 
 
@@ -142,8 +197,8 @@ void InputsDialog::StartInputPoll(const wxString &port_tag, int mask, InputSeq::
 //  show_inputs_dialog
 //-------------------------------------------------
 
-bool show_inputs_dialog(wxWindow &parent, const std::vector<Input> &inputs)
+bool show_inputs_dialog(wxWindow &parent, IInputsHost &host)
 {
-	InputsDialog dialog(parent, inputs);
+	InputsDialog dialog(parent, host);
 	return dialog.ShowModal() == wxID_OK;
 }

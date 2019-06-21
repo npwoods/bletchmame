@@ -13,9 +13,20 @@
 
 #include <vector>
 
+#include "runmachinetask.h"
+
 class wxWindow;
 struct Input;
 
-bool show_inputs_dialog(wxWindow &parent, const std::vector<Input> &inputs);
+class IInputsHost
+{
+public:
+	virtual const std::vector<Input> GetInputs() = 0;
+	virtual void SetOnPollingSeqChanged(std::function<void(bool)> &&func) = 0;
+	virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type) = 0;
+	virtual void StopPolling() = 0;
+};
+
+bool show_inputs_dialog(wxWindow &parent, IInputsHost &host);
 
 #endif // DLGINPUTS_H

@@ -86,6 +86,8 @@ struct StatusUpdate
 	// the actual data
 	bool				m_paused;
 	bool				m_paused_specified;
+	bool				m_polling_input_seq;
+	bool				m_polling_input_seq_specified;
 	wxString			m_frameskip;
 	bool				m_frameskip_specified;
 	wxString			m_speed_text;

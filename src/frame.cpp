@@ -125,6 +125,20 @@ namespace
 			const wxString &GetMachineName() const;
 		};
 
+		class InputsHost : public IInputsHost
+		{
+		public:
+			InputsHost(MameFrame &host);
+
+			virtual const std::vector<Input> GetInputs();
+			virtual void SetOnPollingSeqChanged(std::function<void(bool)> &&func);
+			virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
+			virtual void StopPolling();
+
+		private:
+			MameFrame & m_host;
+		};
+
 		MameClient						m_client;
 		Preferences					    m_prefs;
 		VirtualListView *			    m_list_view;
@@ -133,6 +147,7 @@ namespace
 		wxTimer							m_ping_timer;
 		bool							m_pinging;
 		const Pauser *					m_current_pauser;
+		std::function<void(bool)>		m_on_polling_input_seq_changed;
 		std::function<void()>			m_on_images_changed;
 		std::function<void(Chatter &&)>	m_on_chatter;
 
@@ -143,6 +158,7 @@ namespace
 
 		// status of running emulation
 		bool							m_status_paused;
+		bool							m_status_polling_input_seq;
 		wxString						m_status_frameskip;
 		bool							m_status_throttled;
 		float							m_status_throttle_rate;
@@ -162,6 +178,7 @@ namespace
 		void OnMenuStateSave();
 		void OnMenuSnapshotSave();
 		void OnMenuImages();
+		void OnMenuInputs();
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
@@ -364,7 +381,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Pauser pauser(*this); show_paths_dialog(*this, m_prefs);					}, show_paths_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Pauser pauser(*this); show_inputs_dialog(*this, m_status_inputs);			}, show_inputs_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs();															}, show_inputs_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
 	// Bind UI update events	
@@ -647,6 +664,18 @@ void MameFrame::OnMenuImages()
 
 
 //-------------------------------------------------
+//  OnMenuInputs
+//-------------------------------------------------
+
+void MameFrame::OnMenuInputs()
+{
+	Pauser pauser(*this);
+	InputsHost host(*this);
+	show_inputs_dialog(*this, host);
+}
+
+
+//-------------------------------------------------
 //  OnMenuAbout
 //-------------------------------------------------
 
@@ -771,6 +800,14 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 	{
 		m_status_paused = payload.m_paused;
 		UpdateTitleBar();
+	}
+
+	// polling input seq can be observed
+	if (payload.m_polling_input_seq_specified && m_status_polling_input_seq != payload.m_polling_input_seq)
+	{
+		m_status_polling_input_seq = payload.m_polling_input_seq;
+		if (m_on_polling_input_seq_changed)
+			m_on_polling_input_seq_changed(m_status_polling_input_seq);
 	}
 
 	// only read the data in if image data is specified, and has changed
@@ -1289,6 +1326,76 @@ void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
 const wxString &MameFrame::ImagesHost::GetMachineName() const
 {
 	return m_host.GetRunningMachine().m_name;
+}
+
+
+//**************************************************************************
+//  InputsHost
+//**************************************************************************
+
+//-------------------------------------------------
+//  InputsHost ctor
+//-------------------------------------------------
+
+MameFrame::InputsHost::InputsHost(MameFrame &host)
+	: m_host(host)
+{
+}
+
+
+//-------------------------------------------------
+//  GetInputs
+//-------------------------------------------------
+
+const std::vector<Input> MameFrame::InputsHost::GetInputs()
+{
+	return m_host.m_status_inputs;
+}
+
+
+//-------------------------------------------------
+//  SetOnPollingSeqChanged
+//-------------------------------------------------
+
+void MameFrame::InputsHost::SetOnPollingSeqChanged(std::function<void(bool)> &&func)
+{
+	m_host.m_on_polling_input_seq_changed = std::move(func);
+}
+
+
+//-------------------------------------------------
+//  StartPolling
+//-------------------------------------------------
+
+void MameFrame::InputsHost::StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type)
+{
+	wxString seq_type_string;
+	switch (seq_type)
+	{
+	case InputSeq::inputseq_type::STANDARD:
+		seq_type_string = "standard";
+		break;
+	case InputSeq::inputseq_type::INCREMENT:
+		seq_type_string = "increment";
+		break;
+	case InputSeq::inputseq_type::DECREMENT:
+		seq_type_string = "decrement";
+		break;
+	default:
+		throw false;
+	}
+
+	m_host.Issue({ "seq_poll_start", port_tag, std::to_string(mask), seq_type_string });
+}
+
+
+//-------------------------------------------------
+//  StopPolling
+//-------------------------------------------------
+
+void MameFrame::InputsHost::StopPolling()
+{
+	m_host.Issue({ "seq_poll_stop" });
 }
 
 
