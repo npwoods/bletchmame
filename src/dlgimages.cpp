@@ -126,7 +126,7 @@ void ImagesDialog::UpdateImageGrid()
 	const std::vector<Image> &images(m_host.GetImages());
 
 	// iterate through the vector of images
-	for (int i = 0; i < images.size(); i++)
+	for (int i = 0; i < (int)images.size(); i++)
 	{
 		int id = ID_GRID_CONTROLS + (i * COLUMN_COUNT);
 		wxStaticText *static_text;

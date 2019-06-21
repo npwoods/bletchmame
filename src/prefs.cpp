@@ -205,7 +205,7 @@ bool Preferences::Load(wxInputStream &input)
 
 				if (attributes.Get("width", width) && IsValidDimension(width))
 					SetColumnWidth(index, width);
-				if (attributes.Get("order", order) && order >= 0 && order < column_order.size())
+				if (attributes.Get("order", order) && order >= 0 && order < (int)column_order.size())
 					column_order[index] = order;
 			}
 		}
