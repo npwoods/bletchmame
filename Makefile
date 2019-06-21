@@ -38,7 +38,7 @@ $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)/dir.txt
 	strip $@
 
 $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
-	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -O4 -c -o $@ $<
+	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I./lib -O4 -c -o $@ $<
 
 $(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<

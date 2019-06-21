@@ -14,6 +14,8 @@
 #include <wx/textfile.h>
 #include <wx/filename.h>
 
+#include <observable/observable.hpp>
+
 #include "frame.h"
 #include "client.h"
 #include "dlgconsole.h"
@@ -157,7 +159,7 @@ namespace
 		std::vector<Machine>		    m_machines;
 
 		// status of running emulation
-		bool							m_status_paused;
+		observable::value<bool>			m_status_paused;
 		bool							m_status_polling_input_seq;
 		wxString						m_status_frameskip;
 		bool							m_status_throttled;
@@ -368,7 +370,7 @@ void MameFrame::CreateMenuBar()
 
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();																}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused);											}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused.get());										}, pause_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();														}, save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();														}, save_screenshot_menu_item->GetId());
@@ -386,7 +388,7 @@ void MameFrame::CreateMenuBar()
 
 	// Bind UI update events	
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, stop_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused);						}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused.get());				}, pause_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, load_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, save_screenshot_menu_item->GetId());
@@ -421,6 +423,9 @@ void MameFrame::CreateMenuBar()
 		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });							}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
 	}
+
+	// subscribe to title bar updates
+	m_status_paused.subscribe([this]() { UpdateTitleBar(); });
 }
 
 
@@ -784,6 +789,8 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 {
 	StatusUpdate &payload(event.Payload());
 
+	if (payload.m_paused_specified)
+		m_status_paused = payload.m_paused;
 	if (payload.m_frameskip_specified)
 		m_status_frameskip = payload.m_frameskip;
 	if (payload.m_speed_text_specified)
@@ -794,13 +801,6 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttle_rate = payload.m_throttle_rate;
 	if (payload.m_inputs_specified)
 		m_status_inputs = std::move(payload.m_inputs);
-
-	// pause changes can update the title bar
-	if (payload.m_paused_specified && m_status_paused != payload.m_paused)
-	{
-		m_status_paused = payload.m_paused;
-		UpdateTitleBar();
-	}
 
 	// polling input seq can be observed
 	if (payload.m_polling_input_seq_specified && m_status_polling_input_seq != payload.m_polling_input_seq)
@@ -1051,7 +1051,7 @@ void MameFrame::UpdateTitleBar()
 		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().m_description;
 
 		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
-		if (m_status_paused && !m_current_pauser)
+		if (m_status_paused.get() && !m_current_pauser)
 			title_text += " PAUSED";
 	}
 	SetLabel(title_text);
@@ -1195,7 +1195,7 @@ MameFrame::Pauser::Pauser(MameFrame &host, bool actually_pause)
 	, m_last_pauser(host.m_current_pauser)
 {
 	// if we're running and not pause, pause while the message box is up
-	m_is_running = actually_pause && m_host.IsEmulationSessionActive() && !m_host.m_status_paused;
+	m_is_running = actually_pause && m_host.IsEmulationSessionActive() && !m_host.m_status_paused.get();
 	if (m_is_running)
 		m_host.ChangePaused(true);
 
