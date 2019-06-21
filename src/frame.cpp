@@ -132,10 +132,10 @@ namespace
 		public:
 			InputsHost(MameFrame &host);
 
-			virtual const std::vector<Input> GetInputs();
-			virtual void SetOnPollingSeqChanged(std::function<void(bool)> &&func);
-			virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
-			virtual void StopPolling();
+			virtual const std::vector<Input> GetInputs() override;
+			virtual observable::value<bool> ObservePollingSeqChanged() override;
+			virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type) override;
+			virtual void StopPolling() override;
 
 		private:
 			MameFrame & m_host;
@@ -149,7 +149,6 @@ namespace
 		wxTimer							m_ping_timer;
 		bool							m_pinging;
 		const Pauser *					m_current_pauser;
-		std::function<void(bool)>		m_on_polling_input_seq_changed;
 		std::function<void()>			m_on_images_changed;
 		std::function<void(Chatter &&)>	m_on_chatter;
 
@@ -160,7 +159,7 @@ namespace
 
 		// status of running emulation
 		observable::value<bool>			m_status_paused;
-		bool							m_status_polling_input_seq;
+		observable::value<bool>			m_status_polling_input_seq;
 		wxString						m_status_frameskip;
 		bool							m_status_throttled;
 		float							m_status_throttle_rate;
@@ -791,6 +790,8 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 
 	if (payload.m_paused_specified)
 		m_status_paused = payload.m_paused;
+	if (payload.m_polling_input_seq_specified)
+		m_status_polling_input_seq = payload.m_polling_input_seq;
 	if (payload.m_frameskip_specified)
 		m_status_frameskip = payload.m_frameskip;
 	if (payload.m_speed_text_specified)
@@ -801,14 +802,6 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttle_rate = payload.m_throttle_rate;
 	if (payload.m_inputs_specified)
 		m_status_inputs = std::move(payload.m_inputs);
-
-	// polling input seq can be observed
-	if (payload.m_polling_input_seq_specified && m_status_polling_input_seq != payload.m_polling_input_seq)
-	{
-		m_status_polling_input_seq = payload.m_polling_input_seq;
-		if (m_on_polling_input_seq_changed)
-			m_on_polling_input_seq_changed(m_status_polling_input_seq);
-	}
 
 	// only read the data in if image data is specified, and has changed
 	if (payload.m_images_specified && !std::equal(
@@ -1354,12 +1347,12 @@ const std::vector<Input> MameFrame::InputsHost::GetInputs()
 
 
 //-------------------------------------------------
-//  SetOnPollingSeqChanged
+//  ObservePollingSeqChanged
 //-------------------------------------------------
 
-void MameFrame::InputsHost::SetOnPollingSeqChanged(std::function<void(bool)> &&func)
+observable::value<bool> MameFrame::InputsHost::ObservePollingSeqChanged()
 {
-	m_host.m_on_polling_input_seq_changed = std::move(func);
+	return observable::observe(m_host.m_status_polling_input_seq);
 }
 
 

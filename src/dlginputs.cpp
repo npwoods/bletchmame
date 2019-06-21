@@ -26,16 +26,16 @@ namespace
 	{
 	public:
 		InputsDialog(wxWindow &parent, IInputsHost &host);
-		~InputsDialog();
 
 	private:
-		IInputsHost &	m_host;
-		wxDialog *		m_current_dialog;
+		IInputsHost &			m_host;
+		wxDialog *				m_current_dialog;
+		observable::value<bool>	m_status_polling_seq_changed;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 
 		void StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
-		void OnPollingSeqChanged(bool new_value);
+		void OnPollingSeqChanged();
 	};
 };
 
@@ -114,20 +114,11 @@ InputsDialog::InputsDialog(wxWindow &parent, IInputsHost &host)
 	SetSizer(outer_sizer.release());
 
 	// observe
-	m_host.SetOnPollingSeqChanged([this](bool new_value) { OnPollingSeqChanged(new_value); });
+	m_status_polling_seq_changed = m_host.ObservePollingSeqChanged();
+	m_status_polling_seq_changed.subscribe([this]() { OnPollingSeqChanged(); });
 
 	// appease compiler
 	(void)ok_button;
-}
-
-
-//-------------------------------------------------
-//  dtor
-//-------------------------------------------------
-
-InputsDialog::~InputsDialog()
-{
-	m_host.SetOnPollingSeqChanged(nullptr);
 }
 
 
@@ -186,9 +177,9 @@ void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, c
 //  OnPollingSeqChanged
 //-------------------------------------------------
 
-void InputsDialog::OnPollingSeqChanged(bool new_value)
+void InputsDialog::OnPollingSeqChanged()
 {
-	if (!new_value && m_current_dialog)
+	if (!m_status_polling_seq_changed.get() && m_current_dialog)
 		m_current_dialog->Close();
 }
 

@@ -12,6 +12,7 @@
 #define DLGINPUTS_H
 
 #include <vector>
+#include <observable/observable.hpp>
 
 #include "runmachinetask.h"
 
@@ -22,7 +23,7 @@ class IInputsHost
 {
 public:
 	virtual const std::vector<Input> GetInputs() = 0;
-	virtual void SetOnPollingSeqChanged(std::function<void(bool)> &&func) = 0;
+	virtual observable::value<bool> ObservePollingSeqChanged() = 0;
 	virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type) = 0;
 	virtual void StopPolling() = 0;
 };
