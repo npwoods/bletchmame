@@ -50,11 +50,12 @@ namespace
 
 		static const int COLUMN_COUNT = 3;
 
-		IImagesHost &		m_host;
-		wxFlexGridSizer *	m_grid_sizer;
-		wxButton *			m_ok_button;
-		wxMenu				m_popup_menu;
-		int					m_popup_menu_result;
+		IImagesHost &							m_host;
+		wxFlexGridSizer *						m_grid_sizer;
+		wxButton *								m_ok_button;
+		wxMenu									m_popup_menu;
+		int										m_popup_menu_result;
+		observable::value<std::vector<Image>>	m_status_images;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
@@ -84,7 +85,8 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 	, m_ok_button(nullptr)
 {
 	// host interactions
-	m_host.SetOnImagesChanged([this] { UpdateImageGrid(); });
+	m_status_images = m_host.ObserveImages();
+	m_status_images.subscribe([this] { UpdateImageGrid(); });
 
 	// setup popup menu
 	AppendToPopupMenu(ID_LOAD_IMAGE, "Load...");
@@ -123,7 +125,7 @@ void ImagesDialog::UpdateImageGrid()
 	bool ok_enabled = true;
 
 	// get the list of images
-	const std::vector<Image> &images(m_host.GetImages());
+	const std::vector<Image> &images(m_status_images.get());
 
 	// iterate through the vector of images
 	for (int i = 0; i < (int)images.size(); i++)

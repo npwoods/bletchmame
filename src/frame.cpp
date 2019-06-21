@@ -111,10 +111,8 @@ namespace
 		{
 		public:
 			ImagesHost(MameFrame &host);
-			~ImagesHost();
 
-			virtual const std::vector<Image> GetImages();
-			virtual void SetOnImagesChanged(std::function<void()> &&func);
+			virtual observable::value<std::vector<Image>> ObserveImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
 			virtual const std::vector<wxString> &GetExtensions(const wxString &tag) const;
@@ -141,30 +139,29 @@ namespace
 			MameFrame & m_host;
 		};
 
-		MameClient						m_client;
-		Preferences					    m_prefs;
-		VirtualListView *			    m_list_view;
-		wxMenuBar *					    m_menu_bar;
-		wxAcceleratorTable				m_menu_bar_accelerators;
-		wxTimer							m_ping_timer;
-		bool							m_pinging;
-		const Pauser *					m_current_pauser;
-		std::function<void()>			m_on_images_changed;
-		std::function<void(Chatter &&)>	m_on_chatter;
+		MameClient								m_client;
+		Preferences							    m_prefs;
+		VirtualListView *					    m_list_view;
+		wxMenuBar *							    m_menu_bar;
+		wxAcceleratorTable						m_menu_bar_accelerators;
+		wxTimer									m_ping_timer;
+		bool									m_pinging;
+		const Pauser *							m_current_pauser;
+		std::function<void(Chatter &&)>			m_on_chatter;
 
 		// information retrieved by -listxml
-		wxString						m_mame_build;
-		bool							m_last_listxml_succeeded;
-		std::vector<Machine>		    m_machines;
+		wxString								m_mame_build;
+		bool									m_last_listxml_succeeded;
+		std::vector<Machine>				    m_machines;
 
 		// status of running emulation
-		observable::value<bool>			m_status_paused;
-		observable::value<bool>			m_status_polling_input_seq;
-		wxString						m_status_frameskip;
-		bool							m_status_throttled;
-		float							m_status_throttle_rate;
-		std::vector<Image>				m_status_images;
-		std::vector<Input>				m_status_inputs;
+		observable::value<bool>					m_status_paused;
+		observable::value<bool>					m_status_polling_input_seq;
+		wxString								m_status_frameskip;
+		bool									m_status_throttled;
+		float									m_status_throttle_rate;
+		observable::value<std::vector<Image> >	m_status_images;
+		std::vector<Input>						m_status_inputs;
 
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
@@ -396,7 +393,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);					}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_images.empty());	}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_images.get().empty());	}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_inputs.empty());	}, show_inputs_dialog_menu_item->GetId());
 
@@ -502,11 +499,11 @@ void MameFrame::Run(int machine_index)
 	}
 
 	// do we have any images that require images?
-	auto iter = std::find_if(m_status_images.cbegin(), m_status_images.cend(), [](const Image &image)
+	auto iter = std::find_if(m_status_images.get().cbegin(), m_status_images.get().cend(), [](const Image &image)
 	{
 		return image.m_must_be_loaded && image.m_file_name.IsEmpty();
 	});
-	if (iter != m_status_images.cend())
+	if (iter != m_status_images.get().cend())
 	{
 		// if so, show the dialog
 		ImagesHost images_host(*this);
@@ -800,18 +797,10 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttled = payload.m_throttled;
 	if (payload.m_throttle_rate_specified)
 		m_status_throttle_rate = payload.m_throttle_rate;
+	if (payload.m_images_specified)
+		m_status_images = std::move(payload.m_images);
 	if (payload.m_inputs_specified)
 		m_status_inputs = std::move(payload.m_inputs);
-
-	// only read the data in if image data is specified, and has changed
-	if (payload.m_images_specified && !std::equal(
-		m_status_images.begin(), m_status_images.end(),
-		payload.m_images.begin(), payload.m_images.end()))
-	{
-		m_status_images = std::move(payload.m_images);
-		if (m_on_images_changed)
-			m_on_images_changed();
-	}
 
 	m_pinging = false;
 }
@@ -1224,32 +1213,12 @@ MameFrame::ImagesHost::ImagesHost(MameFrame &host)
 
 
 //-------------------------------------------------
-//  ImagesHost dtor
+//  ObserveImages
 //-------------------------------------------------
 
-MameFrame::ImagesHost::~ImagesHost()
+observable::value<std::vector<Image>> MameFrame::ImagesHost::ObserveImages()
 {
-	m_host.m_on_images_changed = 0;
-}
-
-
-//-------------------------------------------------
-//  GetImages
-//-------------------------------------------------
-
-const std::vector<Image> MameFrame::ImagesHost::GetImages()
-{
-	return m_host.m_status_images;
-}
-
-
-//-------------------------------------------------
-//  SetOnImagesChanged
-//-------------------------------------------------
-
-void MameFrame::ImagesHost::SetOnImagesChanged(std::function<void()> &&func)
-{
-	m_host.m_on_images_changed = std::move(func);
+	return observe(m_host.m_status_images);
 }
 
 

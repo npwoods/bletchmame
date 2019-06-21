@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <memory>
+#include <observable/observable.hpp>
 
 // pesky Win32 declaration
 #ifdef LoadImage
@@ -23,8 +24,7 @@ struct Image;
 class IImagesHost
 {
 public:
-	virtual const std::vector<Image> GetImages() = 0;
-	virtual void SetOnImagesChanged(std::function<void()> &&func) = 0;
+	virtual observable::value<std::vector<Image>> ObserveImages() = 0;
 	virtual const wxString &GetWorkingDirectory() const = 0;
 	virtual void SetWorkingDirectory(wxString &&dir) = 0;
 	virtual const std::vector<wxString> &GetExtensions(const wxString &tag) const = 0;
