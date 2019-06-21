@@ -24,7 +24,7 @@ struct Image;
 class IImagesHost
 {
 public:
-	virtual observable::value<std::vector<Image>> ObserveImages() = 0;
+	virtual observable::value<std::vector<Image>> &GetImages() = 0;
 	virtual const wxString &GetWorkingDirectory() const = 0;
 	virtual void SetWorkingDirectory(wxString &&dir) = 0;
 	virtual const std::vector<wxString> &GetExtensions(const wxString &tag) const = 0;

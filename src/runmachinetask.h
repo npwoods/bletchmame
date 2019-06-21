@@ -23,12 +23,20 @@
 
 struct RunMachineResult
 {
-    bool        m_success;
+	RunMachineResult() = default;
+	RunMachineResult(const RunMachineResult &that) = delete;
+	RunMachineResult(RunMachineResult &&that) = default;
+
+	bool        m_success;
     wxString    m_error_message;
 };
 
 struct Image
 {
+	Image() = default;
+	Image(const Image &that) = delete;
+	Image(Image &&that) = default;
+
 	wxString			m_tag;
 	wxString			m_instance_name;
 	bool				m_is_readable;
@@ -51,6 +59,10 @@ struct Image
 
 struct InputSeq
 {
+	InputSeq() = default;
+	InputSeq(const InputSeq &that) = delete;
+	InputSeq(InputSeq &&that) = default;
+
 	enum class inputseq_type
 	{
 		STANDARD,
@@ -64,6 +76,10 @@ struct InputSeq
 
 struct Input
 {
+	Input() = default;
+	Input(const Input &that) = delete;
+	Input(Input &&that) = default;
+
 	enum class input_type
 	{
 		ANALOG,
@@ -79,6 +95,10 @@ struct Input
 
 struct StatusUpdate
 {
+	StatusUpdate() = default;
+	StatusUpdate(const StatusUpdate &that) = delete;
+	StatusUpdate(StatusUpdate &&that) = default;
+
 	// did we have problems reading the response from MAME?
 	bool				m_success;
 	wxString			m_parse_error;
@@ -104,6 +124,10 @@ struct StatusUpdate
 
 struct Chatter
 {
+	Chatter() = default;
+	Chatter(const Chatter &that) = delete;
+	Chatter(Chatter &&that) = default;
+
 	enum class chatter_type
 	{
 		COMMAND_LINE,

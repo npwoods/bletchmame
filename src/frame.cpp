@@ -112,7 +112,7 @@ namespace
 		public:
 			ImagesHost(MameFrame &host);
 
-			virtual observable::value<std::vector<Image>> ObserveImages();
+			virtual observable::value<std::vector<Image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
 			virtual const std::vector<wxString> &GetExtensions(const wxString &tag) const;
@@ -130,8 +130,8 @@ namespace
 		public:
 			InputsHost(MameFrame &host);
 
-			virtual const std::vector<Input> GetInputs() override;
-			virtual observable::value<bool> ObservePollingSeqChanged() override;
+			virtual const std::vector<Input> &GetInputs() override;
+			virtual observable::value<bool> &GetPollingSeqChanged() override;
 			virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type) override;
 			virtual void StopPolling() override;
 
@@ -1213,12 +1213,12 @@ MameFrame::ImagesHost::ImagesHost(MameFrame &host)
 
 
 //-------------------------------------------------
-//  ObserveImages
+//  GetImages
 //-------------------------------------------------
 
-observable::value<std::vector<Image>> MameFrame::ImagesHost::ObserveImages()
+observable::value<std::vector<Image>> &MameFrame::ImagesHost::GetImages()
 {
-	return observe(m_host.m_status_images);
+	return m_host.m_status_images;
 }
 
 
@@ -1309,19 +1309,19 @@ MameFrame::InputsHost::InputsHost(MameFrame &host)
 //  GetInputs
 //-------------------------------------------------
 
-const std::vector<Input> MameFrame::InputsHost::GetInputs()
+const std::vector<Input> &MameFrame::InputsHost::GetInputs()
 {
 	return m_host.m_status_inputs;
 }
 
 
 //-------------------------------------------------
-//  ObservePollingSeqChanged
+//  GetPollingSeqChanged
 //-------------------------------------------------
 
-observable::value<bool> MameFrame::InputsHost::ObservePollingSeqChanged()
+observable::value<bool> &MameFrame::InputsHost::GetPollingSeqChanged()
 {
-	return observable::observe(m_host.m_status_polling_input_seq);
+	return m_host.m_status_polling_input_seq;
 }
 
 
