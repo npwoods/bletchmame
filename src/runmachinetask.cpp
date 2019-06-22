@@ -111,7 +111,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"-window",
 		"-keyboardprovider",
 		"dinput",
-		"-slave_ui",
+		"-worker_ui",
 		std::to_string(m_target_window),
 		"-skip_gameinfo"
 	};
