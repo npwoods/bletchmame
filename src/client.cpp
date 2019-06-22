@@ -34,29 +34,29 @@
 
 namespace
 {
-    class ClientProcess : public wxProcess
-    {
-    public:
+	class ClientProcess : public wxProcess
+	{
+	public:
 		ClientProcess(std::function<void(Task::emu_error status)> func)
 			: m_on_child_process_completed_func(std::move(func))
 		{
 		}
 
 		void SetProcess(std::shared_ptr<wxProcess> &&process)
-        {
+		{
 			m_process = std::move(process);
-        }
+		}
 
-        virtual void OnTerminate(int pid, int status) override
-        {
-			wxLogStatus("Slave process terminated; pid=%d status=%d", pid, status);
+		virtual void OnTerminate(int pid, int status) override
+		{
+			wxLogStatus("Worker process terminated; pid=%d status=%d", pid, status);
 			m_on_child_process_completed_func(static_cast<Task::emu_error>(status));
-        }
+		}
 
 	private:
 		std::function<void(Task::emu_error status)>	m_on_child_process_completed_func;
 		std::shared_ptr<wxProcess>					m_process;
-    };
+	};
 }
 
 
