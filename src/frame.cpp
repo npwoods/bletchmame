@@ -176,6 +176,7 @@ namespace
 		void OnMenuStateSave();
 		void OnMenuSnapshotSave();
 		void OnMenuImages();
+		void OnMenuPaths();
 		void OnMenuInputs();
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
@@ -378,7 +379,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);										}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { Pauser pauser(*this); show_paths_dialog(*this, m_prefs);					}, show_paths_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs();															}, show_inputs_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
@@ -661,6 +662,18 @@ void MameFrame::OnMenuImages()
 	Pauser pauser(*this);
 	ImagesHost images_host(*this);
 	show_images_dialog(images_host);
+}
+
+
+//-------------------------------------------------
+//  OnMenuPaths
+//-------------------------------------------------
+
+void MameFrame::OnMenuPaths()
+{
+	Pauser pauser(*this);
+	show_paths_dialog(*this, m_prefs);
+	m_prefs.Save();
 }
 
 
