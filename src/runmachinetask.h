@@ -74,6 +74,8 @@ struct InputSeq
 	wxString				m_text;
 };
 
+typedef std::uint32_t ioport_value;
+
 struct Input
 {
 	Input() = default;
@@ -88,7 +90,7 @@ struct Input
 
 	wxString				m_port_tag;
 	wxString				m_name;
-	int						m_mask;
+	ioport_value			m_mask;
 	input_type				m_type;
 	std::vector<InputSeq>	m_seqs;
 };

@@ -132,7 +132,7 @@ namespace
 
 			virtual const std::vector<Input> &GetInputs() override;
 			virtual observable::value<bool> &GetPollingSeqChanged() override;
-			virtual void StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type) override;
+			virtual void StartPolling(const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type) override;
 			virtual void StopPolling() override;
 
 		private:
@@ -1342,7 +1342,7 @@ observable::value<bool> &MameFrame::InputsHost::GetPollingSeqChanged()
 //  StartPolling
 //-------------------------------------------------
 
-void MameFrame::InputsHost::StartPolling(const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type)
+void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type)
 {
 	wxString seq_type_string;
 	switch (seq_type)

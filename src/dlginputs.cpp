@@ -34,7 +34,7 @@ namespace
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 
-		void StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type);
+		void StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type);
 		void OnPollingSeqChanged();
 	};
 };
@@ -138,7 +138,7 @@ TControl &InputsDialog::AddControl(wxWindow &parent, wxSizer &sizer, int proport
 //  StartInputPoll
 //-------------------------------------------------
 
-void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, int mask, InputSeq::inputseq_type seq_type)
+void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type)
 {
 	// start polling
 	m_host.StartPolling(port_tag, mask, seq_type);

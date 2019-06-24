@@ -17,8 +17,40 @@
 
 
 //**************************************************************************
+//  LOCAL TYPES
+//**************************************************************************
+
+namespace
+{
+	template<typename T>
+	class scanf_parser
+	{
+	public:
+		scanf_parser(const char *format)
+			: m_format(format)
+		{
+		}
+
+		bool operator()(const std::string &text, T &value) const
+		{
+			int rc = sscanf(text.c_str(), m_format, &value);
+			return rc > 0;
+		}
+
+	private:
+		const char *m_format;
+	};
+};
+
+
+//**************************************************************************
 //  LOCAL VARIABLES
 //**************************************************************************
+
+
+static const scanf_parser<int> s_int_parser("%d");
+static const scanf_parser<unsigned int> s_uint_parser("%u");
+static const scanf_parser<float> s_float_parser("%f");
 
 static const util::enum_parser<bool> s_bool_parser =
 {
@@ -318,9 +350,17 @@ void XmlParser::CharacterDataHandler(void *user_data, const char *s, int len)
 
 bool XmlParser::Attributes::Get(const char *attribute, int &value) const
 {
-	const char *string_value = InternalGet(attribute);
-	int rc = sscanf(string_value, "%d", &value);
-	return rc > 0;
+	return Get(attribute, value, s_int_parser);
+}
+
+
+//-------------------------------------------------
+//  Attributes::Get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::Get(const char *attribute, std::uint32_t &value) const
+{
+	return Get(attribute, value, s_uint_parser);
 }
 
 
@@ -340,9 +380,7 @@ bool XmlParser::Attributes::Get(const char *attribute, bool &value) const
 
 bool XmlParser::Attributes::Get(const char *attribute, float &value) const
 {
-	const char *string_value = InternalGet(attribute);
-	int rc = sscanf(string_value, "%f", &value);
-	return rc > 0;
+	return Get(attribute, value, s_float_parser);
 }
 
 
@@ -417,6 +455,10 @@ static void test()
 	bool hotel_value_parsed		= INVALID_BOOL_VALUE;
 	bool india_value			= INVALID_BOOL_VALUE;
 	bool india_value_parsed		= INVALID_BOOL_VALUE;
+	std::uint32_t julliet_value	= INVALID_BOOL_VALUE;
+	bool julliet_value_parsed	= INVALID_BOOL_VALUE;
+	float kilo_value			= INVALID_BOOL_VALUE;
+	bool kilo_value_parsed		= INVALID_BOOL_VALUE;
 	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		charlie_value_parsed	= attributes.Get("charlie", charlie_value);
@@ -427,12 +469,14 @@ static void test()
 		golf_value_parsed		= attributes.Get("golf", golf_value);
 		hotel_value_parsed		= attributes.Get("hotel", hotel_value);
 		india_value_parsed		= attributes.Get("india", india_value);
+		julliet_value_parsed	= attributes.Get("julliet", julliet_value);
+		kilo_value_parsed		= attributes.Get("kilo", kilo_value);
 	});
 
 	bool result = xml.ParseXml(
 		"<alpha>"
 		"<bravo charlie=\"delta\"/>"
-		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\"/>"
+		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\"/>/>"
 		"</alpha>");
 	assert(result);
 	assert(charlie_value == "delta");
@@ -445,6 +489,10 @@ static void test()
 	assert(hotel_value_parsed);
 	assert(!india_value);
 	assert(india_value_parsed);
+	assert(julliet_value == 2500000000);
+	assert(julliet_value_parsed);
+	assert(abs(kilo_value - 3.14159f) < 0.000000001);
+	assert(kilo_value_parsed);
 	(void)result;
 }
 
