@@ -27,6 +27,7 @@
 #include "runmachinetask.h"
 #include "utility.h"
 #include "virtuallistview.h"
+#include "info.h"
 
 
 //**************************************************************************
@@ -40,8 +41,6 @@ enum
 	ID_PING_TIMER				= wxID_HIGHEST + 1,
 	ID_LAST
 };
-
-wxDEFINE_EVENT(EVT_SPECIFY_MAME_PATH, wxCommandEvent);
 
 
 //**************************************************************************
@@ -115,7 +114,7 @@ namespace
 			virtual observable::value<std::vector<Image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
-			virtual const std::vector<wxString> &GetExtensions(const wxString &tag) const;
+			virtual std::vector<wxString> GetExtensions(const wxString &tag) const;
 			virtual void LoadImage(const wxString &tag, wxString &&path);
 			virtual void UnloadImage(const wxString &tag);
 
@@ -150,9 +149,8 @@ namespace
 		std::function<void(Chatter &&)>			m_on_chatter;
 
 		// information retrieved by -listxml
-		wxString								m_mame_build;
+		info::database							m_info_db;
 		bool									m_last_listxml_succeeded;
-		std::vector<Machine>				    m_machines;
 
 		// status of running emulation
 		observable::value<bool>					m_status_paused;
@@ -187,13 +185,13 @@ namespace
 		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
 		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
 		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
-		void OnSpecifyMamePath();
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
 		void CreateMenuBar();
+		void CheckMameInfoDatabase(bool prompt_mame_path);
 		bool IsEmulationSessionActive() const;
-		const Machine &GetRunningMachine() const;
+		const info::machine &GetRunningMachine() const;
 		void Run(int machine_index);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, tri_state checked = nullptr, bool enabled = true);
@@ -258,7 +256,6 @@ MameFrame::MameFrame()
 	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
-	Bind(EVT_SPECIFY_MAME_PATH,     [this](auto &)      { OnSpecifyMamePath();			});
 	Bind(EVT_CHATTER,				[this](auto &event)	{ OnChatter(event);				});
 	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             });
 	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);				});
@@ -282,16 +279,8 @@ MameFrame::MameFrame()
 	// nothing is running yet...
 	UpdateEmulationSession();
 
-	// Connect to MAME
-	if (wxFileExists(m_prefs.GetPath(Preferences::path_type::emu_exectuable)))
-	{
-		m_client.Launch(create_list_xml_task());
-	}
-	else
-	{
-		// Can't find MAME; ask the user
-		util::PostEvent(*this, EVT_SPECIFY_MAME_PATH);
-	}
+	// we need to check the DB
+	CheckMameInfoDatabase(true);
 }
 
 
@@ -427,6 +416,41 @@ void MameFrame::CreateMenuBar()
 
 
 //-------------------------------------------------
+//  CheckMameInfoDatabase
+//-------------------------------------------------
+
+void MameFrame::CheckMameInfoDatabase(bool prompt_mame_path)
+{
+	// try to load the info database
+	wxString db_path = m_prefs.GetMameXmlDatabasePath();
+	if (m_info_db.load(db_path))
+	{
+		// we were able to do so; refresh the machine list and we're done
+		UpdateMachineList();
+		return;
+	}
+
+	// does our path exist?
+	if (!wxFileExists(m_prefs.GetPath(Preferences::path_type::emu_exectuable)))
+	{
+		// it doesn't... are we supposed to ask the user?
+		if (!prompt_mame_path)
+			return;
+
+		// if so, ask the user
+		wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable, m_prefs.GetPath(Preferences::path_type::emu_exectuable));
+		if (path.IsEmpty())
+			return;
+
+		m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
+	}
+
+	// list XML
+	m_client.Launch(create_list_xml_task(std::move(db_path)));
+}
+
+
+//-------------------------------------------------
 //  IsEmulationSessionActive
 //-------------------------------------------------
 
@@ -440,7 +464,7 @@ bool MameFrame::IsEmulationSessionActive() const
 //  GetRunningMachine
 //-------------------------------------------------
 
-const Machine &MameFrame::GetRunningMachine() const
+const info::machine &MameFrame::GetRunningMachine() const
 {
 	// get the currently running machine
 	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
@@ -450,7 +474,6 @@ const Machine &MameFrame::GetRunningMachine() const
 
 	// return the machine
 	return task->GetMachine();
-
 }
 
 
@@ -461,31 +484,12 @@ const Machine &MameFrame::GetRunningMachine() const
 void MameFrame::Run(int machine_index)
 {
 	// we need to have full information to support the emulation session; retrieve
-	// it if appropriate
-	if (m_machines[machine_index].m_light)
-	{
-		// invoke the task
-		Task::ptr task = create_list_xml_task(false, m_machines[machine_index].m_name);
-		m_client.Launch(std::move(task));
-
-		// yield until the task is completed
-		while (m_client.IsTaskActive())
-			wxYield();
-
-		// bail if we have not gotten full info
-		if (m_machines[machine_index].m_light)
-		{
-			MessageBox("Error retrieving full information", wxOK);
-			return;
-		}
-	}
-
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
 	Pauser fake_pauser(*this, false);
 
 	// run the emulation
 	Task::ptr task = std::make_unique<RunMachineTask>(
-		m_machines[machine_index],
+		m_info_db.machines()[machine_index],
 		*this);
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
@@ -701,8 +705,8 @@ void MameFrame::OnMenuAbout()
 		+ eoln;
 
 	// MAME version
-	if (!m_mame_build.IsEmpty())
-		message += wxT("MAME ") + m_mame_build + eoln;
+	if (!m_info_db.version().IsEmpty())
+		message += wxT("MAME ") + m_info_db.version() + eoln;
 
 	// wxWidgets version
 	message += wxVERSION_STRING;
@@ -734,39 +738,14 @@ void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 	ListXmlResult &payload(event.Payload());
 
 	// identify the results
-	if (!payload.m_success)
-		return;
-
-	// this is universal; always get it
-	m_mame_build = std::move(payload.m_build);
-
-	// is this a targetted load?
-	if (payload.m_target.IsEmpty())
+	if (payload.m_success)
 	{
-		// if so, take over the machine list
-		m_machines = std::move(payload.m_machines);
-
-		// and update the machine list
-		UpdateMachineList();
-	}
-	else
-	{
-		// it isn't, cherry pick entries out
-		for (auto payload_iter = payload.m_machines.begin(); payload_iter != payload.m_machines.end(); payload_iter++)
-		{
-			// find our entry
-			auto local_iter = std::find_if(m_machines.begin(), m_machines.end(), [payload_iter](const Machine &m)
-			{
-				return m.m_name == payload_iter->m_name;
-			});
-
-			// and update it if it is there
-			if (local_iter != m_machines.end())
-				*local_iter = std::move(*payload_iter);
-		}
+		// if it succeeded, try to load the DB
+		wxString db_path = m_prefs.GetMameXmlDatabasePath();
+		if (m_info_db.load(db_path))
+			UpdateMachineList();
 	}
 
-	// we're done; reset the client
 	m_client.Reset();
 }
 
@@ -820,21 +799,6 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 
 
 //-------------------------------------------------
-//  OnSpecifyMamePath
-//-------------------------------------------------
-
-void MameFrame::OnSpecifyMamePath()
-{
-	wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable, m_prefs.GetPath(Preferences::path_type::emu_exectuable));
-	if (path.IsEmpty())
-		return;
-
-	m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
-	m_client.Launch(create_list_xml_task());
-}
-
-
-//-------------------------------------------------
 //  FileDialogCommand
 //-------------------------------------------------
 
@@ -876,7 +840,7 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 	}
 
 	// prepare the default dir/file
-	const wxString &running_machine_name(GetRunningMachine().m_name);
+	const wxString &running_machine_name(GetRunningMachine().name());
 	const wxString &default_path(m_prefs.GetMachinePath(running_machine_name, path_type));
 	wxString default_dir;
 	wxString default_file;
@@ -925,7 +889,7 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 void MameFrame::OnListItemSelected(wxListEvent &evt)
 {
     long index = evt.GetIndex();
-    m_prefs.SetSelectedMachine(m_machines[index].m_name);
+    m_prefs.SetSelectedMachine(m_info_db.machines()[index].name());
 }
 
 
@@ -937,7 +901,7 @@ void MameFrame::OnListItemActivated(wxListEvent &evt)
 {
 	// get the index
 	long index = evt.GetIndex();
-	if (index < 0 || index >= (long)m_machines.size())
+	if (index < 0 || index >= (long) m_info_db.machines().size())
 		return;
 
 	// and run the machine
@@ -963,19 +927,19 @@ void MameFrame::OnListColumnResized(wxListEvent &evt)
 
 void MameFrame::UpdateMachineList()
 {
-	m_list_view->SetItemCount(m_machines.size());
-	m_list_view->RefreshItems(0, m_machines.size() - 1);
+	m_list_view->SetItemCount(m_info_db.machines().size());
+	m_list_view->RefreshItems(0, m_info_db.machines().size() - 1);
 
 	// find the currently selected machine
-	auto iter = std::find_if(m_machines.begin(), m_machines.end(), [this](const Machine &machine)
+	auto iter = std::find_if(m_info_db.machines().begin(), m_info_db.machines().end(), [this](info::machine machine)
 	{
-		return machine.m_name == m_prefs.GetSelectedMachine();
+		return machine.name() == m_prefs.GetSelectedMachine();
 	});
 
 	// if successful, select it
-	if (iter < m_machines.end())
+	if (iter < m_info_db.machines().end())
 	{
-		long selected_index = iter - m_machines.begin();
+		long selected_index = iter - m_info_db.machines().begin();
 		m_list_view->Select(selected_index);
 		m_list_view->EnsureVisible(selected_index);
 	}
@@ -988,20 +952,22 @@ void MameFrame::UpdateMachineList()
 
 wxString MameFrame::GetListItemText(size_t item, long column) const
 {
+	const info::machine machine(m_info_db.machines()[item]);
+
 	wxString result;
 	switch (column)
 	{
 	case 0:
-		result = m_machines[item].m_name;
+		result = machine.name();
 		break;
 	case 1:
-		result = m_machines[item].m_description;
+		result = machine.description();
 		break;
 	case 2:
-		result = m_machines[item].m_year;
+		result = machine.year();
 		break;
 	case 3:
-		result = m_machines[item].m_manfacturer;
+		result = machine.manufacturer();
 		break;
 	default:
 		throw false;
@@ -1043,7 +1009,7 @@ void MameFrame::UpdateTitleBar()
 	wxString title_text = wxTheApp->GetAppName();
 	if (IsEmulationSessionActive())
 	{
-		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().m_description;
+		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().description();
 
 		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
 		if (m_status_paused.get() && !m_current_pauser)
@@ -1259,18 +1225,19 @@ void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 //  GetExtensions
 //-------------------------------------------------
 
-const std::vector<wxString> &MameFrame::ImagesHost::GetExtensions(const wxString &tag) const
+std::vector<wxString> MameFrame::ImagesHost::GetExtensions(const wxString &tag) const
 {
 	// find the device declaration
-	const Machine &machine(m_host.GetRunningMachine());
-	auto iter = std::find_if(machine.m_devices.begin(), machine.m_devices.end(), [&tag](const Device &dev)
+	auto devices = m_host.GetRunningMachine().devices();
+
+	auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
 	{
-		return dev.m_tag == tag;
+		return dev.tag() == tag;
 	});
-	assert(iter != machine.m_devices.end());
+	assert(iter != devices.end());
 
 	// and return it!
-	return iter->m_extensions;
+	return util::string_split((*iter).extensions(), [](wchar_t ch) { return ch == ','; });
 }
 
 
@@ -1300,7 +1267,7 @@ void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
 
 const wxString &MameFrame::ImagesHost::GetMachineName() const
 {
-	return m_host.GetRunningMachine().m_name;
+	return m_host.GetRunningMachine().name();
 }
 
 

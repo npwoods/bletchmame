@@ -232,6 +232,7 @@
     <ClCompile Include="dlginputs.cpp" />
     <ClCompile Include="dlgpaths.cpp" />
     <ClCompile Include="frame.cpp" />
+    <ClCompile Include="info.cpp" />
     <ClCompile Include="job.cpp" />
     <ClCompile Include="listxmltask.cpp" />
     <ClCompile Include="prefs.cpp" />
@@ -252,6 +253,7 @@
     <ClInclude Include="dlginputs.h" />
     <ClInclude Include="dlgpaths.h" />
     <ClInclude Include="frame.h" />
+    <ClInclude Include="info.h" />
     <ClInclude Include="job.h" />
     <ClInclude Include="listxmltask.h" />
     <ClInclude Include="payloadevent.h" />

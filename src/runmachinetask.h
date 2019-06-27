@@ -14,6 +14,7 @@
 #include <wx/msgqueue.h>
 
 #include "task.h"
+#include "info.h"
 #include "payloadevent.h"
 
 
@@ -149,11 +150,11 @@ struct Machine;
 class RunMachineTask : public Task
 {
 public:
-	RunMachineTask(const Machine &machine, wxWindow &target_window);
+	RunMachineTask(info::machine machine, wxWindow &target_window);
 
 	void Issue(const std::vector<wxString> &args);
 	void IssueFullCommandLine(const wxString &full_command);
-	const Machine &GetMachine() const { return m_machine; }
+	const info::machine &GetMachine() const { return m_machine; }
 	void SetChatterEnabled(bool enabled) { m_chatter_enabled = enabled; }
 
 protected:
@@ -178,7 +179,7 @@ private:
 		emu_error					m_status;
     };
 
-	const Machine &					m_machine;
+	info::machine					m_machine;
 	std::uintptr_t					m_target_window;
 	wxMessageQueue<Message>         m_message_queue;
 	volatile bool					m_chatter_enabled;

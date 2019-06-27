@@ -71,6 +71,8 @@ public:
 	const wxString &GetMachinePath(const wxString &machine_name, machine_path_type path_type) const;
 	void SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path);
 
+	wxString GetMameXmlDatabasePath(bool ensure_directory_exists = true) const;
+
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
 
 	bool Load();

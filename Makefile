@@ -22,6 +22,7 @@ OBJECTFILES=\
 	$(OBJ)/dlginputs.o			\
 	$(OBJ)/dlgpaths.o			\
 	$(OBJ)/frame.o				\
+	$(OBJ)/info.o				\
 	$(OBJ)/job.o				\
 	$(OBJ)/listxmltask.o		\
 	$(OBJ)/prefs.o				\

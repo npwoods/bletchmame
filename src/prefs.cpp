@@ -294,6 +294,32 @@ void Preferences::Save(std::ostream &output)
 
 
 //-------------------------------------------------
+//  GetMameXmlDatabasePath
+//-------------------------------------------------
+
+wxString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
+{
+	// get the configuration directory
+	wxString config_dir = GetConfigDirectory(ensure_directory_exists);
+	if (config_dir.IsEmpty())
+		return "";
+
+	// get the MAME path
+	const wxString &mame_path = GetPath(Preferences::path_type::emu_exectuable);
+	if (mame_path.IsEmpty())
+		return "";
+
+	// parse out the MAME filename
+	wxString mame_filename;
+	wxFileName::SplitPath(mame_path, nullptr, &mame_filename, nullptr);
+
+	// get the full name
+	wxFileName db_filename(config_dir, mame_filename, "infodb");
+	return db_filename.GetFullPath();
+}
+
+
+//-------------------------------------------------
 //  GetFileName
 //-------------------------------------------------
 

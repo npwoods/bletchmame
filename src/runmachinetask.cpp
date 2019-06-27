@@ -83,7 +83,7 @@ wxString BuildCommand(const std::vector<wxString> &args)
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(const Machine &machine, wxWindow &target_window)
+RunMachineTask::RunMachineTask(info::machine machine, wxWindow &target_window)
     : m_machine(machine)
     , m_target_window((std::uintptr_t)target_window.GetHWND())
 	, m_chatter_enabled(false)
@@ -99,7 +99,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 {
 	return
 	{
-		GetMachine().m_name,
+		GetMachine().name(),
 		"-rompath",
 		prefs.GetPath(Preferences::path_type::roms),
 		"-samplepath",
