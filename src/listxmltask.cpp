@@ -43,6 +43,13 @@ namespace
 		std::uint32_t get(const std::string &string);
 		std::uint32_t get(const wxString &string);
 		const std::vector<char> &data() const;
+		
+		template<typename T> void embed_value(T value)
+		{
+			const std::uint8_t *bytes = (const std::uint8_t *) &value;
+			for (int i = 0; i < sizeof(value); i++)
+				m_data.push_back(bytes[i]);
+		}
 
 	private:
 		std::vector<char>								m_data;
@@ -128,7 +135,7 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	configuration_settings.reserve(350000);	// 312460 settings
 
 	// magic/version
-	header.m_magic = info::binaries::MAGIC;
+	header.m_magic = info::binaries::MAGIC_HEADER;
 	header.m_version = info::binaries::VERSION;
 
 	// parse the -listxml output
@@ -253,6 +260,9 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	if (!result.m_success)
 		result.m_error_message = xml.ErrorMessage();
 
+	// final magic bytes on string table
+	strings.embed_value(info::binaries::MAGIC_STRINGTABLE_END);
+
 	// finalize the header
 	header.m_machines_count					= to_uint32(machines.size());
 	header.m_devices_count					= to_uint32(devices.size());
@@ -261,15 +271,13 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	header.m_configuration_conditions_count	= to_uint32(configuration_conditions.size()); 
 	
 	// emit the data
-	m_output->Write(&header,							sizeof(header));
-	m_output->Write(machines.data(),					machines.size()					* sizeof(machines[0]));
-	m_output->Write(devices.data(),						devices.size()					* sizeof(devices[0]));
-	m_output->Write(configurations.data(),				configurations.size()			* sizeof(configurations[0]));
-	m_output->Write(configuration_settings.data(),		configuration_settings.size()	* sizeof(configuration_settings[0]));
-	m_output->Write(configuration_conditions.data(),	configuration_conditions.size()	* sizeof(configuration_conditions[0]));
-
-	// note that on the string table, we know the last character is \0 so we can drop it
-	m_output->Write(strings.data().data(),				(strings.data().size() - 1)		* sizeof(strings.data()[0]));
+	m_output->Write(&header,									sizeof(header));
+	m_output->Write(machines.data(),							machines.size()					* sizeof(machines[0]));
+	m_output->Write(devices.data(),								devices.size()					* sizeof(devices[0]));
+	m_output->Write(configurations.data(),						configurations.size()			* sizeof(configurations[0]));
+	m_output->Write(configuration_settings.data(),				configuration_settings.size()	* sizeof(configuration_settings[0]));
+	m_output->Write(configuration_conditions.data(),			configuration_conditions.size()	* sizeof(configuration_conditions[0]));
+	m_output->Write(strings.data().data(),						strings.data().size()			* sizeof(strings.data()[0]));
 
 	// close out the file and return
 	m_output.reset();
@@ -289,6 +297,9 @@ string_table::string_table()
 
 	// special case; prime empty string to be #0
 	get(std::string());
+
+	// embed the initial magic bytes
+	embed_value(info::binaries::MAGIC_STRINGTABLE_BEGIN);
 }
 
 

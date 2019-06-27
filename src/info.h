@@ -25,7 +25,9 @@ namespace info
 {
 	namespace binaries
 	{
-		const std::uint32_t MAGIC = 3133731337;
+		const std::uint32_t MAGIC_HEADER = 3133731337;
+		const std::uint16_t MAGIC_STRINGTABLE_BEGIN = 0x9D9B;
+		const std::uint16_t MAGIC_STRINGTABLE_END = 0x9F99;
 		const std::uint32_t VERSION = 1;
 
 		struct header
