@@ -230,6 +230,7 @@
     <ClCompile Include="dlgimages.cpp" />
     <ClCompile Include="dlgconsole.cpp" />
     <ClCompile Include="dlginputs.cpp" />
+    <ClCompile Include="dlgloading.cpp" />
     <ClCompile Include="dlgpaths.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="info.cpp" />
@@ -251,6 +252,7 @@
     <ClInclude Include="dlgimages.h" />
     <ClInclude Include="dlgconsole.h" />
     <ClInclude Include="dlginputs.h" />
+    <ClInclude Include="dlgloading.h" />
     <ClInclude Include="dlgpaths.h" />
     <ClInclude Include="frame.h" />
     <ClInclude Include="info.h" />

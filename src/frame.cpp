@@ -28,6 +28,7 @@
 #include "utility.h"
 #include "virtuallistview.h"
 #include "info.h"
+#include "dlgloading.h"
 
 
 //**************************************************************************
@@ -189,7 +190,7 @@ namespace
 
 		// miscellaneous
 		void CreateMenuBar();
-		void CheckMameInfoDatabase(bool prompt_mame_path);
+		void CheckMameInfoDatabase(bool prompt_mame_path, bool force_refresh);
 		bool IsEmulationSessionActive() const;
 		const info::machine &GetRunningMachine() const;
 		void Run(int machine_index);
@@ -280,7 +281,7 @@ MameFrame::MameFrame()
 	UpdateEmulationSession();
 
 	// we need to check the DB
-	CheckMameInfoDatabase(true);
+	CheckMameInfoDatabase(true, false);
 }
 
 
@@ -338,7 +339,9 @@ void MameFrame::CreateMenuBar()
 
 	// the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
 	wxMenu *help_menu = new wxMenu();
-	wxMenuItem *about_menu_item				= help_menu->Append(wxID_ABOUT, "&About\tF1");
+	wxMenuItem *refresh_mame_info_menu_item     = help_menu->Append(id++, "Refresh MAME machine info...");
+	help_menu->AppendSeparator();
+	wxMenuItem *about_menu_item			        = help_menu->Append(wxID_ABOUT, "&About\tF1");
 
 	// now append the freshly created menu to the menu bar...
 	m_menu_bar = new wxMenuBar();
@@ -370,6 +373,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs();															}, show_inputs_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { CheckMameInfoDatabase(false, true);										}, refresh_mame_info_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
 	// Bind UI update events	
@@ -386,6 +390,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_images.get().empty());	}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_inputs.empty());	}, show_inputs_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -419,15 +424,18 @@ void MameFrame::CreateMenuBar()
 //  CheckMameInfoDatabase
 //-------------------------------------------------
 
-void MameFrame::CheckMameInfoDatabase(bool prompt_mame_path)
+void MameFrame::CheckMameInfoDatabase(bool prompt_mame_path, bool force_refresh)
 {
-	// try to load the info database
 	wxString db_path = m_prefs.GetMameXmlDatabasePath();
-	if (m_info_db.load(db_path))
+	if (!force_refresh)
 	{
-		// we were able to do so; refresh the machine list and we're done
-		UpdateMachineList();
-		return;
+		// try to load the info database
+		if (m_info_db.load(db_path))
+		{
+			// we were able to do so; refresh the machine list and we're done
+			UpdateMachineList();
+			return;
+		}
 	}
 
 	// does our path exist?
@@ -447,6 +455,9 @@ void MameFrame::CheckMameInfoDatabase(bool prompt_mame_path)
 
 	// list XML
 	m_client.Launch(create_list_xml_task(std::move(db_path)));
+
+	// and show the dialog
+	show_loading_mame_info_dialog(*this, [this]() { return !m_client.IsTaskActive(); });
 }
 
 

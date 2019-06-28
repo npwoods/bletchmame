@@ -20,6 +20,7 @@ OBJECTFILES=\
 	$(OBJ)/dlgconsole.o			\
 	$(OBJ)/dlgimages.o			\
 	$(OBJ)/dlginputs.o			\
+	$(OBJ)/dlgloading.o			\
 	$(OBJ)/dlgpaths.o			\
 	$(OBJ)/frame.o				\
 	$(OBJ)/info.o				\
