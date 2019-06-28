@@ -72,8 +72,10 @@ bool info::database::load(const wxString &file_name)
 		return false;
 
 	// things look good, set up our tables
-	m_view_machines	= decltype(m_view_machines)(*this,	machines_offset, hdr.m_machines_count);
-	m_view_devices	= decltype(m_view_devices)(*this,	devices_offset, hdr.m_devices_count);
+	m_machines_offset = machines_offset;
+	m_machines_count = hdr.m_machines_count;
+	m_devices_offset = devices_offset;
+	m_devices_count = hdr.m_devices_count;
 
 	// ...and set up string table info
 	m_loaded_strings.clear();

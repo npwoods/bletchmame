@@ -137,6 +137,13 @@ namespace info
 			return *this;
 		}
 
+		bool operator==(const view &that) const
+		{
+			return m_db == that.m_db
+				&& m_offset == that.m_offset
+				&& m_count == that.m_count;
+		}
+
 		TPublic operator[](std::uint32_t position) const;
 		size_t size() const { return m_count; }
 
@@ -152,9 +159,8 @@ namespace info
 		class iterator : public std::iterator<std::random_access_iterator_tag, TPublic>
 		{
 		public:
-			iterator(const database &db, const view &view, uint32_t position)
-				: m_db(db)
-				, m_view(view)
+			iterator(const view &view, uint32_t position)
+				: m_view(view)
 				, m_position(position)
 			{
 			}
@@ -193,21 +199,19 @@ namespace info
 			}
 
 		private:
-			const database &	m_db;
-			const view &		m_view;
+			view				m_view;
 			uint32_t			m_position;
 
 			void asset_compatible_iterator(const iterator &that)
 			{
-				assert(&m_db == &that.m_db);
-				assert(&m_view == &that.m_view);
+				assert(m_view == that.m_view);
 			}
 		};
 
 		typedef iterator const_iterator;
 
-		iterator begin() const { return iterator(*m_db, *this, 0); }
-		iterator end() const { return iterator(*m_db, *this, m_count); }
+		iterator begin() const { return iterator(*this, 0); }
+		iterator end() const { return iterator(*this, m_count); }
 		const_iterator cbegin() const { return begin(); }
 		const_iterator cend() const { return end(); }
 
@@ -277,7 +281,11 @@ namespace info
 		friend class view;
 	public:
 		database()
-			: m_string_table_offset(0)
+			: m_machines_offset(0)
+			, m_machines_count(0)
+			, m_devices_offset(0)
+			, m_devices_count(0)
+			, m_string_table_offset(0)
 			, m_version(&s_empty_string)
 		{
 		}
@@ -285,16 +293,18 @@ namespace info
 		// publically usable functions
 		bool load(const wxString &file_name);
 		const wxString &version() const			{ return *m_version; }
-		const auto &machines() const			{ return m_view_machines; }
-		const auto &devices() const				{ return m_view_devices; }
+		auto machines() const					{ return view<machine, binaries::machine>(*this, m_machines_offset, m_machines_count); }
+		auto devices() const					{ return view<device, binaries::device>(*this, m_devices_offset, m_devices_count); }
 
 		// should only be called by info classes
 		const wxString &get_string(std::uint32_t offset) const;
 
 	private:
 		std::vector<std::uint8_t>							m_data;
-		view<machine, binaries::machine>					m_view_machines;
-		view<device, binaries::device>						m_view_devices;
+		std::uint32_t										m_machines_offset;
+		std::uint32_t										m_machines_count;
+		std::uint32_t										m_devices_offset;
+		std::uint32_t										m_devices_count;
 		size_t												m_string_table_offset;
 		mutable std::unordered_map<std::uint32_t, wxString>	m_loaded_strings;
 		const wxString *									m_version;
