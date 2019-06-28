@@ -99,6 +99,8 @@ bool info::database::load_data(const wxString &file_name)
 		return false;
 
 	size_t size = input.GetSize();
+	if (size <= 0)
+		return false;
 	m_data.resize(size);
 	return input.ReadAll(m_data.data(), size);
 }
