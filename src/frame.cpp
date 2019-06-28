@@ -159,12 +159,16 @@ namespace
 		wxString								m_status_frameskip;
 		bool									m_status_throttled;
 		float									m_status_throttle_rate;
+		int										m_status_sound_attenuation;
 		observable::value<std::vector<Image> >	m_status_images;
 		std::vector<Input>						m_status_inputs;
 
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
 		static const wxString s_wc_save_snapshot;
+
+		const int SOUND_ATTENUATION_OFF = -32;
+		const int SOUND_ATTENUATION_ON = 0;
 
 		// event handlers (these functions should _not_ be virtual)
 		void OnKeyDown(wxKeyEvent &event);
@@ -213,6 +217,8 @@ namespace
 		void ChangeThrottled(bool throttled);
 		void ChangeThrottleRate(float throttle_rate);
 		void ChangeThrottleRate(int adjustment);
+		void ChangeSound(bool sound_enabled);
+		bool IsSoundEnabled() const;
 	};
 };
 
@@ -329,6 +335,7 @@ void MameFrame::CreateMenuBar()
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 	wxMenuItem *images_menu_item				= options_menu->Append(id++, "Images...");
+	wxMenuItem *sound_menu_item					= options_menu->Append(id++, "Sound", wxEmptyString, wxITEM_CHECK);
 	options_menu->AppendSeparator();
 	wxMenuItem *console_menu_item				= options_menu->Append(id++, "Console...");
 
@@ -370,6 +377,8 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);													}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);										}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { ChangeSound(!IsSoundEnabled());											}, sound_menu_item->GetId());
+	
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs();															}, show_inputs_dialog_menu_item->GetId());
@@ -388,6 +397,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);					}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_images.get().empty());	}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());						}, sound_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_inputs.empty());	}, show_inputs_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
@@ -800,6 +810,8 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 		m_status_throttled = payload.m_throttled;
 	if (payload.m_throttle_rate_specified)
 		m_status_throttle_rate = payload.m_throttle_rate;
+	if (payload.m_sound_attenuation_specified)
+		m_status_sound_attenuation = payload.m_sound_attenuation;
 	if (payload.m_images_specified)
 		m_status_images = std::move(payload.m_images);
 	if (payload.m_inputs_specified)
@@ -1121,7 +1133,7 @@ void MameFrame::ChangeThrottled(bool throttled)
 
 
 //-------------------------------------------------
-//  IssueThrottleRate
+//  ChangeThrottleRate
 //-------------------------------------------------
 
 void MameFrame::ChangeThrottleRate(float throttle_rate)
@@ -1151,6 +1163,26 @@ void MameFrame::ChangeThrottleRate(int adjustment)
 
 	// and change the throttle rate
 	ChangeThrottleRate(s_throttle_rates[index]);
+}
+
+
+//-------------------------------------------------
+//  ChangeSound
+//-------------------------------------------------
+
+void MameFrame::ChangeSound(bool sound_enabled)
+{
+	Issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
+}
+
+
+//-------------------------------------------------
+//  IsSoundEnabled
+//-------------------------------------------------
+
+bool MameFrame::IsSoundEnabled() const
+{
+	return m_status_sound_attenuation != SOUND_ATTENUATION_OFF;
 }
 
 

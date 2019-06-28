@@ -298,6 +298,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	result.m_speed_text_specified = false;
 	result.m_throttled_specified = false;
 	result.m_throttle_rate_specified = false;
+	result.m_sound_attenuation_specified = false;
 	result.m_images_specified = false;
 	result.m_inputs_specified = false;
 
@@ -313,6 +314,10 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		result.m_speed_text_specified = attributes.Get("speed_text", result.m_speed_text);
 		result.m_throttled_specified = attributes.Get("throttled", result.m_throttled);
 		result.m_throttle_rate_specified = attributes.Get("throttle_rate", result.m_throttle_rate);
+	});
+	xml.OnElement({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
+	{
+		result.m_sound_attenuation_specified = attributes.Get("attenuation", result.m_sound_attenuation);
 	});
 	xml.OnElement({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{

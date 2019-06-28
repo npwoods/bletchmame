@@ -119,6 +119,8 @@ struct StatusUpdate
 	bool				m_throttled_specified;
 	float				m_throttle_rate;
 	bool				m_throttle_rate_specified;
+	int					m_sound_attenuation;
+	bool				m_sound_attenuation_specified;
 	std::vector<Image>	m_images;
 	bool				m_images_specified;
 	std::vector<Input>	m_inputs;
