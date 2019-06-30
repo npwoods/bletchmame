@@ -150,13 +150,13 @@ bool Preferences::Load(wxInputStream &input)
 	path_type type = path_type::count;
 	std::array<int, COLUMN_COUNT> column_order = { 0, };
 
-	xml.OnElement({ "preferences" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
 		bool menu_bar_shown;
 		if (attributes.Get("menu_bar_shown", menu_bar_shown))
 			SetMenuBarShown(menu_bar_shown);
 	});
-	xml.OnElement({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
 		wxString type_string;
 		if (attributes.Get("type", type_string))
@@ -167,17 +167,17 @@ bool Preferences::Load(wxInputStream &input)
 				: path_type::count;
 		}
 	});
-	xml.OnElement({ "preferences", "path" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "path" }, [&](wxString &&content)
 	{
 		if (type < path_type::count)
 			SetPath(type, std::move(content));
 		type = path_type::count;
 	});
-	xml.OnElement({ "preferences", "mameextraarguments" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "mameextraarguments" }, [&](wxString &&content)
 	{
 		SetMameExtraArguments(std::move(content));
 	});
-	xml.OnElement({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
 	{
 		int width, height;
 		if (attributes.Get("width", width) && attributes.Get("height", height) && IsValidDimension(width) && IsValidDimension(height))
@@ -188,11 +188,11 @@ bool Preferences::Load(wxInputStream &input)
 			SetSize(size);
 		}
 	});
-	xml.OnElement({ "preferences", "selectedmachine" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "selectedmachine" }, [&](wxString &&content)
 	{
 		SetSelectedMachine(std::move(content));
 	});
-	xml.OnElement({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string id;
 		if (attributes.Get("id", id))
@@ -210,7 +210,7 @@ bool Preferences::Load(wxInputStream &input)
 			}
 		}
 	});
-	xml.OnElement({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
 	{
 		wxString name;
 		if (attributes.Get("name", name))

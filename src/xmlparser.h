@@ -13,6 +13,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include <type_traits>
 
 #include "utility.h"
 
@@ -22,6 +23,12 @@ class wxInputStream;
 class XmlParser
 {
 public:
+	enum class element_result
+	{
+		OK,
+		SKIP
+	};
+
 	class Attributes
 	{
 	public:
@@ -62,14 +69,28 @@ public:
 	XmlParser();
 	~XmlParser();
 
-	typedef std::function<void(const Attributes &node)> OnBeginElementCallback;
-	void OnElement(const std::initializer_list<const char *> &elements, OnBeginElementCallback &&func)
+	typedef std::function<element_result (const Attributes &node) > OnBeginElementCallback;
+	template<typename TFunc>
+	void OnElementBegin(const std::initializer_list<const char *> &elements, TFunc &&func)
 	{
-		GetNode(elements)->m_begin_func = std::move(func);
+		// we don't want to force callers to specify a return value in the TFunc (usually a
+		// lambda) because most of the time it would just return element_result::OK
+		//
+		// therefore, we are creating a proxy that will supply element_result::OK as a return
+		// value if it is not specified
+		Attributes *x = nullptr;
+		typedef typename std::conditional<
+			std::is_void<decltype(func(*x))>::value,
+			util::return_value_substitutor<TFunc, element_result, element_result::OK>,
+			TFunc>::type proxy_type;
+		auto proxy = proxy_type(std::move(func));
+
+		// supply the proxy
+		GetNode(elements)->m_begin_func = std::move(proxy);
 	}
 
 	typedef std::function<void(wxString &&content)> OnEndElementCallback;
-	void OnElement(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
+	void OnElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
 		GetNode(elements)->m_end_func = std::move(func);
 	}
@@ -95,9 +116,9 @@ private:
 	};
 
 	struct XML_ParserStruct *	m_parser;
-	Node::ptr				m_root;
-	Node::ptr				m_current_node;
-	int							m_unknown_depth;
+	Node::ptr					m_root;
+	Node::ptr					m_current_node;
+	int							m_skipping_depth;
 	wxString					m_current_content;
 
 	bool InternalParse(wxInputStream &input);

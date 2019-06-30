@@ -57,9 +57,11 @@ static const util::enum_parser<bool> s_bool_parser =
 	{ "0", false },
 	{ "off", false },
 	{ "false", false },
+	{ "no", false },
 	{ "1", true },
 	{ "on", true },
-	{ "true", true }
+	{ "true", true },
+	{ "yes", true }
 };
 
 
@@ -99,12 +101,12 @@ XmlParser::~XmlParser()
 bool XmlParser::Parse(wxInputStream &input)
 {
 	m_current_node = m_root;
-	m_unknown_depth = 0;
+	m_skipping_depth = 0;
 
 	bool success = InternalParse(input);
 
 	m_current_node = nullptr;
-	m_unknown_depth = 0;
+	m_skipping_depth = 0;
 	return success;
 }
 
@@ -203,34 +205,59 @@ XmlParser::Node::ptr XmlParser::GetNode(const std::initializer_list<const char *
 
 void XmlParser::StartElement(const char *element, const char **attributes)
 {
+	// only try to find this node in our tables if we are not skipping
 	Node::ptr child;
-
-	if (m_unknown_depth == 0)
+	if (m_skipping_depth == 0)
 	{
 		auto iter = m_current_node->m_map.find(element);
 		if (iter != m_current_node->m_map.end())
 			child = iter->second;
 	}
 
-	// do we have a child?
+	// figure out how to handle this element
+	element_result result;
 	if (child)
 	{
 		// we do - traverse down the tree
 		m_current_node = child;
 
-		// call back the begin func, if appropriate
+		// do we have a callback function for beginning this node?
 		if (m_current_node->m_begin_func)
 		{
-			Attributes *xxx = reinterpret_cast<Attributes *>(reinterpret_cast<void *>(attributes));
-			m_current_node->m_begin_func(*xxx);
+			// we do - call it
+			Attributes *attributes_object = reinterpret_cast<Attributes *>(reinterpret_cast<void *>(attributes));
+			result = m_current_node->m_begin_func(*attributes_object);
+		}
+		else
+		{
+			// we don't; we treat this as a normal node
+			result = element_result::OK;
 		}
 	}
 	else
 	{
-		// we don't - go into the unknown
-		m_unknown_depth++;
+		// we don't - we start skipping
+		result = element_result::SKIP;
 	}
 
+	// do the dirty work
+	switch (result)
+	{
+	case element_result::OK:
+		// do nothing
+		break;
+
+	case element_result::SKIP:
+		// we're skipping this element; treat it the same as an unknown element
+		m_skipping_depth++;
+		break;
+
+	default:
+		assert(false);
+		break;
+	}
+
+	// finally clear out content
 	m_current_content.clear();
 }
 
@@ -241,10 +268,10 @@ void XmlParser::StartElement(const char *element, const char **attributes)
 
 void XmlParser::EndElement(const char *)
 {
-	if (m_unknown_depth)
+	if (m_skipping_depth)
 	{
 		// coming out of an unknown element type
-		m_unknown_depth--;
+		m_skipping_depth--;
 	}
 	else
 	{
@@ -459,11 +486,11 @@ static void test()
 	bool julliet_value_parsed	= INVALID_BOOL_VALUE;
 	float kilo_value			= INVALID_BOOL_VALUE;
 	bool kilo_value_parsed		= INVALID_BOOL_VALUE;
-	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		charlie_value_parsed	= attributes.Get("charlie", charlie_value);
 	});
-	xml.OnElement({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		foxtrot_value_parsed	= attributes.Get("foxtrot", foxtrot_value);
 		golf_value_parsed		= attributes.Get("golf", golf_value);
@@ -506,13 +533,13 @@ static void unicode()
 	XmlParser xml;
 	wxString bravo_value;
 	wxString charlie_value;
-	xml.OnElement({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		bool result = attributes.Get("charlie", charlie_value);
 		assert(result);
 		(void)result;
 	});
-	xml.OnElement({ "alpha", "bravo" }, [&](wxString &&value)
+	xml.OnElementEnd({ "alpha", "bravo" }, [&](wxString &&value)
 	{
 		bravo_value = std::move(value);
 	});
@@ -529,12 +556,48 @@ static void unicode()
 
 
 //-------------------------------------------------
+//  skipping
+//-------------------------------------------------
+
+static void skipping()
+{
+	XmlParser xml;
+	int expected_invocations = 0;
+	int unexpected_invocations = 0;
+	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		bool skip_value;
+		attributes.Get("skip", skip_value);
+		return skip_value ? XmlParser::element_result::SKIP : XmlParser::element_result::OK;
+	});
+	xml.OnElementBegin({ "alpha", "bravo", "expected" }, [&](const XmlParser::Attributes &)
+	{
+		expected_invocations++;
+	});
+	xml.OnElementBegin({ "alpha", "bravo", "unexpected" }, [&](const XmlParser::Attributes &)
+	{
+		unexpected_invocations++;
+	});
+
+	bool result = xml.ParseXml(
+		"<alpha>"
+		"<bravo skip=\"no\"><expected/></bravo>"
+		"<bravo skip=\"yes\"><unexpected/></bravo>"
+		"</alpha>");
+	assert(result);
+	assert(expected_invocations == 1);
+	assert(unexpected_invocations == 0);
+}
+
+
+//-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
 
 static validity_check validity_checks[] =
 {
 	test,
-	unicode
+	unicode,
+	skipping
 };
 

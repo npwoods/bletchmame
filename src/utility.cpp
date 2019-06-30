@@ -142,10 +142,34 @@ static void test_enum_parser()
 //  validity_checks
 //-------------------------------------------------
 
+static void test_return_value_substitutor()
+{
+	// a function that returns void
+	bool func_called = false;
+	auto func = [&]
+	{
+		func_called = true;
+	};
+
+	// proxying it
+	auto proxy = util::return_value_substitutor<decltype(func), int, 42>(std::move(func));
+
+	// and lets make sure the proxy works
+	int rc = proxy();
+	assert(rc == 42);
+	assert(func_called);
+}
+
+
+//-------------------------------------------------
+//  validity_checks
+//-------------------------------------------------
+
 static validity_check validity_checks[] =
 {
 	test_string_split<std::string>,
 	test_string_split<std::wstring>,
 	test_build_command_line,
-	test_enum_parser
+	test_enum_parser,
+	test_return_value_substitutor
 };

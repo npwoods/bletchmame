@@ -303,27 +303,27 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	result.m_inputs_specified = false;
 
 	XmlParser xml;
-	xml.OnElement({ "status" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
 		result.m_paused_specified = attributes.Get("paused", result.m_paused);
 		result.m_polling_input_seq_specified = attributes.Get("polling_input_seq", result.m_polling_input_seq);
 	});
-	xml.OnElement({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
 		result.m_frameskip_specified = attributes.Get("frameskip", result.m_frameskip);
 		result.m_speed_text_specified = attributes.Get("speed_text", result.m_speed_text);
 		result.m_throttled_specified = attributes.Get("throttled", result.m_throttled);
 		result.m_throttle_rate_specified = attributes.Get("throttle_rate", result.m_throttle_rate);
 	});
-	xml.OnElement({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
 		result.m_sound_attenuation_specified = attributes.Get("attenuation", result.m_sound_attenuation);
 	});
-	xml.OnElement({ "status", "images" }, [&](const XmlParser::Attributes &)
+	xml.OnElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_images_specified = true;
 	});
-	xml.OnElement({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
 		Image image;
 		attributes.Get("tag",				image.m_tag);
@@ -335,11 +335,11 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("filename",			image.m_file_name);
 		result.m_images.push_back(std::move(image));
 	});
-	xml.OnElement({ "status", "inputs" }, [&](const XmlParser::Attributes &)
+	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_inputs_specified = true;
 	});
-	xml.OnElement({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
 		Input input;
 		attributes.Get("port_tag",			input.m_port_tag);
@@ -348,7 +348,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("name",				input.m_name);
 		result.m_inputs.push_back(std::move(input));
 	});
-	xml.OnElement({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
 		Input &current_input(*(result.m_inputs.end() - 1));
 		InputSeq seq;

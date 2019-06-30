@@ -16,6 +16,32 @@
 
 namespace util {
 
+
+//**************************************************************************
+//  PARSING UTILITY CLASSES
+//**************************************************************************
+
+template<typename TFunc, typename TValue, TValue Value>
+class return_value_substitutor
+{
+public:
+	return_value_substitutor(TFunc &&func)
+		: m_func(std::move(func))
+	{
+	}
+
+	template<typename... TArgs>
+	TValue operator()(TArgs&&... args)
+	{
+		m_func(args...);
+		return Value;
+	}
+
+private:
+	TFunc m_func;
+};
+
+
 //**************************************************************************
 //  PARSING UTILITY CLASSES
 //**************************************************************************
