@@ -20,6 +20,22 @@
 
 
 //**************************************************************************
+//  MACROS
+//**************************************************************************
+
+// workaround for GCC bug fixed in 7.4
+#ifdef __GNUC__
+#if __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
+#define SHOULD_BE_DELETE	default
+#endif	// __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
+#endif // __GNUC__
+
+#ifndef SHOULD_BE_DELETE
+#define SHOULD_BE_DELETE	delete
+#endif // !SHOULD_BE_DELETE
+
+
+//**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
@@ -36,7 +52,7 @@ struct RunMachineResult
 struct Image
 {
 	Image() = default;
-	Image(const Image &) = default;	// should be 'delete', but can't in response to a bug fixed in GCC 7.4
+	Image(const Image &) = SHOULD_BE_DELETE;
 	Image(Image &&that) = default;
 
 	wxString			m_tag;
@@ -62,7 +78,7 @@ struct Image
 struct InputSeq
 {
 	InputSeq() = default;
-	InputSeq(const InputSeq &that) = default;	// should be 'delete', but can't in response to a bug fixed in GCC 7.4
+	InputSeq(const InputSeq &that) = SHOULD_BE_DELETE;
 	InputSeq(InputSeq &&that) = default;
 
 	enum class inputseq_type
@@ -81,7 +97,7 @@ typedef std::uint32_t ioport_value;
 struct Input
 {
 	Input() = default;
-	Input(const Input &) = default;	// should be 'delete', but can't in response to a bug fixed in GCC 7.4
+	Input(const Input &) = SHOULD_BE_DELETE;
 	Input(Input &&that) = default;
 
 	enum class input_type
