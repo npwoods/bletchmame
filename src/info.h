@@ -156,7 +156,7 @@ namespace info
 				: view();
 		}
 
-		class iterator : public std::iterator<std::random_access_iterator_tag, TPublic>
+		class iterator
 		{
 		public:
 			iterator(const view &view, uint32_t position)
@@ -164,6 +164,12 @@ namespace info
 				, m_position(position)
 			{
 			}
+
+			using iterator_category = std::random_access_iterator_tag;
+			using value_type = TPublic;
+			using difference_type = ssize_t;
+			using pointer = TPublic * ;
+			using reference = TPublic & ;
 
 			TPublic operator*() const { return m_view[m_position]; }
 			TPublic operator->() const { return m_view[m_position]; }
@@ -205,6 +211,7 @@ namespace info
 			void asset_compatible_iterator(const iterator &that)
 			{
 				assert(m_view == that.m_view);
+				(void)that;
 			}
 		};
 

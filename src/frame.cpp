@@ -9,6 +9,7 @@
 #include "wx/wxprec.h"
 
 #include <algorithm>
+#include <optional>
 
 #include <wx/listctrl.h>
 #include <wx/textfile.h>
@@ -50,37 +51,6 @@ enum
 
 namespace
 {
-	// I really want to use std::optional<bool>
-	class tri_state
-	{
-	public:
-		tri_state(bool b)
-			: m_i(b ? 1 : 0)
-		{
-		}
-
-		tri_state(void *p)
-			: m_i(-1)
-		{
-			(void)p;
-			assert(!p);
-		}
-
-		operator bool() const
-		{
-			assert(has_value());
-			return m_i ? true : false;
-		}
-
-		bool has_value() const
-		{
-			return m_i >= 0;
-		}
-
-	private:
-		int m_i;
-	};
-
 	class MameFrame : public wxFrame, private IConsoleDialogHost
 	{
 	public:
@@ -199,7 +169,7 @@ namespace
 		const info::machine &GetRunningMachine() const;
 		void Run(int machine_index);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
-		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, tri_state checked = nullptr, bool enabled = true);
+		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
 		wxString GetListItemText(size_t item, long column) const;
 		void UpdateEmulationSession();
@@ -396,10 +366,10 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);					}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_images.get().empty());	}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !m_status_images.get().empty());	}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());						}, sound_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, nullptr, !m_status_inputs.empty());	}, show_inputs_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !m_status_inputs.empty());		}, show_inputs_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
@@ -740,7 +710,7 @@ void MameFrame::OnMenuAbout()
 //  OnEmuMenuUpdateUI
 //-------------------------------------------------
 
-void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, tri_state checked, bool enabled)
+void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked, bool enabled)
 {
 	bool is_active = IsEmulationSessionActive();
 	event.Enable(is_active && enabled);

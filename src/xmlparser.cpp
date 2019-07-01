@@ -587,6 +587,7 @@ static void skipping()
 	assert(result);
 	assert(expected_invocations == 1);
 	assert(unexpected_invocations == 0);
+	(void)result;
 }
 
 

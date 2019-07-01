@@ -19,7 +19,7 @@
 class Win32Job
 {
 public:
-    Win32Job();
+	Win32Job();
     ~Win32Job()
     {
         if (m_handle)
@@ -48,8 +48,7 @@ public:
 #ifdef WIN32
 typedef Win32Job Job;
 #else
-typedef NullJob Job
+typedef NullJob Job;
 #endif
 
 #endif // JOB_H
-

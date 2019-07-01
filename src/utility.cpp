@@ -158,6 +158,7 @@ static void test_return_value_substitutor()
 	int rc = proxy();
 	assert(rc == 42);
 	assert(func_called);
+	(void)rc;
 }
 
 
