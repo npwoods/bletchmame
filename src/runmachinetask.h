@@ -12,6 +12,7 @@
 #define RUNMACHINETASK_H
 
 #include <wx/msgqueue.h>
+#include <optional>
 
 #include "task.h"
 #include "info.h"
@@ -35,7 +36,7 @@ struct RunMachineResult
 struct Image
 {
 	Image() = default;
-	Image(const Image &that) = delete;
+	Image(const Image &) = default;	// should be 'delete', but can't in response to a bug fixed in GCC 7.4
 	Image(Image &&that) = default;
 
 	wxString			m_tag;
@@ -61,7 +62,7 @@ struct Image
 struct InputSeq
 {
 	InputSeq() = default;
-	InputSeq(const InputSeq &that) = delete;
+	InputSeq(const InputSeq &that) = default;	// should be 'delete', but can't in response to a bug fixed in GCC 7.4
 	InputSeq(InputSeq &&that) = default;
 
 	enum class inputseq_type
@@ -80,7 +81,7 @@ typedef std::uint32_t ioport_value;
 struct Input
 {
 	Input() = default;
-	Input(const Input &that) = delete;
+	Input(const Input &) = default;	// should be 'delete', but can't in response to a bug fixed in GCC 7.4
 	Input(Input &&that) = default;
 
 	enum class input_type
@@ -103,28 +104,19 @@ struct StatusUpdate
 	StatusUpdate(StatusUpdate &&that) = default;
 
 	// did we have problems reading the response from MAME?
-	bool				m_success;
-	wxString			m_parse_error;
+	bool								m_success;
+	wxString							m_parse_error;
 
 	// the actual data
-	bool				m_paused;
-	bool				m_paused_specified;
-	bool				m_polling_input_seq;
-	bool				m_polling_input_seq_specified;
-	wxString			m_frameskip;
-	bool				m_frameskip_specified;
-	wxString			m_speed_text;
-	bool				m_speed_text_specified;
-	bool				m_throttled;
-	bool				m_throttled_specified;
-	float				m_throttle_rate;
-	bool				m_throttle_rate_specified;
-	int					m_sound_attenuation;
-	bool				m_sound_attenuation_specified;
-	std::vector<Image>	m_images;
-	bool				m_images_specified;
-	std::vector<Input>	m_inputs;
-	bool				m_inputs_specified;
+	std::optional<bool>					m_paused;
+	std::optional<bool>					m_polling_input_seq;
+	std::optional<wxString>				m_frameskip;
+	std::optional<wxString>				m_speed_text;
+	std::optional<bool>					m_throttled;
+	std::optional<float>				m_throttle_rate;
+	std::optional<int>					m_sound_attenuation;
+	std::optional<std::vector<Image>>	m_images;
+	std::optional<std::vector<Input>>	m_inputs;
 };
 
 struct Chatter

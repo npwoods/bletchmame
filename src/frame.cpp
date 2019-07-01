@@ -177,8 +177,9 @@ namespace
 		void UpdateMenuBar();
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
+		template<typename TStatus, typename TPayload> static bool GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload);
 
-		// runtime Control
+		// runtime control
 		void Issue(const std::vector<wxString> &args);
 		void Issue(const std::initializer_list<wxString> &args);
 		void Issue(const char *command);
@@ -716,7 +717,7 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> ch
 	event.Enable(is_active && enabled);
 
 	if (checked.has_value())
-		event.Check(is_active && (bool)checked);
+		event.Check(is_active && checked.value());
 }
 
 
@@ -768,26 +769,36 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 {
 	StatusUpdate &payload(event.Payload());
 
-	if (payload.m_paused_specified)
-		m_status_paused = payload.m_paused;
-	if (payload.m_polling_input_seq_specified)
-		m_status_polling_input_seq = payload.m_polling_input_seq;
-	if (payload.m_frameskip_specified)
-		m_status_frameskip = payload.m_frameskip;
-	if (payload.m_speed_text_specified)
-		SetStatusText(payload.m_speed_text);
-	if (payload.m_throttled_specified)
-		m_status_throttled = payload.m_throttled;
-	if (payload.m_throttle_rate_specified)
-		m_status_throttle_rate = payload.m_throttle_rate;
-	if (payload.m_sound_attenuation_specified)
-		m_status_sound_attenuation = payload.m_sound_attenuation;
-	if (payload.m_images_specified)
-		m_status_images = std::move(payload.m_images);
-	if (payload.m_inputs_specified)
-		m_status_inputs = std::move(payload.m_inputs);
+	GetStatusFromPayload(m_status_paused,				payload.m_paused);
+	GetStatusFromPayload(m_status_polling_input_seq,	payload.m_polling_input_seq);
+	GetStatusFromPayload(m_status_frameskip,			payload.m_frameskip);
+	GetStatusFromPayload(m_status_throttled,			payload.m_throttled);
+	GetStatusFromPayload(m_status_throttle_rate,		payload.m_throttle_rate);
+	GetStatusFromPayload(m_status_sound_attenuation,	payload.m_sound_attenuation);
+	GetStatusFromPayload(m_status_images,				payload.m_images);
+	GetStatusFromPayload(m_status_inputs,				payload.m_inputs);
+
+	if (payload.m_speed_text.has_value())
+		SetStatusText(payload.m_speed_text.value());
 
 	m_pinging = false;
+}
+
+
+//-------------------------------------------------
+//  GetStatusFromPayload
+//-------------------------------------------------
+
+template<typename TStatus, typename TPayload>
+bool MameFrame::GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload)
+{
+	bool result = payload.has_value();
+	if (result)
+	{
+		TPayload extracted_value = std::move(payload.value());
+		value = std::move(extracted_value);
+	}
+	return result;
 }
 
 

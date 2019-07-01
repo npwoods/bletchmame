@@ -14,6 +14,7 @@
 #include <initializer_list>
 #include <memory>
 #include <type_traits>
+#include <optional>
 
 #include "utility.h"
 
@@ -59,6 +60,16 @@ public:
 			if (!result)
 				value = T();
 			return result;
+		}
+
+		template<typename T>
+		void Get(const char *attribute, std::optional<T> &value) const
+		{
+			T temp_value;
+			bool result = Get(attribute, temp_value);
+			value = result
+				? std::move(temp_value)
+				: std::optional<T>();
 		}
 
 	private:

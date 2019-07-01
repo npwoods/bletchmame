@@ -292,36 +292,27 @@ void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &i
 StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 {
 	StatusUpdate result;
-	result.m_paused_specified = false;
-	result.m_polling_input_seq_specified = false;
-	result.m_frameskip_specified = false;
-	result.m_speed_text_specified = false;
-	result.m_throttled_specified = false;
-	result.m_throttle_rate_specified = false;
-	result.m_sound_attenuation_specified = false;
-	result.m_images_specified = false;
-	result.m_inputs_specified = false;
 
 	XmlParser xml;
 	xml.OnElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_paused_specified = attributes.Get("paused", result.m_paused);
-		result.m_polling_input_seq_specified = attributes.Get("polling_input_seq", result.m_polling_input_seq);
+		attributes.Get("paused",			result.m_paused);
+		attributes.Get("polling_input_seq",	result.m_polling_input_seq);
 	});
 	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_frameskip_specified = attributes.Get("frameskip", result.m_frameskip);
-		result.m_speed_text_specified = attributes.Get("speed_text", result.m_speed_text);
-		result.m_throttled_specified = attributes.Get("throttled", result.m_throttled);
-		result.m_throttle_rate_specified = attributes.Get("throttle_rate", result.m_throttle_rate);
+		attributes.Get("frameskip",			result.m_frameskip);
+		attributes.Get("speed_text",		result.m_speed_text);
+		attributes.Get("throttled",			result.m_throttled);
+		attributes.Get("throttle_rate",		result.m_throttle_rate);
 	});
 	xml.OnElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_sound_attenuation_specified = attributes.Get("attenuation", result.m_sound_attenuation);
+		attributes.Get("attenuation",		result.m_sound_attenuation);
 	});
 	xml.OnElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{
-		result.m_images_specified = true;
+		result.m_images = std::vector<Image>();
 	});
 	xml.OnElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -333,11 +324,11 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("is_createable",		image.m_is_createable, false);
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
 		attributes.Get("filename",			image.m_file_name);
-		result.m_images.push_back(std::move(image));
+		result.m_images.value().push_back(std::move(image));
 	});
 	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
-		result.m_inputs_specified = true;
+		result.m_inputs = std::vector<Input>();
 	});
 	xml.OnElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -346,11 +337,11 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("mask",				input.m_mask);
 		attributes.Get("type",				input.m_type, s_input_type_parser);
 		attributes.Get("name",				input.m_name);
-		result.m_inputs.push_back(std::move(input));
+		result.m_inputs.value().push_back(std::move(input));
 	});
 	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
-		Input &current_input(*(result.m_inputs.end() - 1));
+		Input &current_input(*(result.m_inputs.value().end() - 1));
 		InputSeq seq;
 		attributes.Get("type",				seq.m_type, s_inputseq_type_parser);
 		attributes.Get("text",				seq.m_text);
