@@ -738,6 +738,12 @@ void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 		if (m_info_db.load(db_path))
 			UpdateMachineList();
 	}
+	else if (payload.m_status != ListXmlResult::status::ABORTED)
+	{
+		// the only non-successful error status we should have got
+		// was ABORTED; show a (non-useful) error message
+		MessageBox(wxT("Error building MAME info database"));
+	}
 
 	m_client.Reset();
 }
