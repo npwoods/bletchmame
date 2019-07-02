@@ -438,7 +438,8 @@ void MameFrame::CheckMameInfoDatabase(bool prompt_mame_path, bool force_refresh)
 	m_client.Launch(create_list_xml_task(std::move(db_path)));
 
 	// and show the dialog
-	show_loading_mame_info_dialog(*this, [this]() { return !m_client.IsTaskActive(); });
+	if (!show_loading_mame_info_dialog(*this, [this]() { return !m_client.IsTaskActive(); }))
+		m_client.Abort();
 }
 
 
@@ -730,7 +731,7 @@ void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 	ListXmlResult &payload(event.Payload());
 
 	// identify the results
-	if (payload.m_success)
+	if (payload.m_status == ListXmlResult::status::SUCCESS)
 	{
 		// if it succeeded, try to load the DB
 		wxString db_path = m_prefs.GetMameXmlDatabasePath();

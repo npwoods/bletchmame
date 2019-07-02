@@ -16,8 +16,16 @@
 
 struct ListXmlResult
 {
-	bool                    m_success;
-	wxString				m_error_message;
+	enum class status
+	{
+		SUCCESS,
+		ABORTED,
+		XML_PARSE_ERROR,
+		IO_ERROR
+	};
+
+	status		m_status;
+	wxString	m_error_message;
 };
 
 wxDECLARE_EVENT(EVT_LIST_XML_RESULT, PayloadEvent<ListXmlResult>);

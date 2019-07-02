@@ -53,7 +53,7 @@ public:
 
 protected:
 	// called on the main thread to trigger a shutdown (e.g. - BletchMAME is closed)
-	virtual void Abort();
+	virtual void Abort() = 0;
 
 	// retrieves the arguments to be used at the command line
 	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const = 0;

@@ -24,16 +24,19 @@ namespace
 	class ListXmlTask : public Task
 	{
 	public:
-		ListXmlTask(std::unique_ptr<wxOutputStream> &&output);
+		ListXmlTask(wxString &&output_filename);
 
 	protected:
 		virtual std::vector<wxString> GetArguments(const Preferences &) const;
 		virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
+		virtual void Abort() override;
 
 	private:
-		std::unique_ptr<wxOutputStream>	m_output;
+		wxString		m_output_filename;
+		volatile bool	m_aborted;
 
 		ListXmlResult InternalProcess(wxInputStream &input);
+		ListXmlResult CreateResult(ListXmlResult::status status, wxString &&message = wxT(""));
 	};
 
 	class string_table
@@ -83,8 +86,9 @@ static std::uint32_t to_uint32(T &&value)
 //  ctor
 //-------------------------------------------------
 
-ListXmlTask::ListXmlTask(std::unique_ptr<wxOutputStream> &&output)
-	: m_output(std::move(output))
+ListXmlTask::ListXmlTask(wxString &&output_filename)
+	: m_output_filename(std::move(output_filename))
+	, m_aborted(false)
 {
 }
 
@@ -96,6 +100,16 @@ ListXmlTask::ListXmlTask(std::unique_ptr<wxOutputStream> &&output)
 std::vector<wxString> ListXmlTask::GetArguments(const Preferences &) const
 {
 	return { "-listxml", "-nodtd" };
+}
+
+
+//-------------------------------------------------
+//  Abort
+//-------------------------------------------------
+
+void ListXmlTask::Abort()
+{
+	m_aborted = true;
 }
 
 
@@ -116,8 +130,6 @@ void ListXmlTask::Process(wxProcess &process, wxEvtHandler &handler)
 
 ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 {
-	ListXmlResult result;
-
 	// prepare data
 	info::binaries::header header = { 0, };
 	std::vector<info::binaries::machine> machines;
@@ -259,11 +271,23 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 			iter->m_extensions_strindex = strings.get(current_device_extensions);
 		}
 	});
-	xml.Parse(input);
 
-	// record any error messages
-	if (!result.m_success)
-		result.m_error_message = xml.ErrorMessage();
+	// parse!
+	bool success = xml.Parse(input);
+
+	// before we check to see if there is a parsing error, check for an abort - under which
+	// scenario a parsing error is expected
+	if (m_aborted)
+		return CreateResult(ListXmlResult::status::ABORTED);
+
+	// now check for a parse error (which should be very unlikely)
+	if (!success)
+		return CreateResult(ListXmlResult::status::XML_PARSE_ERROR, xml.ErrorMessage());
+
+	// looks like we're good, but opening the file can gag
+	wxFileOutputStream output(m_output_filename);
+	if (!output.IsOk())
+		return CreateResult(ListXmlResult::status::IO_ERROR);
 
 	// final magic bytes on string table
 	strings.embed_value(info::binaries::MAGIC_STRINGTABLE_END);
@@ -276,16 +300,28 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	header.m_configuration_conditions_count	= to_uint32(configuration_conditions.size()); 
 	
 	// emit the data
-	m_output->Write(&header,									sizeof(header));
-	m_output->Write(machines.data(),							machines.size()					* sizeof(machines[0]));
-	m_output->Write(devices.data(),								devices.size()					* sizeof(devices[0]));
-	m_output->Write(configurations.data(),						configurations.size()			* sizeof(configurations[0]));
-	m_output->Write(configuration_settings.data(),				configuration_settings.size()	* sizeof(configuration_settings[0]));
-	m_output->Write(configuration_conditions.data(),			configuration_conditions.size()	* sizeof(configuration_conditions[0]));
-	m_output->Write(strings.data().data(),						strings.data().size()			* sizeof(strings.data()[0]));
+	output.Write(&header,							sizeof(header));
+	output.Write(machines.data(),					machines.size()					* sizeof(machines[0]));
+	output.Write(devices.data(),					devices.size()					* sizeof(devices[0]));
+	output.Write(configurations.data(),				configurations.size()			* sizeof(configurations[0]));
+	output.Write(configuration_settings.data(),		configuration_settings.size()	* sizeof(configuration_settings[0]));
+	output.Write(configuration_conditions.data(),	configuration_conditions.size()	* sizeof(configuration_conditions[0]));
+	output.Write(strings.data().data(),				strings.data().size()			* sizeof(strings.data()[0]));
 
-	// close out the file and return
-	m_output.reset();
+	// return a successful result
+	return CreateResult(ListXmlResult::status::SUCCESS);
+}
+
+
+//-------------------------------------------------
+//  CreateResult
+//-------------------------------------------------
+
+ListXmlResult ListXmlTask::CreateResult(ListXmlResult::status status, wxString &&message)
+{
+	ListXmlResult result;
+	result.m_status = status;
+	result.m_error_message = std::move(message);
 	return result;
 }
 
@@ -354,6 +390,5 @@ const std::vector<char> &string_table::data() const
 
 Task::ptr create_list_xml_task(wxString &&dest)
 {
-	std::unique_ptr<wxOutputStream> output = std::make_unique<wxFileOutputStream>(dest);
-	return std::make_unique<ListXmlTask>(std::move(output));
+	return std::make_unique<ListXmlTask>(std::move(dest));
 }

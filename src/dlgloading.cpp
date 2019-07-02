@@ -45,7 +45,7 @@ namespace
 //-------------------------------------------------
 
 LoadingDialog::LoadingDialog(wxWindow &parent, const std::function<bool()> &poll_completion_check)
-	: wxDialog(&parent, wxID_ANY, wxTheApp->GetAppName(), wxDefaultPosition, wxDefaultSize, 0)
+	: wxDialog(&parent, wxID_ANY, wxTheApp->GetAppName())
 	, m_poll_completion_check(poll_completion_check)
 	, m_timer(this, wxID_ANY)
 {

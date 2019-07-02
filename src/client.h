@@ -39,7 +39,15 @@ public:
 	MameClient(wxEvtHandler &event_handler, const Preferences &prefs);
 	~MameClient();
 
+	// launches a task
 	void Launch(Task::ptr &&task);
+
+	// instructs the currently running task to stop, and ensures that
+	// the task's premature termination will not cause problems
+	void Abort();
+
+	// called when a task's final event is received, and waits for the task
+	// to complete
 	void Reset();
 
 	template<class T> std::shared_ptr<T> GetCurrentTask()
@@ -63,8 +71,6 @@ private:
 	std::thread						m_thread;
 
 	static Job						s_job;
-
-	void Abort();
 };
 
 #endif // CLIENT_H

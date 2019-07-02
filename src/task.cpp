@@ -23,18 +23,6 @@ Task::~Task()
 
 
 //-------------------------------------------------
-//  Abort
-//-------------------------------------------------
-
-void Task::Abort()
-{
-	// by default, do nothing - most tasks (like -listxml) are doing something
-	// of finite duration anyways and an explicit "abort" does not have any
-	// meaning
-}
-
-
-//-------------------------------------------------
 //  OnChildProcessCompleted
 //-------------------------------------------------
 
