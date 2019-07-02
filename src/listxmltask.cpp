@@ -65,7 +65,7 @@ namespace
 	class list_xml_exception : public std::exception
 	{
 	public:
-		list_xml_exception(ListXmlResult::status status, wxString &&message = wxT(""))
+		list_xml_exception(ListXmlResult::status status, wxString &&message = wxString())
 			: m_status(status)
 			, m_message(message)
 		{
@@ -93,7 +93,7 @@ static std::uint32_t to_uint32(T &&value)
 {
 	std::uint32_t new_value = static_cast<std::uint32_t>(value);
 	if (new_value != value)
-		throw list_xml_exception(ListXmlResult::status::UNEXPECTED);
+		throw list_xml_exception(ListXmlResult::status::ERROR, "Array size cannot fit in 32 bits");
 	return new_value;
 }
 
@@ -314,7 +314,7 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 
 	// now check for a parse error (which should be very unlikely)
 	if (!success)
-		throw list_xml_exception(ListXmlResult::status::XML_PARSE_ERROR, xml.ErrorMessage());
+		throw list_xml_exception(ListXmlResult::status::ERROR, wxString(wxT("Error parsing XML from MAME -listxml: ")) + xml.ErrorMessage());
 
 	// final magic bytes on string table
 	strings.embed_value(info::binaries::MAGIC_STRINGTABLE_END);
@@ -330,7 +330,7 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	// to the actual file
 	wxFileOutputStream output(m_output_filename);
 	if (!output.IsOk())
-		throw list_xml_exception(ListXmlResult::status::IO_ERROR);
+		throw list_xml_exception(ListXmlResult::status::ERROR, wxString(wxT("Could not open file: ")) + m_output_filename);
 
 	// emit the data
 	output.Write(&header,							sizeof(header));

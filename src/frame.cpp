@@ -730,19 +730,31 @@ void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 {
 	ListXmlResult &payload(event.Payload());
 
-	// identify the results
-	if (payload.m_status == ListXmlResult::status::SUCCESS)
+	// check the status
+	switch (payload.m_status)
 	{
+	case ListXmlResult::status::SUCCESS:
 		// if it succeeded, try to load the DB
-		wxString db_path = m_prefs.GetMameXmlDatabasePath();
-		if (m_info_db.load(db_path))
-			UpdateMachineList();
-	}
-	else if (payload.m_status != ListXmlResult::status::ABORTED)
-	{
-		// the only non-successful error status we should have got
-		// was ABORTED; show a (non-useful) error message
-		MessageBox(wxT("Error building MAME info database"));
+		{
+			wxString db_path = m_prefs.GetMameXmlDatabasePath();
+			if (m_info_db.load(db_path))
+				UpdateMachineList();
+		}
+		break;
+
+	case ListXmlResult::status::ABORTED:
+		// if we aborted, do nothing
+		break;
+
+	case ListXmlResult::status::ERROR:
+		// present an error message
+		MessageBox(!payload.m_error_message.empty()
+			? payload.m_error_message
+			: wxT("Error building MAME info database"));
+		break;
+
+	default:
+		throw false;
 	}
 
 	m_client.Reset();

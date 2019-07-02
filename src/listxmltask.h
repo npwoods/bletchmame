@@ -14,15 +14,28 @@
 #include "task.h"
 #include "payloadevent.h"
 
+
+//**************************************************************************
+//  MACROS
+//**************************************************************************
+
+// pesky macros
+#ifdef ERROR
+#undef ERROR
+#endif // ERROR
+
+
+//**************************************************************************
+//  TYPES
+//**************************************************************************
+
 struct ListXmlResult
 {
 	enum class status
 	{
-		SUCCESS,
-		ABORTED,
-		XML_PARSE_ERROR,
-		IO_ERROR,
-		UNEXPECTED
+		SUCCESS,		// the invocation of -listxml succeeded
+		ABORTED,		// the user aborted the -listxml request midflight
+		ERROR			// an error is to be reported to use user
 	};
 
 	status		m_status;
