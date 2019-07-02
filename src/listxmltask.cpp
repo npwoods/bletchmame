@@ -8,6 +8,7 @@
 
 #include <wx/wfstream.h>
 #include <unordered_map>
+#include <exception>
 
 #include "listxmltask.h"
 #include "xmlparser.h"
@@ -21,6 +22,7 @@
 
 namespace
 {
+	// ======================> ListXmlTask
 	class ListXmlTask : public Task
 	{
 	public:
@@ -35,10 +37,10 @@ namespace
 		wxString		m_output_filename;
 		volatile bool	m_aborted;
 
-		ListXmlResult InternalProcess(wxInputStream &input);
-		ListXmlResult CreateResult(ListXmlResult::status status, wxString &&message = wxT(""));
+		void InternalProcess(wxInputStream &input);
 	};
 
+	// ======================> string_table
 	class string_table
 	{
 	public:
@@ -57,6 +59,20 @@ namespace
 	private:
 		std::vector<char>								m_data;
 		std::unordered_map<std::string, std::uint32_t>	m_map;
+	};
+
+	// ======================> list_xml_exception
+	class list_xml_exception : public std::exception
+	{
+	public:
+		list_xml_exception(ListXmlResult::status status, wxString &&message = wxT(""))
+			: m_status(status)
+			, m_message(message)
+		{
+		}
+
+		ListXmlResult::status	m_status;
+		wxString				m_message;
 	};
 };
 
@@ -77,7 +93,7 @@ static std::uint32_t to_uint32(T &&value)
 {
 	std::uint32_t new_value = static_cast<std::uint32_t>(value);
 	if (new_value != value)
-		throw false;
+		throw list_xml_exception(ListXmlResult::status::UNEXPECTED);
 	return new_value;
 }
 
@@ -119,7 +135,23 @@ void ListXmlTask::Abort()
 
 void ListXmlTask::Process(wxProcess &process, wxEvtHandler &handler)
 {
-	ListXmlResult result = InternalProcess(*process.GetInputStream());
+	ListXmlResult result;
+	try
+	{
+		// process
+		InternalProcess(*process.GetInputStream());
+
+		// we've succeeded!
+		result.m_status = ListXmlResult::status::SUCCESS;
+	}
+	catch (list_xml_exception &ex)
+	{
+		// an exception has occurred
+		result.m_status = ex.m_status;
+		result.m_error_message = std::move(ex.m_message);
+	}
+
+	// regardless of what happened, notify the main thread
 	util::QueueEvent(handler, EVT_LIST_XML_RESULT, wxID_ANY, std::move(result));
 }
 
@@ -128,7 +160,7 @@ void ListXmlTask::Process(wxProcess &process, wxEvtHandler &handler)
 //  InternalProcess
 //-------------------------------------------------
 
-ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
+void ListXmlTask::InternalProcess(wxInputStream &input)
 {
 	// prepare data
 	info::binaries::header header = { 0, };
@@ -278,16 +310,11 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected
 	if (m_aborted)
-		return CreateResult(ListXmlResult::status::ABORTED);
+		throw list_xml_exception(ListXmlResult::status::ABORTED);
 
 	// now check for a parse error (which should be very unlikely)
 	if (!success)
-		return CreateResult(ListXmlResult::status::XML_PARSE_ERROR, xml.ErrorMessage());
-
-	// looks like we're good, but opening the file can gag
-	wxFileOutputStream output(m_output_filename);
-	if (!output.IsOk())
-		return CreateResult(ListXmlResult::status::IO_ERROR);
+		throw list_xml_exception(ListXmlResult::status::XML_PARSE_ERROR, xml.ErrorMessage());
 
 	// final magic bytes on string table
 	strings.embed_value(info::binaries::MAGIC_STRINGTABLE_END);
@@ -299,6 +326,12 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	header.m_configuration_settings_count	= to_uint32(configuration_settings.size());
 	header.m_configuration_conditions_count	= to_uint32(configuration_conditions.size()); 
 	
+	// we finally have all of the info accumulated; now we can get to business with writing
+	// to the actual file
+	wxFileOutputStream output(m_output_filename);
+	if (!output.IsOk())
+		throw list_xml_exception(ListXmlResult::status::IO_ERROR);
+
 	// emit the data
 	output.Write(&header,							sizeof(header));
 	output.Write(machines.data(),					machines.size()					* sizeof(machines[0]));
@@ -307,22 +340,6 @@ ListXmlResult ListXmlTask::InternalProcess(wxInputStream &input)
 	output.Write(configuration_settings.data(),		configuration_settings.size()	* sizeof(configuration_settings[0]));
 	output.Write(configuration_conditions.data(),	configuration_conditions.size()	* sizeof(configuration_conditions[0]));
 	output.Write(strings.data().data(),				strings.data().size()			* sizeof(strings.data()[0]));
-
-	// return a successful result
-	return CreateResult(ListXmlResult::status::SUCCESS);
-}
-
-
-//-------------------------------------------------
-//  CreateResult
-//-------------------------------------------------
-
-ListXmlResult ListXmlTask::CreateResult(ListXmlResult::status status, wxString &&message)
-{
-	ListXmlResult result;
-	result.m_status = status;
-	result.m_error_message = std::move(message);
-	return result;
 }
 
 

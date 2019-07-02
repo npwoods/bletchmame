@@ -21,7 +21,8 @@ struct ListXmlResult
 		SUCCESS,
 		ABORTED,
 		XML_PARSE_ERROR,
-		IO_ERROR
+		IO_ERROR,
+		UNEXPECTED
 	};
 
 	status		m_status;
