@@ -111,6 +111,7 @@ namespace
 
 		MameClient								m_client;
 		Preferences							    m_prefs;
+		wxTextCtrl *							m_search_box;
 		VirtualListView *					    m_list_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
@@ -121,7 +122,9 @@ namespace
 
 		// information retrieved by -listxml
 		info::database							m_info_db;
-		bool									m_last_listxml_succeeded;
+
+		// machine list indirection
+		std::vector<int>						m_machine_list_indirections;
 
 		// status of running emulation
 		observable::value<bool>					m_status_paused;
@@ -155,6 +158,7 @@ namespace
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
 		void OnListColumnResized(wxListEvent &event);
+		void OnSearchBoxTextChanged();
 
 		// task notifications
 		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
@@ -163,15 +167,18 @@ namespace
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
+		template<typename TControl, typename... TArgs>
+		TControl &AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args);
 		void CreateMenuBar();
 		void CheckMameInfoDatabase(bool prompt_mame_path, bool force_refresh);
 		bool IsEmulationSessionActive() const;
-		const info::machine &GetRunningMachine() const;
-		void Run(int machine_index);
+		info::machine GetRunningMachine() const;
+		void Run(const info::machine &machine);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
-		wxString GetListItemText(size_t item, long column) const;
+		info::machine GetMachineFromIndex(long item) const;
+		wxString GetListItemText(long item, long column) const;
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
 		void UpdateMenuBar();
@@ -210,12 +217,15 @@ const wxString MameFrame::s_wc_save_snapshot = wxT("PNG Files (*.png)|*.png|All 
 MameFrame::MameFrame()
 	: wxFrame(nullptr, wxID_ANY, wxTheApp->GetAppName())
 	, m_client(*this, m_prefs)
+	, m_search_box(nullptr)
 	, m_list_view(nullptr)
 	, m_menu_bar(nullptr)
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
+	int id = wxID_LAST + 1;
+
 	// set the frame icon
 	SetIcon(wxICON(bletchmame));
 
@@ -230,6 +240,27 @@ MameFrame::MameFrame()
 	CreateStatusBar(2);
 	SetStatusText("Welcome to BletchMAME!");
 
+	// create a sizer
+	std::unique_ptr<wxBoxSizer> sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
+
+	// create a search bar
+	m_search_box = &AddControl<wxTextCtrl>(sizer, 0, wxALL | wxEXPAND, id++);
+	m_search_box->SetValue(m_prefs.GetSearchBoxText());
+		
+	// create a list view
+	m_list_view = &AddControl<VirtualListView>(sizer, 1, wxALL | wxEXPAND, id++);
+	m_list_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(item, column); });
+	m_list_view->ClearAll();
+	m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
+	m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
+	m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
+	m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
+	m_list_view->SetColumnsOrder(m_prefs.GetColumnOrder());
+	UpdateMachineList();
+
+	// set the sizer
+	SetSizer(sizer.release());
+
 	// the ties that bind...
 	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
@@ -242,17 +273,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
 	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
 	Bind(wxEVT_TIMER,				[this](auto &)		{ InvokePing();					});
-
-	// Create a list view
-	m_list_view = new VirtualListView(this);
-	m_list_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(static_cast<size_t>(item), column); });
-	m_list_view->ClearAll();
-	m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
-	m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
-	m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
-	m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
-	m_list_view->SetColumnsOrder(m_prefs.GetColumnOrder());
-	UpdateMachineList();
+	Bind(wxEVT_TEXT,				[this](auto &)		{ OnSearchBoxTextChanged();		}, m_search_box->GetId());
 
 	// nothing is running yet...
 	UpdateEmulationSession();
@@ -269,6 +290,19 @@ MameFrame::MameFrame()
 MameFrame::~MameFrame()
 {
 	m_prefs.Save();
+}
+
+
+//-------------------------------------------------
+//  AddControl
+//-------------------------------------------------
+
+template<typename TControl, typename... TArgs>
+TControl &MameFrame::AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args)
+{
+	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
+	sizer->Add(control, proportion, flags, 0);
+	return *control;
 }
 
 
@@ -457,7 +491,7 @@ bool MameFrame::IsEmulationSessionActive() const
 //  GetRunningMachine
 //-------------------------------------------------
 
-const info::machine &MameFrame::GetRunningMachine() const
+info::machine MameFrame::GetRunningMachine() const
 {
 	// get the currently running machine
 	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
@@ -474,7 +508,7 @@ const info::machine &MameFrame::GetRunningMachine() const
 //  Run
 //-------------------------------------------------
 
-void MameFrame::Run(int machine_index)
+void MameFrame::Run(const info::machine &machine)
 {
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
@@ -482,7 +516,7 @@ void MameFrame::Run(int machine_index)
 
 	// run the emulation
 	Task::ptr task = std::make_unique<RunMachineTask>(
-		m_info_db.machines()[machine_index],
+		machine,
 		*this);
 	m_client.Launch(std::move(task));
 	UpdateEmulationSession();
@@ -911,8 +945,9 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 
 void MameFrame::OnListItemSelected(wxListEvent &evt)
 {
-    long index = evt.GetIndex();
-    m_prefs.SetSelectedMachine(m_info_db.machines()[index].name());
+	long index = evt.GetIndex();
+	const info::machine machine = GetMachineFromIndex(index);
+	m_prefs.SetSelectedMachine(machine.name());
 }
 
 
@@ -922,13 +957,9 @@ void MameFrame::OnListItemSelected(wxListEvent &evt)
 
 void MameFrame::OnListItemActivated(wxListEvent &evt)
 {
-	// get the index
 	long index = evt.GetIndex();
-	if (index < 0 || index >= (long) m_info_db.machines().size())
-		return;
-
-	// and run the machine
-	Run(index);
+	const info::machine machine = GetMachineFromIndex(index);
+	Run(machine);
 }
 
 
@@ -938,9 +969,20 @@ void MameFrame::OnListItemActivated(wxListEvent &evt)
 
 void MameFrame::OnListColumnResized(wxListEvent &evt)
 {
-    int column_index = evt.GetColumn();
-    int column_width = m_list_view->GetColumnWidth(column_index);
-    m_prefs.SetColumnWidth(column_index, column_width);
+	int column_index = evt.GetColumn();
+	int column_width = m_list_view->GetColumnWidth(column_index);
+	m_prefs.SetColumnWidth(column_index, column_width);
+}
+
+
+//-------------------------------------------------
+//  OnSearchBoxTextChanged
+//-------------------------------------------------
+
+void MameFrame::OnSearchBoxTextChanged()
+{
+	m_prefs.SetSearchBoxText(m_search_box->GetValue());
+	UpdateMachineList();
 }
 
 
@@ -950,19 +992,34 @@ void MameFrame::OnListColumnResized(wxListEvent &evt)
 
 void MameFrame::UpdateMachineList()
 {
-	m_list_view->SetItemCount(m_info_db.machines().size());
-	m_list_view->RefreshItems(0, m_info_db.machines().size() - 1);
+	wxString filter_text = m_search_box->GetValue();
+
+	// rebuild the indirection list
+	m_machine_list_indirections.clear();
+	m_machine_list_indirections.reserve(m_info_db.machines().size());
+	for (int i = 0; i < static_cast<int>(m_info_db.machines().size()); i++)
+	{
+		const info::machine &machine(m_info_db.machines()[i]);
+		if (filter_text.empty() || util::string_icontains(machine.name(), filter_text) || util::string_icontains(machine.description(), filter_text))
+		{
+			m_machine_list_indirections.push_back(i);
+		}
+	}
+
+	// set the list view size
+	m_list_view->SetItemCount(m_machine_list_indirections.size());
+	m_list_view->RefreshItems(0, m_machine_list_indirections.size() - 1);
 
 	// find the currently selected machine
-	auto iter = std::find_if(m_info_db.machines().begin(), m_info_db.machines().end(), [this](info::machine machine)
+	auto iter = std::find_if(m_machine_list_indirections.begin(), m_machine_list_indirections.end(), [this](int index)
 	{
-		return machine.name() == m_prefs.GetSelectedMachine();
+		return m_info_db.machines()[index].name() == m_prefs.GetSelectedMachine();
 	});
 
 	// if successful, select it
-	if (iter < m_info_db.machines().end())
+	if (iter < m_machine_list_indirections.end())
 	{
-		long selected_index = iter - m_info_db.machines().begin();
+		long selected_index = iter - m_machine_list_indirections.begin();
 		m_list_view->Select(selected_index);
 		m_list_view->EnsureVisible(selected_index);
 	}
@@ -970,12 +1027,26 @@ void MameFrame::UpdateMachineList()
 
 
 //-------------------------------------------------
+//  GetMachineFromIndex
+//-------------------------------------------------
+
+info::machine MameFrame::GetMachineFromIndex(long item) const
+{
+	// look up the indirection
+	int machine_index = m_machine_list_indirections[item];
+
+	// and look up in the info DB
+	return m_info_db.machines()[machine_index];
+}
+
+
+//-------------------------------------------------
 //  GetListItemText
 //-------------------------------------------------
 
-wxString MameFrame::GetListItemText(size_t item, long column) const
+wxString MameFrame::GetListItemText(long item, long column) const
 {
-	const info::machine machine(m_info_db.machines()[item]);
+	const info::machine machine = GetMachineFromIndex(item);
 
 	wxString result;
 	switch (column)

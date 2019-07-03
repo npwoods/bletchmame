@@ -157,12 +157,30 @@ TStr string_join(const TStr &delim, const TColl &collection)
 template<typename TStr, typename TChar>
 void string_truncate(TStr &str, TChar ch)
 {
-    size_t index = str.find(ch);
-    if (index != std::string::npos)
-        str.resize(index);
+	size_t index = str.find(ch);
+	if (index != std::string::npos)
+		str.resize(index);
 }
 
 
+//-------------------------------------------------
+//  string_icontains
+//-------------------------------------------------
+
+template<typename TStr>
+inline bool string_icontains(const TStr &str, const TStr &target)
+{
+	auto iter = std::search(str.begin(), str.end(), target.begin(), target.end(), [](auto ch1, auto ch2)
+	{
+		// TODO - this does not handle UTF-8
+		return sizeof(ch1) > 0
+			? towlower(static_cast<wchar_t>(ch1)) == towlower(static_cast<wchar_t>(ch2))
+			: tolower(static_cast<char>(ch1)) == tolower(static_cast<char>(ch2));
+	});
+	return iter < str.end();
+}
+
+	
 //**************************************************************************
 //  COMMAND LINE
 //**************************************************************************

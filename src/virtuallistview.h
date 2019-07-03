@@ -16,7 +16,7 @@
 class VirtualListView : public wxListView
 {
 public:
-	VirtualListView(wxWindow *parent, wxWindowID winid = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+	VirtualListView(wxWindow *parent, wxWindowID winid, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
 		long style = wxLC_REPORT | wxLC_VIRTUAL, const wxValidator& validator = wxDefaultValidator, const wxString &name = wxListCtrlNameStr);
 
 	void SetOnGetItemText(std::function<wxString(long, long)> &&func) { m_func_on_get_item_text = func; }

@@ -192,6 +192,10 @@ bool Preferences::Load(wxInputStream &input)
 	{
 		SetSelectedMachine(std::move(content));
 	});
+	xml.OnElementEnd({ "preferences", "searchboxtext" }, [&](wxString &&content)
+	{
+		SetSearchBoxText(std::move(content));
+	});
 	xml.OnElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string id;
@@ -269,6 +273,8 @@ void Preferences::Save(std::ostream &output)
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
 	if (!m_selected_machine.IsEmpty())
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
+	if (!m_search_box_text.IsEmpty())
+		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
 	for (size_t i = 0; i < m_column_widths.size(); i++)
 		output << "\t<column id=\"" << s_column_ids[i] << "\" width=\"" << m_column_widths[i] << "\" order=\"" << m_column_order[i] << "\"/>" << std::endl;
 	output << std::endl;

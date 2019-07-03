@@ -65,6 +65,9 @@ public:
 	void SetSelectedMachine(const wxString &machine_name)   { m_selected_machine = machine_name; }
 	void SetSelectedMachine(wxString &&machine_name)        { m_selected_machine = std::move(machine_name); }
 
+	const wxString &GetSearchBoxText() const				{ return m_search_box_text; }
+	void SetSearchBoxText(wxString &&search_box_text)		{ m_search_box_text = std::move(search_box_text); }
+
 	bool GetMenuBarShown() const							{ return m_menu_bar_shown; }
 	void SetMenuBarShown(bool menu_bar_shown)				{ m_menu_bar_shown = menu_bar_shown; }
 
@@ -93,6 +96,7 @@ private:
 	std::array<int, COLUMN_COUNT>										m_column_order;
 	std::map<wxString, MachinePath>										m_machine_paths;
 	wxString															m_selected_machine;
+	wxString															m_search_box_text;
 	bool																m_menu_bar_shown;
 
 	void Save(std::ostream &output);

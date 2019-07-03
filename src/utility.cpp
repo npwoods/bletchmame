@@ -79,22 +79,55 @@ wxString util::build_command_line(const wxString &executable, const std::vector<
 
 
 //-------------------------------------------------
+//  build_string
+//-------------------------------------------------
+
+template<typename TStr>
+static TStr build_string(const char *string)
+{
+	// get the string into a TStr
+	TStr str;
+	for (int i = 0; string[i]; i++)
+		str += string[i];
+	return str;
+}
+
+
+//-------------------------------------------------
 //  test_string_split
 //-------------------------------------------------
 
 template<typename TStr>
 static void test_string_split()
 {
-	// get the string into a TStr
-	const char *string = "Alpha,Bravo,Charlie";
-	TStr str;
-	for (int i = 0; string[i]; i++)
-		str += string[i];
-
+	TStr str = build_string<TStr>("Alpha,Bravo,Charlie");
 	auto result = util::string_split(str, [](auto ch) { return ch == ','; });
 	assert(result[0] == "Alpha");
 	assert(result[1] == "Bravo");
 	assert(result[2] == "Charlie");
+}
+
+
+//-------------------------------------------------
+//  test_string_split
+//-------------------------------------------------
+
+template<typename TStr>
+static void test_string_icontains()
+{
+	TStr str = build_string<TStr>("Alpha,Bravo,Charlie");
+
+	bool result1 = util::string_icontains(str, build_string<TStr>("Bravo"));
+	assert(result1);
+	(void)result1;
+
+	bool result2 = util::string_icontains(str, build_string<TStr>("brAvo"));
+	assert(result2);
+	(void)result2;
+
+	bool result3 = util::string_icontains(str, build_string<TStr>("ZYXZYX"));
+	assert(!result3);
+	(void)result3;
 }
 
 
@@ -170,6 +203,8 @@ static validity_check validity_checks[] =
 {
 	test_string_split<std::string>,
 	test_string_split<std::wstring>,
+	test_string_icontains<std::string>,
+	test_string_icontains<std::wstring>,
 	test_build_command_line,
 	test_enum_parser,
 	test_return_value_substitutor
