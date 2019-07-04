@@ -1,6 +1,4 @@
 language: cpp
 os: windows
 script:
-	echo "Hello World"
-	gcc -version
-	gmake
+  make -v
