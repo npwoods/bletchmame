@@ -45,6 +45,6 @@ $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
 $(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
-$(OBJ)/dir.txt:
-	-mkdir $(subst /,\\, $(@D))
+%/dir.txt:
+	sh -c "mkdir -p $(@D)"
 	echo Directory Placeholder > $@
