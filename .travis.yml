@@ -1,7 +1,12 @@
 language: cpp
 os: windows
 script:
-  - git clone --branch v3.1.2 https://github.com/wxWidgets/wxWidgets.git lib/wxWidgets
-  - pushd lib/wxWidgets/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
-  - pushd lib/wxWidgets/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
-  - mingw32-make
+  - choco install wxWidgets --version 3.1.2
+  - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
+  - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
+  - mingw32-make WXWIDGETS_DIR=C:/wxWidgets-3.1.2
+
+cache:
+  directories:
+  - C:/wxWidgets-3.1.2/build/msw/gcc_mswu
+  
