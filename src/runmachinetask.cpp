@@ -298,6 +298,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	{
 		attributes.Get("paused",			result.m_paused);
 		attributes.Get("polling_input_seq",	result.m_polling_input_seq);
+		attributes.Get("startup_text",		result.m_startup_text);
 	});
 	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -324,6 +325,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("is_createable",		image.m_is_createable, false);
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
 		attributes.Get("filename",			image.m_file_name);
+		attributes.Get("display",			image.m_display);
 		result.m_images.value().push_back(std::move(image));
 	});
 	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)

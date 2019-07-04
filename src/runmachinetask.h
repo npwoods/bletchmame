@@ -62,6 +62,7 @@ struct Image
 	bool				m_is_createable;
 	bool				m_must_be_loaded;
 	wxString			m_file_name;
+	wxString			m_display;
 
 	bool operator==(const Image &that) const
 	{
@@ -71,7 +72,8 @@ struct Image
 			&& m_is_writeable	== that.m_is_writeable
 			&& m_is_createable	== that.m_is_createable
 			&& m_must_be_loaded	== that.m_must_be_loaded
-			&& m_file_name		== that.m_file_name;
+			&& m_file_name		== that.m_file_name
+			&& m_display		== that.m_display;
 	}
 };
 
@@ -126,6 +128,7 @@ struct StatusUpdate
 	// the actual data
 	std::optional<bool>					m_paused;
 	std::optional<bool>					m_polling_input_seq;
+	std::optional<wxString>				m_startup_text;
 	std::optional<wxString>				m_frameskip;
 	std::optional<wxString>				m_speed_text;
 	std::optional<bool>					m_throttled;

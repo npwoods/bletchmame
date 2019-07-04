@@ -129,6 +129,7 @@ namespace
 		// status of running emulation
 		observable::value<bool>					m_status_paused;
 		observable::value<bool>					m_status_polling_input_seq;
+		wxString								m_status_startup_text;
 		wxString								m_status_frameskip;
 		bool									m_status_throttled;
 		float									m_status_throttle_rate;
@@ -824,6 +825,7 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 
 	GetStatusFromPayload(m_status_paused,				payload.m_paused);
 	GetStatusFromPayload(m_status_polling_input_seq,	payload.m_polling_input_seq);
+	GetStatusFromPayload(m_status_startup_text,			payload.m_startup_text);
 	GetStatusFromPayload(m_status_frameskip,			payload.m_frameskip);
 	GetStatusFromPayload(m_status_throttled,			payload.m_throttled);
 	GetStatusFromPayload(m_status_throttle_rate,		payload.m_throttle_rate);
@@ -831,8 +833,19 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 	GetStatusFromPayload(m_status_images,				payload.m_images);
 	GetStatusFromPayload(m_status_inputs,				payload.m_inputs);
 
+	// build speed text
+	std::vector<wxString> status_text;
 	if (payload.m_speed_text.has_value())
-		SetStatusText(payload.m_speed_text.value());
+		status_text.push_back(payload.m_speed_text.value());
+	else if (payload.m_startup_text.has_value())
+		status_text.push_back(payload.m_startup_text.value());
+	for (auto iter = m_status_images.get().begin(); iter < m_status_images.get().end(); iter++)
+	{
+		if (!iter->m_display.empty())
+			status_text.push_back(iter->m_display);
+	}
+	for (int i = 0; i < (int)status_text.size(); i++)
+		SetStatusText(status_text[i], i);
 
 	m_pinging = false;
 }
@@ -1079,8 +1092,9 @@ void MameFrame::UpdateEmulationSession()
 	// is the emulation session active?
 	bool is_active = IsEmulationSessionActive();
 
-	// if so, hide the list view...
+	// if so, hide the machine list UX
 	m_list_view->Show(!is_active);
+	m_search_box->Show(!is_active);
 
 	// ...and enable pinging
 	if (is_active)
