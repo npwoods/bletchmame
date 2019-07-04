@@ -1,4 +1,4 @@
 language: cpp
 os: windows
 script:
-  make -v
+  mingw32-make
