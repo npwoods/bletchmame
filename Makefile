@@ -14,6 +14,10 @@ OBJ				= obj/mingw_win64/release
 WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
 
+ifndef WXWIDGETS_DIR
+WXWIDGETS_DIR=lib/wxWidgets-3.1.2
+endif
+
 OBJECTFILES=\
 	$(OBJ)/app.o				\
 	$(OBJ)/client.o				\
