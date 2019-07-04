@@ -5,6 +5,4 @@ script:
   - mv C:/wxWidgets-3.1.2 lib/wxWidgets
   - pushd lib/wxWidgets/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
   - pushd lib/wxWidgets/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
-  - pwd
-  - ls  
-  - mingw32-make -f Makefile
+  - mingw32-make
