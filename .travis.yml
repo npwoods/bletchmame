@@ -1,4 +1,5 @@
 language: cpp
 os: windows
 script:
-  make
+	gcc -version
+	gmake
