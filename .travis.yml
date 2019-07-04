@@ -1,5 +1,6 @@
 language: cpp
 os: windows
 script:
+	echo Foo
 	gcc -version
 	gmake
