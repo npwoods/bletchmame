@@ -1,5 +1,5 @@
 language: cpp
 os: windows
 script:
-  choco install wxwidgets
-  mingw32-make WXWIDGETS_DIR=C:\wxWidgets-3.1.2
+  - choco install wxwidgets
+  - mingw32-make WXWIDGETS_DIR=C:\wxWidgets-3.1.2
