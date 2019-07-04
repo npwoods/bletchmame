@@ -2,7 +2,6 @@ language: cpp
 os: windows
 script:
   - choco install wxwidgets
-  - cd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h
   - cd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release
   - junction lib\wxWidgets-3.1.2  d:\project\misc\wxWidgets-3.1.2
   - mingw32-make
