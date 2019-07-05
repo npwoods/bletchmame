@@ -11,6 +11,6 @@ cache:
   - C:/wxWidgets-3.1.2/build/msw/gcc_mswu
   
 addons:
-  artifacts: true
+  artifacts:
     paths:
     - bin/mingw_win64/release/BletchMAME.exe
