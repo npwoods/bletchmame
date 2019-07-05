@@ -14,3 +14,4 @@ deploy:
   provider: s3
   bucket: bletchmame-artifacts
   skip_cleanup: true
+  local_dir: bin/mingw_win64/release
