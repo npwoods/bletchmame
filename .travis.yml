@@ -16,5 +16,3 @@ addons:
     - bin
     working_dir: bin
     debug: true
-
-# foo
