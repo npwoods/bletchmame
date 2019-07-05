@@ -13,5 +13,5 @@ cache:
 addons:
   artifacts: true
     paths:
-    - bin
+    - bin/mingw_win64/release/BletchMAME.exe
     debug: true
