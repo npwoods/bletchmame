@@ -12,5 +12,7 @@ cache:
   
 addons:
   artifacts: true
-    # ...
+    paths:
+    - bin
     working_dir: bin
+    debug: true
