@@ -12,3 +12,4 @@ cache:
   
 addons:
   artifacts: true
+    working_dir: bin
