@@ -5,6 +5,7 @@ script:
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
   - mingw32-make WXWIDGETS_DIR=C:/wxWidgets-3.1.2 -j 8
+  - zip -j rel/BletchMAME.zip bin/mingw_win64/release/BletchMAME.exe
 
 cache:
   directories:
@@ -12,6 +13,7 @@ cache:
   
 deploy:
   provider: s3
-  bucket: bletchmame-artifacts
+  bucket: bletchmame
   skip_cleanup: true
-  local_dir: bin/mingw_win64/release
+  local_dir: rel
+  upload-dir: files
