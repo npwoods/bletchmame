@@ -35,6 +35,7 @@ OBJECTFILES=\
 	$(OBJ)/task.o				\
 	$(OBJ)/utility.o			\
 	$(OBJ)/validity.o			\
+	$(OBJ)/versiontask.o		\
 	$(OBJ)/virtuallistview.o	\
 	$(OBJ)/xmlparser.o			\
 	$(OBJ)/bletchmame.res.o		\

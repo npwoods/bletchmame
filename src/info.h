@@ -298,7 +298,8 @@ namespace info
 		}
 
 		// publically usable functions
-		bool load(const wxString &file_name);
+		bool load(const wxString &file_name, const wxString &expected_version = wxT(""));
+		void reset();
 		const wxString &version() const			{ return *m_version; }
 		auto machines() const					{ return view<machine, binaries::machine>(*this, m_machines_offset, m_machines_count); }
 		auto devices() const					{ return view<device, binaries::device>(*this, m_devices_offset, m_devices_count); }
@@ -318,8 +319,8 @@ namespace info
 
 		static const wxString								s_empty_string;
 
-		bool load_data(const wxString &file_name);
-		const info::binaries::header &header() const;
+		static std::vector<std::uint8_t> load_data(const wxString &file_name);
+		static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset);
 	};
 
 	template<typename TBinary> const wxString &entry_base<TBinary>::get_string(std::uint32_t strindex) const

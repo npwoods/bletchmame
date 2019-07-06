@@ -25,6 +25,7 @@
 #include "dlgpaths.h"
 #include "prefs.h"
 #include "listxmltask.h"
+#include "versiontask.h"
 #include "runmachinetask.h"
 #include "utility.h"
 #include "virtuallistview.h"
@@ -110,6 +111,14 @@ namespace
 			MameFrame & m_host;
 		};
 
+		// status of MAME version checks
+		enum class check_mame_info_status
+		{
+			SUCCESS,			// we've loaded an info DB that matches the expected MAME version
+			MAME_NOT_FOUND,		// we can't find the MAME executable
+			DB_NEEDS_REBUILD	// we've found MAME, but we must rebuild the database
+		};
+
 		MameClient								m_client;
 		Preferences							    m_prefs;
 		wxTextCtrl *							m_search_box;
@@ -120,6 +129,9 @@ namespace
 		bool									m_pinging;
 		const Pauser *							m_current_pauser;
 		std::function<void(Chatter &&)>			m_on_chatter;
+
+		// information retrieved by -version
+		wxString								m_mame_version;
 
 		// information retrieved by -listxml
 		info::database							m_info_db;
@@ -163,6 +175,7 @@ namespace
 		void OnSearchBoxTextChanged();
 
 		// task notifications
+		void OnVersionCompleted(PayloadEvent<VersionResult> &event);
 		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
 		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
 		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
@@ -172,7 +185,11 @@ namespace
 		template<typename TControl, typename... TArgs>
 		TControl &AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args);
 		void CreateMenuBar();
-		void CheckMameInfoDatabase(bool prompt_mame_path, bool force_refresh);
+		bool IsMameExecutablePresent() const;
+		void InitialCheckMameInfoDatabase();
+		check_mame_info_status CheckMameInfoDatabase();
+		bool PromptForMameExecutable();
+		bool RefreshMameInfoDatabase();
 		bool IsEmulationSessionActive() const;
 		info::machine GetRunningMachine() const;
 		void Run(const info::machine &machine);
@@ -264,6 +281,7 @@ MameFrame::MameFrame()
 	SetSizer(sizer.release());
 
 	// the ties that bind...
+	Bind(EVT_VERSION_RESULT,		[this](auto &event) { OnVersionCompleted(event);    });
 	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
 	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
 	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
@@ -280,8 +298,8 @@ MameFrame::MameFrame()
 	// nothing is running yet...
 	UpdateEmulationSession();
 
-	// we need to check the DB
-	CheckMameInfoDatabase(true, false);
+	// time for the initial check
+	InitialCheckMameInfoDatabase();
 }
 
 
@@ -389,7 +407,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs();															}, show_inputs_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { CheckMameInfoDatabase(false, true);										}, refresh_mame_info_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { RefreshMameInfoDatabase();												}, refresh_mame_info_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
 	// Bind UI update events	
@@ -438,44 +456,136 @@ void MameFrame::CreateMenuBar()
 
 
 //-------------------------------------------------
-//  CheckMameInfoDatabase
+//  IsMameExecutablePresent
 //-------------------------------------------------
 
-void MameFrame::CheckMameInfoDatabase(bool prompt_mame_path, bool force_refresh)
+bool MameFrame::IsMameExecutablePresent() const
 {
-	wxString db_path = m_prefs.GetMameXmlDatabasePath();
-	if (!force_refresh)
+	const wxString &path = m_prefs.GetPath(Preferences::path_type::emu_exectuable);
+	return !path.empty() && wxFileExists(path);
+}
+
+
+//-------------------------------------------------
+//  InitialCheckMameInfoDatabase - called when we
+//	load up for the very first time
+//-------------------------------------------------
+
+void MameFrame::InitialCheckMameInfoDatabase()
+{
+	bool done = false;
+	while (!done)
 	{
-		// try to load the info database
-		if (m_info_db.load(db_path))
+		switch (CheckMameInfoDatabase())
 		{
-			// we were able to do so; refresh the machine list and we're done
-			UpdateMachineList();
-			return;
+		case check_mame_info_status::SUCCESS:
+			// we're good!
+			done = true;
+			break;
+
+		case check_mame_info_status::MAME_NOT_FOUND:
+			// prompt the user for the MAME executable
+			if (!PromptForMameExecutable())
+			{
+				// the (l)user gave up; guess we're done...
+				done = true;
+			}
+			break;
+
+		case check_mame_info_status::DB_NEEDS_REBUILD:
+			// start a rebuild; whether the process succeeds or fails, we're done
+			RefreshMameInfoDatabase();
+			done = true;
+			break;
+
+		default:
+			throw false;
 		}
 	}
+}
 
-	// does our path exist?
-	if (!wxFileExists(m_prefs.GetPath(Preferences::path_type::emu_exectuable)))
-	{
-		// it doesn't... are we supposed to ask the user?
-		if (!prompt_mame_path)
-			return;
 
-		// if so, ask the user
-		wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable, m_prefs.GetPath(Preferences::path_type::emu_exectuable));
-		if (path.IsEmpty())
-			return;
+//-------------------------------------------------
+//  CheckMameInfoDatabase - checks the version and
+//	the MAME info DB
+//
+//	how to respond to failure conditions is up to
+//	the caller
+//-------------------------------------------------
 
-		m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
-	}
+MameFrame::check_mame_info_status MameFrame::CheckMameInfoDatabase()
+{
+	// first thing, check to see if the executable is there
+	if (!IsMameExecutablePresent())
+		return check_mame_info_status::MAME_NOT_FOUND;
+
+	// get the version - this should be blazingly fast
+	m_client.Launch(create_version_task());
+	while (m_client.IsTaskActive())
+		wxYield();
+
+	// we didn't get a version?  treat this as if we cannot find the
+	// executable
+	if (m_mame_version.empty())
+		return check_mame_info_status::MAME_NOT_FOUND;
+
+	// now let's try to open the info DB; we expect a specific version
+	wxString db_path = m_prefs.GetMameXmlDatabasePath();
+	if (!m_info_db.load(db_path, m_mame_version))
+		return check_mame_info_status::DB_NEEDS_REBUILD;
+
+	// success!  we can update the machine list
+	UpdateMachineList();
+	return check_mame_info_status::SUCCESS;
+}
+
+
+//-------------------------------------------------
+//  PromptForMameExecutable
+//-------------------------------------------------
+
+bool MameFrame::PromptForMameExecutable()
+{
+	wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable, m_prefs.GetPath(Preferences::path_type::emu_exectuable));
+	if (path.empty())
+		return false;
+
+	m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
+	return true;
+}
+
+
+//-------------------------------------------------
+//  RefreshMameInfoDatabase
+//-------------------------------------------------
+
+bool MameFrame::RefreshMameInfoDatabase()
+{
+	// sanity check; bail if we can't find the executable
+	if (!IsMameExecutablePresent())
+		return false;
 
 	// list XML
-	m_client.Launch(create_list_xml_task(std::move(db_path)));
+	wxString db_path = m_prefs.GetMameXmlDatabasePath();
+	m_client.Launch(create_list_xml_task(wxString(db_path)));
 
 	// and show the dialog
 	if (!show_loading_mame_info_dialog(*this, [this]() { return !m_client.IsTaskActive(); }))
+	{
 		m_client.Abort();
+		return false;
+	}
+
+	// we've succeeded; load the DB
+	if (!m_info_db.load(db_path))
+	{
+		// a failure here is likely due to a very strange condition (e.g. - someone deleting the infodb
+		// file out from under me)
+		return false;
+	}
+
+	UpdateMachineList();
+	return true;
 }
 
 
@@ -704,9 +814,42 @@ void MameFrame::OnMenuImages()
 
 void MameFrame::OnMenuPaths()
 {
-	Pauser pauser(*this);
-	show_paths_dialog(*this, m_prefs);
-	m_prefs.Save();
+	// keep the old path in case the user changes things
+	wxString old_executable_path = m_prefs.GetPath(Preferences::path_type::emu_exectuable);
+
+	// show the dialog
+	{
+		Pauser pauser(*this);
+		show_paths_dialog(*this, m_prefs);
+		m_prefs.Save();
+	}
+
+	// did the user change the executable path?
+	if (m_prefs.GetPath(Preferences::path_type::emu_exectuable) != old_executable_path)
+	{
+		// they did; check the MAME info DB
+		check_mame_info_status status = CheckMameInfoDatabase();
+		switch (status)
+		{
+		case check_mame_info_status::SUCCESS:
+			// we're good!
+			break;
+
+		case check_mame_info_status::MAME_NOT_FOUND:
+		case check_mame_info_status::DB_NEEDS_REBUILD:
+			// in both of these scenarios, we need to clear out the list
+			m_info_db.reset();
+			UpdateMachineList();
+
+			// start a rebuild if that is the only problem
+			if (status == check_mame_info_status::DB_NEEDS_REBUILD)
+				RefreshMameInfoDatabase();
+			break;
+
+		default:
+			throw false;
+		}
+	}
 }
 
 
@@ -755,6 +898,18 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> ch
 
 	if (checked.has_value())
 		event.Check(is_active && checked.value());
+}
+
+
+//-------------------------------------------------
+//  OnVersionCompleted
+//-------------------------------------------------
+
+void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
+{
+	VersionResult &payload(event.Payload());
+	m_mame_version = std::move(payload.m_version);
+	m_client.Reset();
 }
 
 

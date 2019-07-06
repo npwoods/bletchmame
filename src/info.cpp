@@ -36,16 +36,17 @@ static bool unaligned_check(const void *ptr, T value)
 //  database::load
 //-------------------------------------------------
 
-bool info::database::load(const wxString &file_name)
+bool info::database::load(const wxString &file_name, const wxString &expected_version)
 {
 	// try to load the data
-	if (!load_data(file_name))
+	std::vector<std::uint8_t> data = load_data(file_name);
+	if (data.empty())
 		return false;
 
 	// check the header
-	const binaries::header &hdr(header());
-	if (m_data.size() < sizeof(binaries::header))
+	if (data.size() < sizeof(binaries::header))
 		return false;
+	const binaries::header &hdr(*(reinterpret_cast<const info::binaries::header *>(data.data())));
 	if (hdr.m_magic != binaries::MAGIC_HEADER)
 		return false;
 	if (hdr.m_version != binaries::VERSION)
@@ -60,18 +61,25 @@ bool info::database::load(const wxString &file_name)
 	size_t string_table_offset				= configuration_conditions_offset	+ (hdr.m_configuration_conditions_count	* sizeof(binaries::configuration_condition));
 
 	// sanity check the string table
-	if (m_data.size() < string_table_offset + 1)
+	if (data.size() < string_table_offset + 1)
 		return false;
-	if (m_data[string_table_offset] != '\0')
+	if (data[string_table_offset] != '\0')
 		return false;
-	if (!unaligned_check(&m_data[string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
+	if (!unaligned_check(&data[string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
 		return false;
-	if (m_data[m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
+	if (data[data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
 		return false;
-	if (!unaligned_check(&m_data[m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END)], binaries::MAGIC_STRINGTABLE_END))
+	if (!unaligned_check(&data[data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END)], binaries::MAGIC_STRINGTABLE_END))
 		return false;
 
-	// things look good, set up our tables
+	// version check if appropriate
+	if (!expected_version.empty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
+		return false;
+
+	// finally things look good, set up the data
+	m_data = std::move(data);
+
+	// ...and the tables
 	m_machines_offset = machines_offset;
 	m_machines_count = hdr.m_machines_count;
 	m_devices_offset = devices_offset;
@@ -91,31 +99,42 @@ bool info::database::load(const wxString &file_name)
 //  database::load_data
 //-------------------------------------------------
 
-bool info::database::load_data(const wxString &file_name)
+std::vector<std::uint8_t> info::database::load_data(const wxString &file_name)
 {
 	if (!wxFileExists(file_name))
-		return false;
+		return { };
 
 	wxFileInputStream input(file_name);
 	if (!input.IsOk())
-		return false;
+		return { };
 
 	size_t size = input.GetSize();
 	if (size <= 0)
-		return false;
-	m_data.resize(size);
-	return input.ReadAll(m_data.data(), size);
+		return { };
+
+	std::vector<std::uint8_t> data;
+	data.resize(size);
+	if (!input.ReadAll(data.data(), size))
+		return { };
+
+	return data;
 }
 
 
 //-------------------------------------------------
-//  database::header
+//  database::reset
 //-------------------------------------------------
 
-const info::binaries::header &info::database::header() const
+void info::database::reset()
 {
-	assert(m_data.size() >= sizeof(info::binaries::header));
-	return *(reinterpret_cast<const info::binaries::header *>(m_data.data()));
+	m_data.resize(0);
+	m_machines_offset = 0;
+	m_machines_count = 0;
+	m_devices_offset = 0;
+	m_devices_count = 0;
+	m_string_table_offset = 0;
+	m_loaded_strings.clear();
+	m_version = nullptr;
 }
 
 
@@ -132,7 +151,25 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 	if (iter != m_loaded_strings.end())
 		return iter->second;
 
-	const char *string = reinterpret_cast<const char *>(&m_data.data()[m_string_table_offset + offset]);
+	const char *string = get_string_from_data(m_data, m_string_table_offset, offset);
 	m_loaded_strings.emplace(offset, wxString::FromUTF8(string));
 	return m_loaded_strings.find(offset)->second;
+}
+
+
+//-------------------------------------------------
+//  database::get_string_from_data - needs to be
+//	separate so we can do version check on
+//	"uncommitted" data
+//-------------------------------------------------
+
+const char *info::database::get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset)
+{
+	// sanity check
+	size_t maximum_size = data.size() - sizeof(std::uint16_t);
+	if (offset >= maximum_size || (string_table_offset + offset) >= maximum_size)
+		return "";	// should not happen with a valid info DB
+
+	// needs to be separate so we can call it on "uncommitted" data
+	return reinterpret_cast<const char *>(&data.data()[string_table_offset + offset]);
 }

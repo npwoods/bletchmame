@@ -245,6 +245,7 @@
     <ClCompile Include="task.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="validity.cpp" />
+    <ClCompile Include="versiontask.cpp" />
     <ClCompile Include="virtuallistview.cpp" />
     <ClCompile Include="xmlparser.cpp" />
   </ItemGroup>
@@ -268,6 +269,7 @@
     <ClInclude Include="task.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="validity.h" />
+    <ClInclude Include="versiontask.h" />
     <ClInclude Include="virtuallistview.h" />
     <ClInclude Include="xmlparser.h" />
   </ItemGroup>
