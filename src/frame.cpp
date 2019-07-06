@@ -86,6 +86,7 @@ namespace
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
 			virtual std::vector<wxString> GetExtensions(const wxString &tag) const;
+			virtual void CreateImage(const wxString &tag, wxString &&path);
 			virtual void LoadImage(const wxString &tag, wxString &&path);
 			virtual void UnloadImage(const wxString &tag);
 
@@ -1366,6 +1367,16 @@ std::vector<wxString> MameFrame::ImagesHost::GetExtensions(const wxString &tag) 
 
 	// and return it!
 	return util::string_split((*iter).extensions(), [](wchar_t ch) { return ch == ','; });
+}
+
+
+//-------------------------------------------------
+//  CreateImage
+//-------------------------------------------------
+
+void MameFrame::ImagesHost::CreateImage(const wxString &tag, wxString &&path)
+{
+	m_host.Issue({ "create", tag, std::move(path) });
 }
 
 

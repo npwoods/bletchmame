@@ -36,7 +36,8 @@ namespace
 		enum
 		{
 			// user IDs
-			ID_LOAD_IMAGE = wxID_HIGHEST + 1,
+			ID_CREATE_IMAGE = wxID_HIGHEST + 1,
+			ID_LOAD_IMAGE,
 			ID_UNLOAD_IMAGE,
 			ID_GRID_CONTROLS
 		};
@@ -61,11 +62,13 @@ namespace
 
 		void AppendToPopupMenu(int id, const wxString &text);
 
-		bool ImageMenu(const wxButton &button, const wxString &tag);
+		bool ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable);
+		bool CreateImage(const wxString &tag);
 		bool LoadImage(const wxString &tag);
 		bool UnloadImage(const wxString &tag);
-		wxString GetWildcardString(const wxString &tag) const;
+		wxString GetWildcardString(const wxString &tag, bool support_zip) const;
 		void UpdateImageGrid();
+		void UpdateWorkingDirectory(const wxString &path);
 	};
 };
 
@@ -88,6 +91,7 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 	m_images_event_subscription = m_host.GetImages().subscribe([this] { UpdateImageGrid(); });
 
 	// setup popup menu
+	AppendToPopupMenu(ID_CREATE_IMAGE, "Create...");
 	AppendToPopupMenu(ID_LOAD_IMAGE, "Load...");
 	AppendToPopupMenu(ID_UNLOAD_IMAGE, "Unload");
 
@@ -148,7 +152,9 @@ void ImagesDialog::UpdateImageGrid()
 			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
-			Bind(wxEVT_BUTTON, [this, image_button, tag](auto &) { ImageMenu(*image_button, tag); }, image_button->GetId());
+			bool is_createable = images[i].m_is_createable;
+			bool is_unloadable = !images[i].m_file_name.empty();
+			Bind(wxEVT_BUTTON, [this, image_button, tag, is_createable, is_unloadable](auto &) { ImageMenu(*image_button, tag, is_createable, is_unloadable); }, image_button->GetId());
 		}
 		else
 		{
@@ -216,8 +222,12 @@ void ImagesDialog::AppendToPopupMenu(int id, const wxString &text)
 //  ImageMenu
 //-------------------------------------------------
 
-bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag)
+bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable)
 {
+	// enable/disable these items as appropriate
+	m_popup_menu.Enable(ID_CREATE_IMAGE, is_createable);
+	m_popup_menu.Enable(ID_UNLOAD_IMAGE, is_unloadable);
+
 	// display the popup menu
 	wxRect button_rectangle = button.GetRect();
 	m_popup_menu_result = 0;
@@ -228,6 +238,10 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag)
 	bool result = false;
 	switch (m_popup_menu_result)
 	{
+	case ID_CREATE_IMAGE:
+		result = CreateImage(tag);
+		break;
+
 	case ID_LOAD_IMAGE:
 		result = LoadImage(tag);
 		break;
@@ -238,6 +252,36 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag)
 	}
 	return false;
 }
+
+
+//-------------------------------------------------
+//  CreateImage
+//-------------------------------------------------
+
+bool ImagesDialog::CreateImage(const wxString &tag)
+{
+	// show the dialog
+	wxFileDialog dialog(
+		this,
+		wxFileSelectorPromptStr,
+		m_host.GetWorkingDirectory(),
+		wxEmptyString,
+		GetWildcardString(tag, false),
+		wxFD_SAVE);
+	if (dialog.ShowModal() != wxID_OK)
+		return false;
+
+	// get the result from the dialog
+	wxString path = dialog.GetPath();
+
+	// update our host's working directory
+	UpdateWorkingDirectory(path);
+
+	// and load the image
+	m_host.CreateImage(tag, std::move(path));
+	return true;
+}
+
 
 
 //-------------------------------------------------
@@ -252,7 +296,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 		wxFileSelectorPromptStr,
 		m_host.GetWorkingDirectory(),
 		wxEmptyString,
-		GetWildcardString(tag),
+		GetWildcardString(tag, true),
 		wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 	if (dialog.ShowModal() != wxID_OK)
 		return false;
@@ -261,9 +305,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 	wxString path = dialog.GetPath();
 
 	// update our host's working directory
-	wxString dir;
-	wxFileName::SplitPath(path, &dir, nullptr, nullptr);
-	m_host.SetWorkingDirectory(std::move(dir));
+	UpdateWorkingDirectory(path);
 
 	// and load the image
 	m_host.LoadImage(tag, std::move(path));
@@ -286,13 +328,14 @@ bool ImagesDialog::UnloadImage(const wxString &tag)
 //  GetWildcardString
 //-------------------------------------------------
 
-wxString ImagesDialog::GetWildcardString(const wxString &tag) const
+wxString ImagesDialog::GetWildcardString(const wxString &tag, bool support_zip) const
 {
 	// get the list of extensions
 	std::vector<wxString> extensions = m_host.GetExtensions(tag);
 
-	// append zip
-	extensions.push_back("zip");
+	// append zip if appropriate
+	if (support_zip)
+		extensions.push_back("zip");
 
 	// figure out the "general" wildcard part for all devices
 	wxString all_extensions = util::string_join(wxString(";"), extensions, [](wxString ext) { return wxString::Format("*.%s", ext); });
@@ -310,6 +353,18 @@ wxString ImagesDialog::GetWildcardString(const wxString &tag) const
 	// and all files
 	result += "|All files (*.*)|*.*";
 	return result;
+}
+
+
+//-------------------------------------------------
+//  UpdateWorkingDirectory
+//-------------------------------------------------
+
+void ImagesDialog::UpdateWorkingDirectory(const wxString &path)
+{
+	wxString dir;
+	wxFileName::SplitPath(path, &dir, nullptr, nullptr);
+	m_host.SetWorkingDirectory(std::move(dir));
 }
 
 
