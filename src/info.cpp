@@ -91,6 +91,9 @@ bool info::database::load(const wxString &file_name, const wxString &expected_ve
 
 	// ...and last but not least set up the version
 	m_version = &get_string(hdr.m_build_strindex);
+
+	// signal that we've changed and we're done
+	on_changed();
 	return true;
 }
 
@@ -134,7 +137,19 @@ void info::database::reset()
 	m_devices_count = 0;
 	m_string_table_offset = 0;
 	m_loaded_strings.clear();
-	m_version = nullptr;
+	m_version = &s_empty_string;
+	on_changed();
+}
+
+
+//-------------------------------------------------
+//  database::on_changed
+//-------------------------------------------------
+
+void info::database::on_changed()
+{
+	if (m_on_changed)
+		m_on_changed();
 }
 
 

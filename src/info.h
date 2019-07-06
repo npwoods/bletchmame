@@ -303,11 +303,13 @@ namespace info
 		const wxString &version() const			{ return *m_version; }
 		auto machines() const					{ return view<machine, binaries::machine>(*this, m_machines_offset, m_machines_count); }
 		auto devices() const					{ return view<device, binaries::device>(*this, m_devices_offset, m_devices_count); }
+		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
 
 		// should only be called by info classes
 		const wxString &get_string(std::uint32_t offset) const;
 
 	private:
+		// member variables
 		std::vector<std::uint8_t>							m_data;
 		std::uint32_t										m_machines_offset;
 		std::uint32_t										m_machines_count;
@@ -316,9 +318,13 @@ namespace info
 		size_t												m_string_table_offset;
 		mutable std::unordered_map<std::uint32_t, wxString>	m_loaded_strings;
 		const wxString *									m_version;
+		std::function<void()>								m_on_changed;
 
+		// statics
 		static const wxString								s_empty_string;
 
+		// private functions
+		void on_changed();
 		static std::vector<std::uint8_t> load_data(const wxString &file_name);
 		static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset);
 	};

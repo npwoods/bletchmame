@@ -276,6 +276,7 @@ MameFrame::MameFrame()
 	m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
 	m_list_view->SetColumnsOrder(m_prefs.GetColumnOrder());
 	UpdateMachineList();
+	m_info_db.set_on_changed([this]() { UpdateMachineList(); });
 
 	// set the sizer
 	SetSizer(sizer.release());
@@ -535,7 +536,6 @@ MameFrame::check_mame_info_status MameFrame::CheckMameInfoDatabase()
 		return check_mame_info_status::DB_NEEDS_REBUILD;
 
 	// success!  we can update the machine list
-	UpdateMachineList();
 	return check_mame_info_status::SUCCESS;
 }
 
@@ -584,7 +584,6 @@ bool MameFrame::RefreshMameInfoDatabase()
 		return false;
 	}
 
-	UpdateMachineList();
 	return true;
 }
 
@@ -839,7 +838,6 @@ void MameFrame::OnMenuPaths()
 		case check_mame_info_status::DB_NEEDS_REBUILD:
 			// in both of these scenarios, we need to clear out the list
 			m_info_db.reset();
-			UpdateMachineList();
 
 			// start a rebuild if that is the only problem
 			if (status == check_mame_info_status::DB_NEEDS_REBUILD)
@@ -928,8 +926,7 @@ void MameFrame::OnListXmlCompleted(PayloadEvent<ListXmlResult> &event)
 		// if it succeeded, try to load the DB
 		{
 			wxString db_path = m_prefs.GetMameXmlDatabasePath();
-			if (m_info_db.load(db_path))
-				UpdateMachineList();
+			m_info_db.load(db_path);
 		}
 		break;
 
