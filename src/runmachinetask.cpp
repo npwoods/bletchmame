@@ -31,6 +31,15 @@ wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
 wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
 wxDEFINE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
 
+static const util::enum_parser<Input::input_class> s_input_class_parser =
+{
+	{ "controller", Input::input_class::CONTROLLER, },
+	{ "misc", Input::input_class::MISC, },
+	{ "keyboard", Input::input_class::KEYBOARD, },
+	{ "config", Input::input_class::CONFIG, },
+	{ "dipswitch", Input::input_class::DIPSWITCH, },
+};
+
 static const util::enum_parser<Input::input_type> s_input_type_parser =
 {
 	{ "analog", Input::input_type::ANALOG, },
@@ -337,6 +346,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		Input input;
 		attributes.Get("port_tag",			input.m_port_tag);
 		attributes.Get("mask",				input.m_mask);
+		attributes.Get("class",				input.m_class, s_input_class_parser);
 		attributes.Get("type",				input.m_type, s_input_type_parser);
 		attributes.Get("name",				input.m_name);
 		result.m_inputs.value().push_back(std::move(input));

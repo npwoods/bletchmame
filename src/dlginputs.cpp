@@ -25,7 +25,7 @@ namespace
 	class InputsDialog : public wxDialog
 	{
 	public:
-		InputsDialog(wxWindow &parent, IInputsHost &host);
+		InputsDialog(wxWindow &parent, const wxString &title, IInputsHost &host, Input::input_class input_class);
 
 	private:
 		IInputsHost &					m_host;
@@ -48,8 +48,8 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-InputsDialog::InputsDialog(wxWindow &parent, IInputsHost &host)
-	: wxDialog(&parent, wxID_ANY, "Inputs", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost &host, Input::input_class input_class)
+	: wxDialog(&parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_host(host)
 	, m_current_dialog(nullptr)
 {
@@ -75,33 +75,36 @@ InputsDialog::InputsDialog(wxWindow &parent, IInputsHost &host)
 	wxString buffer;
 	for (const Input &input : host.GetInputs())
 	{
-		for (const InputSeq &input_seq : input.m_seqs)
+		if (input.m_class == input_class)
 		{
-			const wxString *name;
-			switch (input_seq.m_type)
+			for (const InputSeq &input_seq : input.m_seqs)
 			{
-			case InputSeq::inputseq_type::STANDARD:
-				name = &input.m_name;
-				break;
-			case InputSeq::inputseq_type::INCREMENT:
-				buffer = input.m_name + " Inc";
-				name = &buffer;
-				break;
-			case InputSeq::inputseq_type::DECREMENT:
-				buffer = input.m_name + " Dec";
-				name = &buffer;
-				break;
-			default:
-				throw false;
+				const wxString *name;
+				switch (input_seq.m_type)
+				{
+				case InputSeq::inputseq_type::STANDARD:
+					name = &input.m_name;
+					break;
+				case InputSeq::inputseq_type::INCREMENT:
+					buffer = input.m_name + " Inc";
+					name = &buffer;
+					break;
+				case InputSeq::inputseq_type::DECREMENT:
+					buffer = input.m_name + " Dec";
+					name = &buffer;
+					break;
+				default:
+					throw false;
+				}
+
+				wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
+				wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, input_seq.m_text);
+
+				wxString port_tag = input.m_port_tag;
+				int mask = input.m_mask;
+				InputSeq::inputseq_type seq_type = input_seq.m_type;
+				Bind(wxEVT_BUTTON, [this, &button, &static_text, port_tag, mask, seq_type](auto &) { StartInputPoll(button, static_text, port_tag, mask, seq_type); }, button.GetId());
 			}
-
-			wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
-			wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, input_seq.m_text);
-
-			wxString port_tag = input.m_port_tag;
-			int mask = input.m_mask;
-			InputSeq::inputseq_type seq_type = input_seq.m_type;
-			Bind(wxEVT_BUTTON, [this, &button, &static_text, port_tag, mask, seq_type](auto &) { StartInputPoll(button, static_text, port_tag, mask, seq_type); }, button.GetId());
 		}
 	}
 
@@ -187,8 +190,8 @@ void InputsDialog::OnPollingSeqChanged()
 //  show_inputs_dialog
 //-------------------------------------------------
 
-bool show_inputs_dialog(wxWindow &parent, IInputsHost &host)
+bool show_inputs_dialog(wxWindow &parent, const wxString &title, IInputsHost &host, Input::input_class input_class)
 {
-	InputsDialog dialog(parent, host);
+	InputsDialog dialog(parent, title, host, input_class);
 	return dialog.ShowModal() == wxID_OK;
 }

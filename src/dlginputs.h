@@ -28,6 +28,6 @@ public:
 	virtual void StopPolling() = 0;
 };
 
-bool show_inputs_dialog(wxWindow &parent, IInputsHost &host);
+bool show_inputs_dialog(wxWindow &parent, const wxString &title, IInputsHost &host, Input::input_class input_class);
 
 #endif // DLGINPUTS_H

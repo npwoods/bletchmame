@@ -167,7 +167,7 @@ namespace
 		void OnMenuSnapshotSave();
 		void OnMenuImages();
 		void OnMenuPaths();
-		void OnMenuInputs();
+		void OnMenuInputs(Input::input_class input_class);
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
@@ -204,6 +204,8 @@ namespace
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 		template<typename TStatus, typename TPayload> static bool GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload);
+		bool HasInputClass(Input::input_class input_class) const;
+		static wxString InputClassText(Input::input_class input_class, bool elipsis);
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -367,8 +369,11 @@ void MameFrame::CreateMenuBar()
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
-	wxMenuItem *show_paths_dialog_menu_item		= settings_menu->Append(id++, "Paths...");
-	wxMenuItem *show_inputs_dialog_menu_item	= settings_menu->Append(id++, "Inputs...");
+	wxMenuItem *show_input_controllers_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::CONTROLLER, true));
+	wxMenuItem *show_input_keyboard_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::KEYBOARD, true));
+	wxMenuItem *show_input_misc_dialog_menu_item		= settings_menu->Append(id++, InputClassText(Input::input_class::MISC, true));
+	settings_menu->AppendSeparator();
+	wxMenuItem *show_paths_dialog_menu_item				= settings_menu->Append(id++, "Paths...");
 
 	// the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
 	wxMenu *help_menu = new wxMenu();
@@ -406,8 +411,10 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { ChangeSound(!IsSoundEnabled());											}, sound_menu_item->GetId());
 	
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::CONTROLLER);								}, show_input_controllers_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::KEYBOARD);								}, show_input_keyboard_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::MISC);									}, show_input_misc_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs();															}, show_inputs_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { RefreshMameInfoDatabase();												}, refresh_mame_info_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
@@ -425,7 +432,9 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !m_status_images.get().empty());	}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());						}, sound_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !m_status_inputs.empty());		}, show_inputs_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::KEYBOARD));		}, show_input_keyboard_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::MISC));			}, show_input_misc_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
@@ -855,11 +864,12 @@ void MameFrame::OnMenuPaths()
 //  OnMenuInputs
 //-------------------------------------------------
 
-void MameFrame::OnMenuInputs()
+void MameFrame::OnMenuInputs(Input::input_class input_class)
 {
+	wxString title = InputClassText(input_class, false);
 	Pauser pauser(*this);
 	InputsHost host(*this);
-	show_inputs_dialog(*this, host);
+	show_inputs_dialog(*this, title, host, input_class);
 }
 
 
@@ -1297,6 +1307,57 @@ void MameFrame::UpdateMenuBar()
 #else
 	throw false;
 #endif
+}
+
+
+//-------------------------------------------------
+//  HasInputClass
+//-------------------------------------------------
+
+bool MameFrame::HasInputClass(Input::input_class input_class) const
+{
+	return std::find_if(
+		m_status_inputs.begin(),
+		m_status_inputs.end(),
+		[input_class](const auto &input)
+		{
+			return input.m_class == input_class;
+		}) != m_status_inputs.end();
+}
+
+
+//-------------------------------------------------
+//  InputClassText
+//-------------------------------------------------
+
+wxString MameFrame::InputClassText(Input::input_class input_class, bool elipsis)
+{
+	wxString result;
+	switch (input_class)
+	{
+	case Input::input_class::CONTROLLER:
+		result = "Joysticks and Controllers";
+		break;
+	case Input::input_class::KEYBOARD:
+		result = "Keyboard";
+		break;
+	case Input::input_class::MISC:
+		result = "Miscellaneous Input";
+		break;
+	case Input::input_class::CONFIG:
+		result = "Configuration";
+		break;
+	case Input::input_class::DIPSWITCH:
+		result = "DIP Switches";
+		break;
+	default:
+		throw false;
+	}
+
+	if (elipsis)
+		result += "...";
+
+	return result;
 }
 
 

@@ -102,6 +102,16 @@ struct Input
 	Input(const Input &) = SHOULD_BE_DELETE;
 	Input(Input &&that) = default;
 
+	enum class input_class
+	{
+		UNKNOWN,
+		CONTROLLER,
+		KEYBOARD,
+		MISC,
+		CONFIG,
+		DIPSWITCH
+	};
+
 	enum class input_type
 	{
 		ANALOG,
@@ -111,6 +121,7 @@ struct Input
 	wxString				m_port_tag;
 	wxString				m_name;
 	ioport_value			m_mask;
+	input_class				m_class;
 	input_type				m_type;
 	std::vector<InputSeq>	m_seqs;
 };
