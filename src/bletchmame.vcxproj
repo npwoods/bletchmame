@@ -254,6 +254,7 @@
     <ResourceCompile Include="bletchmame.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bindata.h" />
     <ClInclude Include="client.h" />
     <ClInclude Include="dlgimages.h" />
     <ClInclude Include="dlgconsole.h" />
