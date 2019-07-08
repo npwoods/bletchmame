@@ -33,28 +33,75 @@ static bool unaligned_check(const void *ptr, T value)
 
 
 //-------------------------------------------------
+//  load_data
+//-------------------------------------------------
+
+static std::vector<std::uint8_t> load_data(const wxString &file_name, info::binaries::header &header)
+{
+	// check for file existance
+	if (!wxFileExists(file_name))
+		return {};
+
+	// open up the file
+	wxFileInputStream input(file_name);
+	if (!input.IsOk())
+		return {};
+
+	// get the file size and read the header
+	size_t size = input.GetSize();
+	if (size <= sizeof(header))
+		return {};
+	if (!input.ReadAll(&header, sizeof(header)))
+		return {};
+
+	// read the data
+	std::vector<std::uint8_t> data;
+	data.resize(size - sizeof(header));
+	if (!input.ReadAll(data.data(), data.size()))
+		return {};
+
+	// success! return it
+	return data;
+}
+
+
+//-------------------------------------------------
+//  get_string_from_data - needs to be separate so
+//	we can do version check on "uncommitted" data
+//-------------------------------------------------
+
+static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset)
+{
+	// sanity check
+	size_t maximum_size = data.size() - sizeof(std::uint16_t);
+	if (offset >= maximum_size || (string_table_offset + offset) >= maximum_size)
+		return "";	// should not happen with a valid info DB
+
+	// needs to be separate so we can call it on "uncommitted" data
+	return reinterpret_cast<const char *>(&data.data()[string_table_offset + offset]);
+}
+
+
+//-------------------------------------------------
 //  database::load
 //-------------------------------------------------
 
 bool info::database::load(const wxString &file_name, const wxString &expected_version)
 {
 	// try to load the data
-	std::vector<std::uint8_t> data = load_data(file_name);
+	binaries::header hdr;
+	std::vector<std::uint8_t> data = load_data(file_name, hdr);
 	if (data.empty())
 		return false;
 
 	// check the header
-	if (data.size() < sizeof(binaries::header))
-		return false;
-	const binaries::header &hdr(*(reinterpret_cast<const info::binaries::header *>(data.data())));
 	if (hdr.m_magic != binaries::MAGIC_HEADER)
 		return false;
 	if (hdr.m_version != binaries::VERSION)
 		return false;
 
 	// offsets
-	size_t machines_offset					= sizeof(binaries::header);
-	size_t devices_offset					= machines_offset					+ (hdr.m_machines_count					* sizeof(binaries::machine));
+	size_t devices_offset					= 0									+ (hdr.m_machines_count					* sizeof(binaries::machine));
 	size_t configurations_offset			= devices_offset					+ (hdr.m_devices_count					* sizeof(binaries::device));
 	size_t configuration_settings_offset	= configurations_offset				+ (hdr.m_configurations_count			* sizeof(binaries::configuration));
 	size_t configuration_conditions_offset	= configuration_settings_offset		+ (hdr.m_configuration_settings_count	* sizeof(binaries::configuration_setting));
@@ -80,7 +127,6 @@ bool info::database::load(const wxString &file_name, const wxString &expected_ve
 	m_data = std::move(data);
 
 	// ...and the tables
-	m_machines_offset = machines_offset;
 	m_machines_count = hdr.m_machines_count;
 	m_devices_offset = devices_offset;
 	m_devices_count = hdr.m_devices_count;
@@ -103,39 +149,12 @@ bool info::database::load(const wxString &file_name, const wxString &expected_ve
 
 
 //-------------------------------------------------
-//  database::load_data
-//-------------------------------------------------
-
-std::vector<std::uint8_t> info::database::load_data(const wxString &file_name)
-{
-	if (!wxFileExists(file_name))
-		return { };
-
-	wxFileInputStream input(file_name);
-	if (!input.IsOk())
-		return { };
-
-	size_t size = input.GetSize();
-	if (size <= 0)
-		return { };
-
-	std::vector<std::uint8_t> data;
-	data.resize(size);
-	if (!input.ReadAll(data.data(), size))
-		return { };
-
-	return data;
-}
-
-
-//-------------------------------------------------
 //  database::reset
 //-------------------------------------------------
 
 void info::database::reset()
 {
 	m_data.resize(0);
-	m_machines_offset = 0;
 	m_machines_count = 0;
 	m_devices_offset = 0;
 	m_devices_count = 0;
@@ -177,22 +196,4 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 	const char *string = get_string_from_data(m_data, m_string_table_offset, offset);
 	m_loaded_strings.emplace(offset, wxString::FromUTF8(string));
 	return m_loaded_strings.find(offset)->second;
-}
-
-
-//-------------------------------------------------
-//  database::get_string_from_data - needs to be
-//	separate so we can do version check on
-//	"uncommitted" data
-//-------------------------------------------------
-
-const char *info::database::get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset)
-{
-	// sanity check
-	size_t maximum_size = data.size() - sizeof(std::uint16_t);
-	if (offset >= maximum_size || (string_table_offset + offset) >= maximum_size)
-		return "";	// should not happen with a valid info DB
-
-	// needs to be separate so we can call it on "uncommitted" data
-	return reinterpret_cast<const char *>(&data.data()[string_table_offset + offset]);
 }

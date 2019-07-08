@@ -183,8 +183,7 @@ namespace info
 		friend class ::bindata::view;
 	public:
 		database()
-			: m_machines_offset(0)
-			, m_machines_count(0)
+			: m_machines_count(0)
 			, m_devices_offset(0)
 			, m_devices_count(0)
 			, m_configurations_offset(0)
@@ -203,7 +202,7 @@ namespace info
 		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
 
 		// views
-		auto machines() const				{ return machine::view(*this, m_machines_offset, m_machines_count); }
+		auto machines() const				{ return machine::view(*this, 0, m_machines_count); }
 		auto devices() const				{ return device::view(*this, m_devices_offset, m_devices_count); }
 		auto configurations() const			{ return configuration::view(*this, m_configurations_offset, m_configurations_count); }
 		auto configuration_settings() const	{ return configuration_setting::view(*this, m_configuration_settings_offset, m_configuration_settings_count); }
@@ -214,7 +213,6 @@ namespace info
 	private:
 		// member variables
 		std::vector<std::uint8_t>							m_data;
-		std::uint32_t										m_machines_offset;
 		std::uint32_t										m_machines_count;
 		std::uint32_t										m_devices_offset;
 		std::uint32_t										m_devices_count;
@@ -232,8 +230,6 @@ namespace info
 
 		// private functions
 		void on_changed();
-		static std::vector<std::uint8_t> load_data(const wxString &file_name);
-		static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset);
 	};
 
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
