@@ -84,6 +84,10 @@ bool info::database::load(const wxString &file_name, const wxString &expected_ve
 	m_machines_count = hdr.m_machines_count;
 	m_devices_offset = devices_offset;
 	m_devices_count = hdr.m_devices_count;
+	m_configurations_offset = configurations_offset;
+	m_configurations_count = hdr.m_configurations_count;
+	m_configuration_settings_offset = configuration_settings_offset;
+	m_configuration_settings_count = hdr.m_configuration_settings_count;
 
 	// ...and set up string table info
 	m_loaded_strings.clear();
@@ -135,6 +139,10 @@ void info::database::reset()
 	m_machines_count = 0;
 	m_devices_offset = 0;
 	m_devices_count = 0;
+	m_configurations_offset = 0;
+	m_configurations_count = 0;
+	m_configuration_settings_offset = 0;
+	m_configuration_settings_count = 0;
 	m_string_table_offset = 0;
 	m_loaded_strings.clear();
 	m_version = &s_empty_string;

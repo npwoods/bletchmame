@@ -349,6 +349,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("class",				input.m_class, s_input_class_parser);
 		attributes.Get("type",				input.m_type, s_input_type_parser);
 		attributes.Get("name",				input.m_name);
+		attributes.Get("value",				input.m_value);
 		result.m_inputs.value().push_back(std::move(input));
 	});
 	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)

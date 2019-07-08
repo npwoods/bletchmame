@@ -235,6 +235,8 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 			configuration.m_name_strindex = strings.get(data);
 		if (attributes.Get("tag", data))
 			configuration.m_tag_strindex = strings.get(data);
+		attributes.Get("mask", configuration.m_mask);
+		configuration.m_configuration_settings_index = to_uint32(configuration_settings.size());
 		configurations.push_back(std::move(configuration));
 	
 		auto iter = machines.end() - 1;
@@ -248,6 +250,9 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 			configuration_setting.m_name_strindex = strings.get(data);
 		attributes.Get("value", configuration_setting.m_value);
 		configuration_settings.push_back(std::move(configuration_setting));
+	
+		auto iter = configurations.end() - 1;
+		iter->m_configuration_settings_count++;
 	});
 	xml.OnElementBegin({ "mame", "machine", "configuration", "confsetting", "condition" }, [&](const XmlParser::Attributes &attributes)
 	{

@@ -23,6 +23,7 @@
 #include "dlgimages.h"
 #include "dlginputs.h"
 #include "dlgpaths.h"
+#include "dlgswitches.h"
 #include "prefs.h"
 #include "listxmltask.h"
 #include "versiontask.h"
@@ -111,6 +112,18 @@ namespace
 			MameFrame & m_host;
 		};
 
+		class SwitchesHost : public ISwitchesHost
+		{
+		public:
+			SwitchesHost(MameFrame &host);
+
+			virtual const std::vector<Input> &GetInputs() override;
+			virtual void SetInputValue(const wxString &port_tag, ioport_value mask, ioport_value value) override;
+
+		private:
+			MameFrame & m_host;
+		};
+
 		// status of MAME version checks
 		enum class check_mame_info_status
 		{
@@ -168,6 +181,7 @@ namespace
 		void OnMenuImages();
 		void OnMenuPaths();
 		void OnMenuInputs(Input::input_class input_class);
+		void OnMenuSwitches(Input::input_class input_class);
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
@@ -372,6 +386,8 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *show_input_controllers_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::CONTROLLER, true));
 	wxMenuItem *show_input_keyboard_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::KEYBOARD, true));
 	wxMenuItem *show_input_misc_dialog_menu_item		= settings_menu->Append(id++, InputClassText(Input::input_class::MISC, true));
+	wxMenuItem *show_input_config_dialog_menu_item		= settings_menu->Append(id++, InputClassText(Input::input_class::CONFIG, true));
+	wxMenuItem *show_input_dipswitch_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::DIPSWITCH, true));
 	settings_menu->AppendSeparator();
 	wxMenuItem *show_paths_dialog_menu_item				= settings_menu->Append(id++, "Paths...");
 
@@ -414,6 +430,8 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::CONTROLLER);								}, show_input_controllers_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::KEYBOARD);								}, show_input_keyboard_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::MISC);									}, show_input_misc_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(Input::input_class::CONFIG);								}, show_input_config_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(Input::input_class::DIPSWITCH);							}, show_input_dipswitch_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { RefreshMameInfoDatabase();												}, refresh_mame_info_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
@@ -435,6 +453,8 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::KEYBOARD));		}, show_input_keyboard_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::MISC));			}, show_input_misc_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
@@ -870,6 +890,19 @@ void MameFrame::OnMenuInputs(Input::input_class input_class)
 	Pauser pauser(*this);
 	InputsHost host(*this);
 	show_inputs_dialog(*this, title, host, input_class);
+}
+
+
+//-------------------------------------------------
+//  OnMenuSwitches
+//-------------------------------------------------
+
+void MameFrame::OnMenuSwitches(Input::input_class input_class)
+{
+	wxString title = InputClassText(input_class, false);
+	Pauser pauser(*this);
+	SwitchesHost host(*this);
+	show_switches_dialog(*this, title, host, input_class, GetRunningMachine());
 }
 
 
@@ -1690,6 +1723,40 @@ void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value 
 void MameFrame::InputsHost::StopPolling()
 {
 	m_host.Issue({ "seq_poll_stop" });
+}
+
+
+//**************************************************************************
+//  SwitchesHost
+//**************************************************************************
+
+//-------------------------------------------------
+//  SwitchesHost ctor
+//-------------------------------------------------
+
+MameFrame::SwitchesHost::SwitchesHost(MameFrame &host)
+	: m_host(host)
+{
+}
+
+
+//-------------------------------------------------
+//  GetInputs
+//-------------------------------------------------
+
+const std::vector<Input> &MameFrame::SwitchesHost::GetInputs()
+{
+	return m_host.m_status_inputs;
+}
+
+
+//-------------------------------------------------
+//  SetInputValue
+//-------------------------------------------------
+
+void MameFrame::SwitchesHost::SetInputValue(const wxString &port_tag, ioport_value mask, ioport_value value)
+{
+	m_host.Issue({ "set_input_value", port_tag, std::to_string(mask), std::to_string(value) });
 }
 
 

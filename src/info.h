@@ -28,7 +28,7 @@ namespace info
 		const std::uint32_t MAGIC_HEADER = 3133731337;
 		const std::uint16_t MAGIC_STRINGTABLE_BEGIN = 0x9D9B;
 		const std::uint16_t MAGIC_STRINGTABLE_END = 0x9F99;
-		const std::uint32_t VERSION = 1;
+		const std::uint32_t VERSION = 2;
 
 		struct header
 		{
@@ -61,7 +61,9 @@ namespace info
 		{
 			std::uint32_t	m_name_strindex;
 			std::uint32_t	m_tag_strindex;
-			std::uint32_t	m_settings_index;
+			std::uint32_t	m_mask;
+			std::uint32_t	m_configuration_settings_index;
+			std::uint32_t	m_configuration_settings_count;
 		};
 
 		struct configuration_condition
@@ -243,6 +245,31 @@ namespace info
 		bool mandatory() const { return inner().m_mandatory != 0; }
 	};
 
+	class configuration_setting : public entry_base<binaries::configuration_setting>
+	{
+	public:
+		configuration_setting(const database &db, const binaries::configuration_setting &inner)
+			: entry_base(db, inner)
+		{
+		}
+
+		const wxString &name() const { return get_string(inner().m_name_strindex); }
+		std::uint32_t value() const { return inner().m_value; }
+	};
+
+	class configuration : public entry_base<binaries::configuration>
+	{
+	public:
+		configuration(const database &db, const binaries::configuration &inner)
+			: entry_base(db, inner)
+		{
+		}
+
+		const wxString &name() const { return get_string(inner().m_name_strindex); }
+		const wxString &tag() const { return get_string(inner().m_tag_strindex); }
+		std::uint32_t mask() const { return inner().m_mask; }
+		view<configuration_setting, binaries::configuration_setting> settings() const;
+	};
 
 	class machine : public entry_base<binaries::machine>
 	{
@@ -252,6 +279,7 @@ namespace info
 		{
 		}
 
+		// properties
 		const wxString &name() const			{ return get_string(inner().m_name_strindex); }
 		const wxString &sourcefile() const		{ return get_string(inner().m_sourcefile_strindex); }
 		const wxString &clone_of() const		{ return get_string(inner().m_clone_of_strindex); }
@@ -259,28 +287,13 @@ namespace info
 		const wxString &description() const		{ return get_string(inner().m_description_strindex); }
 		const wxString &year() const			{ return get_string(inner().m_year_strindex); }
 		const wxString &manufacturer() const	{ return get_string(inner().m_manufacturer_strindex); }
-		view<device, binaries::device> devices() const;
+
+		// views
+		view<device, binaries::device>									devices() const;
+		view<configuration, binaries::configuration>					configurations() const;
+		view<configuration_setting, binaries::configuration_setting>	configuration_settings() const;
 	};
 
-
-
-	class configuration
-	{
-	public:
-		configuration(const database &db);
-	};
-
-	class configuration_condition
-	{
-	public:
-		configuration_condition(const database &db);
-	};
-
-	class configuration_setting
-	{
-	public:
-		configuration_setting(const database &db);
-	};
 
 	class database
 	{
@@ -292,6 +305,10 @@ namespace info
 			, m_machines_count(0)
 			, m_devices_offset(0)
 			, m_devices_count(0)
+			, m_configurations_offset(0)
+			, m_configurations_count(0)
+			, m_configuration_settings_offset(0)
+			, m_configuration_settings_count(0)
 			, m_string_table_offset(0)
 			, m_version(&s_empty_string)
 		{
@@ -301,9 +318,13 @@ namespace info
 		bool load(const wxString &file_name, const wxString &expected_version = wxT(""));
 		void reset();
 		const wxString &version() const			{ return *m_version; }
-		auto machines() const					{ return view<machine, binaries::machine>(*this, m_machines_offset, m_machines_count); }
-		auto devices() const					{ return view<device, binaries::device>(*this, m_devices_offset, m_devices_count); }
 		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
+
+		// views
+		auto machines() const				{ return view<machine, binaries::machine>(*this, m_machines_offset, m_machines_count); }
+		auto devices() const				{ return view<device, binaries::device>(*this, m_devices_offset, m_devices_count); }
+		auto configurations() const			{ return view<configuration, binaries::configuration>(*this, m_configurations_offset, m_configurations_count); }
+		auto configuration_settings() const	{ return view<configuration_setting, binaries::configuration_setting>(*this, m_configuration_settings_offset, m_configuration_settings_count); }
 
 		// should only be called by info classes
 		const wxString &get_string(std::uint32_t offset) const;
@@ -315,6 +336,10 @@ namespace info
 		std::uint32_t										m_machines_count;
 		std::uint32_t										m_devices_offset;
 		std::uint32_t										m_devices_count;
+		std::uint32_t										m_configurations_offset;
+		std::uint32_t										m_configurations_count;
+		std::uint32_t										m_configuration_settings_offset;
+		std::uint32_t										m_configuration_settings_count;
 		size_t												m_string_table_offset;
 		mutable std::unordered_map<std::uint32_t, wxString>	m_loaded_strings;
 		const wxString *									m_version;
@@ -344,7 +369,9 @@ namespace info
 	}
 
 
-	inline view<device, binaries::device> machine::devices() const	{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
+	inline view<device, binaries::device>				machine::devices() const						{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
+	inline view<configuration, binaries::configuration>	machine::configurations() const					{ return db().configurations().subview(inner().m_configurations_index, inner().m_configurations_count); }
+	inline view<configuration_setting, binaries::configuration_setting> configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }
 };
 
 

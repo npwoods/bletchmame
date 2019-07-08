@@ -92,6 +92,12 @@ struct InputSeq
 
 	inputseq_type			m_type;
 	wxString				m_text;
+
+	bool operator==(const InputSeq &that) const
+	{
+		return m_type == that.m_type
+			&& m_text == that.m_text;
+	}
 };
 
 typedef std::uint32_t ioport_value;
@@ -123,7 +129,19 @@ struct Input
 	ioport_value			m_mask;
 	input_class				m_class;
 	input_type				m_type;
+	ioport_value			m_value;
 	std::vector<InputSeq>	m_seqs;
+
+	bool operator==(const Input &that) const
+	{
+		return m_port_tag == that.m_port_tag
+			&& m_name == that.m_name
+			&& m_mask == that.m_mask
+			&& m_class == that.m_class
+			&& m_type == that.m_type
+			&& m_value == that.m_value
+			&& m_seqs == that.m_seqs;
+	}
 };
 
 struct StatusUpdate

@@ -236,6 +236,7 @@
     <ClCompile Include="dlginputs.cpp" />
     <ClCompile Include="dlgloading.cpp" />
     <ClCompile Include="dlgpaths.cpp" />
+    <ClCompile Include="dlgswitches.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="info.cpp" />
     <ClCompile Include="job.cpp" />
@@ -259,6 +260,7 @@
     <ClInclude Include="dlginputs.h" />
     <ClInclude Include="dlgloading.h" />
     <ClInclude Include="dlgpaths.h" />
+    <ClInclude Include="dlgswitches.h" />
     <ClInclude Include="frame.h" />
     <ClInclude Include="info.h" />
     <ClInclude Include="job.h" />

@@ -26,6 +26,7 @@ OBJECTFILES=\
 	$(OBJ)/dlginputs.o			\
 	$(OBJ)/dlgloading.o			\
 	$(OBJ)/dlgpaths.o			\
+	$(OBJ)/dlgswitches.o		\
 	$(OBJ)/frame.o				\
 	$(OBJ)/info.o				\
 	$(OBJ)/job.o				\
