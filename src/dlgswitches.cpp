@@ -128,10 +128,10 @@ void SwitchesDialog::UpdateInputs()
 			// get the values and strings
 			std::vector<std::uint32_t> choice_values;
 			std::vector<wxString> choice_strings;
-			for (const auto &pair : choices)
+			for (const auto &[value, str] : choices)
 			{
-				choice_values.push_back(pair.first);
-				choice_strings.push_back(pair.second);
+				choice_values.push_back(value);
+				choice_strings.push_back(str);
 			}
 
 			// add static text with the name of the config item

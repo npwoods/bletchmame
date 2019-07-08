@@ -46,6 +46,7 @@ private:
 //  PARSING UTILITY CLASSES
 //**************************************************************************
 
+// ======================> string_hash
 class string_hash
 {
 public:
@@ -53,6 +54,7 @@ public:
 };
 
 
+// ======================> string_compare
 class string_compare
 {
 public:
@@ -60,6 +62,7 @@ public:
 };
 
 
+// ======================> enum_parser
 template<typename T>
 class enum_parser
 {
@@ -83,7 +86,7 @@ private:
 
 
 //**************************************************************************
-//  STRING UTILITIES
+//  STRING & CONTAINER UTILITIES
 //**************************************************************************
 
 //-------------------------------------------------
@@ -181,6 +184,18 @@ inline bool string_icontains(const TStr &str, const TStr &target)
 }
 
 	
+//-------------------------------------------------
+//  last
+//-------------------------------------------------
+
+template<typename T>
+auto &last(T &container)
+{
+	assert(container.end() > container.begin());
+	return *(container.end() - 1);
+}
+
+
 //**************************************************************************
 //  COMMAND LINE
 //**************************************************************************

@@ -326,7 +326,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	});
 	xml.OnElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
-		Image image;
+		Image &image = result.m_images.value().emplace_back();
 		attributes.Get("tag",				image.m_tag);
 		attributes.Get("instance_name",		image.m_instance_name);
 		attributes.Get("is_readable",		image.m_is_readable, false);
@@ -335,7 +335,6 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
 		attributes.Get("filename",			image.m_file_name);
 		attributes.Get("display",			image.m_display);
-		result.m_images.value().push_back(std::move(image));
 	});
 	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
@@ -343,22 +342,19 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 	});
 	xml.OnElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
-		Input input;
+		Input &input = result.m_inputs.value().emplace_back();
 		attributes.Get("port_tag",			input.m_port_tag);
 		attributes.Get("mask",				input.m_mask);
 		attributes.Get("class",				input.m_class, s_input_class_parser);
 		attributes.Get("type",				input.m_type, s_input_type_parser);
 		attributes.Get("name",				input.m_name);
 		attributes.Get("value",				input.m_value);
-		result.m_inputs.value().push_back(std::move(input));
 	});
 	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
-		Input &current_input(*(result.m_inputs.value().end() - 1));
-		InputSeq seq;
+		InputSeq &seq = util::last(result.m_inputs.value()).m_seqs.emplace_back();
 		attributes.Get("type",				seq.m_type, s_inputseq_type_parser);
 		attributes.Get("text",				seq.m_text);
-		current_input.m_seqs.push_back(std::move(seq));
 	});
 
 	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this

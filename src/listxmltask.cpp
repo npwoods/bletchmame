@@ -198,7 +198,7 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 			return XmlParser::element_result::SKIP;
 
 		std::string data;
-		info::binaries::machine machine = { 0, };
+		info::binaries::machine &machine = machines.emplace_back();
 		if (attributes.Get("name", data))
 			machine.m_name_strindex = strings.get(data);
 		if (attributes.Get("sourcefile", data))
@@ -209,7 +209,6 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 			machine.m_rom_of_strindex = strings.get(data);
 		machine.m_configurations_index = to_uint32(configurations.size());
 		machine.m_devices_index = to_uint32(devices.size());
-		machines.push_back(std::move(machine));
 		return XmlParser::element_result::OK;
 	});
 	xml.OnElementEnd({ "mame", "machine", "description" }, [&](wxString &&content)
@@ -230,66 +229,58 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	xml.OnElementBegin({ "mame", "machine", "configuration" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
-		info::binaries::configuration configuration = { 0, };
+		info::binaries::configuration &configuration = configurations.emplace_back();
 		if (attributes.Get("name", data))
 			configuration.m_name_strindex = strings.get(data);
 		if (attributes.Get("tag", data))
 			configuration.m_tag_strindex = strings.get(data);
 		attributes.Get("mask", configuration.m_mask);
 		configuration.m_configuration_settings_index = to_uint32(configuration_settings.size());
-		configurations.push_back(std::move(configuration));
 	
-		auto iter = machines.end() - 1;
-		iter->m_configurations_count++;
+		util::last(machines).m_configurations_count++;
 	});
 	xml.OnElementBegin({ "mame", "machine", "configuration", "confsetting" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
-		info::binaries::configuration_setting configuration_setting = { 0, };
+		info::binaries::configuration_setting &configuration_setting = configuration_settings.emplace_back();
 		if (attributes.Get("name", data))
 			configuration_setting.m_name_strindex = strings.get(data);
 		attributes.Get("value", configuration_setting.m_value);
-		configuration_settings.push_back(std::move(configuration_setting));
-	
-		auto iter = configurations.end() - 1;
-		iter->m_configuration_settings_count++;
+
+		util::last(configurations).m_configuration_settings_count++;
 	});
 	xml.OnElementBegin({ "mame", "machine", "configuration", "confsetting", "condition" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
-		info::binaries::configuration_condition configuration_condition = { 0, };
+		info::binaries::configuration_condition &configuration_condition = configuration_conditions.emplace_back();
 		if (attributes.Get("tag", data))
 			configuration_condition.m_tag_strindex = strings.get(data);
 		if (attributes.Get("relation", data))
 			configuration_condition.m_relation_strindex = strings.get(data);
 		attributes.Get("mask", configuration_condition.m_mask);
 		attributes.Get("value", configuration_condition.m_value);
-		configuration_conditions.push_back(std::move(configuration_condition));
 	});
 	xml.OnElementBegin({ "mame", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		bool mandatory;
-		info::binaries::device device = { 0, };
+		info::binaries::device &device = devices.emplace_back();
 		if (attributes.Get("type", data))
 			device.m_type_strindex = strings.get(data);
 		if (attributes.Get("tag", data))
 			device.m_tag_strindex = strings.get(data);
 		attributes.Get("mandatory", mandatory);
 		device.m_mandatory = mandatory ? 1 : 0;
-		devices.push_back(std::move(device));
 
 		current_device_extensions.clear();
 
-		auto iter = machines.end() - 1;
-		iter->m_devices_count++;
+		util::last(machines).m_devices_count++;
 	});
 	xml.OnElementBegin({ "mame", "machine", "device", "instance" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
-		auto iter = devices.end() - 1;
 		if (attributes.Get("name", data))
-			iter->m_instance_name_strindex = strings.get(data);
+			util::last(devices).m_instance_name_strindex = strings.get(data);
 	});
 	xml.OnElementBegin({ "mame", "machine", "device", "extension" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -303,10 +294,7 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	xml.OnElementEnd({ "mame", "machine", "device" }, [&](wxString &&)
 	{
 		if (!current_device_extensions.empty())
-		{
-			auto iter = devices.end() - 1;
-			iter->m_extensions_strindex = strings.get(current_device_extensions);
-		}
+			util::last(devices).m_extensions_strindex = strings.get(current_device_extensions);
 	});
 
 	// parse!
