@@ -104,7 +104,10 @@ public:
 	void OnElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func)
 	{
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
-			OnElementBegin(*iter, func);
+		{
+			TFunc func_duplicate(func);
+			OnElementBegin(*iter, std::move(func_duplicate));
+		}
 	}
 
 	typedef std::function<void(wxString &&content)> OnEndElementCallback;
