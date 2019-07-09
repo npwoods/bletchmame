@@ -29,12 +29,18 @@ namespace info
 		const std::uint32_t MAGIC_HEADER = 3133731337;
 		const std::uint16_t MAGIC_STRINGTABLE_BEGIN = 0x9D9B;
 		const std::uint16_t MAGIC_STRINGTABLE_END = 0x9F99;
-		const std::uint32_t VERSION = 2;
+		const std::uint16_t VERSION = 3;
 
 		struct header
 		{
 			std::uint32_t	m_magic;
 			std::uint32_t	m_version;
+			std::uint8_t	m_size_header;
+			std::uint8_t	m_size_machine;
+			std::uint8_t	m_size_device;
+			std::uint8_t	m_size_configuration;
+			std::uint8_t	m_size_configuration_setting;
+			std::uint8_t	m_size_configuration_condition;
 			std::uint32_t	m_build_strindex;
 			std::uint32_t	m_machines_count;
 			std::uint32_t	m_devices_count;
@@ -69,7 +75,6 @@ namespace info
 
 		struct configuration_condition
 		{
-			std::uint32_t	m_configuration_index;	// vestigial
 			std::uint32_t	m_tag_strindex;
 			std::uint32_t	m_mask;
 			std::uint32_t	m_relation_strindex;
@@ -78,7 +83,6 @@ namespace info
 
 		struct configuration_setting
 		{
-			std::uint32_t	m_configuration_index;	// vestigial
 			std::uint32_t	m_name_strindex;
 			std::uint32_t	m_value;
 			std::uint32_t	m_conditions_index;

@@ -178,9 +178,15 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	configuration_conditions.reserve(250);	// 216 conditions
 	configuration_settings.reserve(350000);	// 312460 settings
 
-	// magic/version
-	header.m_magic = info::binaries::MAGIC_HEADER;
-	header.m_version = info::binaries::VERSION;
+	// header magic variables
+	header.m_magic							= info::binaries::MAGIC_HEADER;
+	header.m_version						= info::binaries::VERSION;
+	header.m_size_header					= sizeof(info::binaries::header);
+	header.m_size_machine					= sizeof(info::binaries::machine);
+	header.m_size_device					= sizeof(info::binaries::device);
+	header.m_size_configuration				= sizeof(info::binaries::configuration);
+	header.m_size_configuration_setting		= sizeof(info::binaries::configuration_setting);
+	header.m_size_configuration_condition	= sizeof(info::binaries::configuration_condition);
 
 	// parse the -listxml output
 	XmlParser xml;
@@ -243,7 +249,6 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		std::string data;
 		info::binaries::configuration_setting &configuration_setting = configuration_settings.emplace_back();
 		configuration_setting.m_name_strindex		= attributes.Get("name", data) ? strings.get(data) : 0;
-		configuration_setting.m_configuration_index	= 0;
 		configuration_setting.m_conditions_index	= to_uint32(configuration_conditions.size());
 		attributes.Get("value", configuration_setting.m_value);
 
@@ -256,7 +261,6 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		info::binaries::configuration_condition &configuration_condition = configuration_conditions.emplace_back();
 		configuration_condition.m_tag_strindex			= attributes.Get("tag", data) ? strings.get(data) : 0;
 		configuration_condition.m_relation_strindex		= attributes.Get("relation", data) ? strings.get(data) : 0;
-		configuration_condition.m_configuration_index	= 0;
 		attributes.Get("mask", configuration_condition.m_mask);
 		attributes.Get("value", configuration_condition.m_value);
 	});

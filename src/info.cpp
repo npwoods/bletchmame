@@ -95,10 +95,17 @@ bool info::database::load(const wxString &file_name, const wxString &expected_ve
 		return false;
 
 	// check the header
-	if (hdr.m_magic != binaries::MAGIC_HEADER)
+	if ((hdr.m_magic != binaries::MAGIC_HEADER)
+		|| (hdr.m_version != binaries::VERSION)
+		|| (hdr.m_size_header != sizeof(binaries::header))
+		|| (hdr.m_size_machine != sizeof(binaries::machine))
+		|| (hdr.m_size_device != sizeof(binaries::device))
+		|| (hdr.m_size_configuration != sizeof(binaries::configuration))
+		|| (hdr.m_size_configuration_setting != sizeof(binaries::configuration_setting))
+		|| (hdr.m_size_configuration_condition != sizeof(binaries::configuration_condition)))
+	{
 		return false;
-	if (hdr.m_version != binaries::VERSION)
-		return false;
+	}
 
 	// offsets
 	size_t devices_offset					= 0									+ (hdr.m_machines_count					* sizeof(binaries::machine));
