@@ -69,7 +69,7 @@ namespace info
 
 		struct configuration_condition
 		{
-			std::uint32_t	m_configuration_index;
+			std::uint32_t	m_configuration_index;	// vestigial
 			std::uint32_t	m_tag_strindex;
 			std::uint32_t	m_mask;
 			std::uint32_t	m_relation_strindex;
@@ -78,7 +78,7 @@ namespace info
 
 		struct configuration_setting
 		{
-			std::uint32_t	m_configuration_index;
+			std::uint32_t	m_configuration_index;	// vestigial
 			std::uint32_t	m_name_strindex;
 			std::uint32_t	m_value;
 			std::uint32_t	m_conditions_index;

@@ -188,8 +188,8 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	xml.OnElementBegin({ "mame" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string build;
-		if (attributes.Get("build", build))
-			header.m_build_strindex = strings.get(build);
+		header.m_build_strindex = attributes.Get("build", build) ? strings.get(build) : 0;
+			
 	});
 	xml.OnElementBegin({ "mame", "machine" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -199,44 +199,41 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 
 		std::string data;
 		info::binaries::machine &machine = machines.emplace_back();
-		if (attributes.Get("name", data))
-			machine.m_name_strindex = strings.get(data);
-		if (attributes.Get("sourcefile", data))
-			machine.m_sourcefile_strindex = strings.get(data);
-		if (attributes.Get("cloneof", data))
-			machine.m_clone_of_strindex = strings.get(data);
-		if (attributes.Get("romof", data))
-			machine.m_rom_of_strindex = strings.get(data);
-		machine.m_configurations_index = to_uint32(configurations.size());
-		machine.m_devices_index = to_uint32(devices.size());
+		machine.m_name_strindex			= attributes.Get("name", data) ? strings.get(data) : 0;
+		machine.m_sourcefile_strindex	= attributes.Get("sourcefile", data) ? strings.get(data) : 0;
+		machine.m_clone_of_strindex		= attributes.Get("cloneof", data) ? strings.get(data) : 0;
+		machine.m_rom_of_strindex		= attributes.Get("romof", data) ? strings.get(data) : 0;
+		machine.m_configurations_index	= to_uint32(configurations.size());
+		machine.m_configurations_count	= 0;
+		machine.m_devices_index			= to_uint32(devices.size());
+		machine.m_devices_count			= 0;
+		machine.m_description_strindex	= 0;
+		machine.m_year_strindex			= 0;
+		machine.m_manufacturer_strindex = 0;
 		return XmlParser::element_result::OK;
 	});
 	xml.OnElementEnd({ "mame", "machine", "description" }, [&](wxString &&content)
 	{
-		auto iter = machines.end() - 1;
-		iter->m_description_strindex = strings.get(content);
+		util::last(machines).m_description_strindex = strings.get(content);
 	});
 	xml.OnElementEnd({ "mame", "machine", "year" }, [&](wxString &&content)
 	{
-		auto iter = machines.end() - 1;
-		iter->m_year_strindex = strings.get(content);
+		util::last(machines).m_year_strindex = strings.get(content);
 	});
 	xml.OnElementEnd({ "mame", "machine", "manufacturer" }, [&](wxString &&content)
 	{
-		auto iter = machines.end() - 1;
-		iter->m_manufacturer_strindex = strings.get(content);
+		util::last(machines).m_manufacturer_strindex = strings.get(content);
 	});
 	xml.OnElementBegin({ { "mame", "machine", "configuration" },
 						 { "mame", "machine", "dipswitch" } }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration &configuration = configurations.emplace_back();
-		if (attributes.Get("name", data))
-			configuration.m_name_strindex = strings.get(data);
-		if (attributes.Get("tag", data))
-			configuration.m_tag_strindex = strings.get(data);
+		configuration.m_name_strindex					= attributes.Get("name", data) ? strings.get(data) : 0;
+		configuration.m_tag_strindex					= attributes.Get("tag", data) ? strings.get(data) : 0;
+		configuration.m_configuration_settings_index	= to_uint32(configuration_settings.size());
+		configuration.m_configuration_settings_count	= 0;
 		attributes.Get("mask", configuration.m_mask);
-		configuration.m_configuration_settings_index = to_uint32(configuration_settings.size());
 	
 		util::last(machines).m_configurations_count++;
 	});
@@ -245,8 +242,9 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	{
 		std::string data;
 		info::binaries::configuration_setting &configuration_setting = configuration_settings.emplace_back();
-		if (attributes.Get("name", data))
-			configuration_setting.m_name_strindex = strings.get(data);
+		configuration_setting.m_name_strindex		= attributes.Get("name", data) ? strings.get(data) : 0;
+		configuration_setting.m_configuration_index	= 0;
+		configuration_setting.m_conditions_index	= to_uint32(configuration_conditions.size());
 		attributes.Get("value", configuration_setting.m_value);
 
 		util::last(configurations).m_configuration_settings_count++;
@@ -256,10 +254,9 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = configuration_conditions.emplace_back();
-		if (attributes.Get("tag", data))
-			configuration_condition.m_tag_strindex = strings.get(data);
-		if (attributes.Get("relation", data))
-			configuration_condition.m_relation_strindex = strings.get(data);
+		configuration_condition.m_tag_strindex			= attributes.Get("tag", data) ? strings.get(data) : 0;
+		configuration_condition.m_relation_strindex		= attributes.Get("relation", data) ? strings.get(data) : 0;
+		configuration_condition.m_configuration_index	= 0;
 		attributes.Get("mask", configuration_condition.m_mask);
 		attributes.Get("value", configuration_condition.m_value);
 	});
@@ -268,12 +265,11 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		std::string data;
 		bool mandatory;
 		info::binaries::device &device = devices.emplace_back();
-		if (attributes.Get("type", data))
-			device.m_type_strindex = strings.get(data);
-		if (attributes.Get("tag", data))
-			device.m_tag_strindex = strings.get(data);
-		attributes.Get("mandatory", mandatory);
-		device.m_mandatory = mandatory ? 1 : 0;
+		device.m_type_strindex			= attributes.Get("type", data) ? strings.get(data) : 0;
+		device.m_tag_strindex			= attributes.Get("tag", data) ? strings.get(data) : 0;
+		device.m_mandatory				= attributes.Get("mandatory", mandatory) && mandatory ? 1 : 0;
+		device.m_instance_name_strindex	= 0;
+		device.m_extensions_strindex	= 0;
 
 		current_device_extensions.clear();
 
