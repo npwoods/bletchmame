@@ -100,6 +100,13 @@ public:
 		GetNode(elements)->m_begin_func = std::move(proxy);
 	}
 
+	template<typename TFunc>
+	void OnElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func)
+	{
+		for (auto iter = elements.begin(); iter != elements.end(); iter++)
+			OnElementBegin(*iter, func);
+	}
+
 	typedef std::function<void(wxString &&content)> OnEndElementCallback;
 	void OnElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{

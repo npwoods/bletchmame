@@ -592,6 +592,37 @@ static void skipping()
 
 
 //-------------------------------------------------
+//  multiple
+//-------------------------------------------------
+
+static void multiple()
+{
+	XmlParser xml;
+	int total = 0;
+	xml.OnElementBegin({ { "alpha", "bravo" },
+						 { "alpha", "charlie" },
+						 { "alpha", "delta" }}, [&](const XmlParser::Attributes &attributes)
+	{
+		int value;
+		attributes.Get("value", value);
+		total += value;
+	});
+
+	bool result = xml.ParseXml(
+		"<alpha>"
+		"<bravo value=\"2\" />"
+		"<charlie value=\"3\" />"
+		"<delta value=\"5\" />"
+		"<echo value=\"-666\" />"
+		"</alpha>");
+	assert(result);
+	assert(total == 10);
+	(void)result;
+	(void)total;
+}
+
+
+//-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
 
@@ -599,6 +630,7 @@ static validity_check validity_checks[] =
 {
 	test,
 	unicode,
-	skipping
+	skipping,
+	multiple
 };
 

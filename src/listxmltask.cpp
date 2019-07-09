@@ -226,7 +226,8 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		auto iter = machines.end() - 1;
 		iter->m_manufacturer_strindex = strings.get(content);
 	});
-	xml.OnElementBegin({ "mame", "machine", "configuration" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ { "mame", "machine", "configuration" },
+						 { "mame", "machine", "dipswitch" } }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration &configuration = configurations.emplace_back();
@@ -239,7 +240,8 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	
 		util::last(machines).m_configurations_count++;
 	});
-	xml.OnElementBegin({ "mame", "machine", "configuration", "confsetting" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting" },
+						 { "mame", "machine", "dipswitch", "dipvalue" } }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration_setting &configuration_setting = configuration_settings.emplace_back();
@@ -249,7 +251,8 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 
 		util::last(configurations).m_configuration_settings_count++;
 	});
-	xml.OnElementBegin({ "mame", "machine", "configuration", "confsetting", "condition" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting", "condition" },
+						 { "mame", "machine", "dipswitch", "dipvalue", "condition" } }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = configuration_conditions.emplace_back();
