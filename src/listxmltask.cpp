@@ -236,6 +236,10 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		attributes.Get("mask", configuration.m_mask);
 	
 		util::last(machines).m_configurations_count++;
+
+		// this line should not be necessary; without it we seem to crash on MinGW optimized builds, we
+		// should determine the real problem at some point
+		return XmlParser::element_result::OK;
 	});
 	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting" },
 						 { "mame", "machine", "dipswitch", "dipvalue" } }, [&](const XmlParser::Attributes &attributes)
@@ -248,6 +252,10 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		attributes.Get("value", configuration_setting.m_value);
 
 		util::last(configurations).m_configuration_settings_count++;
+
+		// this line should not be necessary; without it we seem to crash on MinGW optimized builds, we
+		// should determine the real problem at some point
+		return XmlParser::element_result::OK;
 	});
 	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting", "condition" },
 						 { "mame", "machine", "dipswitch", "dipvalue", "condition" } }, [&](const XmlParser::Attributes &attributes)
@@ -259,6 +267,10 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		configuration_condition.m_configuration_index	= 0;
 		attributes.Get("mask", configuration_condition.m_mask);
 		attributes.Get("value", configuration_condition.m_value);
+
+		// this line should not be necessary; without it we seem to crash on MinGW optimized builds, we
+		// should determine the real problem at some point
+		return XmlParser::element_result::OK;
 	});
 	xml.OnElementBegin({ "mame", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
