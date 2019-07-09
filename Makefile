@@ -9,8 +9,16 @@
 # See https://wiki.wxwidgets.org/Compiling_wxWidgets_with_MinGW #
 #################################################################
 
-BIN				= bin/mingw_win64/release
-OBJ				= obj/mingw_win64/release
+ifdef DEBUG
+BUILD			= debug
+CFLAGS			= -O0 -g
+else
+BUILD			= release
+CFLAGS			= -O4
+endif
+
+BIN				= bin/mingw_win64/$(BUILD)
+OBJ				= obj/mingw_win64/$(BUILD)
 WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
 
@@ -43,10 +51,12 @@ OBJECTFILES=\
 
 $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)/dir.txt
 	g++ -static -static-libgcc -static-libstdc++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -mwindows -o $@
+ifndef DEBUG
 	strip $@
+endif
 
 $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
-	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -O4 -std=c++17 -DWIN32 -c -o $@ $<
+	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib $(CFLAGS) -std=c++17 -DWIN32 -c -o $@ $<
 
 $(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
