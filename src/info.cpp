@@ -73,8 +73,7 @@ static std::vector<std::uint8_t> load_data(const wxString &file_name, info::bina
 static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset)
 {
 	// sanity check
-	size_t maximum_size = data.size() - sizeof(std::uint16_t);
-	if (offset >= maximum_size || (string_table_offset + offset) >= maximum_size)
+	if (offset >= data.size() || (string_table_offset + offset) >= data.size())
 		return "";	// should not happen with a valid info DB
 
 	// needs to be separate so we can call it on "uncommitted" data
@@ -130,7 +129,10 @@ bool info::database::load(const wxString &file_name, const wxString &expected_ve
 	if (!expected_version.empty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
 		return false;
 
-	// finally things look good, set up the data
+	// finally things look good - first shrink the data array to drop the ending magic bytes
+	data.resize(data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END));
+
+	// ...move the data itself
 	m_data = std::move(data);
 
 	// ...and the tables
