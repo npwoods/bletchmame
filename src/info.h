@@ -26,10 +26,8 @@ namespace info
 {
 	namespace binaries
 	{
-		const std::uint32_t MAGIC_HEADER = 3133731337;
 		const std::uint16_t MAGIC_STRINGTABLE_BEGIN = 0x9D9B;
 		const std::uint16_t MAGIC_STRINGTABLE_END = 0x9F99;
-		const std::uint16_t VERSION = 3;
 
 		struct header
 		{
@@ -95,6 +93,17 @@ namespace info
 			std::uint32_t	m_instance_name_strindex;
 			std::uint32_t	m_extensions_strindex;
 			std::uint8_t	m_mandatory;
+		};
+
+		class salt
+		{
+		public:
+			salt() : m_magic1(3133731337), m_magic2(0xF00D), m_version(1) { }
+
+		private:
+			std::uint32_t	m_magic1;
+			std::uint16_t	m_magic2;
+			std::uint16_t	m_version;
 		};
 	};
 };

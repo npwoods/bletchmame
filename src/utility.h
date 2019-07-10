@@ -196,6 +196,30 @@ auto &last(T &container)
 }
 
 
+//-------------------------------------------------
+//  salt
+//-------------------------------------------------
+
+inline void salt(void *destination, const void *original, size_t original_size, const void *salt, size_t salt_size)
+{
+	char *destination_ptr = (char *)destination;
+	const char *original_ptr = (char *)original;
+	const char *salt_ptr = (char *)salt;
+
+	for (size_t i = 0; i < original_size; i++)
+		destination_ptr[i] = original_ptr[i] ^ salt_ptr[i % salt_size];
+}
+
+
+template<typename TStruct, typename TSalt>
+TStruct salt(const TStruct &original, const TSalt &salt_value)
+{
+	TStruct result;
+	salt((void *)&result, (const void *)&original, sizeof(original), (const void *)&salt_value, sizeof(salt_value));
+	return result;
+}
+
+
 //**************************************************************************
 //  COMMAND LINE
 //**************************************************************************

@@ -10,6 +10,7 @@
 #include <wx/wfstream.h>
 
 #include "info.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -88,15 +89,16 @@ static const char *get_string_from_data(const std::vector<std::uint8_t> &data, s
 bool info::database::load(const wxString &file_name, const wxString &expected_version)
 {
 	// try to load the data
-	binaries::header hdr;
-	std::vector<std::uint8_t> data = load_data(file_name, hdr);
+	binaries::header salted_hdr;
+	std::vector<std::uint8_t> data = load_data(file_name, salted_hdr);
 	if (data.empty())
 		return false;
 
+	// unsalt the header
+	binaries::header hdr = util::salt(salted_hdr, info::binaries::salt());
+
 	// check the header
-	if ((hdr.m_magic != binaries::MAGIC_HEADER)
-		|| (hdr.m_version != binaries::VERSION)
-		|| (hdr.m_size_header != sizeof(binaries::header))
+	if ((hdr.m_size_header != sizeof(binaries::header))
 		|| (hdr.m_size_machine != sizeof(binaries::machine))
 		|| (hdr.m_size_device != sizeof(binaries::device))
 		|| (hdr.m_size_configuration != sizeof(binaries::configuration))

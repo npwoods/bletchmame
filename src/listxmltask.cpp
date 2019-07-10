@@ -179,8 +179,6 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	configuration_settings.reserve(350000);	// 312460 settings
 
 	// header magic variables
-	header.m_magic							= info::binaries::MAGIC_HEADER;
-	header.m_version						= info::binaries::VERSION;
 	header.m_size_header					= sizeof(info::binaries::header);
 	header.m_size_machine					= sizeof(info::binaries::machine);
 	header.m_size_device					= sizeof(info::binaries::device);
@@ -321,6 +319,9 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 	header.m_configurations_count			= to_uint32(configurations.size());
 	header.m_configuration_settings_count	= to_uint32(configuration_settings.size());
 	header.m_configuration_conditions_count	= to_uint32(configuration_conditions.size()); 
+
+	// and salt it
+	info::binaries::header salted_header = util::salt(header, info::binaries::salt());
 	
 	// we finally have all of the info accumulated; now we can get to business with writing
 	// to the actual file
@@ -329,7 +330,7 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 		throw list_xml_exception(ListXmlResult::status::ERROR, wxString(wxT("Could not open file: ")) + m_output_filename);
 
 	// emit the data
-	output.Write(&header,							sizeof(header));
+	output.Write(&salted_header,					sizeof(salted_header));
 	output.Write(machines.data(),					machines.size()					* sizeof(machines[0]));
 	output.Write(devices.data(),					devices.size()					* sizeof(devices[0]));
 	output.Write(configurations.data(),				configurations.size()			* sizeof(configurations[0]));
