@@ -27,6 +27,7 @@ public:
 	virtual observable::value<std::vector<Image>> &GetImages() = 0;
 	virtual const wxString &GetWorkingDirectory() const = 0;
 	virtual void SetWorkingDirectory(wxString &&dir) = 0;
+	virtual const std::vector<wxString> &GetRecentFiles(const wxString &tag) const = 0;
 	virtual std::vector<wxString> GetExtensions(const wxString &tag) const = 0;
 	virtual void CreateImage(const wxString &tag, wxString &&path) = 0;
 	virtual void LoadImage(const wxString &tag, wxString &&path) = 0;

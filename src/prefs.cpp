@@ -78,6 +78,19 @@ Preferences::Preferences()
 
 
 //-------------------------------------------------
+//  GetMachineInfo
+//-------------------------------------------------
+
+const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &machine_name) const
+{
+	const auto iter = m_machine_info.find(machine_name);
+	return iter != m_machine_info.end()
+		? &iter->second
+		: nullptr;
+}
+
+
+//-------------------------------------------------
 //  GetMachinePath
 //-------------------------------------------------
 
@@ -85,16 +98,16 @@ const wxString &Preferences::GetMachinePath(const wxString &machine_name, machin
 {
 	// find the machine path entry
 	static const wxString empty_string;
-	auto iter = m_machine_paths.find(machine_name);
-	if (iter == m_machine_paths.end())
+	const MachineInfo *info = GetMachineInfo(machine_name);
+	if (!info)
 		return empty_string;
 
 	switch (path_type)
 	{
 	case machine_path_type::working_directory:
-		return iter->second.m_working_directory;
+		return info->m_working_directory;
 	case machine_path_type::last_save_state:
-		return iter->second.m_last_save_state;
+		return info->m_last_save_state;
 	default:
 		throw false;
 	}
@@ -110,14 +123,39 @@ void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type
 	switch (path_type)
 	{
 	case machine_path_type::working_directory:
-		m_machine_paths[machine_name].m_working_directory = std::move(path);
+		m_machine_info[machine_name].m_working_directory = std::move(path);
 		break;
 	case machine_path_type::last_save_state:
-		m_machine_paths[machine_name].m_last_save_state = std::move(path);
+		m_machine_info[machine_name].m_last_save_state = std::move(path);
 		break;
 	default:
 		throw false;
 	}
+}
+
+
+//-------------------------------------------------
+//  GetRecentDeviceFiles
+//-------------------------------------------------
+
+std::vector<wxString> &Preferences::GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type)
+{
+	return m_machine_info[machine_name].m_recent_device_files[device_type];
+}
+
+
+const std::vector<wxString> &Preferences::GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type) const
+{
+	static const std::vector<wxString> empty_vector;
+	const MachineInfo *info = GetMachineInfo(machine_name);
+	if (!info)
+		return empty_vector;
+
+	auto iter = info->m_recent_device_files.find(device_type);
+	if (iter == info->m_recent_device_files.end())
+		return empty_vector;
+
+	return iter->second;
 }
 
 
@@ -149,6 +187,11 @@ bool Preferences::Load(wxInputStream &input)
 	XmlParser xml;
 	path_type type = path_type::count;
 	std::array<int, COLUMN_COUNT> column_order = { 0, };
+	wxString current_machine_name;
+	wxString current_device_type;
+
+	// clear out state
+	m_machine_info.clear();
 
 	xml.OnElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -216,15 +259,25 @@ bool Preferences::Load(wxInputStream &input)
 	});
 	xml.OnElementBegin({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
 	{
-		wxString name;
-		if (attributes.Get("name", name))
-		{
-			wxString path;
-			if (attributes.Get("working_directory", path))
-				SetMachinePath(name, machine_path_type::working_directory, std::move(path));
-			if (attributes.Get("last_save_state", path))
-				SetMachinePath(name, machine_path_type::last_save_state, std::move(path));
-		}
+		if (!attributes.Get("name", current_machine_name))
+			return XmlParser::element_result::SKIP;
+
+		wxString path;
+		if (attributes.Get("working_directory", path))
+			SetMachinePath(current_machine_name, machine_path_type::working_directory, std::move(path));
+		if (attributes.Get("last_save_state", path))
+			SetMachinePath(current_machine_name, machine_path_type::last_save_state, std::move(path));
+		return XmlParser::element_result::OK;
+	});
+	xml.OnElementBegin({ "preferences", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
+	{
+		return attributes.Get("type", current_device_type)
+			? XmlParser::element_result::OK
+			: XmlParser::element_result::SKIP;
+	});
+	xml.OnElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](wxString &&content)
+	{
+		GetRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
 	});
 	bool success = xml.Parse(input);
 
@@ -280,17 +333,33 @@ void Preferences::Save(std::ostream &output)
 	output << std::endl;
 
 	output << "\t<!-- Machines -->" << std::endl;
-	for (const auto &pair : m_machine_paths)
+	for (const auto &[machine_name, info] : m_machine_info)
 	{
-		if (!pair.first.IsEmpty() && (!pair.second.m_working_directory.IsEmpty() || !pair.second.m_last_save_state.IsEmpty()))
+		if (!machine_name.empty() && (!info.m_working_directory.empty() || !info.m_last_save_state.empty() || !info.m_recent_device_files.empty()))
 		{
-			output << "\t<machine name=\"" << XmlParser::Escape(pair.first) << "\"";
+			output << "\t<machine name=\"" << XmlParser::Escape(machine_name) << "\"";
 			
-			if (!pair.second.m_working_directory.IsEmpty())
-				output << " working_directory=\"" << XmlParser::Escape(pair.second.m_working_directory) << "\"";
-			if (!pair.second.m_last_save_state.IsEmpty())
-				output << " last_save_state=\"" << XmlParser::Escape(pair.second.m_last_save_state) << "\"";
-			output << "/>" << std::endl;
+			if (!info.m_working_directory.empty())
+				output << " working_directory=\"" << XmlParser::Escape(info.m_working_directory) << "\"";
+			if (!info.m_last_save_state.empty())
+				output << " last_save_state=\"" << XmlParser::Escape(info.m_last_save_state) << "\"";
+
+			if (info.m_recent_device_files.empty())
+			{
+				output << "/>" << std::endl;
+			}
+			else
+			{
+				output << ">" << std::endl;
+				for (const auto &[device_type, recents] : info.m_recent_device_files)
+				{
+					output << "\t\t<device type=\"" << XmlParser::Escape(device_type) << "\">" << std::endl;
+					for (const wxString &recent : recents)
+						output << "\t\t\t<recentfile>" << recent.ToStdWstring() << "</recentfile>" << std::endl;
+					output << "\t\t</device>" << std::endl;
+				}
+				output << "\t</machine>" << std::endl;
+			}
 		}
 	}
 	output << std::endl;

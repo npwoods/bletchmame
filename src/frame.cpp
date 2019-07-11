@@ -87,6 +87,7 @@ namespace
 			virtual observable::value<std::vector<Image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
+			virtual const std::vector<wxString> &GetRecentFiles(const wxString &tag) const;
 			virtual std::vector<wxString> GetExtensions(const wxString &tag) const;
 			virtual void CreateImage(const wxString &tag, wxString &&path);
 			virtual void LoadImage(const wxString &tag, wxString &&path);
@@ -96,6 +97,8 @@ namespace
 			MameFrame &m_host;
 
 			const wxString &GetMachineName() const;
+			const wxString &GetDeviceType(const info::machine &machine, const wxString &tag) const;
+			void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		};
 
 		class InputsHost : public IInputsHost
@@ -1597,6 +1600,18 @@ void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 
 
 //-------------------------------------------------
+//  GetRecentFiles
+//-------------------------------------------------
+
+const std::vector<wxString> &MameFrame::ImagesHost::GetRecentFiles(const wxString &tag) const
+{
+	info::machine machine = m_host.GetRunningMachine();
+	const wxString &device_type = GetDeviceType(machine, tag);
+	return m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+}
+
+
+//-------------------------------------------------
 //  GetExtensions
 //-------------------------------------------------
 
@@ -1632,6 +1647,7 @@ void MameFrame::ImagesHost::CreateImage(const wxString &tag, wxString &&path)
 
 void MameFrame::ImagesHost::LoadImage(const wxString &tag, wxString &&path)
 {
+	PlaceInRecentFiles(tag, path);
 	m_host.Issue({ "load", tag, std::move(path) });
 }
 
@@ -1653,6 +1669,56 @@ void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
 const wxString &MameFrame::ImagesHost::GetMachineName() const
 {
 	return m_host.GetRunningMachine().name();
+}
+
+
+//-------------------------------------------------
+//  GetDeviceType
+//-------------------------------------------------
+
+const wxString &MameFrame::ImagesHost::GetDeviceType(const info::machine &machine, const wxString &tag) const
+{
+	static const wxString s_empty;
+
+	auto iter = std::find_if(
+		machine.devices().begin(),
+		machine.devices().end(),
+		[&tag](const info::device device)
+		{
+			return device.tag() == tag;
+		});
+
+	return iter != machine.devices().end()
+		? (*iter).type()
+		: s_empty;
+}
+
+
+//-------------------------------------------------
+//  PlaceInRecentFiles
+//-------------------------------------------------
+
+void MameFrame::ImagesHost::PlaceInRecentFiles(const wxString &tag, const wxString &path)
+{
+	// get the machine and device type to update recents
+	info::machine machine = m_host.GetRunningMachine();
+	const wxString &device_type = GetDeviceType(machine, tag);
+
+	// actually edit the recent files; start by getting recent files
+	std::vector<wxString> &recent_files = m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+
+	// ...and clearing out places where that entry already exists
+	std::vector<wxString>::iterator iter;
+	while ((iter = std::find(recent_files.begin(), recent_files.end(), path)) != recent_files.end())
+		recent_files.erase(iter);
+
+	// ...insert the new value
+	recent_files.insert(recent_files.begin(), path);
+
+	// and cull the list
+	const size_t MAXIMUM_RECENT_FILES = 10;
+	if (recent_files.size() > MAXIMUM_RECENT_FILES)
+		recent_files.erase(recent_files.begin() + MAXIMUM_RECENT_FILES, recent_files.end());
 }
 
 

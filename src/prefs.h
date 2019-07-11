@@ -74,6 +74,9 @@ public:
 	const wxString &GetMachinePath(const wxString &machine_name, machine_path_type path_type) const;
 	void SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path);
 
+	std::vector<wxString> &GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type);
+	const std::vector<wxString> &GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type) const;
+
 	wxString GetMameXmlDatabasePath(bool ensure_directory_exists = true) const;
 
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
@@ -83,24 +86,26 @@ public:
 	void Save();
 
 private:
-	struct MachinePath
+	struct MachineInfo
 	{
-		wxString	m_working_directory;
-		wxString	m_last_save_state;
+		wxString									m_working_directory;
+		wxString									m_last_save_state;
+		std::map<wxString, std::vector<wxString>>	m_recent_device_files;
 	};
 
-	std::array<wxString, static_cast<size_t>(path_type::count)>			m_paths;
-	wxString															m_mame_extra_arguments;
-	wxSize																m_size;
-	std::array<int, COLUMN_COUNT>										m_column_widths;
-	std::array<int, COLUMN_COUNT>										m_column_order;
-	std::map<wxString, MachinePath>										m_machine_paths;
-	wxString															m_selected_machine;
-	wxString															m_search_box_text;
-	bool																m_menu_bar_shown;
+	std::array<wxString, static_cast<size_t>(path_type::count)>	m_paths;
+	wxString													m_mame_extra_arguments;
+	wxSize														m_size;
+	std::array<int, COLUMN_COUNT>								m_column_widths;
+	std::array<int, COLUMN_COUNT>								m_column_order;
+	std::map<wxString, MachineInfo>								m_machine_info;
+	wxString													m_selected_machine;
+	wxString													m_search_box_text;
+	bool														m_menu_bar_shown;
 
 	void Save(std::ostream &output);
 	wxString GetFileName(bool ensure_directory_exists);
+	const MachineInfo *GetMachineInfo(const wxString &machine_name) const;
 };
 
 #endif // PREFS_H

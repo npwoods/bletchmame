@@ -39,7 +39,8 @@ namespace
 			ID_CREATE_IMAGE = wxID_HIGHEST + 1,
 			ID_LOAD_IMAGE,
 			ID_UNLOAD_IMAGE,
-			ID_GRID_CONTROLS
+			ID_GRID_CONTROLS,
+			ID_RECENT_FILES
 		};
 
 		enum
@@ -54,13 +55,12 @@ namespace
 		IImagesHost &					m_host;
 		wxFlexGridSizer *				m_grid_sizer;
 		wxButton *						m_ok_button;
-		wxMenu							m_popup_menu;
 		int								m_popup_menu_result;
 		observable::unique_subscription	m_images_event_subscription;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
-		void AppendToPopupMenu(int id, const wxString &text);
+		void AppendToPopupMenu(wxMenu &popup_menu, int id, const wxString &text);
 
 		bool ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable);
 		bool CreateImage(const wxString &tag);
@@ -89,11 +89,6 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 {
 	// host interactions
 	m_images_event_subscription = m_host.GetImages().subscribe([this] { UpdateImageGrid(); });
-
-	// setup popup menu
-	AppendToPopupMenu(ID_CREATE_IMAGE, "Create...");
-	AppendToPopupMenu(ID_LOAD_IMAGE, "Load...");
-	AppendToPopupMenu(ID_UNLOAD_IMAGE, "Unload");
 
 	// main grid
 	m_grid_sizer = new wxFlexGridSizer(COLUMN_COUNT);
@@ -208,30 +203,35 @@ TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
 
 
 //-------------------------------------------------
-//  AppendToPopupMenu
-//-------------------------------------------------
-
-void ImagesDialog::AppendToPopupMenu(int id, const wxString &text)
-{
-	m_popup_menu.Append(id, text);
-	Bind(wxEVT_MENU, [this, id](auto &) { m_popup_menu_result = id; }, id);
-}
-
-
-//-------------------------------------------------
 //  ImageMenu
 //-------------------------------------------------
 
 bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable)
 {
-	// enable/disable these items as appropriate
-	m_popup_menu.Enable(ID_CREATE_IMAGE, is_createable);
-	m_popup_menu.Enable(ID_UNLOAD_IMAGE, is_unloadable);
+	wxMenu popup_menu;
+
+	// setup popup menu
+	if (is_createable)
+		AppendToPopupMenu(popup_menu, ID_CREATE_IMAGE, "Create...");
+	AppendToPopupMenu(popup_menu, ID_LOAD_IMAGE, "Load...");
+	AppendToPopupMenu(popup_menu, ID_UNLOAD_IMAGE, "Unload");
+	popup_menu.Enable(ID_UNLOAD_IMAGE, is_unloadable);
+
+	// recent files
+	const std::vector<wxString> &recent_files = m_host.GetRecentFiles(tag);
+	if (!recent_files.empty())
+	{
+		popup_menu.AppendSeparator();
+
+		int id = ID_RECENT_FILES;
+		for (const wxString &recent_file : recent_files)
+			AppendToPopupMenu(popup_menu, id++, recent_file);
+	}
 
 	// display the popup menu
 	wxRect button_rectangle = button.GetRect();
 	m_popup_menu_result = 0;
-	if (!PopupMenu(&m_popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
+	if (!PopupMenu(&popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
 		return false;
 
 	// interpret the result
@@ -249,8 +249,28 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 	case ID_UNLOAD_IMAGE:
 		result = UnloadImage(tag);
 		break;
+
+	default:
+		if (m_popup_menu_result >= ID_RECENT_FILES && m_popup_menu_result < ID_RECENT_FILES + recent_files.size())
+		{
+			m_host.LoadImage(tag, wxString(recent_files[m_popup_menu_result - ID_RECENT_FILES]));
+			result = true;
+		}
+		break;
 	}
+
 	return false;
+}
+
+
+//-------------------------------------------------
+//  AppendToPopupMenu
+//-------------------------------------------------
+
+void ImagesDialog::AppendToPopupMenu(wxMenu &popup_menu, int id, const wxString &text)
+{
+	popup_menu.Append(id, text);
+	Bind(wxEVT_MENU, [this, id](auto &) { m_popup_menu_result = id; }, id);
 }
 
 
