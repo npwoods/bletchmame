@@ -229,7 +229,11 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 
 		int id = ID_RECENT_FILES;
 		for (const wxString &recent_file : recent_files)
-			AppendToPopupMenu(popup_menu, id++, recent_file);
+		{
+			wxString recent_file_basename, recent_file_extension;
+			wxFileName::SplitPath(recent_file, nullptr, &recent_file_basename, &recent_file_extension);
+			AppendToPopupMenu(popup_menu, id++, recent_file_basename + "." + recent_file_extension);
+		}
 	}
 
 	// display the popup menu
