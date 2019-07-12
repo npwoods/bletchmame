@@ -97,8 +97,6 @@ namespace
 			MameFrame &m_host;
 
 			const wxString &GetMachineName() const;
-			const wxString &GetDeviceType(const info::machine &machine, const wxString &tag) const;
-			void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		};
 
 		class InputsHost : public IInputsHost
@@ -145,6 +143,7 @@ namespace
 		bool									m_pinging;
 		const Pauser *							m_current_pauser;
 		std::function<void(Chatter &&)>			m_on_chatter;
+		observable::unique_subscription			m_watch_subscription;
 
 		// information retrieved by -version
 		wxString								m_mame_version;
@@ -223,6 +222,10 @@ namespace
 		template<typename TStatus, typename TPayload> static bool GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload);
 		bool HasInputClass(Input::input_class input_class) const;
 		static wxString InputClassText(Input::input_class input_class, bool elipsis);
+		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
+		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
+		void WatchForImageMount(const wxString &tag);
+		const Image *FindImageByTag(const wxString &tag) const;
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -1005,6 +1008,7 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 
 	m_client.Reset();
     UpdateEmulationSession();
+	m_watch_subscription = observable::unique_subscription();
 
 	// report any errors
 	if (!payload.m_error_message.IsEmpty())
@@ -1068,7 +1072,105 @@ bool MameFrame::GetStatusFromPayload(TStatus &value, std::optional<TPayload> &pa
 
 
 //-------------------------------------------------
-//  FileDialogCommand
+//  WatchForImageMount
+//-------------------------------------------------
+
+void MameFrame::WatchForImageMount(const wxString &tag)
+{
+	// find the current value; we want to monitor for this value changing
+	wxString current_value;
+	const Image *image = FindImageByTag(tag);
+	if (image)
+		current_value = image->m_file_name;
+
+	// start watching
+	m_watch_subscription = m_status_images.subscribe([this, current_value{std::move(current_value)}, tag{std::move(tag)}]
+	{
+		// did the value change?
+		const Image *image = FindImageByTag(tag);
+		if (image && image->m_file_name != current_value)
+		{
+			// it did!  place the new file in recent files
+			PlaceInRecentFiles(tag, image->m_file_name);
+
+			// and stop subscribing
+			m_watch_subscription = observable::unique_subscription();
+		}
+	});	
+}
+
+
+//-------------------------------------------------
+//  PlaceInRecentFiles
+//-------------------------------------------------
+
+const Image *MameFrame::FindImageByTag(const wxString &tag) const
+{
+	wxString actual_tag = wxString(":") + tag;
+
+	auto iter = std::find_if(
+		m_status_images.get().begin(),
+		m_status_images.get().end(),
+		[&actual_tag](const Image &image) { return image.m_tag == actual_tag; });
+
+	return iter != m_status_images.get().end()
+		? &*iter
+		: nullptr;
+}
+
+
+//-------------------------------------------------
+//  PlaceInRecentFiles
+//-------------------------------------------------
+
+void MameFrame::PlaceInRecentFiles(const wxString &tag, const wxString &path)
+{
+	// get the machine and device type to update recents
+	info::machine machine = GetRunningMachine();
+	const wxString &device_type = GetDeviceType(machine, tag);
+
+	// actually edit the recent files; start by getting recent files
+	std::vector<wxString> &recent_files = m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+
+	// ...and clearing out places where that entry already exists
+	std::vector<wxString>::iterator iter;
+	while ((iter = std::find(recent_files.begin(), recent_files.end(), path)) != recent_files.end())
+		recent_files.erase(iter);
+
+	// ...insert the new value
+	recent_files.insert(recent_files.begin(), path);
+
+	// and cull the list
+	const size_t MAXIMUM_RECENT_FILES = 10;
+	if (recent_files.size() > MAXIMUM_RECENT_FILES)
+		recent_files.erase(recent_files.begin() + MAXIMUM_RECENT_FILES, recent_files.end());
+}
+
+
+//-------------------------------------------------
+//  GetDeviceType
+//-------------------------------------------------
+
+const wxString &MameFrame::GetDeviceType(const info::machine &machine, const wxString &tag)
+{
+	static const wxString s_empty;
+
+	auto iter = std::find_if(
+		machine.devices().begin(),
+		machine.devices().end(),
+		[&tag](const info::device device)
+		{
+			return device.tag() == tag;
+		});
+
+	return iter != machine.devices().end()
+		? (*iter).type()
+		: s_empty;
+}
+
+
+//-------------------------------------------------
+//  SetChatterListener
 //-------------------------------------------------
 
 void MameFrame::SetChatterListener(std::function<void(Chatter &&chatter)> &&func)
@@ -1637,6 +1739,7 @@ std::vector<wxString> MameFrame::ImagesHost::GetExtensions(const wxString &tag) 
 
 void MameFrame::ImagesHost::CreateImage(const wxString &tag, wxString &&path)
 {
+	m_host.WatchForImageMount(tag);
 	m_host.Issue({ "create", tag, std::move(path) });
 }
 
@@ -1647,7 +1750,7 @@ void MameFrame::ImagesHost::CreateImage(const wxString &tag, wxString &&path)
 
 void MameFrame::ImagesHost::LoadImage(const wxString &tag, wxString &&path)
 {
-	PlaceInRecentFiles(tag, path);
+	m_host.WatchForImageMount(tag);
 	m_host.Issue({ "load", tag, std::move(path) });
 }
 
@@ -1669,56 +1772,6 @@ void MameFrame::ImagesHost::UnloadImage(const wxString &tag)
 const wxString &MameFrame::ImagesHost::GetMachineName() const
 {
 	return m_host.GetRunningMachine().name();
-}
-
-
-//-------------------------------------------------
-//  GetDeviceType
-//-------------------------------------------------
-
-const wxString &MameFrame::ImagesHost::GetDeviceType(const info::machine &machine, const wxString &tag) const
-{
-	static const wxString s_empty;
-
-	auto iter = std::find_if(
-		machine.devices().begin(),
-		machine.devices().end(),
-		[&tag](const info::device device)
-		{
-			return device.tag() == tag;
-		});
-
-	return iter != machine.devices().end()
-		? (*iter).type()
-		: s_empty;
-}
-
-
-//-------------------------------------------------
-//  PlaceInRecentFiles
-//-------------------------------------------------
-
-void MameFrame::ImagesHost::PlaceInRecentFiles(const wxString &tag, const wxString &path)
-{
-	// get the machine and device type to update recents
-	info::machine machine = m_host.GetRunningMachine();
-	const wxString &device_type = GetDeviceType(machine, tag);
-
-	// actually edit the recent files; start by getting recent files
-	std::vector<wxString> &recent_files = m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
-
-	// ...and clearing out places where that entry already exists
-	std::vector<wxString>::iterator iter;
-	while ((iter = std::find(recent_files.begin(), recent_files.end(), path)) != recent_files.end())
-		recent_files.erase(iter);
-
-	// ...insert the new value
-	recent_files.insert(recent_files.begin(), path);
-
-	// and cull the list
-	const size_t MAXIMUM_RECENT_FILES = 10;
-	if (recent_files.size() > MAXIMUM_RECENT_FILES)
-		recent_files.erase(recent_files.begin() + MAXIMUM_RECENT_FILES, recent_files.end());
 }
 
 
