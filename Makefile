@@ -64,3 +64,6 @@ $(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 %/dir.txt:
 	sh -c "mkdir -p $(@D)"
 	echo Directory Placeholder > $@
+
+clean:
+	rm -rf obj bin
