@@ -95,16 +95,20 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 	m_grid_sizer->AddGrowableCol(1);
 
 	// buttons
+	std::unique_ptr<wxBoxSizer> bottom_sizer = std::make_unique<wxBoxSizer>(wxHORIZONTAL);
+	bottom_sizer->Add(0, 0, 1, wxRIGHT, 350);
 	wxSizer *button_sizer = CreateButtonSizer(has_cancel_button ? (wxOK | wxCANCEL) : wxOK);
 	if (button_sizer)
+	{
 		m_ok_button = dynamic_cast<wxButton *>(FindWindow(wxID_OK));
+		bottom_sizer->Add(button_sizer, 0, wxALL);
+	}
 
 	// overall layout
-	wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
+	std::unique_ptr<wxBoxSizer> main_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
 	main_sizer->Add(m_grid_sizer, 1, wxALL | wxEXPAND);
-	if (button_sizer)
-		main_sizer->Add(button_sizer, 0, wxALL | wxALIGN_RIGHT, 10);
-	SetSizer(main_sizer);
+	main_sizer->Add(bottom_sizer.release(), 0, wxALL | wxALIGN_RIGHT, 10);
+	SetSizer(main_sizer.release());
 
 	// initial update of image grid
 	UpdateImageGrid();
