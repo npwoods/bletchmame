@@ -15,19 +15,19 @@
 #include <observable/observable.hpp>
 
 #include "runmachinetask.h"
+#include "status.h"
 
 class wxWindow;
-struct Input;
 
 class IInputsHost
 {
 public:
-	virtual const std::vector<Input> &GetInputs() = 0;
+	virtual const std::vector<status::input> &GetInputs() = 0;
 	virtual observable::value<bool> &GetPollingSeqChanged() = 0;
-	virtual void StartPolling(const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type) = 0;
+	virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type) = 0;
 	virtual void StopPolling() = 0;
 };
 
-bool show_inputs_dialog(wxWindow &parent, const wxString &title, IInputsHost &host, Input::input_class input_class);
+bool show_inputs_dialog(wxWindow &parent, const wxString &title, IInputsHost &host, status::input::input_class input_class);
 
 #endif // DLGINPUTS_H

@@ -26,18 +26,18 @@ namespace
 	class SwitchesDialog : public wxDialog
 	{
 	public:
-		SwitchesDialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, Input::input_class input_class, info::machine machine);
+		SwitchesDialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine);
 
 	private:
 		ISwitchesHost &				m_host;
-		Input::input_class			m_input_class;
+		status::input::input_class	m_input_class;
 		info::machine				m_machine;
 		wxScrolledWindow *			m_scrolled;
 		wxFlexGridSizer *			m_grid_sizer;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 		void UpdateInputs();
-		std::unordered_map<std::uint32_t, wxString> GetChoices(const Input &input) const;
+		std::unordered_map<std::uint32_t, wxString> GetChoices(const status::input &input) const;
 		void OnSettingChanged(wxComboBox &combo_box, const wxString &port_tag, ioport_value mask, const std::vector<std::uint32_t> &choice_values);
 	};
 };
@@ -58,7 +58,7 @@ enum
 //  ctor
 //-------------------------------------------------
 
-SwitchesDialog::SwitchesDialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, Input::input_class input_class, info::machine machine)
+SwitchesDialog::SwitchesDialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine)
 	: wxDialog(&parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_host(host)
 	, m_input_class(input_class)
@@ -118,7 +118,7 @@ void SwitchesDialog::UpdateInputs()
 {
 	int id = ID_LAST;
 
-	for (const Input &input : m_host.GetInputs())
+	for (const status::input &input : m_host.GetInputs())
 	{
 		if (input.m_class == m_input_class)
 		{
@@ -171,12 +171,10 @@ void SwitchesDialog::UpdateInputs()
 //  GetChoices
 //-------------------------------------------------
 
-std::unordered_map<std::uint32_t, wxString> SwitchesDialog::GetChoices(const Input &input) const
+std::unordered_map<std::uint32_t, wxString> SwitchesDialog::GetChoices(const status::input &input) const
 {
-	// get the tag, remove initial colon
-	wxString tag = input.m_port_tag;
-	if (tag.StartsWith(":"))
-		tag = tag.substr(1);
+	// get the tag
+	const wxString &tag = input.m_port_tag;
 
 	// find the configuration with this tag
 	std::unordered_map<std::uint32_t, wxString> results;
@@ -222,7 +220,7 @@ void SwitchesDialog::OnSettingChanged(wxComboBox &combo_box, const wxString &por
 //  show_switches_dialog
 //-------------------------------------------------
 
-bool show_switches_dialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, Input::input_class input_class, info::machine machine)
+bool show_switches_dialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine)
 {
 	SwitchesDialog dialog(parent, title, host, input_class, machine);
 	return dialog.ShowModal() == wxID_OK;

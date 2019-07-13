@@ -22,6 +22,7 @@
 #include "dlgconsole.h"
 #include "dlgimages.h"
 #include "dlginputs.h"
+#include "dlgloading.h"
 #include "dlgpaths.h"
 #include "dlgswitches.h"
 #include "prefs.h"
@@ -31,7 +32,7 @@
 #include "utility.h"
 #include "virtuallistview.h"
 #include "info.h"
-#include "dlgloading.h"
+#include "status.h"
 
 
 //**************************************************************************
@@ -84,7 +85,7 @@ namespace
 		public:
 			ImagesHost(MameFrame &host);
 
-			virtual observable::value<std::vector<Image>> &GetImages();
+			virtual observable::value<std::vector<status::image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
 			virtual const std::vector<wxString> &GetRecentFiles(const wxString &tag) const;
@@ -104,9 +105,9 @@ namespace
 		public:
 			InputsHost(MameFrame &host);
 
-			virtual const std::vector<Input> &GetInputs() override;
+			virtual const std::vector<status::input> &GetInputs() override;
 			virtual observable::value<bool> &GetPollingSeqChanged() override;
-			virtual void StartPolling(const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type) override;
+			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type) override;
 			virtual void StopPolling() override;
 
 		private:
@@ -118,7 +119,7 @@ namespace
 		public:
 			SwitchesHost(MameFrame &host);
 
-			virtual const std::vector<Input> &GetInputs() override;
+			virtual const std::vector<status::input> &GetInputs() override;
 			virtual void SetInputValue(const wxString &port_tag, ioport_value mask, ioport_value value) override;
 
 		private:
@@ -163,8 +164,8 @@ namespace
 		bool									m_status_throttled;
 		float									m_status_throttle_rate;
 		int										m_status_sound_attenuation;
-		observable::value<std::vector<Image> >	m_status_images;
-		std::vector<Input>						m_status_inputs;
+		observable::value<std::vector<status::image> >	m_status_images;
+		std::vector<status::input>						m_status_inputs;
 
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
@@ -183,8 +184,8 @@ namespace
 		void OnMenuSnapshotSave();
 		void OnMenuImages();
 		void OnMenuPaths();
-		void OnMenuInputs(Input::input_class input_class);
-		void OnMenuSwitches(Input::input_class input_class);
+		void OnMenuInputs(status::input::input_class input_class);
+		void OnMenuSwitches(status::input::input_class input_class);
 		void OnMenuAbout();
 		void OnListItemSelected(wxListEvent &event);
 		void OnListItemActivated(wxListEvent &event);
@@ -195,7 +196,7 @@ namespace
 		void OnVersionCompleted(PayloadEvent<VersionResult> &event);
 		void OnListXmlCompleted(PayloadEvent<ListXmlResult> &event);
 		void OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event);
-		void OnStatusUpdate(PayloadEvent<StatusUpdate> &event);
+		void OnStatusUpdate(PayloadEvent<status::update> &event);
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
@@ -222,12 +223,12 @@ namespace
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 		template<typename TStatus, typename TPayload> static bool GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload);
-		bool HasInputClass(Input::input_class input_class) const;
-		static wxString InputClassText(Input::input_class input_class, bool elipsis);
+		bool HasInputClass(status::input::input_class input_class) const;
+		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
 		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
 		void WatchForImageMount(const wxString &tag);
-		const Image *FindImageByTag(const wxString &tag) const;
+		const status::image *FindImageByTag(const wxString &tag) const;
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -391,11 +392,11 @@ void MameFrame::CreateMenuBar()
 
 	// create the "Settings" menu
 	wxMenu *settings_menu = new wxMenu();
-	wxMenuItem *show_input_controllers_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::CONTROLLER, true));
-	wxMenuItem *show_input_keyboard_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::KEYBOARD, true));
-	wxMenuItem *show_input_misc_dialog_menu_item		= settings_menu->Append(id++, InputClassText(Input::input_class::MISC, true));
-	wxMenuItem *show_input_config_dialog_menu_item		= settings_menu->Append(id++, InputClassText(Input::input_class::CONFIG, true));
-	wxMenuItem *show_input_dipswitch_dialog_menu_item	= settings_menu->Append(id++, InputClassText(Input::input_class::DIPSWITCH, true));
+	wxMenuItem *show_input_controllers_dialog_menu_item	= settings_menu->Append(id++, InputClassText(status::input::input_class::CONTROLLER, true));
+	wxMenuItem *show_input_keyboard_dialog_menu_item	= settings_menu->Append(id++, InputClassText(status::input::input_class::KEYBOARD, true));
+	wxMenuItem *show_input_misc_dialog_menu_item		= settings_menu->Append(id++, InputClassText(status::input::input_class::MISC, true));
+	wxMenuItem *show_input_config_dialog_menu_item		= settings_menu->Append(id++, InputClassText(status::input::input_class::CONFIG, true));
+	wxMenuItem *show_input_dipswitch_dialog_menu_item	= settings_menu->Append(id++, InputClassText(status::input::input_class::DIPSWITCH, true));
 	settings_menu->AppendSeparator();
 	wxMenuItem *show_paths_dialog_menu_item				= settings_menu->Append(id++, "Paths...");
 
@@ -435,11 +436,11 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { ChangeSound(!IsSoundEnabled());											}, sound_menu_item->GetId());
 	
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::CONTROLLER);								}, show_input_controllers_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::KEYBOARD);								}, show_input_keyboard_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(Input::input_class::MISC);									}, show_input_misc_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(Input::input_class::CONFIG);								}, show_input_config_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(Input::input_class::DIPSWITCH);							}, show_input_dipswitch_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(status::input::input_class::CONTROLLER);						}, show_input_controllers_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(status::input::input_class::KEYBOARD);						}, show_input_keyboard_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuInputs(status::input::input_class::MISC);							}, show_input_misc_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(status::input::input_class::CONFIG);						}, show_input_config_dialog_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(status::input::input_class::DIPSWITCH);					}, show_input_dipswitch_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { RefreshMameInfoDatabase();												}, refresh_mame_info_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
@@ -458,11 +459,11 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !m_status_images.get().empty());	}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());						}, sound_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::KEYBOARD));		}, show_input_keyboard_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::MISC));			}, show_input_misc_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(Input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::KEYBOARD));		}, show_input_keyboard_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::MISC));			}, show_input_misc_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
@@ -682,7 +683,7 @@ void MameFrame::Run(const info::machine &machine)
 	}
 
 	// do we have any images that require images?
-	auto iter = std::find_if(m_status_images.get().cbegin(), m_status_images.get().cend(), [](const Image &image)
+	auto iter = std::find_if(m_status_images.get().cbegin(), m_status_images.get().cend(), [](const status::image &image)
 	{
 		return image.m_must_be_loaded && image.m_file_name.IsEmpty();
 	});
@@ -895,7 +896,7 @@ void MameFrame::OnMenuPaths()
 //  OnMenuInputs
 //-------------------------------------------------
 
-void MameFrame::OnMenuInputs(Input::input_class input_class)
+void MameFrame::OnMenuInputs(status::input::input_class input_class)
 {
 	wxString title = InputClassText(input_class, false);
 	Pauser pauser(*this);
@@ -908,7 +909,7 @@ void MameFrame::OnMenuInputs(Input::input_class input_class)
 //  OnMenuSwitches
 //-------------------------------------------------
 
-void MameFrame::OnMenuSwitches(Input::input_class input_class)
+void MameFrame::OnMenuSwitches(status::input::input_class input_class)
 {
 	wxString title = InputClassText(input_class, false);
 	Pauser pauser(*this);
@@ -1027,9 +1028,9 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 //  OnStatusUpdate
 //-------------------------------------------------
 
-void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
+void MameFrame::OnStatusUpdate(PayloadEvent<status::update> &event)
 {
-	StatusUpdate &payload(event.Payload());
+	status::update &payload(event.Payload());
 
 	GetStatusFromPayload(m_status_paused,				payload.m_paused);
 	GetStatusFromPayload(m_status_polling_input_seq,	payload.m_polling_input_seq);
@@ -1071,7 +1072,7 @@ void MameFrame::WatchForImageMount(const wxString &tag)
 {
 	// find the current value; we want to monitor for this value changing
 	wxString current_value;
-	const Image *image = FindImageByTag(tag);
+	const status::image *image = FindImageByTag(tag);
 	if (image)
 		current_value = image->m_file_name;
 
@@ -1079,7 +1080,7 @@ void MameFrame::WatchForImageMount(const wxString &tag)
 	m_watch_subscription = m_status_images.subscribe([this, current_value{std::move(current_value)}, tag{std::move(tag)}]
 	{
 		// did the value change?
-		const Image *image = FindImageByTag(tag);
+		const status::image *image = FindImageByTag(tag);
 		if (image && image->m_file_name != current_value)
 		{
 			// it did!  place the new file in recent files
@@ -1096,12 +1097,12 @@ void MameFrame::WatchForImageMount(const wxString &tag)
 //  PlaceInRecentFiles
 //-------------------------------------------------
 
-const Image *MameFrame::FindImageByTag(const wxString &tag) const
+const status::image *MameFrame::FindImageByTag(const wxString &tag) const
 {
 	auto iter = std::find_if(
 		m_status_images.get().begin(),
 		m_status_images.get().end(),
-		[&tag](const Image &image) { return image.m_tag == tag; });
+		[&tag](const status::image &image) { return image.m_tag == tag; });
 
 	return iter != m_status_images.get().end()
 		? &*iter
@@ -1466,7 +1467,7 @@ void MameFrame::UpdateStatusBar()
 //  HasInputClass
 //-------------------------------------------------
 
-bool MameFrame::HasInputClass(Input::input_class input_class) const
+bool MameFrame::HasInputClass(status::input::input_class input_class) const
 {
 	return std::find_if(
 		m_status_inputs.begin(),
@@ -1482,24 +1483,24 @@ bool MameFrame::HasInputClass(Input::input_class input_class) const
 //  InputClassText
 //-------------------------------------------------
 
-wxString MameFrame::InputClassText(Input::input_class input_class, bool elipsis)
+wxString MameFrame::InputClassText(status::input::input_class input_class, bool elipsis)
 {
 	wxString result;
 	switch (input_class)
 	{
-	case Input::input_class::CONTROLLER:
+	case status::input::input_class::CONTROLLER:
 		result = "Joysticks and Controllers";
 		break;
-	case Input::input_class::KEYBOARD:
+	case status::input::input_class::KEYBOARD:
 		result = "Keyboard";
 		break;
-	case Input::input_class::MISC:
+	case status::input::input_class::MISC:
 		result = "Miscellaneous Input";
 		break;
-	case Input::input_class::CONFIG:
+	case status::input::input_class::CONFIG:
 		result = "Configuration";
 		break;
-	case Input::input_class::DIPSWITCH:
+	case status::input::input_class::DIPSWITCH:
 		result = "DIP Switches";
 		break;
 	default:
@@ -1689,7 +1690,7 @@ MameFrame::ImagesHost::ImagesHost(MameFrame &host)
 //  GetImages
 //-------------------------------------------------
 
-observable::value<std::vector<Image>> &MameFrame::ImagesHost::GetImages()
+observable::value<std::vector<status::image>> &MameFrame::ImagesHost::GetImages()
 {
 	return m_host.m_status_images;
 }
@@ -1807,7 +1808,7 @@ MameFrame::InputsHost::InputsHost(MameFrame &host)
 //  GetInputs
 //-------------------------------------------------
 
-const std::vector<Input> &MameFrame::InputsHost::GetInputs()
+const std::vector<status::input> &MameFrame::InputsHost::GetInputs()
 {
 	return m_host.m_status_inputs;
 }
@@ -1827,18 +1828,18 @@ observable::value<bool> &MameFrame::InputsHost::GetPollingSeqChanged()
 //  StartPolling
 //-------------------------------------------------
 
-void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, InputSeq::inputseq_type seq_type)
+void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
 {
 	wxString seq_type_string;
 	switch (seq_type)
 	{
-	case InputSeq::inputseq_type::STANDARD:
+	case status::input_seq::type::STANDARD:
 		seq_type_string = "standard";
 		break;
-	case InputSeq::inputseq_type::INCREMENT:
+	case status::input_seq::type::INCREMENT:
 		seq_type_string = "increment";
 		break;
-	case InputSeq::inputseq_type::DECREMENT:
+	case status::input_seq::type::DECREMENT:
 		seq_type_string = "decrement";
 		break;
 	default:
@@ -1877,7 +1878,7 @@ MameFrame::SwitchesHost::SwitchesHost(MameFrame &host)
 //  GetInputs
 //-------------------------------------------------
 
-const std::vector<Input> &MameFrame::SwitchesHost::GetInputs()
+const std::vector<status::input> &MameFrame::SwitchesHost::GetInputs()
 {
 	return m_host.m_status_inputs;
 }

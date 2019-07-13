@@ -41,6 +41,7 @@ OBJECTFILES=\
 	$(OBJ)/listxmltask.o		\
 	$(OBJ)/prefs.o				\
 	$(OBJ)/runmachinetask.o		\
+	$(OBJ)/status.o				\
 	$(OBJ)/task.o				\
 	$(OBJ)/utility.o			\
 	$(OBJ)/validity.o			\

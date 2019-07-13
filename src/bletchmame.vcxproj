@@ -243,6 +243,7 @@
     <ClCompile Include="listxmltask.cpp" />
     <ClCompile Include="prefs.cpp" />
     <ClCompile Include="runmachinetask.cpp" />
+    <ClCompile Include="status.cpp" />
     <ClCompile Include="task.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="validity.cpp" />
@@ -269,6 +270,7 @@
     <ClInclude Include="payloadevent.h" />
     <ClInclude Include="prefs.h" />
     <ClInclude Include="runmachinetask.h" />
+    <ClInclude Include="status.h" />
     <ClInclude Include="task.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="validity.h" />

@@ -17,6 +17,7 @@
 #include "task.h"
 #include "info.h"
 #include "payloadevent.h"
+#include "status.h"
 
 
 //**************************************************************************
@@ -49,123 +50,6 @@ struct RunMachineResult
     wxString    m_error_message;
 };
 
-struct Image
-{
-	Image() = default;
-	Image(const Image &) = SHOULD_BE_DELETE;
-	Image(Image &&that) = default;
-
-	wxString			m_tag;
-	wxString			m_instance_name;
-	bool				m_is_readable;
-	bool				m_is_writeable;
-	bool				m_is_createable;
-	bool				m_must_be_loaded;
-	wxString			m_file_name;
-	wxString			m_display;
-
-	bool operator==(const Image &that) const
-	{
-		return m_tag			== that.m_tag
-			&& m_instance_name	== that.m_instance_name
-			&& m_is_readable	== that.m_is_readable
-			&& m_is_writeable	== that.m_is_writeable
-			&& m_is_createable	== that.m_is_createable
-			&& m_must_be_loaded	== that.m_must_be_loaded
-			&& m_file_name		== that.m_file_name
-			&& m_display		== that.m_display;
-	}
-};
-
-struct InputSeq
-{
-	InputSeq() = default;
-	InputSeq(const InputSeq &that) = SHOULD_BE_DELETE;
-	InputSeq(InputSeq &&that) = default;
-
-	enum class inputseq_type
-	{
-		STANDARD,
-		INCREMENT,
-		DECREMENT
-	};
-
-	inputseq_type			m_type;
-	wxString				m_text;
-
-	bool operator==(const InputSeq &that) const
-	{
-		return m_type == that.m_type
-			&& m_text == that.m_text;
-	}
-};
-
-typedef std::uint32_t ioport_value;
-
-struct Input
-{
-	Input() = default;
-	Input(const Input &) = SHOULD_BE_DELETE;
-	Input(Input &&that) = default;
-
-	enum class input_class
-	{
-		UNKNOWN,
-		CONTROLLER,
-		KEYBOARD,
-		MISC,
-		CONFIG,
-		DIPSWITCH
-	};
-
-	enum class input_type
-	{
-		ANALOG,
-		DIGITAL
-	};
-
-	wxString				m_port_tag;
-	wxString				m_name;
-	ioport_value			m_mask;
-	input_class				m_class;
-	input_type				m_type;
-	ioport_value			m_value;
-	std::vector<InputSeq>	m_seqs;
-
-	bool operator==(const Input &that) const
-	{
-		return m_port_tag == that.m_port_tag
-			&& m_name == that.m_name
-			&& m_mask == that.m_mask
-			&& m_class == that.m_class
-			&& m_type == that.m_type
-			&& m_value == that.m_value
-			&& m_seqs == that.m_seqs;
-	}
-};
-
-struct StatusUpdate
-{
-	StatusUpdate() = default;
-	StatusUpdate(const StatusUpdate &that) = delete;
-	StatusUpdate(StatusUpdate &&that) = default;
-
-	// did we have problems reading the response from MAME?
-	bool								m_success;
-	wxString							m_parse_error;
-
-	// the actual data
-	std::optional<bool>					m_paused;
-	std::optional<bool>					m_polling_input_seq;
-	std::optional<wxString>				m_startup_text;
-	std::optional<wxString>				m_frameskip;
-	std::optional<wxString>				m_speed_text;
-	std::optional<bool>					m_throttled;
-	std::optional<float>				m_throttle_rate;
-	std::optional<int>					m_sound_attenuation;
-	std::optional<std::vector<Image>>	m_images;
-	std::optional<std::vector<Input>>	m_inputs;
-};
 
 struct Chatter
 {
@@ -184,7 +68,7 @@ struct Chatter
 };
 
 wxDECLARE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
-wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<StatusUpdate>);
+wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<status::update>);
 wxDECLARE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
 
 struct Machine;
@@ -227,7 +111,6 @@ private:
 	volatile bool					m_chatter_enabled;
 
 	void InternalPost(Message::type type, wxString &&command, emu_error status = emu_error::INVALID);
-	static StatusUpdate ReadStatusUpdate(wxTextInputStream &input);
 	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
 	void PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text);
 };

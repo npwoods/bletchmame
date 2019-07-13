@@ -127,7 +127,7 @@ void ImagesDialog::UpdateImageGrid()
 	bool ok_enabled = true;
 
 	// get the list of images
-	const std::vector<Image> &images(m_host.GetImages().get());
+	const std::vector<status::image> &images(m_host.GetImages().get());
 
 	// iterate through the vector of images
 	for (int i = 0; i < (int)images.size(); i++)
