@@ -1106,12 +1106,10 @@ void MameFrame::WatchForImageMount(const wxString &tag)
 
 const Image *MameFrame::FindImageByTag(const wxString &tag) const
 {
-	wxString actual_tag = wxString(":") + tag;
-
 	auto iter = std::find_if(
 		m_status_images.get().begin(),
 		m_status_images.get().end(),
-		[&actual_tag](const Image &image) { return image.m_tag == actual_tag; });
+		[&tag](const Image &image) { return image.m_tag == tag; });
 
 	return iter != m_status_images.get().end()
 		? &*iter

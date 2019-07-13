@@ -138,29 +138,26 @@ void ImagesDialog::UpdateImageGrid()
 		wxButton *image_button;
 
 		// identify the tag (and drop the first colon)
-		assert(!images[i].m_tag.IsEmpty());
-		wxString tag = images[i].m_tag[0] == ':'
-			? images[i].m_tag.SubString(1, images[i].m_tag.size() - 1)
-			: images[i].m_tag;
+		assert(!images[i].m_tag.empty());
 
 		// do we have to create new rows?
 		if (m_grid_sizer->GetRows() <= i)
 		{
 			// we do - add controls
-			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, tag);
+			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_tag);
 			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
 			bool is_createable = images[i].m_is_createable;
 			bool is_unloadable = !images[i].m_file_name.empty();
-			Bind(wxEVT_BUTTON, [this, image_button, tag, is_createable, is_unloadable](auto &) { ImageMenu(*image_button, tag, is_createable, is_unloadable); }, image_button->GetId());
+			Bind(wxEVT_BUTTON, [this, image_button, tag{images[i].m_tag}, is_createable, is_unloadable](auto &) { ImageMenu(*image_button, tag, is_createable, is_unloadable); }, image_button->GetId());
 		}
 		else
 		{
 			// reuse existing controls
 			static_text = dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC));
 			text_ctrl = dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT));
-			static_text->SetLabel(tag);
+			static_text->SetLabel(images[i].m_tag);
 			text_ctrl->SetLabel(images[i].m_file_name);
 		}
 

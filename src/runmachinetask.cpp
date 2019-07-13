@@ -84,6 +84,18 @@ wxString BuildCommand(const std::vector<wxString> &args)
 }
 
 
+//-------------------------------------------------
+//	NormalizeTag - drop the initial colon, if
+//	present
+//-------------------------------------------------
+
+static void NormalizeTag(wxString &tag)
+{
+	if (tag.size() > 0 && tag[0] == ':')
+		tag = tag.substr(1);
+}
+
+
 //**************************************************************************
 //  MAIN THREAD OPERATIONS
 //**************************************************************************
@@ -335,6 +347,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
 		attributes.Get("filename",			image.m_file_name);
 		attributes.Get("display",			image.m_display);
+		NormalizeTag(image.m_tag);
 	});
 	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
@@ -349,6 +362,7 @@ StatusUpdate RunMachineTask::ReadStatusUpdate(wxTextInputStream &input)
 		attributes.Get("type",				input.m_type, s_input_type_parser);
 		attributes.Get("name",				input.m_name);
 		attributes.Get("value",				input.m_value);
+		NormalizeTag(input.m_port_tag);
 	});
 	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
