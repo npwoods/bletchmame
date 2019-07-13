@@ -15,8 +15,6 @@
 #include <wx/textfile.h>
 #include <wx/filename.h>
 
-#include <observable/observable.hpp>
-
 #include "frame.h"
 #include "client.h"
 #include "dlgconsole.h"
@@ -156,17 +154,7 @@ namespace
 		std::vector<int>						m_machine_list_indirections;
 
 		// status of running emulation
-		observable::value<status::machine_phase> m_status_phase;
-		observable::value<bool>					m_status_paused;
-		observable::value<bool>					m_status_polling_input_seq;
-		observable::value<wxString>				m_status_startup_text;
-		observable::value<wxString>				m_status_speed_text;
-		wxString								m_status_frameskip;
-		bool									m_status_throttled;
-		float									m_status_throttle_rate;
-		int										m_status_sound_attenuation;
-		observable::value<std::vector<status::image> >	m_status_images;
-		std::vector<status::input>						m_status_inputs;
+		std::optional<status::state>			m_state;
 
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
@@ -223,13 +211,10 @@ namespace
 		void UpdateStatusBar();
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
-		template<typename TStatus, typename TPayload> static bool GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload);
-		bool HasInputClass(status::input::input_class input_class) const;
 		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
 		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
 		void WatchForImageMount(const wxString &tag);
-		const status::image *FindImageByTag(const wxString &tag) const;
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -423,7 +408,7 @@ void MameFrame::CreateMenuBar()
 
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();																}, stop_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_status_paused.get());										}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_state->paused().get());									}, pause_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();														}, save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();														}, save_screenshot_menu_item->GetId());
@@ -432,7 +417,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);																}, exit_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);													}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);													}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_status_throttled);										}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_state->throttled());									}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeSound(!IsSoundEnabled());											}, sound_menu_item->GetId());
 	
@@ -447,25 +432,25 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
 
 	// Bind UI update events	
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, stop_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_status_paused.get());				}, pause_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, load_state_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, save_state_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, save_screenshot_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, soft_reset_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, hard_reset_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, increase_speed_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, decrease_speed_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, !m_status_throttled);					}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !m_status_images.get().empty());	}, images_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());						}, sound_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);										}, console_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::KEYBOARD));		}, show_input_keyboard_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::MISC));			}, show_input_misc_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, HasInputClass(status::input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());						}, refresh_mame_info_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, stop_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_state && m_state->paused().get());												}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, load_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, soft_reset_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, hard_reset_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, increase_speed_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, decrease_speed_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_state && !m_state->throttled());													}, warp_mode_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && !m_state->images().get().empty());									}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());																	}, sound_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, console_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::KEYBOARD));	}, show_input_keyboard_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::MISC));		}, show_input_misc_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());																	}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -474,8 +459,8 @@ void MameFrame::CreateMenuBar()
 		wxString text		= std::to_string((int)(throttle_rate * 100)) + "%";
 		wxMenuItem *item	= throttle_menu->Insert(i, id++, text, wxEmptyString, wxITEM_CHECK);
 
-		Bind(wxEVT_MENU,		[this, throttle_rate](auto &)		{ ChangeThrottleRate(throttle_rate);										}, item->GetId());
-		Bind(wxEVT_UPDATE_UI,	[this, throttle_rate](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_throttle_rate == throttle_rate);	}, item->GetId());
+		Bind(wxEVT_MENU,		[this, throttle_rate](auto &)		{ ChangeThrottleRate(throttle_rate);												}, item->GetId());
+		Bind(wxEVT_UPDATE_UI,	[this, throttle_rate](auto &event)	{ OnEmuMenuUpdateUI(event, m_state && m_state->throttle_rate() == throttle_rate);	}, item->GetId());
 	}
 
 	// special setup for frameskip dynamic menu
@@ -486,16 +471,9 @@ void MameFrame::CreateMenuBar()
 		std::string value	= i == -1 ? "auto" : std::to_string(i);
 		std::string command = "frameskip " + value;
 
-		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });							}, item->GetId());
-		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
+		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });										}, item->GetId());
+		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_state && m_state->frameskip() == value);	}, item->GetId());		
 	}
-
-	// subscribe to various status updates
-	m_status_paused.subscribe([this]() { UpdateTitleBar(); });
-	m_status_phase.subscribe([this]() { UpdateStatusBar(); });
-	m_status_speed_text.subscribe([this]() { UpdateStatusBar(); });
-	m_status_startup_text.subscribe([this]() { UpdateStatusBar(); });
-	m_status_images.subscribe([this]() { UpdateStatusBar(); });
 }
 
 
@@ -673,6 +651,16 @@ void MameFrame::Run(const info::machine &machine)
 		machine,
 		*this);
 	m_client.Launch(std::move(task));
+
+	// set up running state and subscribe to events
+	m_state.emplace();
+	m_state->paused().subscribe(		[this]() { UpdateTitleBar(); });
+	m_state->phase().subscribe(			[this]() { UpdateStatusBar(); });
+	m_state->speed_text().subscribe(	[this]() { UpdateStatusBar(); });
+	m_state->startup_text().subscribe(	[this]() { UpdateStatusBar(); });
+	m_state->images().subscribe(		[this]() { UpdateStatusBar(); });
+
+	// we have a session running; hide/show things respectively
 	UpdateEmulationSession();
 
 	// wait for first ping
@@ -685,11 +673,11 @@ void MameFrame::Run(const info::machine &machine)
 	}
 
 	// do we have any images that require images?
-	auto iter = std::find_if(m_status_images.get().cbegin(), m_status_images.get().cend(), [](const status::image &image)
+	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [](const status::image &image)
 	{
 		return image.m_must_be_loaded && image.m_file_name.IsEmpty();
 	});
-	if (iter != m_status_images.get().cend())
+	if (iter != m_state->images().get().cend())
 	{
 		// if so, show the dialog
 		ImagesHost images_host(*this);
@@ -1015,8 +1003,8 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 	const RunMachineResult &payload(event.Payload());
 
 	m_client.Reset();
+	m_state.reset();
     UpdateEmulationSession();
-	m_watch_subscription = observable::unique_subscription();
 
 	// report any errors
 	if (!payload.m_error_message.IsEmpty())
@@ -1032,38 +1020,9 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 
 void MameFrame::OnStatusUpdate(PayloadEvent<status::update> &event)
 {
-	status::update &payload(event.Payload());
-
-	GetStatusFromPayload(m_status_phase,				payload.m_phase);
-	GetStatusFromPayload(m_status_paused,				payload.m_paused);
-	GetStatusFromPayload(m_status_polling_input_seq,	payload.m_polling_input_seq);
-	GetStatusFromPayload(m_status_startup_text,			payload.m_startup_text);
-	GetStatusFromPayload(m_status_speed_text,			payload.m_speed_text);
-	GetStatusFromPayload(m_status_frameskip,			payload.m_frameskip);
-	GetStatusFromPayload(m_status_throttled,			payload.m_throttled);
-	GetStatusFromPayload(m_status_throttle_rate,		payload.m_throttle_rate);
-	GetStatusFromPayload(m_status_sound_attenuation,	payload.m_sound_attenuation);
-	GetStatusFromPayload(m_status_images,				payload.m_images);
-	GetStatusFromPayload(m_status_inputs,				payload.m_inputs);
-
+	status::update &payload = event.Payload();
+	m_state->update(std::move(payload));
 	m_pinging = false;
-}
-
-
-//-------------------------------------------------
-//  GetStatusFromPayload
-//-------------------------------------------------
-
-template<typename TStatus, typename TPayload>
-bool MameFrame::GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload)
-{
-	bool result = payload.has_value();
-	if (result)
-	{
-		TPayload extracted_value = std::move(payload.value());
-		value = std::move(extracted_value);
-	}
-	return result;
 }
 
 
@@ -1075,15 +1034,15 @@ void MameFrame::WatchForImageMount(const wxString &tag)
 {
 	// find the current value; we want to monitor for this value changing
 	wxString current_value;
-	const status::image *image = FindImageByTag(tag);
+	const status::image *image = m_state->find_image(tag);
 	if (image)
 		current_value = image->m_file_name;
 
 	// start watching
-	m_watch_subscription = m_status_images.subscribe([this, current_value{std::move(current_value)}, tag{std::move(tag)}]
+	m_watch_subscription = m_state->images().subscribe([this, current_value{std::move(current_value)}, tag{std::move(tag)}]
 	{
 		// did the value change?
-		const status::image *image = FindImageByTag(tag);
+		const status::image *image = m_state->find_image(tag);
 		if (image && image->m_file_name != current_value)
 		{
 			// it did!  place the new file in recent files
@@ -1093,23 +1052,6 @@ void MameFrame::WatchForImageMount(const wxString &tag)
 			m_watch_subscription = observable::unique_subscription();
 		}
 	});	
-}
-
-
-//-------------------------------------------------
-//  PlaceInRecentFiles
-//-------------------------------------------------
-
-const status::image *MameFrame::FindImageByTag(const wxString &tag) const
-{
-	auto iter = std::find_if(
-		m_status_images.get().begin(),
-		m_status_images.get().end(),
-		[&tag](const status::image &image) { return image.m_tag == tag; });
-
-	return iter != m_status_images.get().end()
-		? &*iter
-		: nullptr;
 }
 
 
@@ -1415,7 +1357,7 @@ void MameFrame::UpdateTitleBar()
 		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().description();
 
 		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
-		if (m_status_paused.get() && !m_current_pauser)
+		if (m_state->paused().get() && !m_current_pauser)
 			title_text += " PAUSED";
 	}
 	SetLabel(title_text);
@@ -1451,38 +1393,26 @@ void MameFrame::UpdateStatusBar()
 	// prepare a vector with the status text
 	std::vector<std::reference_wrapper<const wxString>> status_text;
 	
-	// first entry depends on whether we are running
-	if (m_status_phase.get() == status::machine_phase::RUNNING)
-		status_text.push_back(m_status_speed_text.get());
-	else
-		status_text.push_back(m_status_startup_text.get());
-
-	// next entries come from device displays
-	for (auto iter = m_status_images.get().cbegin(); iter < m_status_images.get().cend(); iter++)
+	// is there a running emulation?
+	if (m_state.has_value())
 	{
-		if (!iter->m_display.empty())
-			status_text.push_back(iter->m_display);
+		// first entry depends on whether we are running
+		if (m_state->phase().get() == status::machine_phase::RUNNING)
+			status_text.push_back(m_state->speed_text().get());
+		else
+			status_text.push_back(m_state->startup_text().get());
+
+		// next entries come from device displays
+		for (auto iter = m_state->images().get().cbegin(); iter < m_state->images().get().cend(); iter++)
+		{
+			if (!iter->m_display.empty())
+				status_text.push_back(iter->m_display);
+		}
 	}
 
 	// and specify it
 	for (int i = 0; i < (int)status_text.size(); i++)
 		SetStatusText(status_text[i], i);
-}
-
-
-//-------------------------------------------------
-//  HasInputClass
-//-------------------------------------------------
-
-bool MameFrame::HasInputClass(status::input::input_class input_class) const
-{
-	return std::find_if(
-		m_status_inputs.begin(),
-		m_status_inputs.end(),
-		[input_class](const auto &input)
-		{
-			return input.m_class == input_class;
-		}) != m_status_inputs.end();
 }
 
 
@@ -1611,7 +1541,7 @@ void MameFrame::ChangeThrottleRate(int adjustment)
 	int index;
 	for (index = 0; index < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); index++)
 	{
-		if (m_status_throttle_rate >= s_throttle_rates[index])
+		if (m_state->throttle_rate() >= s_throttle_rates[index])
 			break;
 	}
 
@@ -1641,7 +1571,7 @@ void MameFrame::ChangeSound(bool sound_enabled)
 
 bool MameFrame::IsSoundEnabled() const
 {
-	return m_status_sound_attenuation != SOUND_ATTENUATION_OFF;
+	return m_state && m_state->sound_attenuation() != SOUND_ATTENUATION_OFF;
 }
 
 
@@ -1658,7 +1588,7 @@ MameFrame::Pauser::Pauser(MameFrame &host, bool actually_pause)
 	, m_last_pauser(host.m_current_pauser)
 {
 	// if we're running and not pause, pause while the message box is up
-	m_is_running = actually_pause && m_host.IsEmulationSessionActive() && !m_host.m_status_paused.get();
+	m_is_running = actually_pause && m_host.IsEmulationSessionActive() && !m_host.m_state->paused().get();
 	if (m_is_running)
 		m_host.ChangePaused(true);
 
@@ -1699,7 +1629,7 @@ MameFrame::ImagesHost::ImagesHost(MameFrame &host)
 
 observable::value<std::vector<status::image>> &MameFrame::ImagesHost::GetImages()
 {
-	return m_host.m_status_images;
+	return m_host.m_state->images();
 }
 
 
@@ -1817,7 +1747,7 @@ MameFrame::InputsHost::InputsHost(MameFrame &host)
 
 const std::vector<status::input> &MameFrame::InputsHost::GetInputs()
 {
-	return m_host.m_status_inputs;
+	return m_host.m_state->inputs().get();
 }
 
 
@@ -1827,7 +1757,7 @@ const std::vector<status::input> &MameFrame::InputsHost::GetInputs()
 
 observable::value<bool> &MameFrame::InputsHost::GetPollingSeqChanged()
 {
-	return m_host.m_status_polling_input_seq;
+	return m_host.m_state->polling_input_seq();
 }
 
 
@@ -1887,7 +1817,7 @@ MameFrame::SwitchesHost::SwitchesHost(MameFrame &host)
 
 const std::vector<status::input> &MameFrame::SwitchesHost::GetInputs()
 {
-	return m_host.m_status_inputs;
+	return m_host.m_state->inputs().get();
 }
 
 

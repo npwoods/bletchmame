@@ -11,6 +11,7 @@
 #ifndef STATUS_H
 #define STATUS_H
 
+#include <observable/observable.hpp>
 #include <wx/string.h>
 #include <optional>
 
@@ -130,9 +131,10 @@ namespace status
 	// ======================> update
 	struct update
 	{
-		update() = default;
+		update();
 		update(const update &that) = delete;
 		update(update &&that) = default;
+		~update();
 
 		// did we have problems reading the response from MAME?
 		bool								m_success;
@@ -152,6 +154,54 @@ namespace status
 		std::optional<std::vector<input>>	m_inputs;
 
 		static update read(wxTextInputStream &input);
+	};
+
+
+	// ======================> state
+	class state
+	{
+	public:
+		// ctor/dtor
+		state();
+		state(const state &that) = delete;
+		state(state &&that) = default;
+		~state();
+
+		// update with new state
+		void update(update &&that);
+
+		// state accessors
+		observable::value<machine_phase> &		phase()						{ return m_phase; }
+		observable::value<bool> &				paused()					{ return m_paused; }
+		observable::value<bool> &				polling_input_seq()			{ return m_polling_input_seq; }
+		observable::value<wxString> &			startup_text()				{ return m_startup_text; }
+		observable::value<wxString> &			speed_text()				{ return m_speed_text; }
+		observable::value<std::vector<image>> &	images()					{ return m_images; }
+		observable::value<std::vector<input>> &	inputs()					{ return m_inputs; }
+		wxString								frameskip() const			{ return m_frameskip; }
+		bool									throttled() const			{ return m_throttled; }
+		float									throttle_rate() const		{ return m_throttle_rate; }
+		int										sound_attenuation() const	{ return m_sound_attenuation; }
+
+		// higher level methods
+		const image *find_image(const wxString &tag) const;
+		bool has_input_class(status::input::input_class input_class) const;
+
+	private:
+		observable::value<machine_phase>		m_phase;
+		observable::value<bool>					m_paused;
+		observable::value<bool>					m_polling_input_seq;
+		observable::value<wxString>				m_startup_text;
+		observable::value<wxString>				m_speed_text;
+		observable::value<std::vector<image>>	m_images;
+		observable::value<std::vector<input>>	m_inputs;
+		wxString								m_frameskip;
+		bool									m_throttled;
+		float									m_throttle_rate;
+		int										m_sound_attenuation;
+
+		template<typename TStateField, typename TUpdateField>
+		bool take(TStateField &state_field, std::optional<TUpdateField> &update_field);
 	};
 };
 

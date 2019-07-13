@@ -50,7 +50,7 @@ static const util::enum_parser<status::input_seq::type> s_inputseq_type_parser =
 
 
 //**************************************************************************
-//  IMPLEMENTATION
+//  MISCELLANEOUS STATUS OBJECTS
 //**************************************************************************
 
 //-------------------------------------------------
@@ -106,6 +106,28 @@ static void normalize_tag(wxString &tag)
 {
 	if (tag.size() > 0 && tag[0] == ':')
 		tag = tag.substr(1);
+}
+
+
+//**************************************************************************
+//  STATUS UPDATES
+//**************************************************************************
+
+//-------------------------------------------------
+//  update ctor
+//-------------------------------------------------
+
+status::update::update()
+{
+}
+
+
+//-------------------------------------------------
+//  update dtor
+//-------------------------------------------------
+
+status::update::~update()
+{
 }
 
 
@@ -198,4 +220,97 @@ status::update status::update::read(wxTextInputStream &input_stream)
 
 	// and return it
 	return result;
+}
+
+
+//**************************************************************************
+//  STATUS STATE
+//**************************************************************************
+
+//-------------------------------------------------
+//  state ctor
+//-------------------------------------------------
+
+status::state::state()
+{
+}
+
+
+//-------------------------------------------------
+//  state dtor
+//-------------------------------------------------
+
+status::state::~state()
+{
+}
+
+
+//-------------------------------------------------
+//  state::update()
+//-------------------------------------------------
+
+void status::state::update(status::update &&that)
+{
+	take(m_phase, that.m_phase);
+	take(m_paused, that.m_paused);
+	take(m_polling_input_seq, that.m_polling_input_seq);
+	take(m_startup_text, that.m_startup_text);
+	take(m_speed_text, that.m_speed_text);
+	take(m_frameskip, that.m_frameskip);
+	take(m_throttled, that.m_throttled);
+	take(m_throttle_rate, that.m_throttle_rate);
+	take(m_sound_attenuation, that.m_sound_attenuation);
+	take(m_images, that.m_images);
+	take(m_inputs, that.m_inputs);
+}
+
+
+//-------------------------------------------------
+//  state::take()
+//-------------------------------------------------
+
+template<typename TStateField, typename TUpdateField>
+bool status::state::take(TStateField &state_field, std::optional<TUpdateField> &update_field)
+{
+	bool result = update_field.has_value();
+	if (result)
+	{
+		TUpdateField extracted_value = std::move(update_field.value());
+		state_field = std::move(extracted_value);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  status::state::find_image()
+//-------------------------------------------------
+
+const status::image *status::state::find_image(const wxString &tag) const
+{
+	auto iter = std::find_if(
+		m_images.get().begin(),
+		m_images.get().end(),
+		[&tag](const status::image &image) { return image.m_tag == tag; });
+
+	return iter != m_images.get().end()
+		? &*iter
+		: nullptr;
+}
+
+
+//-------------------------------------------------
+//  status::state::has_input_class()
+//-------------------------------------------------
+
+bool status::state::has_input_class(status::input::input_class input_class) const
+{
+	auto iter = std::find_if(
+		m_inputs.get().begin(),
+		m_inputs.get().end(),
+		[input_class](const auto &input)
+		{
+			return input.m_class == input_class;
+		});
+	return iter != m_inputs.get().end();
 }
