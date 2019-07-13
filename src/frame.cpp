@@ -157,7 +157,8 @@ namespace
 		// status of running emulation
 		observable::value<bool>					m_status_paused;
 		observable::value<bool>					m_status_polling_input_seq;
-		wxString								m_status_startup_text;
+		observable::value<wxString>				m_status_startup_text;
+		observable::value<wxString>				m_status_speed_text;
 		wxString								m_status_frameskip;
 		bool									m_status_throttled;
 		float									m_status_throttle_rate;
@@ -217,6 +218,7 @@ namespace
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
 		void UpdateMenuBar();
+		void UpdateStatusBar();
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 		template<typename TStatus, typename TPayload> static bool GetStatusFromPayload(TStatus &value, std::optional<TPayload> &payload);
@@ -486,8 +488,11 @@ void MameFrame::CreateMenuBar()
 		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_status_frameskip == value);	}, item->GetId());		
 	}
 
-	// subscribe to title bar updates
+	// subscribe to various status updates
 	m_status_paused.subscribe([this]() { UpdateTitleBar(); });
+	m_status_speed_text.subscribe([this]() { UpdateStatusBar(); });
+	m_status_startup_text.subscribe([this]() { UpdateStatusBar(); });
+	m_status_images.subscribe([this]() { UpdateStatusBar(); });
 }
 
 
@@ -1029,26 +1034,13 @@ void MameFrame::OnStatusUpdate(PayloadEvent<StatusUpdate> &event)
 	GetStatusFromPayload(m_status_paused,				payload.m_paused);
 	GetStatusFromPayload(m_status_polling_input_seq,	payload.m_polling_input_seq);
 	GetStatusFromPayload(m_status_startup_text,			payload.m_startup_text);
+	GetStatusFromPayload(m_status_speed_text,			payload.m_speed_text);
 	GetStatusFromPayload(m_status_frameskip,			payload.m_frameskip);
 	GetStatusFromPayload(m_status_throttled,			payload.m_throttled);
 	GetStatusFromPayload(m_status_throttle_rate,		payload.m_throttle_rate);
 	GetStatusFromPayload(m_status_sound_attenuation,	payload.m_sound_attenuation);
 	GetStatusFromPayload(m_status_images,				payload.m_images);
 	GetStatusFromPayload(m_status_inputs,				payload.m_inputs);
-
-	// build speed text
-	std::vector<wxString> status_text;
-	if (payload.m_speed_text.has_value())
-		status_text.push_back(payload.m_speed_text.value());
-	else if (payload.m_startup_text.has_value())
-		status_text.push_back(payload.m_startup_text.value());
-	for (auto iter = m_status_images.get().begin(); iter < m_status_images.get().end(); iter++)
-	{
-		if (!iter->m_display.empty())
-			status_text.push_back(iter->m_display);
-	}
-	for (int i = 0; i < (int)status_text.size(); i++)
-		SetStatusText(status_text[i], i);
 
 	m_pinging = false;
 }
@@ -1443,6 +1435,30 @@ void MameFrame::UpdateMenuBar()
 #else
 	throw false;
 #endif
+}
+
+
+//-------------------------------------------------
+//  UpdateStatusBar
+//-------------------------------------------------
+
+void MameFrame::UpdateStatusBar()
+{
+	// build status bar text
+	std::vector<std::reference_wrapper<const wxString>> status_text;
+	if (!m_status_speed_text.get().empty())
+		status_text.push_back(m_status_speed_text.get());
+	else if (!m_status_startup_text.get().empty())
+		status_text.push_back(m_status_startup_text.get());
+	for (auto iter = m_status_images.get().cbegin(); iter < m_status_images.get().cend(); iter++)
+	{
+		if (!iter->m_display.empty())
+			status_text.push_back(iter->m_display);
+	}
+
+	// and specify it
+	for (int i = 0; i < (int)status_text.size(); i++)
+		SetStatusText(status_text[i], i);
 }
 
 
