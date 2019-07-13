@@ -156,6 +156,7 @@ namespace
 		std::vector<int>						m_machine_list_indirections;
 
 		// status of running emulation
+		observable::value<status::machine_phase> m_status_phase;
 		observable::value<bool>					m_status_paused;
 		observable::value<bool>					m_status_polling_input_seq;
 		observable::value<wxString>				m_status_startup_text;
@@ -491,6 +492,7 @@ void MameFrame::CreateMenuBar()
 
 	// subscribe to various status updates
 	m_status_paused.subscribe([this]() { UpdateTitleBar(); });
+	m_status_phase.subscribe([this]() { UpdateStatusBar(); });
 	m_status_speed_text.subscribe([this]() { UpdateStatusBar(); });
 	m_status_startup_text.subscribe([this]() { UpdateStatusBar(); });
 	m_status_images.subscribe([this]() { UpdateStatusBar(); });
@@ -1032,6 +1034,7 @@ void MameFrame::OnStatusUpdate(PayloadEvent<status::update> &event)
 {
 	status::update &payload(event.Payload());
 
+	GetStatusFromPayload(m_status_phase,				payload.m_phase);
 	GetStatusFromPayload(m_status_paused,				payload.m_paused);
 	GetStatusFromPayload(m_status_polling_input_seq,	payload.m_polling_input_seq);
 	GetStatusFromPayload(m_status_startup_text,			payload.m_startup_text);
@@ -1445,12 +1448,16 @@ void MameFrame::UpdateMenuBar()
 
 void MameFrame::UpdateStatusBar()
 {
-	// build status bar text
+	// prepare a vector with the status text
 	std::vector<std::reference_wrapper<const wxString>> status_text;
-	if (!m_status_speed_text.get().empty())
+	
+	// first entry depends on whether we are running
+	if (m_status_phase.get() == status::machine_phase::RUNNING)
 		status_text.push_back(m_status_speed_text.get());
-	else if (!m_status_startup_text.get().empty())
+	else
 		status_text.push_back(m_status_startup_text.get());
+
+	// next entries come from device displays
 	for (auto iter = m_status_images.get().cbegin(); iter < m_status_images.get().cend(); iter++)
 	{
 		if (!iter->m_display.empty())

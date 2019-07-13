@@ -17,6 +17,15 @@
 //  VARIABLES
 //**************************************************************************
 
+static const util::enum_parser<status::machine_phase> s_machine_phase_parser =
+{
+	{ "preinit", status::machine_phase::PREINIT },
+	{ "init", status::machine_phase::INIT },
+	{ "reset", status::machine_phase::RESET },
+	{ "running", status::machine_phase::RUNNING },
+	{ "exit", status::machine_phase::EXIT }
+};
+
 static const util::enum_parser<status::input::input_class> s_input_class_parser =
 {
 	{ "controller", status::input::input_class::CONTROLLER, },
@@ -111,6 +120,7 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	XmlParser xml;
 	xml.OnElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
+		attributes.Get("phase",				result.m_phase, s_machine_phase_parser);
 		attributes.Get("paused",			result.m_paused);
 		attributes.Get("polling_input_seq",	result.m_polling_input_seq);
 		attributes.Get("startup_text",		result.m_startup_text);

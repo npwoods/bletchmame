@@ -116,6 +116,17 @@ namespace status
 	};
 
 
+	// ======================> machine_phase
+	enum class machine_phase
+	{
+		PREINIT,
+		INIT,
+		RESET,
+		RUNNING,
+		EXIT
+	};
+
+
 	// ======================> update
 	struct update
 	{
@@ -128,6 +139,7 @@ namespace status
 		wxString							m_parse_error;
 
 		// the actual data
+		std::optional<machine_phase>		m_phase;
 		std::optional<bool>					m_paused;
 		std::optional<bool>					m_polling_input_seq;
 		std::optional<wxString>				m_startup_text;

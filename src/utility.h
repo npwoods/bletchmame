@@ -13,6 +13,7 @@
 
 #include <wx/event.h>
 #include <unordered_map>
+#include <optional>
 
 namespace util {
 
@@ -77,6 +78,14 @@ public:
 		auto iter = m_map.find(text.c_str());
 		bool success = iter != m_map.end();
 		value = success ? iter->second : T();
+		return success;
+	}
+
+	bool operator()(const std::string &text, std::optional<T> &value) const
+	{
+		T inner_value;
+		bool success = (*this)(text, inner_value);
+		value = success ? inner_value : std::optional<T>();
 		return success;
 	}
 
