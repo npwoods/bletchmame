@@ -197,7 +197,6 @@ namespace
 		check_mame_info_status CheckMameInfoDatabase();
 		bool PromptForMameExecutable();
 		bool RefreshMameInfoDatabase();
-		bool IsEmulationSessionActive() const;
 		info::machine GetRunningMachine() const;
 		void Run(const info::machine &machine);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
@@ -450,7 +449,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::MISC));		}, show_input_misc_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!IsEmulationSessionActive());																	}, refresh_mame_info_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!m_state.has_value());																			}, refresh_mame_info_menu_item->GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -610,16 +609,6 @@ bool MameFrame::RefreshMameInfoDatabase()
 
 
 //-------------------------------------------------
-//  IsEmulationSessionActive
-//-------------------------------------------------
-
-bool MameFrame::IsEmulationSessionActive() const
-{
-	return m_client.IsTaskActive<RunMachineTask>();
-}
-
-
-//-------------------------------------------------
 //  GetRunningMachine
 //-------------------------------------------------
 
@@ -667,7 +656,7 @@ void MameFrame::Run(const info::machine &machine)
 	m_pinging = true;
 	while (m_pinging)
 	{
-		if (!IsEmulationSessionActive())
+		if (!m_state.has_value())
 			return;
 		wxYield();
 	}
@@ -711,9 +700,9 @@ int MameFrame::MessageBox(const wxString &message, long style, const wxString &c
 void MameFrame::OnKeyDown(wxKeyEvent &event)
 {
 	// pressing ALT to bring up menus is not friendly when running the emulation
-	bool swallow_event = IsEmulationSessionActive() && event.GetKeyCode() == WXK_ALT;
+	bool swallow_event = m_state.has_value() && event.GetKeyCode() == WXK_ALT;
 
-	if (IsEmulationSessionActive() && event.GetKeyCode() == WXK_SCROLL)
+	if (m_state.has_value() && event.GetKeyCode() == WXK_SCROLL)
 	{
 		m_prefs.SetMenuBarShown(!m_prefs.GetMenuBarShown());
 		UpdateMenuBar();
@@ -746,7 +735,7 @@ void MameFrame::OnSize(wxSizeEvent &event)
 
 void MameFrame::OnClose(wxCloseEvent &event)
 {
-	if (IsEmulationSessionActive())
+	if (m_state.has_value())
 	{
 		wxString message = "Do you really want to exit?\n"
 			"\n"
@@ -936,7 +925,7 @@ void MameFrame::OnMenuAbout()
 
 void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked, bool enabled)
 {
-	bool is_active = IsEmulationSessionActive();
+	bool is_active = m_state.has_value();
 	event.Enable(is_active && enabled);
 
 	if (checked.has_value())
@@ -1327,7 +1316,7 @@ wxString MameFrame::GetListItemText(long item, long column) const
 void MameFrame::UpdateEmulationSession()
 {
 	// is the emulation session active?
-	bool is_active = IsEmulationSessionActive();
+	bool is_active = m_state.has_value();
 
 	// if so, hide the machine list UX
 	m_list_view->Show(!is_active);
@@ -1352,7 +1341,7 @@ void MameFrame::UpdateEmulationSession()
 void MameFrame::UpdateTitleBar()
 {
 	wxString title_text = wxTheApp->GetAppName();
-	if (IsEmulationSessionActive())
+	if (m_state.has_value())
 	{
 		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->GetMachine().description();
 
@@ -1370,7 +1359,7 @@ void MameFrame::UpdateTitleBar()
 
 void MameFrame::UpdateMenuBar()
 {
-	bool menu_bar_shown = !IsEmulationSessionActive() || m_prefs.GetMenuBarShown();
+	bool menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
 
 	// when we hide the menu bar, we disable the accelerators
 	m_menu_bar->SetAcceleratorTable(menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
@@ -1493,7 +1482,7 @@ void MameFrame::Issue(const char *command)
 void MameFrame::InvokePing()
 {
 	// only issue a ping if there is an active session, and there is no ping in flight
-	if (!m_pinging && IsEmulationSessionActive())
+	if (!m_pinging && m_state.has_value())
 	{
 		m_pinging = true;
 		Issue("ping");
@@ -1588,7 +1577,7 @@ MameFrame::Pauser::Pauser(MameFrame &host, bool actually_pause)
 	, m_last_pauser(host.m_current_pauser)
 {
 	// if we're running and not pause, pause while the message box is up
-	m_is_running = actually_pause && m_host.IsEmulationSessionActive() && !m_host.m_state->paused().get();
+	m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
 	if (m_is_running)
 		m_host.ChangePaused(true);
 
