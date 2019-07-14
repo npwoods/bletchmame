@@ -994,6 +994,7 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 	m_client.Reset();
 	m_state.reset();
     UpdateEmulationSession();
+	UpdateStatusBar();
 
 	// report any errors
 	if (!payload.m_error_message.IsEmpty())
@@ -1400,8 +1401,12 @@ void MameFrame::UpdateStatusBar()
 	}
 
 	// and specify it
-	for (int i = 0; i < (int)status_text.size(); i++)
-		SetStatusText(status_text[i], i);
+	wxStatusBar *status_bar = GetStatusBar();
+	for (int i = 0; i < status_bar->GetFieldsCount(); i++)
+	{
+		const wxString &text = i < (int)status_text.size() ? status_text[i] : std::reference_wrapper<const wxString>(util::g_empty_string);
+		SetStatusText(text, i);
+	}
 }
 
 

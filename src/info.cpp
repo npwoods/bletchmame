@@ -17,9 +17,6 @@
 //  IMPLEMENTATION
 //**************************************************************************
 
-const wxString info::database::s_empty_string;
-
-
 //-------------------------------------------------
 //  unaligned_check
 //-------------------------------------------------
@@ -175,7 +172,7 @@ void info::database::reset()
 	m_configuration_settings_count = 0;
 	m_string_table_offset = 0;
 	m_loaded_strings.clear();
-	m_version = &s_empty_string;
+	m_version = &util::g_empty_string;
 	on_changed();
 }
 

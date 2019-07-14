@@ -10,6 +10,7 @@
 #include <wx/textctrl.h>
 #include <wx/stattext.h>
 #include <wx/sizer.h>
+#include <wx/filename.h>
 #include <wx/combobox.h>
 #include <wx/button.h>
 #include <wx/statbox.h>
@@ -23,7 +24,7 @@
 #include "prefs.h"
 #include "utility.h"
 #include "virtuallistview.h"
-#include <wx/filename.h>
+#include "validity.h"
 
 
 //**************************************************************************
@@ -38,6 +39,7 @@ namespace
 		PathsDialog(wxWindow &parent, Preferences &prefs);
 
 		void Persist();
+		static void ValidityChecks();
 
 	private:
 		enum
@@ -65,6 +67,7 @@ namespace
 		void RefreshListView();
 		void CurrentPathListChanged();
 		bool IsMultiPath() const;
+		static bool IsMultiPath(Preferences::path_type path_type);
 		bool IsSelectingPath() const;
 		Preferences::path_type GetCurrentPath() const;
 		bool BrowseForPath();
@@ -416,6 +419,13 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 	result[(size_t)Preferences::path_type::samples]			= "Samples";
 	result[(size_t)Preferences::path_type::config]			= "Config Files";
 	result[(size_t)Preferences::path_type::nvram]			= "NVRAM Files";
+	result[(size_t)Preferences::path_type::hash]			= "Hash Files";
+	result[(size_t)Preferences::path_type::artwork]			= "Artwork Files";
+
+	// check to make sure that all values are specified
+	for (const wxString &str : result)
+		assert(!str.empty());
+
 	return result;
 }
 
@@ -426,8 +436,14 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 
 bool PathsDialog::IsMultiPath() const
 {
+	return IsMultiPath(GetCurrentPath());
+}
+
+
+bool PathsDialog::IsMultiPath(Preferences::path_type path_type)
+{
 	bool result;
-	switch (GetCurrentPath())
+	switch (path_type)
 	{
 	case Preferences::path_type::emu_exectuable:
 	case Preferences::path_type::config:
@@ -437,6 +453,8 @@ bool PathsDialog::IsMultiPath() const
 
 	case Preferences::path_type::roms:
 	case Preferences::path_type::samples:
+	case Preferences::path_type::hash:
+	case Preferences::path_type::artwork:
 		result = true;
 		break;
 
@@ -466,6 +484,19 @@ bool PathsDialog::IsSelectingPath() const
 {
 	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
 	return item < m_current_path_list.size();
+}
+
+
+//-------------------------------------------------
+//  ValidityChecks
+//-------------------------------------------------
+
+void PathsDialog::ValidityChecks()
+{
+	BuildComboBoxStrings();
+
+	for (int i = 0; i < (int)Preferences::path_type::count; i++)
+		IsMultiPath(static_cast<Preferences::path_type>(i));
 }
 
 
@@ -506,3 +537,13 @@ bool show_paths_dialog(wxWindow &parent, Preferences &prefs)
 	}
 	return result;
 }
+
+
+//-------------------------------------------------
+//  validity_checks
+//-------------------------------------------------
+
+static validity_check validity_checks[] =
+{
+	PathsDialog::ValidityChecks
+};

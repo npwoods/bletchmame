@@ -30,7 +30,9 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 	"roms",
 	"samples",
 	"config",
-	"nvram"
+	"nvram",
+	"hash",
+	"artwork"
 };
 
 
@@ -97,10 +99,9 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &mach
 const wxString &Preferences::GetMachinePath(const wxString &machine_name, machine_path_type path_type) const
 {
 	// find the machine path entry
-	static const wxString empty_string;
 	const MachineInfo *info = GetMachineInfo(machine_name);
 	if (!info)
-		return empty_string;
+		return util::g_empty_string;
 
 	switch (path_type)
 	{
@@ -430,10 +431,10 @@ wxString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 //**************************************************************************
 
 //-------------------------------------------------
-//  test
+//  general
 //-------------------------------------------------
 
-static void test()
+static void general()
 {
 	const char *xml =
 		"<preferences menu_bar_shown=\"1\">"
@@ -471,10 +472,23 @@ static void test()
 
 
 //-------------------------------------------------
+//  path_names
+//-------------------------------------------------
+
+static void path_names()
+{
+	auto iter = std::find(s_path_names.begin(), s_path_names.end(), nullptr);
+	assert(iter == s_path_names.end());
+	(void)iter;
+}
+
+
+//-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
 
 static validity_check validity_checks[] =
 {
-	test
+	general,
+	path_names
 };

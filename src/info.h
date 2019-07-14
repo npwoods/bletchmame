@@ -16,6 +16,7 @@
 #include <iterator>
 
 #include "bindata.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -204,7 +205,7 @@ namespace info
 			, m_configuration_settings_offset(0)
 			, m_configuration_settings_count(0)
 			, m_string_table_offset(0)
-			, m_version(&s_empty_string)
+			, m_version(&util::g_empty_string)
 		{
 		}
 
@@ -237,9 +238,6 @@ namespace info
 		mutable std::unordered_map<std::uint32_t, wxString>	m_loaded_strings;
 		const wxString *									m_version;
 		std::function<void()>								m_on_changed;
-
-		// statics
-		static const wxString								s_empty_string;
 
 		// private functions
 		void on_changed();

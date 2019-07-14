@@ -27,6 +27,8 @@ public:
 		samples,
 		config,
 		nvram,
+		hash,
+		artwork,
 
 		count
 	};
