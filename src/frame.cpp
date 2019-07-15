@@ -940,6 +940,13 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> ch
 void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 {
 	VersionResult &payload(event.Payload());
+
+	if (!payload.m_version.empty() && !payload.m_version.EndsWith("-worker-ui)"))
+	{
+		MessageBox("BletchMAME only works with worker-ui builds of MAME");
+		payload.m_version.clear();
+	}
+
 	m_mame_version = std::move(payload.m_version);
 	m_client.Reset();
 }
