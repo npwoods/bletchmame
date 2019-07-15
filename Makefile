@@ -21,6 +21,7 @@ BIN				= bin/mingw_win64/$(BUILD)
 OBJ				= obj/mingw_win64/$(BUILD)
 WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
+CFLAGS			+= -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -std=c++17 -DWIN32 
 
 ifndef WXWIDGETS_DIR
 WXWIDGETS_DIR=lib/wxWidgets
@@ -57,7 +58,10 @@ ifndef DEBUG
 endif
 
 $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
-	g++ -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib $(CFLAGS) -std=c++17 -DWIN32 -c -o $@ $<
+	g++ $(CFLAGS) -c -o $@ $<
+
+$(OBJ)/%.s:	src/%.cpp Makefile $(OBJ)/dir.txt
+	g++ $(CFLAGS) -S -o $@ $<
 
 $(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
