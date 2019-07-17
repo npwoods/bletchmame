@@ -29,6 +29,7 @@ public:
 		nvram,
 		hash,
 		artwork,
+		plugins,
 
 		count
 	};

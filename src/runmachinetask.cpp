@@ -98,6 +98,8 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		prefs.GetPath(Preferences::path_type::hash),
 		"-artpath",
 		prefs.GetPath(Preferences::path_type::artwork),
+		"-pluginspath",
+		prefs.GetPath(Preferences::path_type::plugins),
 		"-window",
 		"-keyboardprovider",
 		"dinput",

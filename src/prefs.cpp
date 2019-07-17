@@ -32,7 +32,8 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 	"config",
 	"nvram",
 	"hash",
-	"artwork"
+	"artwork",
+	"plugins"
 };
 
 
