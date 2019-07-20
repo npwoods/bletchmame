@@ -148,9 +148,9 @@ void ImagesDialog::UpdateImageGrid()
 			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
-			bool is_createable = images[i].m_is_createable;
+			bool is_creatable = images[i].m_is_creatable;
 			bool is_unloadable = !images[i].m_file_name.empty();
-			Bind(wxEVT_BUTTON, [this, image_button, tag{images[i].m_tag}, is_createable, is_unloadable](auto &) { ImageMenu(*image_button, tag, is_createable, is_unloadable); }, image_button->GetId());
+			Bind(wxEVT_BUTTON, [this, image_button, tag{images[i].m_tag}, is_creatable, is_unloadable](auto &) { ImageMenu(*image_button, tag, is_creatable, is_unloadable); }, image_button->GetId());
 		}
 		else
 		{
@@ -207,12 +207,12 @@ TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
 //  ImageMenu
 //-------------------------------------------------
 
-bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable)
+bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool is_creatable, bool is_unloadable)
 {
 	wxMenu popup_menu;
 
 	// setup popup menu
-	if (is_createable)
+	if (is_creatable)
 		AppendToPopupMenu(popup_menu, ID_CREATE_IMAGE, "Create...");
 	AppendToPopupMenu(popup_menu, ID_LOAD_IMAGE, "Load...");
 	AppendToPopupMenu(popup_menu, ID_UNLOAD_IMAGE, "Unload");

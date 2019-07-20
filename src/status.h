@@ -52,7 +52,7 @@ namespace status
 		wxString			m_instance_name;
 		bool				m_is_readable;
 		bool				m_is_writeable;
-		bool				m_is_createable;
+		bool				m_is_creatable;
 		bool				m_must_be_loaded;
 		wxString			m_file_name;
 		wxString			m_display;

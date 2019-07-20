@@ -943,7 +943,7 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 
 	if (!payload.m_version.empty() && !payload.m_version.EndsWith("-worker-ui)"))
 	{
-		MessageBox("BletchMAME only works with worker-ui builds of MAME");
+		MessageBox("BletchMAME only works with worker-ui builds of MAME: " + payload.m_version);
 		payload.m_version.clear();
 	}
 

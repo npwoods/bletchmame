@@ -63,7 +63,7 @@ bool status::image::operator==(const status::image &that) const
 		&& m_instance_name == that.m_instance_name
 		&& m_is_readable == that.m_is_readable
 		&& m_is_writeable == that.m_is_writeable
-		&& m_is_createable == that.m_is_createable
+		&& m_is_creatable == that.m_is_creatable
 		&& m_must_be_loaded == that.m_must_be_loaded
 		&& m_file_name == that.m_file_name
 		&& m_display == that.m_display;
@@ -169,7 +169,7 @@ status::update status::update::read(wxTextInputStream &input_stream)
 		attributes.Get("instance_name",		image.m_instance_name);
 		attributes.Get("is_readable",		image.m_is_readable, false);
 		attributes.Get("is_writeable",		image.m_is_writeable, false);
-		attributes.Get("is_createable",		image.m_is_createable, false);
+		attributes.Get("is_creatable",		image.m_is_creatable, false);
 		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
 		attributes.Get("filename",			image.m_file_name);
 		attributes.Get("display",			image.m_display);
