@@ -54,6 +54,32 @@ static const util::enum_parser<status::input_seq::type> s_inputseq_type_parser =
 //**************************************************************************
 
 //-------------------------------------------------
+//  comparer
+//-------------------------------------------------
+
+namespace
+{
+	struct comparer
+	{
+		bool operator()(const status::image &x, const status::image &y)
+		{
+			return x.m_tag < y.m_tag;
+		}
+
+		bool operator()(const status::input &x, const status::input &y)
+		{
+			if (x.m_port_tag < y.m_port_tag)
+				return true;
+			else if (x.m_port_tag > y.m_port_tag)
+				return false;
+			else
+				return x.m_mask < y.m_mask;
+		}
+	};
+};
+
+
+//-------------------------------------------------
 //  image::operator==
 //-------------------------------------------------
 
@@ -218,7 +244,13 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	if (!result.m_success)
 		result.m_parse_error = xml.ErrorMessage();
 
-	// and return it
+	// sort the results
+	if (result.m_images)
+		std::sort(result.m_images.value().begin(), result.m_images.value().end(), comparer());
+	if (result.m_inputs)
+		std::sort(result.m_inputs.value().begin(), result.m_inputs.value().end(), comparer());
+
+	// and return them
 	return result;
 }
 

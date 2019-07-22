@@ -57,6 +57,7 @@ namespace status
 		wxString			m_file_name;
 		wxString			m_display;
 
+		image &operator=(image &&that) = default;
 		bool operator==(const image &that) const;
 	};
 
@@ -113,6 +114,7 @@ namespace status
 		ioport_value			m_value;
 		std::vector<input_seq>	m_seqs;
 
+		input &operator=(input &&that) = default;
 		bool operator==(const input &that) const;
 	};
 
