@@ -15,7 +15,6 @@
 
 #include <fstream>
 #include <functional>
-#include <string_view>
 
 #include "prefs.h"
 #include "utility.h"
