@@ -1,0 +1,10 @@
+{
+  "plugin": {
+	"name": "worker_ui",
+	"description": "Worker UI (BletchMAME) support",
+	"version": "1.0.0",
+	"author": "npwoods@mess.org",
+	"type": "plugin",
+	"start": "false"
+  }
+}
