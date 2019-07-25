@@ -5,8 +5,7 @@ script:
   - dir "c:\Program Files (x86)"
   - dir "c:\Program Files (x86)\WiX Toolset v3.10\bin\candle.exe"
   - dir "c:\Program Files (x86)\WiX Toolset v3.10\bin\light.exe"
-  - cmd /c "c:\\Program Files (x86)\\WiX Toolset v3.10\\bin\\candle.exe -help"
-  - cmd /c "c:\\Program Files (x86)\\WiX Toolset v3.10\\bin\\light.exe -help"
+  - cmd /c ".\make-msi-wix310.bat"
   - choco install wxWidgets --version 3.1.2
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
