@@ -1,8 +1,8 @@
 language: cpp
 os: windows
 script:
+  - choco install wixtoolset -y
   - choco install wxWidgets --version 3.1.2
-  - choco install wixtoolset  
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
   - mingw32-make WXWIDGETS_DIR=C:/wxWidgets-3.1.2 -j 8
