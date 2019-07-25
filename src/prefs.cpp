@@ -11,8 +11,11 @@
 #include <wx/wfstream.h>
 #include <wx/mstream.h>
 #include <wx/dir.h>
+#include <wx/utils.h> 
+
 #include <fstream>
 #include <functional>
+#include <string_view>
 
 #include "prefs.h"
 #include "utility.h"
@@ -50,6 +53,9 @@ static std::array<const char *, Preferences::COLUMN_COUNT> s_column_ids =
 //  IMPLEMENTATION
 //**************************************************************************
 
+static wxString GetDefaultPluginsDirectory();
+
+
 //-------------------------------------------------
 //  ValidateDimension
 //-------------------------------------------------
@@ -75,6 +81,7 @@ Preferences::Preferences()
 		SetColumnOrder(i, i);
 	SetPath(path_type::config, GetConfigDirectory(true));
 	SetPath(path_type::nvram, GetConfigDirectory(true));
+	SetPath(path_type::plugins, GetDefaultPluginsDirectory());
 
     Load();
 }
@@ -371,6 +378,86 @@ void Preferences::Save(std::ostream &output)
 
 
 //-------------------------------------------------
+//  InternalApplySubstitutions
+//-------------------------------------------------
+
+template<typename TStr, typename TFunc>
+static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
+{
+	wxString result;
+	result.reserve(src.size() + 100);
+
+	enum class parse_state
+	{
+		NORMAL,
+		AFTER_DOLLAR_SIGN,
+		IN_VARIABLE_NAME
+	};
+	parse_state state = parse_state::NORMAL;
+	typename TStr::const_iterator var_begin_iter = src.cbegin();
+
+	for (typename TStr::const_iterator iter = src.cbegin(); iter < src.cend(); iter++)
+	{
+		wchar_t ch = *iter;
+		switch (ch)
+		{
+		case '$':
+			if (state == parse_state::NORMAL)
+				state = parse_state::AFTER_DOLLAR_SIGN;
+			break;
+
+		case '(':
+			if (state == parse_state::AFTER_DOLLAR_SIGN)
+			{
+				state = parse_state::IN_VARIABLE_NAME;
+				var_begin_iter = iter + 1;
+			}
+			break;
+
+		case ')':
+			{
+				wxString var_name(var_begin_iter, iter);
+				TStr var_value = func(var_name);
+				result += var_value;
+				state = parse_state::NORMAL;
+			}
+			break;
+
+		default:
+			if (state == parse_state::NORMAL)
+				result += *iter;
+		}
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  ApplySubstitutions
+//-------------------------------------------------
+
+wxString Preferences::ApplySubstitutions(const wxString &path) const
+{
+
+	return InternalApplySubstitutions(path, [this](const wxString &var_name)
+	{
+		wxString result;
+		if (var_name == wxT("MAMEPATH"))
+		{
+			const wxString &path = GetPath(Preferences::path_type::emu_exectuable);
+			wxFileName::SplitPath(path, &result, nullptr, nullptr);
+		}
+		else if (var_name == wxT("BLETCHMAMEPATH"))
+		{
+			wxFileName filename(wxStandardPaths::Get().GetExecutablePath());
+			wxFileName::SplitPath(filename.GetPath(), &result, nullptr, nullptr);
+		}
+		return result;
+	});
+}
+
+
+//-------------------------------------------------
 //  GetMameXmlDatabasePath
 //-------------------------------------------------
 
@@ -424,6 +511,20 @@ wxString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 		wxDir::Make(directory);
 
 	return directory;
+}
+
+
+//-------------------------------------------------
+//  GetDefaultPluginsDirectory
+//-------------------------------------------------
+
+static wxString GetDefaultPluginsDirectory()
+{
+	wxString path_separator(wxFileName::GetPathSeparator());
+	wxString plugins(wxT("plugins"));
+
+	return wxString("$(BLETCHMAMEPATH)") + path_separator + plugins
+		+ wxString(";") + wxString("$(MAMEPATH)") + path_separator + plugins;
 }
 
 

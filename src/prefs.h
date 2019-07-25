@@ -50,6 +50,8 @@ public:
 
 	const wxString &GetPath(path_type type) const			{ return m_paths[static_cast<size_t>(type)]; }
 	void SetPath(path_type type, wxString &&path)			{ m_paths[static_cast<size_t>(type)] = std::move(path); }
+	
+	wxString GetPathWithSubstitutions(path_type type) const { assert(type != path_type::emu_exectuable); return ApplySubstitutions(GetPath(type)); }
 
 	const wxString &GetMameExtraArguments() const			{ return m_mame_extra_arguments; }
 	void SetMameExtraArguments(wxString &&extra_arguments)	{ m_mame_extra_arguments = std::move(extra_arguments); }
@@ -81,6 +83,7 @@ public:
 	const std::vector<wxString> &GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type) const;
 
 	wxString GetMameXmlDatabasePath(bool ensure_directory_exists = true) const;
+	wxString ApplySubstitutions(const wxString &path) const;
 
 	static wxString GetConfigDirectory(bool ensure_directory_exists = false);
 

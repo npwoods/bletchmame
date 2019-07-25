@@ -377,14 +377,24 @@ void PathsDialog::UpdateCurrentPathList()
 
 void PathsDialog::RefreshListView()
 {
+	// basic info about the type of path we are
+	const bool is_emu_executable = GetCurrentPath() == Preferences::path_type::emu_exectuable;
+	const bool expect_dir = !is_emu_executable;
+
 	// recalculate m_current_path_valid_list
 	m_current_path_valid_list.resize(m_current_path_list.size());
-	bool expect_dir = GetCurrentPath() != Preferences::path_type::emu_exectuable;
 	for (size_t i = 0; i < m_current_path_list.size(); i++)
 	{
+		// apply substitutions (e.g. - $(MAMEPATH) with actual MAME path), unless this is the executable of course
+		wxString current_path_buffer;
+		const wxString &current_path = !is_emu_executable
+			? (current_path_buffer = m_prefs.ApplySubstitutions(m_current_path_list[i]), current_path_buffer)
+			: m_current_path_list[i];
+
+		// and perform the check
 		m_current_path_valid_list[i] = expect_dir
-			? wxDir::Exists(m_current_path_list[i])
-			: wxFile::Exists(m_current_path_list[i]);
+			? wxDir::Exists(current_path)
+			: wxFile::Exists(current_path);
 	}
 
 	// update the item count and refresh all items
