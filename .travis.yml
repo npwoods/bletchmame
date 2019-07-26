@@ -9,7 +9,6 @@ script:
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/candle -v bletchmame.wxs -out bletchmame.wixobj
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
   - mkdir rel
-  - dir
   - mv BletchMAME.msi rel
 
 cache:
