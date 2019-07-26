@@ -942,6 +942,12 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 {
 	VersionResult &payload(event.Payload());
 	m_mame_version = std::move(payload.m_version);
+
+	// warn the user if this is not a worker-ui compatible build of MAME; looking forward
+	// to this going away
+	if (!payload.m_version.empty() && !payload.m_version.EndsWith("-worker-ui)"))
+		MessageBox("This does not appear to be a worker-ui build of MAME; BletchMAME may not function correctly");
+
 	m_client.Reset();
 }
 
