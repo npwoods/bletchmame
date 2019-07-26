@@ -449,7 +449,7 @@ wxString Preferences::ApplySubstitutions(const wxString &path) const
 		else if (var_name == wxT("BLETCHMAMEPATH"))
 		{
 			wxFileName filename(wxStandardPaths::Get().GetExecutablePath());
-			wxFileName::SplitPath(filename.GetPath(), &result, nullptr, nullptr);
+			result = filename.GetPath();
 		}
 		return result;
 	});
