@@ -175,10 +175,11 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	});
 	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("frameskip",			result.m_frameskip);
-		attributes.Get("speed_text",		result.m_speed_text);
-		attributes.Get("throttled",			result.m_throttled);
-		attributes.Get("throttle_rate",		result.m_throttle_rate);
+		attributes.Get("speed_percent",			result.m_speed_percent);
+		attributes.Get("frameskip",				result.m_frameskip);
+		attributes.Get("effective_frameskip",	result.m_effective_frameskip);
+		attributes.Get("throttled",				result.m_throttled);
+		attributes.Get("throttle_rate",			result.m_throttle_rate);
 	});
 	xml.OnElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -283,17 +284,18 @@ status::state::~state()
 
 void status::state::update(status::update &&that)
 {
-	take(m_phase, that.m_phase);
-	take(m_paused, that.m_paused);
-	take(m_polling_input_seq, that.m_polling_input_seq);
-	take(m_startup_text, that.m_startup_text);
-	take(m_speed_text, that.m_speed_text);
-	take(m_frameskip, that.m_frameskip);
-	take(m_throttled, that.m_throttled);
-	take(m_throttle_rate, that.m_throttle_rate);
-	take(m_sound_attenuation, that.m_sound_attenuation);
-	take(m_images, that.m_images);
-	take(m_inputs, that.m_inputs);
+	take(m_phase,				that.m_phase);
+	take(m_paused,				that.m_paused);
+	take(m_polling_input_seq,	that.m_polling_input_seq);
+	take(m_startup_text,		that.m_startup_text);
+	take(m_speed_percent,		that.m_speed_percent);
+	take(m_frameskip,			that.m_frameskip);
+	take(m_effective_frameskip,	that.m_effective_frameskip);
+	take(m_throttled,			that.m_throttled);
+	take(m_throttle_rate,		that.m_throttle_rate);
+	take(m_sound_attenuation,	that.m_sound_attenuation);
+	take(m_images,				that.m_images);
+	take(m_inputs,				that.m_inputs);
 }
 
 

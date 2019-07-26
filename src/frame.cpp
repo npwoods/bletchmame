@@ -643,11 +643,12 @@ void MameFrame::Run(const info::machine &machine)
 
 	// set up running state and subscribe to events
 	m_state.emplace();
-	m_state->paused().subscribe(		[this]() { UpdateTitleBar(); });
-	m_state->phase().subscribe(			[this]() { UpdateStatusBar(); });
-	m_state->speed_text().subscribe(	[this]() { UpdateStatusBar(); });
-	m_state->startup_text().subscribe(	[this]() { UpdateStatusBar(); });
-	m_state->images().subscribe(		[this]() { UpdateStatusBar(); });
+	m_state->paused().subscribe(				[this]() { UpdateTitleBar(); });
+	m_state->phase().subscribe(					[this]() { UpdateStatusBar(); });
+	m_state->speed_percent().subscribe(			[this]() { UpdateStatusBar(); });
+	m_state->effective_frameskip().subscribe(	[this]() { UpdateStatusBar(); });
+	m_state->startup_text().subscribe(			[this]() { UpdateStatusBar(); });
+	m_state->images().subscribe(				[this]() { UpdateStatusBar(); });
 
 	// we have a session running; hide/show things respectively
 	UpdateEmulationSession();
@@ -1380,6 +1381,8 @@ void MameFrame::UpdateMenuBar()
 
 void MameFrame::UpdateStatusBar()
 {
+	wxString speed_text;
+
 	// prepare a vector with the status text
 	std::vector<std::reference_wrapper<const wxString>> status_text;
 	
@@ -1388,9 +1391,17 @@ void MameFrame::UpdateStatusBar()
 	{
 		// first entry depends on whether we are running
 		if (m_state->phase().get() == status::machine_phase::RUNNING)
-			status_text.push_back(m_state->speed_text().get());
+		{
+			speed_text = wxString::Format(
+				m_state->effective_frameskip().get() == 0 ? "%d%%" : "%d%% (frameskip %d/10)",
+				(int) (m_state->speed_percent().get() * 100.0 + 0.5),
+				(int) m_state->effective_frameskip().get());
+			status_text.push_back(speed_text);
+		}
 		else
+		{
 			status_text.push_back(m_state->startup_text().get());
+		}
 
 		// next entries come from device displays
 		for (auto iter = m_state->images().get().cbegin(); iter < m_state->images().get().cend(); iter++)

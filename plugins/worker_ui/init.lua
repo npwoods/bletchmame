@@ -101,18 +101,6 @@ function xml_encode(str)
 	return res
 end
 
-function speed_text()
-	-- show speed percentage first
-	local text = tostring(math.floor(manager:machine():video():speed_percent() * 100 + 0.5)) .. "%"
-
-	-- then show effective frameskip, if more than zero
-	local effective_frameskip = manager:machine():video():effective_frameskip()
-	if effective_frameskip > 0 then
-		text = text .. " (frameskip " .. tostring(effective_frameskip) .. "/10)"
-	end
-	return text
-end
-
 function get_images()
 	local result = {}
 	local i = 1
@@ -189,8 +177,9 @@ function emit_status(light)
 
 	-- <video> (video_manager)
 	print("\t<video");
-	print("\t\tspeed_text=\"" .. speed_text() .. "\"");
+	print("\t\tspeed_percent=\"" .. tostring(manager:machine():video():speed_percent()) .. "\"");
 	print("\t\tframeskip=\"" .. tostring(manager:machine():video().frameskip) .. "\"");
+	print("\t\teffective_frameskip=\"" .. tostring(manager:machine():video():effective_frameskip()) .. "\"");
 	print("\t\tthrottled=\"" .. tostring(manager:machine():video().throttled) .. "\"");
 	print("\t\tthrottle_rate=\"" .. tostring(manager:machine():video().throttle_rate) .. "\"");
 	print("\t/>");
