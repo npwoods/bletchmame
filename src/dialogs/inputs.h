@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlginputs.h
+    dialogs/inputs.h
 
     Input customization dialog
 
@@ -8,8 +8,8 @@
 
 #pragma once
 
-#ifndef DLGINPUTS_H
-#define DLGINPUTS_H
+#ifndef DIALOGS_INPUTS_H
+#define DIALOGS_INPUTS_H
 
 #include <vector>
 #include <observable/observable.hpp>
@@ -30,4 +30,4 @@ public:
 
 bool show_inputs_dialog(wxWindow &parent, const wxString &title, IInputsHost &host, status::input::input_class input_class);
 
-#endif // DLGINPUTS_H
+#endif // DIALOGS_INPUTS_H

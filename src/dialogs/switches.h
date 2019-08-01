@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgswitches.h
+    dialogs/switches.h
 
     Configuration & DIP Switches customization dialog
 
@@ -8,8 +8,8 @@
 
 #pragma once
 
-#ifndef DLGSWITCHES_H
-#define DLGSWITCHES_H
+#ifndef DIALOGS_SWITCHES_H
+#define DIALOGS_SWITCHES_H
 
 #include <vector>
 
@@ -31,4 +31,4 @@ public:
 
 bool show_switches_dialog(wxWindow &parent, const wxString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine);
 
-#endif // DLGSWITCHES_H
+#endif // DIALOGS_SWITCHES_H

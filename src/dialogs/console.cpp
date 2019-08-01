@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgconsole.cpp
+    dialogs/console.cpp
 
     Arbitrary command console dialog (essentially a development feature)
 
@@ -12,7 +12,7 @@
 #include <wx/sizer.h>
 #include <wx/checkbox.h>
 
-#include "dlgconsole.h"
+#include "dialogs/console.h"
 #include "runmachinetask.h"
 
 

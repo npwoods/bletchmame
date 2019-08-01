@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgpaths.cpp
+    dialogs/paths.cpp
 
     Paths dialog
 
@@ -20,7 +20,7 @@
 #include <wx/dir.h>
 #include <wx/dirdlg.h>
 
-#include "dlgpaths.h"
+#include "dialogs/paths.h"
 #include "prefs.h"
 #include "utility.h"
 #include "virtuallistview.h"

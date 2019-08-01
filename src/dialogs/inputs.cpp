@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlginputs.cpp
+    dialogs/inputs.cpp
 
     Input customization dialog
 
@@ -12,7 +12,7 @@
 #include <wx/scrolwin.h>
 #include <wx/button.h>
 
-#include "dlginputs.h"
+#include "dialogs/inputs.h"
 #include "runmachinetask.h"
 
 

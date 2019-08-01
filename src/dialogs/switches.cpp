@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgswitches.h
+    dialogs/switches.h
 
     Configuration & DIP Switches customization dialog
 
@@ -13,7 +13,7 @@
 #include <wx/scrolwin.h>
 #include <wx/button.h>
 
-#include "dlgswitches.h"
+#include "dialogs/switches.h"
 #include "runmachinetask.h"
 
 

@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgconsole.h
+    dialogs/console.h
 
     Arbitrary command invocation dialog (essentially a development feature)
 
@@ -8,8 +8,8 @@
 
 #pragma once
 
-#ifndef DLGCONSOLE_H
-#define DLGCONSOLE_H
+#ifndef DIALOGS_CONSOLE_H
+#define DIALOGS_CONSOLE_H
 
 #include <wx/window.h>
 #include "client.h"
@@ -24,4 +24,4 @@ public:
 
 bool show_console_dialog(wxWindow &parent, MameClient &client, IConsoleDialogHost &host);
 
-#endif // DLGCONSOLE_H
+#endif // DIALOGS_CONSOLE_H

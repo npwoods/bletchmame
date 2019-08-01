@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgpaths.h
+    dialogs/paths.h
 
     Paths dialog
 
@@ -8,12 +8,12 @@
 
 #pragma once
 
-#ifndef DLGPATHS_H
-#define DLGPATHS_H
+#ifndef DIALOGS_PATHS_H
+#define DIALOGS_PATHS_H
 
 #include "prefs.h"
 
 bool show_paths_dialog(wxWindow &parent, Preferences &prefs);
 wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_type type, const wxString &default_path);
 
-#endif // DLGPATHS_H
+#endif // DIALOGS_PATHS_H

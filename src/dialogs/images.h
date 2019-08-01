@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgimages.h
+    dialogs/images.h
 
     Images (File Manager) dialog
 
@@ -8,8 +8,8 @@
 
 #pragma once
 
-#ifndef DLGIMAGES_H
-#define DLGIMAGES_H
+#ifndef DIALOGS_IMAGES_H
+#define DIALOGS_IMAGES_H
 
 #include <vector>
 #include <memory>
@@ -39,4 +39,4 @@ public:
 void show_images_dialog(IImagesHost &host);
 bool show_images_dialog_cancellable(IImagesHost &host);
 
-#endif // DLGIMAGES_H
+#endif // DIALOGS_IMAGES_H

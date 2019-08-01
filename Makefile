@@ -21,7 +21,7 @@ BIN				= bin/mingw_win64/$(BUILD)
 OBJ				= obj/mingw_win64/$(BUILD)
 WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
-CFLAGS			+= -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -std=c++17 -DWIN32 
+CFLAGS			+= -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -I./src -std=c++17 -DWIN32 
 
 ifndef WXWIDGETS_DIR
 WXWIDGETS_DIR=lib/wxWidgets
@@ -30,12 +30,12 @@ endif
 OBJECTFILES=\
 	$(OBJ)/app.o				\
 	$(OBJ)/client.o				\
-	$(OBJ)/dlgconsole.o			\
-	$(OBJ)/dlgimages.o			\
-	$(OBJ)/dlginputs.o			\
-	$(OBJ)/dlgloading.o			\
-	$(OBJ)/dlgpaths.o			\
-	$(OBJ)/dlgswitches.o		\
+	$(OBJ)/dialogs/console.o	\
+	$(OBJ)/dialogs/images.o		\
+	$(OBJ)/dialogs/inputs.o		\
+	$(OBJ)/dialogs/loading.o	\
+	$(OBJ)/dialogs/paths.o		\
+	$(OBJ)/dialogs/switches.o	\
 	$(OBJ)/frame.o				\
 	$(OBJ)/info.o				\
 	$(OBJ)/job.o				\
@@ -60,10 +60,16 @@ endif
 $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
 	g++ $(CFLAGS) -c -o $@ $<
 
-$(OBJ)/%.s:	src/%.cpp Makefile $(OBJ)/dir.txt
+$(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile $(OBJ)/dialogs/dir.txt
+	g++ $(CFLAGS) -c -o $@ $<
+
+$(OBJ)/%.s:	src/%.cpp Makefile $(@D)/dir.txt
 	g++ $(CFLAGS) -S -o $@ $<
 
-$(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
+$(OBJ)/dialogs/%.s:	src/dialogs/%.cpp Makefile $(OBJ)/dialogs/dir.txt
+	g++ $(CFLAGS) -S -o $@ $<
+
+$(OBJ)/%.res.o:	src/%.rc Makefile $(@D)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
 %/dir.txt:

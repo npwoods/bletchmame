@@ -1,6 +1,6 @@
 /***************************************************************************
 
-	dlgloading.h
+	dialogs/loading.cpp
 
 	"loading MAME Info..." modal dialog
 
@@ -13,7 +13,7 @@
 #include <wx/stattext.h>
 #include <wx/timer.h>
 
-#include "dlgloading.h"
+#include "dialogs/loading.h"
 
 
 //**************************************************************************

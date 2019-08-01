@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dlgimages.cpp
+    dialogs/images.cpp
 
     Devices dialog
 
@@ -15,7 +15,7 @@
 #include <wx/menu.h>
 #include <wx/filedlg.h>
 
-#include "dlgimages.h"
+#include "dialogs/images.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "utility.h"
