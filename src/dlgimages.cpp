@@ -144,9 +144,11 @@ void ImagesDialog::UpdateImageGrid()
 		if (m_grid_sizer->GetRows() <= i)
 		{
 			// we do - add controls
-			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_tag);
+			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_instance_name);
 			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
+
+			static_text->SetToolTip(images[i].m_tag);
 
 			bool is_creatable = images[i].m_is_creatable;
 			bool is_unloadable = !images[i].m_file_name.empty();
