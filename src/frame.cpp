@@ -42,7 +42,10 @@ enum
 {
 	// user IDs
 	ID_PING_TIMER				= wxID_HIGHEST + 1,
-	ID_LAST
+	ID_LAST,
+
+	// styles (we want to show the menu bar at full size)
+	FULL_SCREEN_STYLE			= wxFULLSCREEN_NOTOOLBAR | wxFULLSCREEN_NOSTATUSBAR | wxFULLSCREEN_NOBORDER | wxFULLSCREEN_NOCAPTION
 };
 
 
@@ -371,6 +374,7 @@ void MameFrame::CreateMenuBar()
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
 	wxMenuItem *images_menu_item				= options_menu->Append(id++, "Images...");
+	wxMenuItem *full_screen_menu_item			= options_menu->Append(id++, "Full Screen\tF11", wxEmptyString, wxITEM_CHECK);
 	wxMenuItem *sound_menu_item					= options_menu->Append(id++, "Sound", wxEmptyString, wxITEM_CHECK);
 	options_menu->AppendSeparator();
 	wxMenuItem *console_menu_item				= options_menu->Append(id++, "Console...");
@@ -418,6 +422,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);													}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_state->throttled());									}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { ShowFullScreen(!IsFullScreen(), FULL_SCREEN_STYLE);						}, full_screen_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeSound(!IsSoundEnabled());											}, sound_menu_item->GetId());
 	
 	Bind(wxEVT_MENU, [this](auto &) { show_console_dialog(*this, m_client, *this);								}, console_menu_item->GetId());
@@ -442,6 +447,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_state && !m_state->throttled());													}, warp_mode_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && !m_state->images().get().empty());									}, images_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Check(IsFullScreen());																				}, full_screen_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());																	}, sound_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, console_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::CONTROLLER));	}, show_input_controllers_dialog_menu_item->GetId());
