@@ -22,6 +22,7 @@ OBJ				= obj/mingw_win64/$(BUILD)
 WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
 CFLAGS			+= -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -I./src -std=c++17 -DWIN32 
+MKDIR_RULE		= @sh -c "mkdir -p $(@D)"
 
 ifndef WXWIDGETS_DIR
 WXWIDGETS_DIR=lib/wxWidgets
@@ -51,14 +52,15 @@ OBJECTFILES=\
 	$(OBJ)/xmlparser.o			\
 	$(OBJ)/bletchmame.res.o		\
 
-$(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile $(BIN)/dir.txt
+$(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile
+	$(MKDIR_RULE)
 	g++ -static -static-libgcc -static-libstdc++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -mwindows -o $@
 ifndef DEBUG
 	strip $@
 endif
 
 $(OBJ)/%.o:	src/%.cpp Makefile
-	sh -c "mkdir -p $(@D)"
+	$(MKDIR_RULE)
 	g++ $(CFLAGS) -c -o $@ $<
 
 $(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile
@@ -66,15 +68,15 @@ $(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile
 	g++ $(CFLAGS) -c -o $@ $<
 
 $(OBJ)/%.s:	src/%.cpp Makefile
-	sh -c "mkdir -p $(@D)"
+	$(MKDIR_RULE)
 	g++ $(CFLAGS) -S -o $@ $<
 
 $(OBJ)/dialogs/%.s:	src/dialogs/%.cpp Makefile
-	sh -c "mkdir -p $(@D)"
+	$(MKDIR_RULE)
 	g++ $(CFLAGS) -S -o $@ $<
 
 $(OBJ)/%.res.o:	src/%.rc Makefile
-	sh -c "mkdir -p $(@D)"
+	$(MKDIR_RULE)
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
 clean:
