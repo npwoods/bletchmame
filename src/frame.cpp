@@ -138,7 +138,7 @@ namespace
 		MameClient								m_client;
 		Preferences							    m_prefs;
 		wxTextCtrl *							m_search_box;
-		VirtualListView *					    m_list_view;
+		VirtualListView *					    m_machine_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
 		wxTimer									m_ping_timer;
@@ -250,7 +250,7 @@ MameFrame::MameFrame()
 	: wxFrame(nullptr, wxID_ANY, wxTheApp->GetAppName())
 	, m_client(*this, m_prefs)
 	, m_search_box(nullptr)
-	, m_list_view(nullptr)
+	, m_machine_view(nullptr)
 	, m_menu_bar(nullptr)
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
@@ -280,14 +280,14 @@ MameFrame::MameFrame()
 	m_search_box->SetValue(m_prefs.GetSearchBoxText());
 		
 	// create a list view
-	m_list_view = &AddControl<VirtualListView>(sizer, 1, wxALL | wxEXPAND, id++);
-	m_list_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(item, column); });
-	m_list_view->ClearAll();
-	m_list_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
-	m_list_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
-	m_list_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
-	m_list_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
-	m_list_view->SetColumnsOrder(m_prefs.GetColumnOrder());
+	m_machine_view = &AddControl<VirtualListView>(sizer, 1, wxALL | wxEXPAND, id++);
+	m_machine_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(item, column); });
+	m_machine_view->ClearAll();
+	m_machine_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
+	m_machine_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
+	m_machine_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
+	m_machine_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
+	m_machine_view->SetColumnsOrder(m_prefs.GetColumnOrder());
 	UpdateMachineList();
 	m_info_db.set_on_changed([this]() { UpdateMachineList(); });
 
@@ -756,7 +756,7 @@ void MameFrame::OnClose(wxCloseEvent &event)
 
 	for (int i = 0; i < Preferences::COLUMN_COUNT; i++)
 	{
-		int order = m_list_view->GetColumnOrder(i);
+		int order = m_machine_view->GetColumnOrder(i);
 		m_prefs.SetColumnOrder(i, order);
 	}
 	Destroy();
@@ -1223,7 +1223,7 @@ void MameFrame::OnListItemActivated(wxListEvent &evt)
 void MameFrame::OnListColumnResized(wxListEvent &evt)
 {
 	int column_index = evt.GetColumn();
-	int column_width = m_list_view->GetColumnWidth(column_index);
+	int column_width = m_machine_view->GetColumnWidth(column_index);
 	m_prefs.SetColumnWidth(column_index, column_width);
 }
 
@@ -1260,8 +1260,8 @@ void MameFrame::UpdateMachineList()
 	}
 
 	// set the list view size
-	m_list_view->SetItemCount(m_machine_list_indirections.size());
-	m_list_view->RefreshItems(0, m_machine_list_indirections.size() - 1);
+	m_machine_view->SetItemCount(m_machine_list_indirections.size());
+	m_machine_view->RefreshItems(0, m_machine_list_indirections.size() - 1);
 
 	// find the currently selected machine
 	auto iter = std::find_if(m_machine_list_indirections.begin(), m_machine_list_indirections.end(), [this](int index)
@@ -1273,8 +1273,8 @@ void MameFrame::UpdateMachineList()
 	if (iter < m_machine_list_indirections.end())
 	{
 		long selected_index = iter - m_machine_list_indirections.begin();
-		m_list_view->Select(selected_index);
-		m_list_view->EnsureVisible(selected_index);
+		m_machine_view->Select(selected_index);
+		m_machine_view->EnsureVisible(selected_index);
 	}
 }
 
@@ -1333,7 +1333,7 @@ void MameFrame::UpdateEmulationSession()
 	bool is_active = m_state.has_value();
 
 	// if so, hide the machine list UX
-	m_list_view->Show(!is_active);
+	m_machine_view->Show(!is_active);
 	m_search_box->Show(!is_active);
 
 	// ...and enable pinging
