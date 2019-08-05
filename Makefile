@@ -57,28 +57,25 @@ ifndef DEBUG
 	strip $@
 endif
 
-$(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
+$(OBJ)/%.o:	src/%.cpp Makefile
+	sh -c "mkdir -p $(@D)"
 	g++ $(CFLAGS) -c -o $@ $<
 
-$(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile $(OBJ)/dialogs/dir.txt
+$(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile
+	sh -c "mkdir -p $(@D)"
 	g++ $(CFLAGS) -c -o $@ $<
 
-$(OBJ)/%.s:	src/%.cpp Makefile $(OBJ)/dir.txt
+$(OBJ)/%.s:	src/%.cpp Makefile
+	sh -c "mkdir -p $(@D)"
 	g++ $(CFLAGS) -S -o $@ $<
 
-$(OBJ)/dialogs/%.s:	src/dialogs/%.cpp Makefile $(OBJ)/dialogs/dir.txt
+$(OBJ)/dialogs/%.s:	src/dialogs/%.cpp Makefile
+	sh -c "mkdir -p $(@D)"
 	g++ $(CFLAGS) -S -o $@ $<
 
-$(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
+$(OBJ)/%.res.o:	src/%.rc Makefile
+	sh -c "mkdir -p $(@D)"
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
-
-$(OBJ)/dir.txt:
-	sh -c "mkdir -p $(@D)"
-	echo Directory Placeholder > $@
-
-$(OBJ)/dialogs/dir.txt:	$(OBJ)/dir.txt
-	sh -c "mkdir -p $(@D)"
-	echo Directory Placeholder > $@
 
 clean:
 	rm -rf obj bin
