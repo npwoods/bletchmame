@@ -106,7 +106,6 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"-attach_window",
 		std::to_string(m_target_window),
 		"-skip_gameinfo",
-		"-skip_mandatory_fileman",
 		"-plugin",
 		"worker_ui" 
 	};

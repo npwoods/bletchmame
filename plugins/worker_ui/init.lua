@@ -600,6 +600,11 @@ function console.startplugin()
 			end
 		end
 	end)
+
+	-- we do not want to use MAME's internal file manager - register a function
+	emu.register_mandatory_file_manager_override(function(instance_name)
+		return true
+	end)
 end
 
 return exports
