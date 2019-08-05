@@ -76,7 +76,7 @@ $(OBJ)/dir.txt:
 	sh -c "mkdir -p $(@D)"
 	echo Directory Placeholder > $@
 
-$(OBJ)/dialogs/dir.txt:
+$(OBJ)/dialogs/dir.txt:	$(OBJ)/dir.txt
 	sh -c "mkdir -p $(@D)"
 	echo Directory Placeholder > $@
 
