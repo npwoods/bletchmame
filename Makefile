@@ -63,16 +63,20 @@ $(OBJ)/%.o:	src/%.cpp Makefile $(OBJ)/dir.txt
 $(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile $(OBJ)/dialogs/dir.txt
 	g++ $(CFLAGS) -c -o $@ $<
 
-$(OBJ)/%.s:	src/%.cpp Makefile $(@D)/dir.txt
+$(OBJ)/%.s:	src/%.cpp Makefile $(OBJ)/dir.txt
 	g++ $(CFLAGS) -S -o $@ $<
 
 $(OBJ)/dialogs/%.s:	src/dialogs/%.cpp Makefile $(OBJ)/dialogs/dir.txt
 	g++ $(CFLAGS) -S -o $@ $<
 
-$(OBJ)/%.res.o:	src/%.rc Makefile $(@D)/dir.txt
+$(OBJ)/%.res.o:	src/%.rc Makefile $(OBJ)/dir.txt
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
-%/dir.txt:
+$(OBJ)/dir.txt:
+	sh -c "mkdir -p $(@D)"
+	echo Directory Placeholder > $@
+
+$(OBJ)/dialogs/dir.txt:
 	sh -c "mkdir -p $(@D)"
 	echo Directory Placeholder > $@
 
