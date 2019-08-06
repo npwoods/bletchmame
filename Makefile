@@ -22,7 +22,13 @@ OBJ				= obj/mingw_win64/$(BUILD)
 WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
 CFLAGS			+= -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -I./src -std=c++17 -DWIN32 
+
 MKDIR_RULE		= @sh -c "mkdir -p $(@D)"
+CPP_RULE		= g++ $(CFLAGS) -c -o $@ $<
+DASM_RULE		= g++ $(CFLAGS) -S -o $@ $<
+
+OLD_GIT_VERSION := $(shell cat $(OBJ)/git_desc.txt 2>NUL)
+NEW_GIT_VERSION := $(shell git describe --dirty)
 
 ifndef WXWIDGETS_DIR
 WXWIDGETS_DIR=lib/wxWidgets
@@ -47,6 +53,7 @@ OBJECTFILES=\
 	$(OBJ)/task.o				\
 	$(OBJ)/utility.o			\
 	$(OBJ)/validity.o			\
+	$(OBJ)/version.gen.o		\
 	$(OBJ)/versiontask.o		\
 	$(OBJ)/virtuallistview.o	\
 	$(OBJ)/xmlparser.o			\
@@ -61,23 +68,40 @@ endif
 
 $(OBJ)/%.o:	src/%.cpp Makefile
 	$(MKDIR_RULE)
-	g++ $(CFLAGS) -c -o $@ $<
+	$(CPP_RULE)
 
 $(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile
 	$(MKDIR_RULE)
-	g++ $(CFLAGS) -c -o $@ $<
+	$(CPP_RULE)
+
+$(OBJ)/version.gen.o:	$(OBJ)/version.gen.cpp
+	$(MKDIR_RULE)
+	$(CPP_RULE)
 
 $(OBJ)/%.s:	src/%.cpp Makefile
 	$(MKDIR_RULE)
-	g++ $(CFLAGS) -S -o $@ $<
+	$(DASM_RULE)
 
 $(OBJ)/dialogs/%.s:	src/dialogs/%.cpp Makefile
 	$(MKDIR_RULE)
-	g++ $(CFLAGS) -S -o $@ $<
+	$(DASM_RULE)
 
 $(OBJ)/%.res.o:	src/%.rc Makefile
 	$(MKDIR_RULE)
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
+
+$(OBJ)/version.gen.cpp:	$(OBJ)/git_desc.txt
+	@sh -c 'echo extern const char build_version[]\;'					> $@
+	@sh -c 'echo extern const char build_date_time[]\;'					>> $@
+	@sh -c 'echo const char build_version[] = \"$(NEW_GIT_VERSION)\"\;'	>> $@
+	@sh -c 'echo const char build_date_time[] = \"`date -Ins`\"\;'		>> $@
+
+ifneq ($(NEW_GIT_VERSION),$(OLD_GIT_VERSION))
+
+$(OBJ)/git_desc.txt::
+	$(MKDIR_RULE)
+	echo $(NEW_GIT_VERSION)>$@
+endif
 
 clean:
 	rm -rf obj bin

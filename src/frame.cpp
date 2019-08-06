@@ -234,6 +234,20 @@ namespace
 
 
 //**************************************************************************
+//  VERSION INFO
+//**************************************************************************
+
+#ifdef _MSC_VER
+// we're not supporing build numbers for MSVC builds
+static const char build_version[] = "MSVC";
+static const char build_date_time[] = "MSVC";
+#else
+extern const char build_version[];
+extern const char build_date_time[];
+#endif
+
+
+//**************************************************************************
 //  MAIN IMPLEMENTATION
 //**************************************************************************
 
@@ -911,8 +925,9 @@ void MameFrame::OnMenuSwitches(status::input::input_class input_class)
 void MameFrame::OnMenuAbout()
 {
 	const wxString eoln = wxTextFile::GetEOL();
-	wxString message = wxTheApp->GetAppName()
-		+ eoln
+	wxString message = wxTheApp->GetAppName() + eoln
+		+ build_version + eoln
+		+ build_date_time + eoln
 		+ eoln;
 
 	// MAME version
