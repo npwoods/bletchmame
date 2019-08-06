@@ -64,7 +64,7 @@ $(OBJ)/%.o:	src/%.cpp Makefile
 	g++ $(CFLAGS) -c -o $@ $<
 
 $(OBJ)/dialogs/%.o:	src/dialogs/%.cpp Makefile
-	sh -c "mkdir -p $(@D)"
+	$(MKDIR_RULE)
 	g++ $(CFLAGS) -c -o $@ $<
 
 $(OBJ)/%.s:	src/%.cpp Makefile
