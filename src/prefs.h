@@ -30,6 +30,7 @@ public:
 		hash,
 		artwork,
 		plugins,
+		profiles,
 
 		count
 	};

@@ -48,6 +48,7 @@ OBJECTFILES=\
 	$(OBJ)/job.o				\
 	$(OBJ)/listxmltask.o		\
 	$(OBJ)/prefs.o				\
+	$(OBJ)/profile.o			\
 	$(OBJ)/runmachinetask.o		\
 	$(OBJ)/status.o				\
 	$(OBJ)/task.o				\

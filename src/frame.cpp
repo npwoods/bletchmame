@@ -14,6 +14,8 @@
 #include <wx/listctrl.h>
 #include <wx/textfile.h>
 #include <wx/filename.h>
+#include <wx/notebook.h>
+#include <wx/dir.h>
 
 #include "frame.h"
 #include "client.h"
@@ -24,6 +26,7 @@
 #include "dialogs/paths.h"
 #include "dialogs/switches.h"
 #include "prefs.h"
+#include "profile.h"
 #include "listxmltask.h"
 #include "versiontask.h"
 #include "runmachinetask.h"
@@ -138,7 +141,9 @@ namespace
 		MameClient								m_client;
 		Preferences							    m_prefs;
 		wxTextCtrl *							m_search_box;
+		wxNotebook *							m_note_book;
 		VirtualListView *					    m_machine_view;
+		VirtualListView *					    m_profile_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
 		wxTimer									m_ping_timer;
@@ -155,6 +160,9 @@ namespace
 
 		// machine list indirection
 		std::vector<int>						m_machine_list_indirections;
+
+		// profile list
+		observable::value<std::vector<profiles::profile>>	m_profiles;
 
 		// status of running emulation
 		std::optional<status::state>			m_state;
@@ -179,9 +187,10 @@ namespace
 		void OnMenuInputs(status::input::input_class input_class);
 		void OnMenuSwitches(status::input::input_class input_class);
 		void OnMenuAbout();
-		void OnListItemSelected(wxListEvent &event);
-		void OnListItemActivated(wxListEvent &event);
-		void OnListColumnResized(wxListEvent &event);
+		void OnMachineListItemSelected(wxListEvent &event);
+		void OnMachineListItemActivated(wxListEvent &event);
+		void OnMachineListColumnResized(wxListEvent &event);
+		void OnProfileListItemActivated(wxListEvent &event);
 		void OnSearchBoxTextChanged();
 
 		// task notifications
@@ -192,8 +201,13 @@ namespace
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
-		template<typename TControl, typename... TArgs>
-		TControl &AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args);
+		struct SizerMember
+		{
+			wxWindow &	m_window;
+			int			m_proportion;
+			int			m_flag;
+		};
+		static void SpecifyBoxSizer(wxWindow &window, int flags, int border, std::initializer_list<SizerMember> &&members);
 		void CreateMenuBar();
 		bool IsMameExecutablePresent() const;
 		void InitialCheckMameInfoDatabase();
@@ -201,10 +215,11 @@ namespace
 		bool PromptForMameExecutable();
 		bool RefreshMameInfoDatabase();
 		info::machine GetRunningMachine() const;
-		void Run(const info::machine &machine);
+		void Run(const info::machine &machine, std::unordered_map<wxString, wxString> &&images = {});
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
+		void UpdateProfileList();
 		info::machine GetMachineFromIndex(long item) const;
 		wxString GetListItemText(long item, long column) const;
 		void UpdateEmulationSession();
@@ -264,7 +279,9 @@ MameFrame::MameFrame()
 	: wxFrame(nullptr, wxID_ANY, wxTheApp->GetAppName())
 	, m_client(*this, m_prefs)
 	, m_search_box(nullptr)
+	, m_note_book(nullptr)
 	, m_machine_view(nullptr)
+	, m_profile_view(nullptr)
 	, m_menu_bar(nullptr)
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
@@ -285,16 +302,18 @@ MameFrame::MameFrame()
 	// create a status bar just for fun (by default with 1 pane only)
 	CreateStatusBar(2);
 	SetStatusText("Welcome to BletchMAME!");
-
-	// create a sizer
-	std::unique_ptr<wxBoxSizer> sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-
-	// create a search bar
-	m_search_box = &AddControl<wxTextCtrl>(sizer, 0, wxALL | wxEXPAND, id++);
-	m_search_box->SetValue(m_prefs.GetSearchBoxText());
 		
-	// create a list view
-	m_machine_view = &AddControl<VirtualListView>(sizer, 1, wxALL | wxEXPAND, id++);
+	// create a notebook
+	m_note_book = new wxNotebook(this, id++);
+
+	// create the machine list panel
+	wxPanel *machine_panel = new wxPanel(m_note_book, id++);
+
+	// create the machine list search box
+	m_search_box = new wxTextCtrl(machine_panel, id++, m_prefs.GetSearchBoxText());
+
+	// create the machine list
+	m_machine_view = new VirtualListView(machine_panel, id++);
 	m_machine_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(item, column); });
 	m_machine_view->ClearAll();
 	m_machine_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
@@ -305,8 +324,34 @@ MameFrame::MameFrame()
 	UpdateMachineList();
 	m_info_db.set_on_changed([this]() { UpdateMachineList(); });
 
-	// set the sizer
-	SetSizer(sizer.release());
+	// specify the sizer on the machine panel
+	SpecifyBoxSizer(*machine_panel, wxVERTICAL, 0, { { *m_search_box, 0, wxEXPAND }, { *m_machine_view, 1, wxEXPAND } });
+
+	// create the profile view
+	m_profile_view = new VirtualListView(m_note_book, id++);
+	m_profile_view->AppendColumn("Name");
+	m_profile_view->AppendColumn("Machine");
+	m_profile_view->AppendColumn("Path");
+	m_profile_view->SetOnGetItemText([this](long item, long column)
+	{
+		switch(column)
+		{
+		case 0:	return m_profiles.get()[item].name();		break;
+		case 1:	return m_profiles.get()[item].machine();	break;
+		case 2:	return m_profiles.get()[item].path();		break;
+		default:	throw false;
+		}
+	});
+	m_profiles.subscribe([this]
+	{
+		m_profile_view->SetItemCount(m_profiles.get().size());
+		m_profile_view->RefreshItems(0, m_profiles.get().size() - 1);
+	});
+	UpdateProfileList();
+
+	// add the notebook pages
+	m_note_book->AddPage(machine_panel, "Machines");
+	m_note_book->AddPage(m_profile_view, "Profiles");
 
 	// the ties that bind...
 	Bind(EVT_VERSION_RESULT,		[this](auto &event) { OnVersionCompleted(event);    });
@@ -317,9 +362,10 @@ MameFrame::MameFrame()
 	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             });
 	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);				});
 	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);				});
-	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnListItemSelected(event);    });
-	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnListItemActivated(event);   });
-	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event);   });
+	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnMachineListItemSelected(event);    }, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnMachineListItemActivated(event);   }, m_machine_view->GetId());
+	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnMachineListColumnResized(event);   }, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnProfileListItemActivated(event);   }, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,				[this](auto &)		{ InvokePing();					});
 	Bind(wxEVT_TEXT,				[this](auto &)		{ OnSearchBoxTextChanged();		}, m_search_box->GetId());
 
@@ -342,15 +388,17 @@ MameFrame::~MameFrame()
 
 
 //-------------------------------------------------
-//  AddControl
+//  SpecifyBoxSizer
 //-------------------------------------------------
 
-template<typename TControl, typename... TArgs>
-TControl &MameFrame::AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args)
+void MameFrame::SpecifyBoxSizer(wxWindow &window, int flags, int border, std::initializer_list<SizerMember> &&members)
 {
-	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer->Add(control, proportion, flags, 0);
-	return *control;
+	auto sizer = std::make_unique<wxBoxSizer>(flags);
+	for (auto m : members)
+	{
+		sizer->Add(&m.m_window, m.m_proportion, m.m_flag, border);
+	}
+	window.SetSizer(sizer.release());
 }
 
 
@@ -649,7 +697,7 @@ info::machine MameFrame::GetRunningMachine() const
 //  Run
 //-------------------------------------------------
 
-void MameFrame::Run(const info::machine &machine)
+void MameFrame::Run(const info::machine &machine, std::unordered_map<wxString, wxString> &&images)
 {
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
@@ -680,6 +728,12 @@ void MameFrame::Run(const info::machine &machine)
 		if (!m_state.has_value())
 			return;
 		wxYield();
+	}
+
+	// mount images
+	for (auto &i : images)
+	{
+		Issue({ "load", std::move(i.first), std::move(i.second) });
 	}
 
 	// do we have any images that require images?
@@ -1208,10 +1262,10 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 
 
 //-------------------------------------------------
-//  OnListItemSelected
+//  OnMachineListItemSelected
 //-------------------------------------------------
 
-void MameFrame::OnListItemSelected(wxListEvent &evt)
+void MameFrame::OnMachineListItemSelected(wxListEvent &evt)
 {
 	long index = evt.GetIndex();
 	const info::machine machine = GetMachineFromIndex(index);
@@ -1220,10 +1274,10 @@ void MameFrame::OnListItemSelected(wxListEvent &evt)
 
 
 //-------------------------------------------------
-//  OnListItemActivated
+//  OnMachineListItemActivated
 //-------------------------------------------------
 
-void MameFrame::OnListItemActivated(wxListEvent &evt)
+void MameFrame::OnMachineListItemActivated(wxListEvent &evt)
 {
 	long index = evt.GetIndex();
 	const info::machine machine = GetMachineFromIndex(index);
@@ -1232,14 +1286,43 @@ void MameFrame::OnListItemActivated(wxListEvent &evt)
 
 
 //-------------------------------------------------
-//  OnListColumnResized
+//  OnMachineListColumnResized
 //-------------------------------------------------
 
-void MameFrame::OnListColumnResized(wxListEvent &evt)
+void MameFrame::OnMachineListColumnResized(wxListEvent &evt)
 {
 	int column_index = evt.GetColumn();
 	int column_width = m_machine_view->GetColumnWidth(column_index);
 	m_prefs.SetColumnWidth(column_index, column_width);
+}
+
+
+//-------------------------------------------------
+//  OnProfileListItemActivated
+//-------------------------------------------------
+
+void MameFrame::OnProfileListItemActivated(wxListEvent &evt)
+{
+	// get the profile
+	long index = evt.GetIndex();
+	const profiles::profile &p = m_profiles.get()[index];
+
+	// find the machine
+	std::optional<info::machine> machine = m_info_db.find_machine(p.machine());
+	if (!machine)
+	{
+		MessageBox("Unknown machine: " + p.machine());
+		return;
+	}
+
+	// get a list of images
+	std::unordered_map<wxString, wxString> images;
+	for (const profiles::image &i : p.images())
+	{
+		images[i.m_tag] = i.m_path;
+	}
+
+	Run(machine.value(), std::move(images));
 }
 
 
@@ -1291,6 +1374,17 @@ void MameFrame::UpdateMachineList()
 		m_machine_view->Select(selected_index);
 		m_machine_view->EnsureVisible(selected_index);
 	}
+}
+
+
+//-------------------------------------------------
+//  UpdateProfileList
+//-------------------------------------------------
+
+void MameFrame::UpdateProfileList()
+{
+	const wxString &path = m_prefs.GetPath(Preferences::path_type::profiles);
+	m_profiles = profiles::profile::scan_directory(path);
 }
 
 
@@ -1348,6 +1442,7 @@ void MameFrame::UpdateEmulationSession()
 	bool is_active = m_state.has_value();
 
 	// if so, hide the machine list UX
+	m_note_book->Show(!is_active);
 	m_machine_view->Show(!is_active);
 	m_search_box->Show(!is_active);
 

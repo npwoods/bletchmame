@@ -205,3 +205,22 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 	m_loaded_strings.emplace(offset, wxString::FromUTF8(string));
 	return m_loaded_strings.find(offset)->second;
 }
+
+
+//-------------------------------------------------
+//  database::find_machine
+//-------------------------------------------------
+
+std::optional<info::machine> info::database::find_machine(const wxString &machine_name) const
+{
+	auto iter = std::find_if(
+		machines().begin(),
+		machines().end(),
+		[&machine_name](const info::machine m)
+		{
+			return m.name() == machine_name;
+		});
+	return iter != machines().end()
+		? std::optional<info::machine>(*iter)
+		: std::optional<info::machine>();
+}

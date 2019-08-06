@@ -212,6 +212,7 @@ namespace info
 		// publically usable functions
 		bool load(const wxString &file_name, const wxString &expected_version = wxT(""));
 		void reset();
+		std::optional<machine> find_machine(const wxString &machine_name) const;
 		const wxString &version() const			{ return *m_version; }
 		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
 

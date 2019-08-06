@@ -35,7 +35,8 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 	"nvram",
 	"hash",
 	"artwork",
-	"plugins"
+	"plugins",
+	"profiles"
 };
 
 
@@ -81,6 +82,7 @@ Preferences::Preferences()
 	SetPath(path_type::config, GetConfigDirectory(true));
 	SetPath(path_type::nvram, GetConfigDirectory(true));
 	SetPath(path_type::plugins, GetDefaultPluginsDirectory());
+	SetPath(path_type::profiles, GetConfigDirectory(true) + "\\profiles");
 
     Load();
 }

@@ -432,6 +432,7 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 	result[(size_t)Preferences::path_type::hash]			= "Hash Files";
 	result[(size_t)Preferences::path_type::artwork]			= "Artwork Files";
 	result[(size_t)Preferences::path_type::plugins]			= "Plugins";
+	result[(size_t)Preferences::path_type::profiles]		= "Profiles";
 
 	// check to make sure that all values are specified
 	for (const wxString &str : result)
@@ -459,6 +460,7 @@ bool PathsDialog::IsMultiPath(Preferences::path_type path_type)
 	case Preferences::path_type::emu_exectuable:
 	case Preferences::path_type::config:
 	case Preferences::path_type::nvram:
+	case Preferences::path_type::profiles:
 		result = false;
 		break;
 
