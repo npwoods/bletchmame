@@ -14,6 +14,7 @@
 #include <wx/timer.h>
 
 #include "dialogs/loading.h"
+#include "wxhelpers.h"
 
 
 //**************************************************************************
@@ -49,19 +50,14 @@ LoadingDialog::LoadingDialog(wxWindow &parent, const std::function<bool()> &poll
 	, m_poll_completion_check(poll_completion_check)
 	, m_timer(this, wxID_ANY)
 {
-	// basic information
-	std::unique_ptr<wxBoxSizer> sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-
 	// the message
-	AddControl<wxStaticText>(sizer, 0, wxALL, wxID_ANY, "Building MAME info database...");
+	wxStaticText *static_text = new wxStaticText(this, wxID_ANY, "Building MAME info database...");
 
-	// and the cancel button
-	std::unique_ptr<wxSizer> button_sizer(CreateButtonSizer(wxCANCEL));
-	if (button_sizer)
-		sizer->Add(button_sizer.release(), 0, wxALL | wxALIGN_RIGHT, 10);
-	
-	// and set and fit!
-	SetSizerAndFit(sizer.release());
+	// and specify the layout
+	SpecifySizerAndFit(*this, { boxsizer_orientation::VERTICAL, 10, {
+		{ 0, wxALL,					*static_text },
+		{ 0, wxALL | wxALIGN_RIGHT,	CreateButtonSizer(wxCANCEL) }
+	}});
 	Centre();
 
 	// bind events

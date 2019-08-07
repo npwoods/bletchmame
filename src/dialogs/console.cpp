@@ -35,9 +35,6 @@ namespace
 		wxTextCtrl *						m_input_control;
 		wxCheckBox *						m_filter_ping_control;
 
-		template<typename TControl, typename... TArgs>
-		TControl &AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args);
-
 		void OnInvoke();
 		void OnChatter(Chatter &&chatter);
 		static bool IsChatterPing(const Chatter &chatter);
@@ -63,30 +60,35 @@ ConsoleDialog::ConsoleDialog(wxWindow &parent, std::shared_ptr<RunMachineTask> &
 {
 	assert(m_task);
 	int id = wxID_LAST;
-	std::unique_ptr<wxBoxSizer> main_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
 
 	// display control, where the results are displayed
-	m_display_control = &AddControl<wxTextCtrl>(main_sizer, 1, wxALL | wxEXPAND, id++, wxEmptyString, wxDefaultPosition, wxSize(400, 150), wxTE_RICH | wxTE_READONLY | wxTE_MULTILINE);
+	m_display_control = new wxTextCtrl(this, id++, wxEmptyString, wxDefaultPosition, wxSize(400, 150), wxTE_RICH | wxTE_READONLY | wxTE_MULTILINE);
 
 	// input control, where commands are entered
-	m_input_control = &AddControl<wxTextCtrl>(main_sizer, 0, wxALL | wxEXPAND, id++, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+	m_input_control = new wxTextCtrl(this, id++, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
 	m_input_control->SetFocus();
 
 	// buttons
-	std::unique_ptr<wxBoxSizer> button_sizer = std::make_unique<wxBoxSizer>(wxHORIZONTAL);
-	m_filter_ping_control	= &AddControl<wxCheckBox>(button_sizer, 0, wxALL, id++,	wxT("Filter out pings"));
-	wxButton &invoke_button	= AddControl<wxButton>(button_sizer, 0, wxALL, id++,	wxT("Invoke"));
-	wxButton &close_button	= AddControl<wxButton>(button_sizer, 0, wxALL, wxID_OK,	wxT("Close"));
+	m_filter_ping_control	= new wxCheckBox(this, id++,	wxT("Filter out pings"));
+	wxButton *invoke_button	= new wxButton(this, id++,	wxT("Invoke"));
+	wxButton *close_button	= new wxButton(this, wxID_OK,	wxT("Close"));
 	m_filter_ping_control->SetValue(true);
-	main_sizer->Add(button_sizer.release(), 0, wxALIGN_RIGHT);
 
-	// specify main sizer
-	SetSizerAndFit(main_sizer.release());
+	// specify the sizer
+	SpecifySizerAndFit(*this, { boxsizer_orientation::VERTICAL, 4, {
+		{ 1, wxALL | wxEXPAND,		*m_display_control },
+		{ 0, wxALL | wxEXPAND,		*m_input_control },
+		{ 0, wxALL | wxALIGN_RIGHT,	boxsizer_orientation::HORIZONTAL, 4, {
+			{ 0, wxALL, *m_filter_ping_control },
+			{ 0, wxALL, *invoke_button },
+			{ 0, wxALL, *close_button }
+		}}
+	}});
 
 	// events
 	Bind(wxEVT_TEXT_ENTER,	[this](auto &)		{ OnInvoke(); },											m_input_control->GetId());
-	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnInvoke(); },											invoke_button.GetId());
-	Bind(wxEVT_UPDATE_UI,	[this](auto &event)	{ event.Enable(!m_input_control->GetValue().IsEmpty()); },	invoke_button.GetId());
+	Bind(wxEVT_BUTTON,		[this](auto &)		{ OnInvoke(); },											invoke_button->GetId());
+	Bind(wxEVT_UPDATE_UI,	[this](auto &event)	{ event.Enable(!m_input_control->GetValue().IsEmpty()); },	invoke_button->GetId());
 	(void)close_button;
 
 	// listen to chatter
@@ -103,19 +105,6 @@ ConsoleDialog::~ConsoleDialog()
 {
 	m_task->SetChatterEnabled(false);
 	m_host.SetChatterListener(nullptr);
-}
-
-
-//-------------------------------------------------
-//  AddControl
-//-------------------------------------------------
-
-template<typename TControl, typename... TArgs>
-TControl &ConsoleDialog::AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args)
-{
-	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer->Add(control, proportion, flags, 4);
-	return *control;
 }
 
 

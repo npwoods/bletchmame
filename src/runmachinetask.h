@@ -16,7 +16,7 @@
 
 #include "task.h"
 #include "info.h"
-#include "payloadevent.h"
+#include "wxhelpers.h"
 #include "status.h"
 
 

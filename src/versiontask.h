@@ -12,7 +12,7 @@
 #define VERSIONTASK_H
 
 #include "task.h"
-#include "payloadevent.h"
+#include "wxhelpers.h"
 
 
 //**************************************************************************

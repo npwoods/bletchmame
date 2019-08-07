@@ -9,7 +9,6 @@
 #include <wx/dialog.h>
 #include <wx/textctrl.h>
 #include <wx/stattext.h>
-#include <wx/sizer.h>
 #include <wx/filename.h>
 #include <wx/combobox.h>
 #include <wx/button.h>
@@ -24,6 +23,7 @@
 #include "prefs.h"
 #include "utility.h"
 #include "virtuallistview.h"
+#include "wxhelpers.h"
 #include "validity.h"
 
 
@@ -60,7 +60,6 @@ namespace
 		VirtualListView *					m_list_view;
 		wxListItemAttr						m_list_item_attr;
 
-		template<typename TControl, typename... TArgs> TControl &AddControl(wxBoxSizer *sizer, int proportion, int flags, TArgs&&... args);
 		static std::array<wxString, PATH_COUNT> BuildComboBoxStrings();
 
 		void UpdateCurrentPathList();
@@ -108,12 +107,9 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 		m_path_lists[i] = m_prefs.GetPath(static_cast<Preferences::path_type>(i));
 
 	// Left column
-	wxBoxSizer *vbox_left = new wxBoxSizer(wxVERTICAL);
-	AddControl<wxStaticText>(vbox_left, 0, wxALL, id++, "Show Paths For:");
-	m_combo_box = &AddControl<wxComboBox>(
-		vbox_left,
-		0,
-		wxALL,
+	wxStaticText *static_text_1 = new wxStaticText(this, id++, "Show Paths For:");
+	m_combo_box = new wxComboBox(
+		this,
 		id++,
 		wxEmptyString,
 		wxDefaultPosition,
@@ -121,19 +117,17 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 		s_combo_box_strings.size(),
 		s_combo_box_strings.data(),
 		wxCB_READONLY);
-	AddControl<wxStaticText>(vbox_left, 0, wxALL, id++, "Directories:");
-	m_list_view = &AddControl<VirtualListView>(vbox_left, 1, wxALL | wxEXPAND, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER
-		| wxLC_EDIT_LABELS | wxLC_VIRTUAL);
+	wxStaticText *static_text_2 = new wxStaticText(this, id++, "Directories:");
+	m_list_view = new VirtualListView(this, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS | wxLC_VIRTUAL);
 	m_list_view->SetOnGetItemText([this](long item, long)	{ return GetListItemText(static_cast<size_t>(item)); });
 	m_list_view->SetOnGetItemAttr([this](long item)			{ return GetListItemAttr(static_cast<size_t>(item)); });
 
 	// Right column
-	wxBoxSizer *vbox_right = new wxBoxSizer(wxVERTICAL);
-	wxButton &ok_button		= AddControl<wxButton>(vbox_right, 0, wxALL, wxID_OK,		"OK");
-	wxButton &cancel_button = AddControl<wxButton>(vbox_right, 0, wxALL, wxID_CANCEL,	"Cancel");
-	wxButton &browse_button = AddControl<wxButton>(vbox_right, 0, wxALL, id++,			"Browse");
-	wxButton &insert_button = AddControl<wxButton>(vbox_right, 0, wxALL, id++,			"Insert");
-	wxButton &delete_button	= AddControl<wxButton>(vbox_right, 0, wxALL, id++,			"Delete");
+	wxButton *ok_button		= new wxButton(this, wxID_OK,		"OK");
+	wxButton *cancel_button = new wxButton(this, wxID_CANCEL,	"Cancel");
+	wxButton *browse_button = new wxButton(this, id++,			"Browse");
+	wxButton *insert_button = new wxButton(this, id++,			"Insert");
+	wxButton *delete_button	= new wxButton(this, id++,			"Delete");
 
 	// Combo box
 	m_combo_box->Select(0);
@@ -144,18 +138,32 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 	UpdateCurrentPathList();	
 
 	// Overall layout
-	wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-	hbox->Add(vbox_left, 1, wxEXPAND);
-	hbox->Add(vbox_right, 0, wxALIGN_TOP | wxTOP | wxBOTTOM, 10);
-	SetSizerAndFit(hbox);
+	SpecifySizerAndFit(*this, { boxsizer_orientation::HORIZONTAL, 5, {
+		// left columnh
+		{ 1, wxEXPAND,	boxsizer_orientation::VERTICAL, 4, {
+			{ 0, wxALL,				*static_text_1 },
+			{ 0, wxALL,				*m_combo_box },
+			{ 0, wxALL,				*static_text_2 },
+			{ 1, wxALL | wxEXPAND,	*m_list_view }
+		} },
+
+		// right column
+		{ 0, wxALIGN_TOP | wxTOP | wxBOTTOM, boxsizer_orientation::VERTICAL, 5, {
+			{ 0, wxALL, *ok_button },
+			{ 0, wxALL, *cancel_button },
+			{ 0, wxALL, *browse_button },
+			{ 0, wxALL, *insert_button },
+			{ 0, wxALL, *delete_button }
+		} }
+	}});
 
 	// bind events
 	Bind(wxEVT_COMBOBOX,				[this](auto &)		{ UpdateCurrentPathList(); });
-	Bind(wxEVT_BUTTON,					[this](auto &)		{ BrowseForPath();									}, browse_button.GetId());
-	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnInsert();										}, insert_button.GetId());
-	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnDelete();										}, delete_button.GetId());
-	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath());						}, insert_button.GetId());
-	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button.GetId());
+	Bind(wxEVT_BUTTON,					[this](auto &)		{ BrowseForPath();									}, browse_button->GetId());
+	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnInsert();										}, insert_button->GetId());
+	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnDelete();										}, delete_button->GetId());
+	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath());						}, insert_button->GetId());
+	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { BrowseForPath(event.GetIndex());					});
 	Bind(wxEVT_LIST_BEGIN_LABEL_EDIT,	[this](auto &event) { OnListBeginLabelEdit(event.GetIndex());			});
 	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnListEndLabelEdit(event.GetIndex());				});
@@ -401,19 +409,6 @@ void PathsDialog::RefreshListView()
 	long item_count = m_current_path_list.size() + (IsMultiPath() ? 1 : 0);
 	m_list_view->SetItemCount(item_count);
 	m_list_view->RefreshItems(0, item_count - 1);
-}
-
-
-//-------------------------------------------------
-//  AddControl
-//-------------------------------------------------
-
-template<typename TControl, typename... TArgs>
-TControl &PathsDialog::AddControl(wxBoxSizer *sizer, int proportion, int flags, TArgs&&... args)
-{
-	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer->Add(control, proportion, flags, 4);
-	return *control;
 }
 
 

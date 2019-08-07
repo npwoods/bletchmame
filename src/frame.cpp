@@ -201,13 +201,6 @@ namespace
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
-		struct SizerMember
-		{
-			wxWindow &	m_window;
-			int			m_proportion;
-			int			m_flag;
-		};
-		static void SpecifyBoxSizer(wxWindow &window, int flags, int border, std::initializer_list<SizerMember> &&members);
 		void CreateMenuBar();
 		bool IsMameExecutablePresent() const;
 		void InitialCheckMameInfoDatabase();
@@ -325,7 +318,10 @@ MameFrame::MameFrame()
 	m_info_db.set_on_changed([this]() { UpdateMachineList(); });
 
 	// specify the sizer on the machine panel
-	SpecifyBoxSizer(*machine_panel, wxVERTICAL, 0, { { *m_search_box, 0, wxEXPAND }, { *m_machine_view, 1, wxEXPAND } });
+	SpecifySizer(*machine_panel, { boxsizer_orientation::VERTICAL, 0, {
+		{ 0, wxEXPAND, *m_search_box },
+		{ 1, wxEXPAND, *m_machine_view }
+	}});
 
 	// create the profile view
 	m_profile_view = new VirtualListView(m_note_book, id++);
@@ -384,21 +380,6 @@ MameFrame::MameFrame()
 MameFrame::~MameFrame()
 {
 	m_prefs.Save();
-}
-
-
-//-------------------------------------------------
-//  SpecifyBoxSizer
-//-------------------------------------------------
-
-void MameFrame::SpecifyBoxSizer(wxWindow &window, int flags, int border, std::initializer_list<SizerMember> &&members)
-{
-	auto sizer = std::make_unique<wxBoxSizer>(flags);
-	for (auto m : members)
-	{
-		sizer->Add(&m.m_window, m.m_proportion, m.m_flag, border);
-	}
-	window.SetSizer(sizer.release());
 }
 
 
