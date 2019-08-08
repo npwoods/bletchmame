@@ -368,11 +368,11 @@ std::uint32_t string_table::get(const std::string &s)
 	if (iter != m_map.end())
 		return iter->second;
 
-	// append the string to m_data
+	// we're going to append the string; the current size becomes the position of the new string
 	std::uint32_t result = to_uint32(m_data.size());
-	for (size_t i = 0; i < s.size(); i++)
-		m_data.push_back(s[i]);
-	m_data.push_back('\0');
+
+	// append the string (including trailing NUL) to m_data
+	m_data.insert(m_data.end(), &s[0], &s[0] + s.size() + 1);
 
 	// and to m_map
 	m_map[s] = result;
