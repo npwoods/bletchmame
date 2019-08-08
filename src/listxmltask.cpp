@@ -52,8 +52,7 @@ namespace
 		template<typename T> void embed_value(T value)
 		{
 			const std::uint8_t *bytes = (const std::uint8_t *) &value;
-			for (int i = 0; i < sizeof(value); i++)
-				m_data.push_back(bytes[i]);
+			m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
 		}
 
 	private:
