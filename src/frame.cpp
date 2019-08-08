@@ -16,6 +16,7 @@
 #include <wx/filename.h>
 #include <wx/notebook.h>
 #include <wx/dir.h>
+#include <wx/fswatcher.h>
 
 #include "frame.h"
 #include "client.h"
@@ -154,6 +155,7 @@ namespace
 		std::function<void(Chatter &&)>			m_on_chatter;
 		observable::unique_subscription			m_watch_subscription;
 		std::vector<std::function<void()>>		m_on_close_funcs;
+		wxFileSystemWatcher						m_fsw_profiles;
 
 		// information retrieved by -version
 		wxString								m_mame_version;
@@ -221,7 +223,7 @@ namespace
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
-		void UpdateProfileList();
+		void UpdateProfileDirectories(bool update_fsw);
 		info::machine GetMachineFromIndex(long item) const;
 		wxString GetMachineListItemText(long item, long column) const;
 		wxString GetProfileListItemText(long item, long column) const;
@@ -333,12 +335,15 @@ MameFrame::MameFrame()
 		m_profile_view->SetItemCount(m_profiles.get().size());
 		m_profile_view->RefreshItems(0, m_profiles.get().size() - 1);
 	});
-	UpdateProfileList();
+	UpdateProfileDirectories(true);
 
 	// add the notebook pages
 	m_note_book->AddPage(machine_panel, "Machines");
 	m_note_book->AddPage(m_profile_view, "Profiles");
 	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
+
+	// set up the file system watcher
+	m_fsw_profiles.SetOwner(this);
 
 	// the ties that bind...
 	Bind(EVT_VERSION_RESULT,			[this](auto &event) { OnVersionCompleted(event);    															});
@@ -359,6 +364,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
 	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
+	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(false);															});
 
 	// nothing is running yet...
 	UpdateEmulationSession();
@@ -992,7 +998,7 @@ void MameFrame::OnMenuPaths()
 
 	// did the user change the profiles path?
 	if (is_changed(Preferences::path_type::profiles))
-		UpdateProfileList();
+		UpdateProfileDirectories(true);
 }
 
 
@@ -1454,14 +1460,23 @@ void MameFrame::UpdateMachineList()
 
 
 //-------------------------------------------------
-//  UpdateProfileList
+//  UpdateProfileDirectories
 //-------------------------------------------------
 
-void MameFrame::UpdateProfileList()
+void MameFrame::UpdateProfileDirectories(bool update_fsw)
 {
+	// first update the actual list
 	const wxString &paths_string = m_prefs.GetPath(Preferences::path_type::profiles);
 	std::vector<wxString> paths = util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
 	m_profiles = profiles::profile::scan_directories(paths);
+
+	// now update the file system watcher if we're asked to
+	if (update_fsw)
+	{
+		m_fsw_profiles.RemoveAll();
+		for (const wxString &path : paths)
+			m_fsw_profiles.Add(path);
+	}
 }
 
 
