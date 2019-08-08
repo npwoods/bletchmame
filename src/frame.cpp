@@ -1455,8 +1455,9 @@ void MameFrame::UpdateMachineList()
 
 void MameFrame::UpdateProfileList()
 {
-	const wxString &path = m_prefs.GetPath(Preferences::path_type::profiles);
-	m_profiles = profiles::profile::scan_directory(path);
+	const wxString &paths_string = m_prefs.GetPath(Preferences::path_type::profiles);
+	std::vector<wxString> paths = util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
+	m_profiles = profiles::profile::scan_directories(paths);
 }
 
 

@@ -42,7 +42,7 @@ namespace profiles
 		bool is_valid() const;
 
 		// statics
-		static std::vector<profile> scan_directory(const wxString &path);
+		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);
 
 		bool operator==(const profile &that) const;
 
