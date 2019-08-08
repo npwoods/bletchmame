@@ -76,10 +76,11 @@ public:
 	const wxSize &GetSize() const											    { return m_size; }
 	void SetSize(const wxSize &size)											{ m_size = size; }
 
-	int GetColumnWidth(list_view_type type, int column_index) const             { return m_column_widths[static_cast<size_t>(type)][column_index]; }
-	void SetColumnWidth(list_view_type type, int column_index, int width)       { m_column_widths[static_cast<size_t>(type)][column_index] = width; }
+	int GetColumnWidth(list_view_type type, int column_index) const             { return GetColumnWidths(type)[column_index]; }
+	void SetColumnWidth(list_view_type type, int column_index, int width)       { GetColumnWidths(type)[column_index] = width; }
 
-	const std::vector<int> GetColumnsOrder(list_view_type type) const			{ return m_columns_order[static_cast<size_t>(type)]; }
+	std::vector<int> &GetColumnsOrder(list_view_type type)						{ return m_columns_order[static_cast<size_t>(type)]; }
+	const std::vector<int> &GetColumnsOrder(list_view_type type) const			{ return m_columns_order[static_cast<size_t>(type)]; }
 	void SetColumnsOrder(list_view_type type, std::vector<int> &&order)			{ m_columns_order[static_cast<size_t>(type)] = std::move(order); }
 
 	const wxString &GetSelectedMachine() const              { return m_selected_machine; }
@@ -128,6 +129,9 @@ private:
 	void Save(std::ostream &output);
 	wxString GetFileName(bool ensure_directory_exists);
 	const MachineInfo *GetMachineInfo(const wxString &machine_name) const;
+
+	std::vector<int> &GetColumnWidths(list_view_type type)				{ return m_column_widths[static_cast<size_t>(type)]; }
+	const std::vector<int> &GetColumnWidths(list_view_type type) const	{ return m_column_widths[static_cast<size_t>(type)]; }
 };
 
 #endif // PREFS_H

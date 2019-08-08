@@ -44,7 +44,7 @@ private:
 
 
 //**************************************************************************
-//  PARSING UTILITY CLASSES
+//  ENUM UTILITY CLASSES
 //**************************************************************************
 
 // ======================> string_hash
@@ -115,6 +115,44 @@ public:
 
 private:
 	std::unordered_map<T, const char *> m_reverse_map;
+};
+
+
+// ======================> all_enums
+template<typename T>
+class all_enums
+{
+public:
+	class iterator
+	{
+	public:
+		iterator(T value) : m_value(value) { }
+		T operator*() const { return m_value; }
+		iterator &operator++() { bump(+1); return *this; }
+		iterator &operator--() { bump(-1); return *this; }
+		iterator operator++(int) { iterator result = *this; bump(+1); return result; }
+		iterator operator--(int) { iterator result = *this; bump(-1); return result; }
+		bool operator==(const iterator &that) const { return m_value == that.m_value; }
+		bool operator!=(const iterator &that) const { return m_value != that.m_value; }
+		bool operator<(const iterator &that) const { return m_value < that.m_value; }
+
+	private:
+		T m_value;
+
+		void bump(std::int64_t offset)
+		{
+			auto i = static_cast<std::int64_t>(m_value);
+			i += offset;
+			m_value = static_cast<T>(i);
+		}
+	};
+
+	typedef iterator const_iterator;
+
+	iterator begin()		const { return iterator((T)0); }
+	iterator end()			const { return iterator(T::count); }
+	const_iterator cbegin()	const { return begin(); }
+	const_iterator cend()	const { return end(); }
 };
 
 

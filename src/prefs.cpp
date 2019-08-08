@@ -113,9 +113,11 @@ Preferences::Preferences()
 	, m_menu_bar_shown(true)
 {
 	// default column order
-	for (size_t i = 0; i < static_cast<size_t>(list_view_type::count); i++)
+	for (list_view_type type : util::all_enums<list_view_type>())
 	{
-		const ColumnDesc *desc = GetColumnDescs(static_cast<list_view_type>(i));
+		std::vector<int> &column_widths = GetColumnWidths(type);
+		std::vector<int> &columns_order = GetColumnsOrder(type);
+		const ColumnDesc *desc = GetColumnDescs(type);
 
 		// count the number of columns
 		int column_count = 0;
@@ -123,14 +125,14 @@ Preferences::Preferences()
 			column_count++;
 
 		// populate the widths
-		m_column_widths[i].resize(column_count);
-		for (int j = 0; j < column_count; j++)
-			m_column_widths[i][j] = desc[j].m_default_width;
+		column_widths.resize(column_count);
+		for (int i = 0; i < column_count; i++)
+			column_widths[i] = desc[i].m_default_width;
 
 		// populate the order
-		m_columns_order[i].resize(column_count);
-		for (int j = 0; j < column_count; j++)
-			m_columns_order[i][j] = j;
+		columns_order.resize(column_count);
+		for (int i = 0; i < column_count; i++)
+			columns_order[i] = i;
 	}
 	
 	// default paths
@@ -388,15 +390,16 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
 	if (!m_search_box_text.IsEmpty())
 		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
-	for (size_t i = 0; i < static_cast<size_t>(list_view_type::count); i++)
+	for (list_view_type type : util::all_enums<list_view_type>())
 	{
-		list_view_type type = static_cast<list_view_type>(i);
 		const char *type_string = s_list_view_type_parser[type];
 		const ColumnDesc *desc = GetColumnDescs(type);
+		std::vector<int> &column_widths = GetColumnWidths(type);
+		std::vector<int> &columns_order = GetColumnsOrder(type);
 
-		for (size_t j = 0; desc[j].m_id && j < m_column_widths[i].size() && j < m_columns_order[i].size(); j++)
+		for (size_t i = 0; desc[i].m_id && i < column_widths.size() && i < columns_order.size(); i++)
 		{
-			output << "\t<column type=\"" << type_string << "\" id=\"" << desc[j].m_id << "\" width=\"" << m_column_widths[i][j] << "\" order=\"" << m_columns_order[i][j] << "\"/>" << std::endl;
+			output << "\t<column type=\"" << type_string << "\" id=\"" << desc[i].m_id << "\" width=\"" << column_widths[i] << "\" order=\"" << columns_order[i] << "\"/>" << std::endl;
 		}
 	}
 	output << std::endl;
