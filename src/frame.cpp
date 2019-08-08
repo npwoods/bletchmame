@@ -47,6 +47,8 @@ enum
 	ID_PING_TIMER				= wxID_HIGHEST + 1,
 	ID_LAST,
 
+	ID_POPUP_MENU_BEGIN			= ID_LAST + 1000,
+
 	// styles (we want to show the menu bar at full size)
 	FULL_SCREEN_STYLE			= wxFULLSCREEN_NOTOOLBAR | wxFULLSCREEN_NOSTATUSBAR | wxFULLSCREEN_NOBORDER | wxFULLSCREEN_NOCAPTION
 };
@@ -196,6 +198,8 @@ namespace
 		void OnMachineListItemSelected(wxListEvent &event);
 		void OnMachineListItemActivated(wxListEvent &event);
 		void OnProfileListItemActivated(wxListEvent &event);
+		void OnMachineListItemContextMenu(wxListEvent &event);
+		void OnProfileListItemContextMenu(wxListEvent &event);
 		void OnSearchBoxTextChanged();
 
 		// task notifications
@@ -213,6 +217,7 @@ namespace
 		bool RefreshMameInfoDatabase();
 		info::machine GetRunningMachine() const;
 		void Run(const info::machine &machine, std::unordered_map<wxString, wxString> &&images = {});
+		void Run(const profiles::profile &profile);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
@@ -350,6 +355,8 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_SELECTED,		[this](auto &event) { OnMachineListItemSelected(event);															}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
+	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
 	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
 
@@ -767,6 +774,27 @@ void MameFrame::Run(const info::machine &machine, std::unordered_map<wxString, w
 
 	// unpause
 	ChangePaused(false);
+}
+
+
+void MameFrame::Run(const profiles::profile &profile)
+{
+	// find the machine
+	std::optional<info::machine> machine = m_info_db.find_machine(profile.machine());
+	if (!machine)
+	{
+		MessageBox("Unknown machine: " + profile.machine());
+		return;
+	}
+
+	// get a list of images
+	std::unordered_map<wxString, wxString> images;
+	for (const profiles::image &i : profile.images())
+	{
+		images[i.m_tag] = i.m_path;
+	}
+
+	Run(machine.value(), std::move(images));
 }
 
 
@@ -1318,23 +1346,49 @@ void MameFrame::OnProfileListItemActivated(wxListEvent &evt)
 	// get the profile
 	long index = evt.GetIndex();
 	const profiles::profile &p = m_profiles.get()[index];
+	Run(p);
+}
 
+
+//-------------------------------------------------
+//  OnMachineListItemContextMenu
+//-------------------------------------------------
+
+void MameFrame::OnMachineListItemContextMenu(wxListEvent &event)
+{
 	// find the machine
-	std::optional<info::machine> machine = m_info_db.find_machine(p.machine());
-	if (!machine)
-	{
-		MessageBox("Unknown machine: " + p.machine());
-		return;
-	}
+	long index = event.GetIndex();
+	const info::machine machine = GetMachineFromIndex(index);
 
-	// get a list of images
-	std::unordered_map<wxString, wxString> images;
-	for (const profiles::image &i : p.images())
-	{
-		images[i.m_tag] = i.m_path;
-	}
+	// build the popup menu
+	int id = ID_POPUP_MENU_BEGIN;
+	wxMenu popup_menu;
+	wxMenuItem &run_menu_item = *popup_menu.Append(id++, "Run \"" + machine.description() + "\"");
+	Bind(wxEVT_MENU, [this, machine](auto &) { Run(machine); }, run_menu_item.GetId());
 
-	Run(machine.value(), std::move(images));
+	// and display it
+	PopupMenu(&popup_menu);
+}
+
+
+//-------------------------------------------------
+//  OnSearchBoxTextChanged
+//-------------------------------------------------
+
+void MameFrame::OnProfileListItemContextMenu(wxListEvent &event)
+{
+	// find the profile
+	long index = event.GetIndex();
+	const profiles::profile &profile = m_profiles.get()[index];
+
+	// build the popup menu
+	int id = ID_POPUP_MENU_BEGIN;
+	wxMenu popup_menu;
+	wxMenuItem &run_menu_item = *popup_menu.Append(id++, "Run \"" + profile.name() + "\"");
+	Bind(wxEVT_MENU, [this, &profile](auto &) { Run(profile); }, run_menu_item.GetId());
+
+	// and display it
+	PopupMenu(&popup_menu);
 }
 
 
