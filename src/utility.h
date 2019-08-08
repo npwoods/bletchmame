@@ -94,6 +94,30 @@ private:
 };
 
 
+// ======================> enum_parser_bidirectional
+template<typename T>
+class enum_parser_bidirectional : public enum_parser<T>
+{
+public:
+	enum_parser_bidirectional(std::initializer_list<std::pair<const char *, T>> values)
+		: enum_parser<T>(values)
+	{
+		for (const auto &[str, value] : values)
+			m_reverse_map.emplace(value, str);
+	}
+
+	const char *operator[](T val) const
+	{
+		auto iter = m_reverse_map.find(val);
+		return iter->second;
+	}
+
+
+private:
+	std::unordered_map<T, const char *> m_reverse_map;
+};
+
+
 //**************************************************************************
 //  STRING & CONTAINER UTILITIES
 //**************************************************************************

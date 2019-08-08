@@ -17,6 +17,13 @@
 #include <ostream>
 #include <map>
 
+struct ColumnDesc
+{
+	const char *	m_id;
+	const wxChar *	m_description;
+	int				m_default_width;
+};
+
 class Preferences
 {
 public:
@@ -43,29 +50,37 @@ public:
 		count
 	};
 
-	static const int COLUMN_COUNT = 4;
+	enum class list_view_type
+	{
+		machine,
+		profile,
+
+		count
+	};
 
 	Preferences();
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
-	const wxString &GetPath(path_type type) const			{ return m_paths[static_cast<size_t>(type)]; }
-	void SetPath(path_type type, wxString &&path)			{ m_paths[static_cast<size_t>(type)] = std::move(path); }
+	// returns 
+	static const ColumnDesc *GetColumnDescs(list_view_type type);
+
+	const wxString &GetPath(path_type type) const								{ return m_paths[static_cast<size_t>(type)]; }
+	void SetPath(path_type type, wxString &&path)								{ m_paths[static_cast<size_t>(type)] = std::move(path); }
 	
-	wxString GetPathWithSubstitutions(path_type type) const { assert(type != path_type::emu_exectuable); return ApplySubstitutions(GetPath(type)); }
+	wxString GetPathWithSubstitutions(path_type type) const						{ assert(type != path_type::emu_exectuable); return ApplySubstitutions(GetPath(type)); }
 
-	const wxString &GetMameExtraArguments() const			{ return m_mame_extra_arguments; }
-	void SetMameExtraArguments(wxString &&extra_arguments)	{ m_mame_extra_arguments = std::move(extra_arguments); }
+	const wxString &GetMameExtraArguments() const								{ return m_mame_extra_arguments; }
+	void SetMameExtraArguments(wxString &&extra_arguments)						{ m_mame_extra_arguments = std::move(extra_arguments); }
 
-	const wxSize &GetSize() const                           { return m_size; }
-	void SetSize(const wxSize &size)                        { m_size = size; }
+	const wxSize &GetSize() const											    { return m_size; }
+	void SetSize(const wxSize &size)											{ m_size = size; }
 
-	int GetColumnWidth(int column_index) const              { return m_column_widths[column_index]; }
-	void SetColumnWidth(int column_index, int width)        { m_column_widths[column_index] = width; }
+	int GetColumnWidth(list_view_type type, int column_index) const             { return m_column_widths[static_cast<size_t>(type)][column_index]; }
+	void SetColumnWidth(list_view_type type, int column_index, int width)       { m_column_widths[static_cast<size_t>(type)][column_index] = width; }
 
-	wxArrayInt GetColumnOrder() const						{ return wxArrayInt(m_column_order.begin(), m_column_order.end()); }
-	void SetColumnOrder(int column_index, int order)		{ m_column_order[column_index] = order; }
-	void SetColumnOrder(const std::array<int, 4> &order)	{ m_column_order = order; }
+	const std::vector<int> GetColumnsOrder(list_view_type type) const			{ return m_columns_order[static_cast<size_t>(type)]; }
+	void SetColumnsOrder(list_view_type type, std::vector<int> &&order)			{ m_columns_order[static_cast<size_t>(type)] = std::move(order); }
 
 	const wxString &GetSelectedMachine() const              { return m_selected_machine; }
 	void SetSelectedMachine(const wxString &machine_name)   { m_selected_machine = machine_name; }
@@ -100,15 +115,15 @@ private:
 		std::map<wxString, std::vector<wxString>>	m_recent_device_files;
 	};
 
-	std::array<wxString, static_cast<size_t>(path_type::count)>	m_paths;
-	wxString													m_mame_extra_arguments;
-	wxSize														m_size;
-	std::array<int, COLUMN_COUNT>								m_column_widths;
-	std::array<int, COLUMN_COUNT>								m_column_order;
-	std::map<wxString, MachineInfo>								m_machine_info;
-	wxString													m_selected_machine;
-	wxString													m_search_box_text;
-	bool														m_menu_bar_shown;
+	std::array<wxString, static_cast<size_t>(path_type::count)>					m_paths;
+	wxString																	m_mame_extra_arguments;
+	wxSize																		m_size;
+	std::array<std::vector<int>, static_cast<size_t>(list_view_type::count)>	m_column_widths;
+	std::array<std::vector<int>, static_cast<size_t>(list_view_type::count)>	m_columns_order;
+	std::map<wxString, MachineInfo>												m_machine_info;
+	wxString																	m_selected_machine;
+	wxString																	m_search_box_text;
+	bool																		m_menu_bar_shown;
 
 	void Save(std::ostream &output);
 	wxString GetFileName(bool ensure_directory_exists);

@@ -40,12 +40,10 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 };
 
 
-static std::array<const char *, Preferences::COLUMN_COUNT> s_column_ids =
+static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list_view_type_parser =
 {
-    "name",
-    "description",
-    "year",
-    "manufacturer"
+	{ "machine", Preferences::list_view_type::machine, },
+	{ "profile", Preferences::list_view_type::profile }
 };
 
 
@@ -68,17 +66,74 @@ static bool IsValidDimension(int dimension)
 
 
 //-------------------------------------------------
+//  GetColumnNames
+//-------------------------------------------------
+
+const ColumnDesc *Preferences::GetColumnDescs(list_view_type type)
+{
+	static const ColumnDesc s_machine_columns[] =
+	{
+		{ "name",			wxT("Name"),			85 },
+		{ "description",	wxT("Description"),		370 },
+		{ "year",			wxT("Year"),			50 },
+		{ "manufacturer",	wxT("Manufacturer"),	320 },
+		{ nullptr }
+	};
+
+	static const ColumnDesc s_profile_columns[] =
+	{
+		{ "name",			wxT("Name"),			85 },
+		{ "machine",		wxT("Machine"),			85 },
+		{ "path",			wxT("Path"),			600 },
+		{ nullptr }
+	};
+
+	const ColumnDesc *result;
+	switch (type)
+	{
+	case list_view_type::machine:
+		result = s_machine_columns;
+		break;
+	case list_view_type::profile:
+		result = s_profile_columns;
+		break;
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
 Preferences::Preferences()
 	: m_size(950, 600)
-	, m_column_widths({85, 370, 50, 320})
 	, m_menu_bar_shown(true)
 {
-	// Defaults
-	for (int i = 0; i < COLUMN_COUNT; i++)
-		SetColumnOrder(i, i);
+	// default column order
+	for (size_t i = 0; i < static_cast<size_t>(list_view_type::count); i++)
+	{
+		const ColumnDesc *desc = GetColumnDescs(static_cast<list_view_type>(i));
+
+		// count the number of columns
+		int column_count = 0;
+		while (desc[column_count].m_id)
+			column_count++;
+
+		// populate the widths
+		m_column_widths[i].resize(column_count);
+		for (int j = 0; j < column_count; j++)
+			m_column_widths[i][j] = desc[j].m_default_width;
+
+		// populate the order
+		m_columns_order[i].resize(column_count);
+		for (int j = 0; j < column_count; j++)
+			m_columns_order[i][j] = j;
+	}
+	
+	// default paths
 	SetPath(path_type::config, GetConfigDirectory(true));
 	SetPath(path_type::nvram, GetConfigDirectory(true));
 	SetPath(path_type::plugins, GetDefaultPluginsDirectory());
@@ -196,7 +251,6 @@ bool Preferences::Load(wxInputStream &input)
 {
 	XmlParser xml;
 	path_type type = path_type::count;
-	std::array<int, COLUMN_COUNT> column_order = { 0, };
 	wxString current_machine_name;
 	wxString current_device_type;
 
@@ -251,19 +305,23 @@ bool Preferences::Load(wxInputStream &input)
 	});
 	xml.OnElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
+		list_view_type type;
 		std::string id;
-		if (attributes.Get("id", id))
+		if (attributes.Get("type", type, s_list_view_type_parser) && attributes.Get("id", id))
 		{
-			auto iter = std::find(s_column_ids.begin(), s_column_ids.end(), id); 
-			if (iter != s_column_ids.end())
+			const ColumnDesc *descs = GetColumnDescs(type);
+			int index = 0;
+			while (descs[index].m_id && id != descs[index].m_id)
+				index++;
+
+			if (descs[index].m_id)
 			{
-				int index = iter - s_column_ids.begin();
 				int width, order;
 
 				if (attributes.Get("width", width) && IsValidDimension(width))
-					SetColumnWidth(index, width);
-				if (attributes.Get("order", order) && order >= 0 && order < (int)column_order.size())
-					column_order[index] = order;
+					SetColumnWidth(type, index, width);
+				if (attributes.Get("order", order) && order >= 0 && order < GetColumnsOrder(type).size())
+					m_columns_order[static_cast<size_t>(type)][index] = order;
 			}
 		}
 	});
@@ -290,14 +348,6 @@ bool Preferences::Load(wxInputStream &input)
 		GetRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
 	});
 	bool success = xml.Parse(input);
-
-	// we're merging in the column order here because we want to make sure that
-	// the columns are specified if and only if each column is present
-	int column_order_mask = 0;
-	for (size_t i = 0; i < column_order.size(); i++)
-		column_order_mask |= 1 << i;
-	if (column_order_mask == (1 << column_order.size()) - 1)
-		SetColumnOrder(column_order);
 
 	return success;
 }
@@ -338,8 +388,17 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
 	if (!m_search_box_text.IsEmpty())
 		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
-	for (size_t i = 0; i < m_column_widths.size(); i++)
-		output << "\t<column id=\"" << s_column_ids[i] << "\" width=\"" << m_column_widths[i] << "\" order=\"" << m_column_order[i] << "\"/>" << std::endl;
+	for (size_t i = 0; i < static_cast<size_t>(list_view_type::count); i++)
+	{
+		list_view_type type = static_cast<list_view_type>(i);
+		const char *type_string = s_list_view_type_parser[type];
+		const ColumnDesc *desc = GetColumnDescs(type);
+
+		for (size_t j = 0; desc[j].m_id && j < m_column_widths[i].size() && j < m_columns_order[i].size(); j++)
+		{
+			output << "\t<column type=\"" << type_string << "\" id=\"" << desc[j].m_id << "\" width=\"" << m_column_widths[i][j] << "\" order=\"" << m_columns_order[i][j] << "\"/>" << std::endl;
+		}
+	}
 	output << std::endl;
 
 	output << "\t<!-- Machines -->" << std::endl;

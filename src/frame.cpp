@@ -142,8 +142,8 @@ namespace
 		Preferences							    m_prefs;
 		wxTextCtrl *							m_search_box;
 		wxNotebook *							m_note_book;
-		VirtualListView *					    m_machine_view;
-		VirtualListView *					    m_profile_view;
+		wxListView *						    m_machine_view;
+		wxListView *						    m_profile_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
 		wxTimer									m_ping_timer;
@@ -151,6 +151,7 @@ namespace
 		const Pauser *							m_current_pauser;
 		std::function<void(Chatter &&)>			m_on_chatter;
 		observable::unique_subscription			m_watch_subscription;
+		std::vector<std::function<void()>>		m_on_close_funcs;
 
 		// information retrieved by -version
 		wxString								m_mame_version;
@@ -174,6 +175,10 @@ namespace
 		const int SOUND_ATTENUATION_OFF = -32;
 		const int SOUND_ATTENUATION_ON = 0;
 
+		// startup
+		void CreateMenuBar();
+		wxListView &CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const);
+
 		// event handlers (these functions should _not_ be virtual)
 		void OnKeyDown(wxKeyEvent &event);
 		void OnSize(wxSizeEvent &event);
@@ -187,9 +192,9 @@ namespace
 		void OnMenuInputs(status::input::input_class input_class);
 		void OnMenuSwitches(status::input::input_class input_class);
 		void OnMenuAbout();
+		void OnListColumnResized(wxListEvent &evt, wxListView &list_view, Preferences::list_view_type type);
 		void OnMachineListItemSelected(wxListEvent &event);
 		void OnMachineListItemActivated(wxListEvent &event);
-		void OnMachineListColumnResized(wxListEvent &event);
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnSearchBoxTextChanged();
 
@@ -201,7 +206,6 @@ namespace
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// miscellaneous
-		void CreateMenuBar();
 		bool IsMameExecutablePresent() const;
 		void InitialCheckMameInfoDatabase();
 		check_mame_info_status CheckMameInfoDatabase();
@@ -214,7 +218,8 @@ namespace
 		void UpdateMachineList();
 		void UpdateProfileList();
 		info::machine GetMachineFromIndex(long item) const;
-		wxString GetListItemText(long item, long column) const;
+		wxString GetMachineListItemText(long item, long column) const;
+		wxString GetProfileListItemText(long item, long column) const;
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
 		void UpdateMenuBar();
@@ -306,14 +311,7 @@ MameFrame::MameFrame()
 	m_search_box = new wxTextCtrl(machine_panel, id++, m_prefs.GetSearchBoxText());
 
 	// create the machine list
-	m_machine_view = new VirtualListView(machine_panel, id++);
-	m_machine_view->SetOnGetItemText([this](long item, long column) { return GetListItemText(item, column); });
-	m_machine_view->ClearAll();
-	m_machine_view->AppendColumn("Name",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(0));
-	m_machine_view->AppendColumn("Description",    wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(1));
-	m_machine_view->AppendColumn("Year",           wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(2));
-	m_machine_view->AppendColumn("Manufacturer",   wxLIST_FORMAT_LEFT, m_prefs.GetColumnWidth(3));
-	m_machine_view->SetColumnsOrder(m_prefs.GetColumnOrder());
+	m_machine_view = &CreateListView(*machine_panel, id++, Preferences::list_view_type::machine, &MameFrame::GetMachineListItemText);
 	UpdateMachineList();
 	m_info_db.set_on_changed([this]() { UpdateMachineList(); });
 
@@ -324,20 +322,7 @@ MameFrame::MameFrame()
 	}});
 
 	// create the profile view
-	m_profile_view = new VirtualListView(m_note_book, id++);
-	m_profile_view->AppendColumn("Name");
-	m_profile_view->AppendColumn("Machine");
-	m_profile_view->AppendColumn("Path");
-	m_profile_view->SetOnGetItemText([this](long item, long column)
-	{
-		switch(column)
-		{
-		case 0:	return m_profiles.get()[item].name();		break;
-		case 1:	return m_profiles.get()[item].machine();	break;
-		case 2:	return m_profiles.get()[item].path();		break;
-		default:	throw false;
-		}
-	});
+	m_profile_view = &CreateListView(*m_note_book, id++, Preferences::list_view_type::profile, &MameFrame::GetProfileListItemText);
 	m_profiles.subscribe([this]
 	{
 		m_profile_view->SetItemCount(m_profiles.get().size());
@@ -350,20 +335,21 @@ MameFrame::MameFrame()
 	m_note_book->AddPage(m_profile_view, "Profiles");
 
 	// the ties that bind...
-	Bind(EVT_VERSION_RESULT,		[this](auto &event) { OnVersionCompleted(event);    });
-	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    });
-	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event); });
-	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        });
-	Bind(EVT_CHATTER,				[this](auto &event)	{ OnChatter(event);				});
-	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             });
-	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);				});
-	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);				});
-	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnMachineListItemSelected(event);    }, m_machine_view->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnMachineListItemActivated(event);   }, m_machine_view->GetId());
-	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnMachineListColumnResized(event);   }, m_machine_view->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnProfileListItemActivated(event);   }, m_profile_view->GetId());
-	Bind(wxEVT_TIMER,				[this](auto &)		{ InvokePing();					});
-	Bind(wxEVT_TEXT,				[this](auto &)		{ OnSearchBoxTextChanged();		}, m_search_box->GetId());
+	Bind(EVT_VERSION_RESULT,		[this](auto &event) { OnVersionCompleted(event);    														});
+	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    														});
+	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event);															});
+	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        														});
+	Bind(EVT_CHATTER,				[this](auto &event)	{ OnChatter(event);																		});
+	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             														});
+	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);																		});
+	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);																		});
+	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event, *m_machine_view, Preferences::list_view_type::machine);	}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event, *m_profile_view, Preferences::list_view_type::profile);	}, m_profile_view->GetId());
+	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnMachineListItemSelected(event);														}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnMachineListItemActivated(event);													}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnProfileListItemActivated(event);													}, m_profile_view->GetId());
+	Bind(wxEVT_TIMER,				[this](auto &)		{ InvokePing();																			});
+	Bind(wxEVT_TEXT,				[this](auto &)		{ OnSearchBoxTextChanged();																}, m_search_box->GetId());
 
 	// nothing is running yet...
 	UpdateEmulationSession();
@@ -522,6 +508,50 @@ void MameFrame::CreateMenuBar()
 		Bind(wxEVT_MENU,		[this, value](auto &)		{ Issue({ "frameskip", value });										}, item->GetId());
 		Bind(wxEVT_UPDATE_UI,	[this, value](auto &event)	{ OnEmuMenuUpdateUI(event, m_state && m_state->frameskip() == value);	}, item->GetId());		
 	}
+}
+
+
+//-------------------------------------------------
+//  CreateListViewColumns
+//-------------------------------------------------
+
+wxListView &MameFrame::CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const)
+{
+	// create the list view
+	VirtualListView *list_view = new VirtualListView(&parent, winid);
+	list_view->SetOnGetItemText([this, on_get_item_text_func](long item, long column) -> wxString
+	{
+		return ((*this).*(on_get_item_text_func))(item, column);
+	});
+
+	// create each of the columns
+	list_view->ClearAll();
+	const ColumnDesc *column_descs = Preferences::GetColumnDescs(type);
+	int column_count = 0;
+	while (column_descs[column_count].m_id)
+	{
+		int width = m_prefs.GetColumnWidth(type, column_count);
+		list_view->AppendColumn(column_descs[column_count].m_description, wxLIST_FORMAT_LEFT, width);
+		column_count++;
+	}
+
+	// set the column order
+	const auto &order = m_prefs.GetColumnsOrder(type);
+	list_view->SetColumnsOrder(wxArrayInt(order.begin(), order.end()));
+
+	// add a callback to read the columns order on exit
+	m_on_close_funcs.emplace_back([this, list_view, column_count, type]
+	{
+		std::vector<int> order;
+		order.resize(column_count);
+
+		for (int i = 0; i < column_count; i++)
+			order[i] = list_view->GetColumnOrder(i);
+
+		m_prefs.SetColumnsOrder(type, std::move(order));
+	});
+
+	return *list_view;
 }
 
 
@@ -803,11 +833,10 @@ void MameFrame::OnClose(wxCloseEvent &event)
 		}
 	}
 
-	for (int i = 0; i < Preferences::COLUMN_COUNT; i++)
-	{
-		int order = m_machine_view->GetColumnOrder(i);
-		m_prefs.SetColumnOrder(i, order);
-	}
+	// call all on close functions
+	for (const auto &func : m_on_close_funcs)
+		func();
+
 	Destroy();
 }
 
@@ -1267,14 +1296,14 @@ void MameFrame::OnMachineListItemActivated(wxListEvent &evt)
 
 
 //-------------------------------------------------
-//  OnMachineListColumnResized
+//  OnListColumnResized
 //-------------------------------------------------
 
-void MameFrame::OnMachineListColumnResized(wxListEvent &evt)
+void MameFrame::OnListColumnResized(wxListEvent &evt, wxListView &list_view, Preferences::list_view_type type)
 {
 	int column_index = evt.GetColumn();
-	int column_width = m_machine_view->GetColumnWidth(column_index);
-	m_prefs.SetColumnWidth(column_index, column_width);
+	int column_width = list_view.GetColumnWidth(column_index);
+	m_prefs.SetColumnWidth(type, column_index, column_width);
 }
 
 
@@ -1384,10 +1413,10 @@ info::machine MameFrame::GetMachineFromIndex(long item) const
 
 
 //-------------------------------------------------
-//  GetListItemText
+//  GetMachineListItemText
 //-------------------------------------------------
 
-wxString MameFrame::GetListItemText(long item, long column) const
+wxString MameFrame::GetMachineListItemText(long item, long column) const
 {
 	const info::machine machine = GetMachineFromIndex(item);
 
@@ -1412,6 +1441,32 @@ wxString MameFrame::GetListItemText(long item, long column) const
 	return result;
 }
 
+
+//-------------------------------------------------
+//  GetProfileListItemText
+//-------------------------------------------------
+
+wxString MameFrame::GetProfileListItemText(long item, long column) const
+{
+	const profiles::profile &p = m_profiles.get()[item];
+
+	wxString result;
+	switch (column)
+	{
+	case 0:
+		result = p.name();
+		break;
+	case 1:
+		result = p.machine();
+		break;
+	case 2:
+		result = p.path();	
+		break;
+	default:
+		throw false;
+	}
+	return result;
+}
 
 //-------------------------------------------------
 //  UpdateEmulationSession
