@@ -989,6 +989,10 @@ void MameFrame::OnMenuPaths()
 			throw false;
 		}
 	}
+
+	// did the user change the profiles path?
+	if (is_changed(Preferences::path_type::profiles))
+		UpdateProfileList();
 }
 
 
