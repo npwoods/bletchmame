@@ -74,17 +74,20 @@ bool profiles::profile::is_valid() const
 //  scan_directory
 //-------------------------------------------------
 
-std::vector<profiles::profile> profiles::profile::scan_directory(const wxString &path)
+std::vector<profiles::profile> profiles::profile::scan_directory(const wxString &paths)
 {
 	std::vector<profile> results;
 
-	wxArrayString files;
-	wxDir::GetAllFiles(path, &files, wxT("*.bletchmameprofile"));
-	for (wxString &file : files)
+	for (const wxString &path : util::string_split(paths, [](const wchar_t ch) { return ch == ';'; }))
 	{
-		std::optional<profile> p = load(std::move(file));
-		if (p)
-			results.push_back(std::move(p.value()));
+		wxArrayString files;
+		wxDir::GetAllFiles(path, &files, wxT("*.bletchmameprofile"));
+		for (wxString &file : files)
+		{
+			std::optional<profile> p = load(std::move(file));
+			if (p)
+				results.push_back(std::move(p.value()));
+		}
 	}
 	return results;
 }

@@ -455,7 +455,6 @@ bool PathsDialog::IsMultiPath(Preferences::path_type path_type)
 	case Preferences::path_type::emu_exectuable:
 	case Preferences::path_type::config:
 	case Preferences::path_type::nvram:
-	case Preferences::path_type::profiles:
 		result = false;
 		break;
 
@@ -464,6 +463,7 @@ bool PathsDialog::IsMultiPath(Preferences::path_type path_type)
 	case Preferences::path_type::hash:
 	case Preferences::path_type::artwork:
 	case Preferences::path_type::plugins:
+	case Preferences::path_type::profiles:
 		result = true;
 		break;
 
