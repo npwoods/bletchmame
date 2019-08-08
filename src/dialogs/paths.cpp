@@ -38,7 +38,7 @@ namespace
 	public:
 		PathsDialog(wxWindow &parent, Preferences &prefs);
 
-		void Persist();
+		std::vector<Preferences::path_type> Persist();
 		static void ValidityChecks();
 
 	private:
@@ -178,10 +178,22 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 //  Persist
 //-------------------------------------------------
 
-void PathsDialog::Persist()
+std::vector<Preferences::path_type> PathsDialog::Persist()
 {
-	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_prefs.SetPath((Preferences::path_type) i, std::move(m_path_lists[i]));
+	std::vector<Preferences::path_type> changed_paths;
+	for (Preferences::path_type type : util::all_enums<Preferences::path_type>())
+	{
+		wxString &path = m_path_lists[static_cast<size_t>(type)];
+
+		// has this path changed?
+		if (path != m_prefs.GetPath(type))
+		{
+			// if so, record that it changed
+			m_prefs.SetPath(type, std::move(path));
+			changed_paths.push_back(type);
+		}
+	}
+	return changed_paths;
 }
 
 
@@ -536,15 +548,19 @@ wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_typ
 //  show_paths_dialog
 //-------------------------------------------------
 
-bool show_paths_dialog(wxWindow &parent, Preferences &prefs)
+std::vector<Preferences::path_type> show_paths_dialog(wxWindow &parent, Preferences &prefs)
 {
+	std::vector<Preferences::path_type> changed_paths;
+
+	// show the dialog
 	PathsDialog dialog(parent, prefs);
 	bool result = dialog.ShowModal() == wxID_OK;
+
+	// if the user clicked "OK", persist the changes
 	if (result)
-	{
-		dialog.Persist();
-	}
-	return result;
+		changed_paths = dialog.Persist();
+
+	return changed_paths;
 }
 
 

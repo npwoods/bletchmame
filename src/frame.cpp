@@ -948,18 +948,24 @@ void MameFrame::OnMenuImages()
 
 void MameFrame::OnMenuPaths()
 {
-	// keep the old path in case the user changes things
-	wxString old_executable_path = m_prefs.GetPath(Preferences::path_type::emu_exectuable);
+	std::vector<Preferences::path_type> changed_paths;
 
 	// show the dialog
 	{
 		Pauser pauser(*this);
-		show_paths_dialog(*this, m_prefs);
+		changed_paths = show_paths_dialog(*this, m_prefs);
 		m_prefs.Save();
 	}
 
+	// lambda to simplify "is this path changed?"
+	auto is_changed = [&changed_paths](Preferences::path_type type) -> bool
+	{
+		auto iter = std::find(changed_paths.begin(), changed_paths.end(), type);
+		return iter != changed_paths.end();
+	};
+
 	// did the user change the executable path?
-	if (m_prefs.GetPath(Preferences::path_type::emu_exectuable) != old_executable_path)
+	if (is_changed(Preferences::path_type::emu_exectuable))
 	{
 		// they did; check the MAME info DB
 		check_mame_info_status status = CheckMameInfoDatabase();
