@@ -333,23 +333,25 @@ MameFrame::MameFrame()
 	// add the notebook pages
 	m_note_book->AddPage(machine_panel, "Machines");
 	m_note_book->AddPage(m_profile_view, "Profiles");
+	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
 
 	// the ties that bind...
-	Bind(EVT_VERSION_RESULT,		[this](auto &event) { OnVersionCompleted(event);    														});
-	Bind(EVT_LIST_XML_RESULT,       [this](auto &event) { OnListXmlCompleted(event);    														});
-	Bind(EVT_RUN_MACHINE_RESULT,    [this](auto &event) { OnRunMachineCompleted(event);															});
-	Bind(EVT_STATUS_UPDATE,         [this](auto &event) { OnStatusUpdate(event);        														});
-	Bind(EVT_CHATTER,				[this](auto &event)	{ OnChatter(event);																		});
-	Bind(wxEVT_KEY_DOWN,			[this](auto &event) { OnKeyDown(event);             														});
-	Bind(wxEVT_SIZE,	        	[this](auto &event) { OnSize(event);																		});
-	Bind(wxEVT_CLOSE_WINDOW,		[this](auto &event) { OnClose(event);																		});
-	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event, *m_machine_view, Preferences::list_view_type::machine);	}, m_machine_view->GetId());
-	Bind(wxEVT_LIST_COL_END_DRAG,   [this](auto &event) { OnListColumnResized(event, *m_profile_view, Preferences::list_view_type::profile);	}, m_profile_view->GetId());
-	Bind(wxEVT_LIST_ITEM_SELECTED,  [this](auto &event) { OnMachineListItemSelected(event);														}, m_machine_view->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnMachineListItemActivated(event);													}, m_machine_view->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](auto &event) { OnProfileListItemActivated(event);													}, m_profile_view->GetId());
-	Bind(wxEVT_TIMER,				[this](auto &)		{ InvokePing();																			});
-	Bind(wxEVT_TEXT,				[this](auto &)		{ OnSearchBoxTextChanged();																}, m_search_box->GetId());
+	Bind(EVT_VERSION_RESULT,			[this](auto &event) { OnVersionCompleted(event);    															});
+	Bind(EVT_LIST_XML_RESULT,		    [this](auto &event) { OnListXmlCompleted(event);    															});
+	Bind(EVT_RUN_MACHINE_RESULT,	    [this](auto &event) { OnRunMachineCompleted(event);																});
+	Bind(EVT_STATUS_UPDATE,			    [this](auto &event) { OnStatusUpdate(event);        															});
+	Bind(EVT_CHATTER,					[this](auto &event)	{ OnChatter(event);																			});
+	Bind(wxEVT_KEY_DOWN,				[this](auto &event) { OnKeyDown(event);             															});
+	Bind(wxEVT_SIZE,					[this](auto &event) { OnSize(event);																			});
+	Bind(wxEVT_CLOSE_WINDOW,			[this](auto &event) { OnClose(event);																			});
+	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &event) { m_prefs.SetSelectedTab(static_cast<Preferences::list_view_type>(event.GetSelection()));	}, m_note_book->GetId());
+	Bind(wxEVT_LIST_COL_END_DRAG,		[this](auto &event) { OnListColumnResized(event, *m_machine_view, Preferences::list_view_type::machine);		}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_COL_END_DRAG,		[this](auto &event) { OnListColumnResized(event, *m_profile_view, Preferences::list_view_type::profile);		}, m_profile_view->GetId());
+	Bind(wxEVT_LIST_ITEM_SELECTED,		[this](auto &event) { OnMachineListItemSelected(event);															}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
+	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
+	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
 
 	// nothing is running yet...
 	UpdateEmulationSession();

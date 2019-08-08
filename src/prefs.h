@@ -76,6 +76,9 @@ public:
 	const wxSize &GetSize() const											    { return m_size; }
 	void SetSize(const wxSize &size)											{ m_size = size; }
 
+	list_view_type GetSelectedTab()												{ return m_selected_tab; }
+	void SetSelectedTab(list_view_type type)									{ m_selected_tab = type; }
+
 	int GetColumnWidth(list_view_type type, int column_index) const             { return GetColumnWidths(type)[column_index]; }
 	void SetColumnWidth(list_view_type type, int column_index, int width)       { GetColumnWidths(type)[column_index] = width; }
 
@@ -122,6 +125,7 @@ private:
 	std::array<std::vector<int>, static_cast<size_t>(list_view_type::count)>	m_column_widths;
 	std::array<std::vector<int>, static_cast<size_t>(list_view_type::count)>	m_columns_order;
 	std::map<wxString, MachineInfo>												m_machine_info;
+	list_view_type																m_selected_tab;
 	wxString																	m_selected_machine;
 	wxString																	m_search_box_text;
 	bool																		m_menu_bar_shown;

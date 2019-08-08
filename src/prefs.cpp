@@ -111,6 +111,7 @@ const ColumnDesc *Preferences::GetColumnDescs(list_view_type type)
 Preferences::Preferences()
 	: m_size(950, 600)
 	, m_menu_bar_shown(true)
+	, m_selected_tab(list_view_type::machine)
 {
 	// default column order
 	for (list_view_type type : util::all_enums<list_view_type>())
@@ -264,6 +265,11 @@ bool Preferences::Load(wxInputStream &input)
 		bool menu_bar_shown;
 		if (attributes.Get("menu_bar_shown", menu_bar_shown))
 			SetMenuBarShown(menu_bar_shown);
+
+		list_view_type selected_tab;
+		if (attributes.Get("selected_tab", selected_tab, s_list_view_type_parser))
+			SetSelectedTab(selected_tab);
+
 	});
 	xml.OnElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -374,7 +380,7 @@ void Preferences::Save()
 void Preferences::Save(std::ostream &output)
 {
 	output << "<!-- Preferences for BletchMAME -->" << std::endl;
-	output << "<preferences menu_bar_shown=\"" << (m_menu_bar_shown ? "1" : "0") << "\">" << std::endl;
+	output << "<preferences menu_bar_shown=\"" << (m_menu_bar_shown ? "1" : "0") << "\" selected_tab=\"" << s_list_view_type_parser[GetSelectedTab()] << "\">" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Paths -->" << std::endl;
