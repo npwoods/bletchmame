@@ -37,10 +37,12 @@ namespace profiles
 		const wxString &name() const { return m_name; }
 		const wxString &path() const { return m_path; }
 		const wxString &machine() const { return m_machine; }
-		const std::vector<image> &images() const { return m_images; }
+		const std::vector<image> &images() const	{ return m_images; }
+		std::vector<image> &images()				{ return m_images; }
 		
 		// methods
 		bool is_valid() const;
+		void save() const;
 		void save_as(wxTextOutputStream &stream) const;
 
 		wxString directory_path() const
@@ -53,6 +55,8 @@ namespace profiles
 		// statics
 		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);
 		static void create(wxTextOutputStream &stream, const info::machine &machine);
+		static std::optional<profile> load(wxString &&path);
+		static std::optional<profile> load(const wxString &path);
 
 		bool operator==(const profile &that) const;
 
@@ -65,8 +69,6 @@ namespace profiles
 		wxString			m_path;
 		wxString			m_machine;
 		std::vector<image>	m_images;
-
-		static std::optional<profile> load(wxString &&path);
 	};
 };
 

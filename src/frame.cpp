@@ -172,6 +172,7 @@ namespace
 		observable::unique_subscription						m_profiles_subscription;
 
 		// status of running emulation
+		wxString								m_current_profile_path;
 		std::optional<status::state>			m_state;
 
 		static const float s_throttle_rates[];
@@ -230,7 +231,7 @@ namespace
 		bool PromptForMameExecutable();
 		bool RefreshMameInfoDatabase();
 		info::machine GetRunningMachine() const;
-		void Run(const info::machine &machine, std::unordered_map<wxString, wxString> &&images = {});
+		void Run(const info::machine &machine, const profiles::profile *profile = nullptr);
 		void Run(const profiles::profile &profile);
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
@@ -757,7 +758,7 @@ info::machine MameFrame::GetRunningMachine() const
 //  Run
 //-------------------------------------------------
 
-void MameFrame::Run(const info::machine &machine, std::unordered_map<wxString, wxString> &&images)
+void MameFrame::Run(const info::machine &machine, const profiles::profile *profile)
 {
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
@@ -790,10 +791,14 @@ void MameFrame::Run(const info::machine &machine, std::unordered_map<wxString, w
 		wxYield();
 	}
 
-	// mount images
-	for (auto &i : images)
+	// set up profile
+	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
+	if (profile)
 	{
-		Issue({ "load", std::move(i.first), std::move(i.second) });
+		for (const auto &image : profile->images())
+		{
+			Issue({ "load", image.m_tag, image.m_path });
+		}
 	}
 
 	// do we have any images that require images?
@@ -827,14 +832,7 @@ void MameFrame::Run(const profiles::profile &profile)
 		return;
 	}
 
-	// get a list of images
-	std::unordered_map<wxString, wxString> images;
-	for (const profiles::image &i : profile.images())
-	{
-		images[i.m_tag] = i.m_path;
-	}
-
-	Run(machine.value(), std::move(images));
+	Run(machine.value(), &profile);
 }
 
 
@@ -901,6 +899,11 @@ void MameFrame::OnClose(wxCloseEvent &event)
 			event.Veto();
 			return;
 		}
+
+		// issue exit command so we can shut down the emulation session gracefully
+		Issue({ "exit" });
+		while (m_state.has_value())
+			wxYield();
 	}
 
 	// call all on close functions
@@ -1163,8 +1166,31 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 {
 	const RunMachineResult &payload(event.Payload());
 
+	// update the profile, if present
+	if (!m_current_profile_path.empty())
+	{
+		std::optional<profiles::profile> profile = profiles::profile::load(m_current_profile_path);
+		if (profile)
+		{
+			profile->images().clear();
+			for (const status::image &status_image : m_state->images().get())
+			{
+				if (!status_image.m_file_name.empty())
+				{
+					profiles::image &profile_image = profile->images().emplace_back();
+					profile_image.m_tag = status_image.m_tag;
+					profile_image.m_path = status_image.m_file_name;
+				}
+			}
+			profile->save();
+		}
+	}
+
+
+	// clear out all of the state
 	m_client.Reset();
 	m_state.reset();
+	m_current_profile_path = util::g_empty_string;
     UpdateEmulationSession();
 	UpdateStatusBar();
 

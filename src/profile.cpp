@@ -98,6 +98,16 @@ std::vector<profiles::profile> profiles::profile::scan_directories(const std::ve
 //  load
 //-------------------------------------------------
 
+std::optional<profiles::profile> profiles::profile::load(const wxString &path)
+{
+	return load(wxString(path));
+}
+
+
+//-------------------------------------------------
+//  load
+//-------------------------------------------------
+
 std::optional<profiles::profile> profiles::profile::load(wxString &&path)
 {
 	// open the stream
@@ -124,6 +134,18 @@ std::optional<profiles::profile> profiles::profile::load(wxString &&path)
 	return xml.Parse(result.m_path) && result.is_valid()
 		? std::optional<profiles::profile>(std::move(result))
 		: std::optional<profiles::profile>();
+}
+
+
+//-------------------------------------------------
+//  save
+//-------------------------------------------------
+
+void profiles::profile::save() const
+{
+	wxFileOutputStream stream(path());
+	wxTextOutputStream text_stream(stream);
+	save_as(text_stream);
 }
 
 
