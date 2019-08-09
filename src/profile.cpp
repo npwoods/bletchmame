@@ -128,12 +128,26 @@ std::optional<profiles::profile> profiles::profile::load(wxString &&path)
 
 
 //-------------------------------------------------
+//  save_as
+//-------------------------------------------------
+
+void profiles::profile::save_as(wxTextOutputStream &stream) const
+{
+	stream << "<!-- BletchMAME profile -->" << endl;
+	stream << "<profile machine=\"" << machine() << "\">" << endl;
+	for (const image &image : images())
+		stream << "\t<image tag=\"" << image.m_tag << "\" path=\"" << image.m_path << "\"/>" << endl;
+	stream << "</profile>" << endl;
+}
+
+
+//-------------------------------------------------
 //  create
 //-------------------------------------------------
 
 void profiles::profile::create(wxTextOutputStream &stream, const info::machine &machine)
 {
-	stream << "<!-- BletchMAME profile -->" << endl;
-	stream << "<profile machine=\"" << machine.name() << "\">" << endl;
-	stream << "</profile>" << endl;
+	profile new_profile;
+	new_profile.m_machine = machine.name();
+	new_profile.save_as(stream);
 }

@@ -213,6 +213,13 @@ namespace
 		void OnStatusUpdate(PayloadEvent<status::update> &event);
 		void OnChatter(PayloadEvent<Chatter> &event);
 
+		// profiles
+		void CreateProfile(const info::machine &machine);
+		void DuplicateProfile(const profiles::profile &profile);
+		void RenameProfile(const profiles::profile &profile);
+		void DeleteProfile(const profiles::profile &profile);
+		void FocusOnNewProfile(wxString &&new_profile_path);
+
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
 		void InitialCheckMameInfoDatabase();
@@ -225,8 +232,7 @@ namespace
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
-		void UpdateProfileDirectories(bool update_fsw);
-		void CreateProfile(const info::machine &machine);
+		void UpdateProfileDirectories(bool update_fsw);		
 		info::machine GetMachineFromIndex(long item) const;
 		wxString GetMachineListItemText(long item, long column) const;
 		wxString GetProfileListItemText(long item, long column) const;
@@ -1421,7 +1427,7 @@ void MameFrame::OnMachineListItemContextMenu(wxListEvent &event)
 
 
 //-------------------------------------------------
-//  OnSearchBoxTextChanged
+//  OnProfileListItemContextMenu
 //-------------------------------------------------
 
 void MameFrame::OnProfileListItemContextMenu(wxListEvent &event)
@@ -1433,8 +1439,17 @@ void MameFrame::OnProfileListItemContextMenu(wxListEvent &event)
 	// build the popup menu
 	int id = ID_POPUP_MENU_BEGIN;
 	wxMenu popup_menu;
-	wxMenuItem &run_menu_item = *popup_menu.Append(id++, "Run \"" + profile.name() + "\"");
-	Bind(wxEVT_MENU, [this, &profile](auto &) { Run(profile); }, run_menu_item.GetId());
+	wxMenuItem &run_menu_item		= *popup_menu.Append(id++, "Run \"" + profile.name() + "\"");
+	wxMenuItem &duplicate_menu_item	= *popup_menu.Append(id++, "Duplicate");
+	wxMenuItem &rename_menu_item	= *popup_menu.Append(id++, "Rename");
+	wxMenuItem &delete_menu_item	= *popup_menu.Append(id++, "Delete");
+	Bind(wxEVT_MENU, [this, &profile](auto &) { Run(profile);				}, run_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { DuplicateProfile(profile);	}, duplicate_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { RenameProfile(profile);		}, rename_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { DeleteProfile(profile);		}, delete_menu_item.GetId());
+
+	// not enabled yet
+	rename_menu_item.Enable(false);
 
 	// and display it
 	PopupMenu(&popup_menu);
@@ -1513,6 +1528,33 @@ void MameFrame::UpdateProfileDirectories(bool update_fsw)
 
 
 //-------------------------------------------------
+//  GetUniqueFileName
+//-------------------------------------------------
+
+template<typename TFunc>
+static wxString GetUniqueProfilePath(const wxString &dir_path, TFunc generate_name)
+{
+	// prepare for building file paths
+	wxFileName file_name(dir_path + "/");
+	wxString file_path;
+	file_name.SetExt("bletchmameprofile");
+
+	// try up to 10 attempts
+	for (int attempt = 0; file_path.empty() && attempt < 10; attempt++)
+	{
+		// build the file path
+		wxString name = generate_name(attempt);
+		file_name.SetName(name);
+
+		// get the file path if this file doesn't exist
+		if (!file_name.Exists())
+			file_path = file_name.GetFullPath();
+	}
+	return file_path;
+}
+
+
+//-------------------------------------------------
 //  CreateProfile
 //-------------------------------------------------
 
@@ -1528,42 +1570,94 @@ void MameFrame::CreateProfile(const info::machine &machine)
 	}
 	const wxString &path = *iter;
 
-	// prepare for building file paths
-	wxFileName file_name(path + "/");
-	wxString file_path;
-	file_name.SetExt("bletchmameprofile");
+	// get the full path for a new profile
+	wxString new_profile_path = GetUniqueProfilePath(path, [&machine](int attempt)
+	{
+		return attempt == 0
+			? machine.name() + wxT(" - New Profile")
+			: machine.name() + wxT(" - New Profile (") + std::to_string(attempt + 1) + wxT(")");
+	});
 
 	// create the file stream
-	std::optional<wxFileOutputStream> stream;
-	for (int attempt = 0; !stream && attempt < 10; attempt++)
-	{
-		// build the file path
-		if (attempt == 0)
-			file_name.SetName(machine.name() + wxT(" - New Profile"));
-		else
-			file_name.SetName(machine.name() + wxT(" - New Profile (") + std::to_string(attempt + 1) + wxT(")"));
-
-		// create the file (if it doesn't exist)	
-		if (!file_name.Exists())
-		{
-			file_path = file_name.GetFullPath();
-			stream.emplace(file_path);
-			if (!stream->IsOk())
-				stream.reset();
-		}
-	}
-	if (!stream)
+	wxFileOutputStream stream(new_profile_path);
+	if (!stream.IsOk())
 	{
 		MessageBox("Could not create profile");
 		return;
 	}
 
-	// create the new profile
-	wxTextOutputStream text_stream(*stream);
+	// create the new profile and focus
+	wxTextOutputStream text_stream(stream);
 	profiles::profile::create(text_stream, machine);
+	FocusOnNewProfile(std::move(new_profile_path));
+}
 
-	// hop over to the profiles tab, and let the file system watcher pick it up
-	m_prefs.SetSelectedProfile(std::move(file_path));
+
+//-------------------------------------------------
+//  DuplicateProfile
+//-------------------------------------------------
+
+void MameFrame::DuplicateProfile(const profiles::profile &profile)
+{
+	wxString dir_path;
+	wxFileName::SplitPath(profile.path(), &dir_path, nullptr, nullptr);
+
+	// get the full path for a new profile
+	wxString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
+	{
+		return attempt == 0
+			? profile.name() + wxT(" - Copy")
+			: profile.name() + wxT(" - Copy (") + std::to_string(attempt + 1) + wxT(")");
+	});
+
+	// create the file stream
+	wxFileOutputStream stream(new_profile_path);
+	if (!stream.IsOk())
+	{
+		MessageBox("Could not create profile");
+		return;
+	}
+
+	// create the new profile and focus
+	wxTextOutputStream text_stream(stream);
+	profile.save_as(text_stream);
+	FocusOnNewProfile(std::move(new_profile_path));
+}
+
+
+//-------------------------------------------------
+//  RenameProfile
+//-------------------------------------------------
+
+void MameFrame::RenameProfile(const profiles::profile &profile)
+{
+	(void)profile;
+	throw false;
+}
+
+
+//-------------------------------------------------
+//  DeleteProfile
+//-------------------------------------------------
+
+void MameFrame::DeleteProfile(const profiles::profile &profile)
+{
+	if (!wxRemoveFile(profile.path()))
+	{
+		MessageBox("Could not delete profile");
+		return;
+	}
+	m_prefs.SetSelectedProfile(util::g_empty_string);
+}
+
+
+//-------------------------------------------------
+//  FocusOnNewProfile
+//-------------------------------------------------
+
+void MameFrame::FocusOnNewProfile(wxString &&new_profile_path)
+{
+	m_prefs.SetSelectedProfile(std::move(new_profile_path));
 	m_note_book->SetSelection(1);
 }
 

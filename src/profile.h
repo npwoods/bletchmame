@@ -41,6 +41,7 @@ namespace profiles
 
 		// methods
 		bool is_valid() const;
+		void save_as(wxTextOutputStream &stream) const;
 
 		// statics
 		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);
