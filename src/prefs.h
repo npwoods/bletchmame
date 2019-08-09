@@ -62,12 +62,40 @@ public:
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
-	// returns 
+	// returns descriptions of all columns
 	static const ColumnDesc *GetColumnDescs(list_view_type type);
+
+	static inline bool IsMultiPath(path_type path_type)
+	{
+		bool result;
+		switch (path_type)
+		{
+		case Preferences::path_type::emu_exectuable:
+		case Preferences::path_type::config:
+		case Preferences::path_type::nvram:
+			result = false;
+			break;
+
+		case Preferences::path_type::roms:
+		case Preferences::path_type::samples:
+		case Preferences::path_type::hash:
+		case Preferences::path_type::artwork:
+		case Preferences::path_type::plugins:
+		case Preferences::path_type::profiles:
+			result = true;
+			break;
+
+		default:
+			throw false;
+		}
+		return result;
+	}
 
 	const wxString &GetPath(path_type type) const								{ return m_paths[static_cast<size_t>(type)]; }
 	void SetPath(path_type type, wxString &&path)								{ m_paths[static_cast<size_t>(type)] = std::move(path); }
 	
+	std::vector<wxString> GetSplitPaths(path_type type) const;
+
 	wxString GetPathWithSubstitutions(path_type type) const						{ assert(type != path_type::emu_exectuable); return ApplySubstitutions(GetPath(type)); }
 
 	const wxString &GetMameExtraArguments() const								{ return m_mame_extra_arguments; }

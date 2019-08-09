@@ -9,6 +9,7 @@
 #include <wx/dir.h>
 #include <wx/wfstream.h>
 #include <wx/filename.h>
+#include <wx/txtstrm.h>
 #include <optional>
 
 #include "profile.h"
@@ -94,7 +95,7 @@ std::vector<profiles::profile> profiles::profile::scan_directories(const std::ve
 
 
 //-------------------------------------------------
-//  ctor
+//  load
 //-------------------------------------------------
 
 std::optional<profiles::profile> profiles::profile::load(wxString &&path)
@@ -123,4 +124,16 @@ std::optional<profiles::profile> profiles::profile::load(wxString &&path)
 	return xml.Parse(result.m_path) && result.is_valid()
 		? std::optional<profiles::profile>(std::move(result))
 		: std::optional<profiles::profile>();
+}
+
+
+//-------------------------------------------------
+//  create
+//-------------------------------------------------
+
+void profiles::profile::create(wxTextOutputStream &stream, const info::machine &machine)
+{
+	stream << "<!-- BletchMAME profile -->" << endl;
+	stream << "<profile machine=\"" << machine.name() << "\">" << endl;
+	stream << "</profile>" << endl;
 }

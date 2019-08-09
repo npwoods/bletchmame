@@ -11,9 +11,10 @@
 #ifndef PROFILE_H
 #define PROFILE_H
 
-#include "wx/string.h"
-
+#include <wx/string.h>
 #include <vector>
+
+#include "info.h"
 
 namespace profiles
 {
@@ -43,6 +44,7 @@ namespace profiles
 
 		// statics
 		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);
+		static void create(wxTextOutputStream &stream, const info::machine &machine);
 
 		bool operator==(const profile &that) const;
 

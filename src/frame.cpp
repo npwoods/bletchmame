@@ -17,6 +17,7 @@
 #include <wx/notebook.h>
 #include <wx/dir.h>
 #include <wx/fswatcher.h>
+#include <wx/wfstream.h>
 
 #include "frame.h"
 #include "client.h"
@@ -224,6 +225,7 @@ namespace
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
 		void UpdateProfileDirectories(bool update_fsw);
+		void CreateProfile(const info::machine &machine);
 		info::machine GetMachineFromIndex(long item) const;
 		wxString GetMachineListItemText(long item, long column) const;
 		wxString GetProfileListItemText(long item, long column) const;
@@ -1379,8 +1381,10 @@ void MameFrame::OnMachineListItemContextMenu(wxListEvent &event)
 	// build the popup menu
 	int id = ID_POPUP_MENU_BEGIN;
 	wxMenu popup_menu;
-	wxMenuItem &run_menu_item = *popup_menu.Append(id++, "Run \"" + machine.description() + "\"");
-	Bind(wxEVT_MENU, [this, machine](auto &) { Run(machine); }, run_menu_item.GetId());
+	wxMenuItem &run_menu_item				= *popup_menu.Append(id++, "Run");
+	wxMenuItem &create_profile_menu_item	= *popup_menu.Append(id++, "Create profile");
+	Bind(wxEVT_MENU, [this, machine](auto &) { Run(machine);			}, run_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, machine](auto &) { CreateProfile(machine);	}, create_profile_menu_item.GetId());
 
 	// and display it
 	PopupMenu(&popup_menu);
@@ -1466,8 +1470,7 @@ void MameFrame::UpdateMachineList()
 void MameFrame::UpdateProfileDirectories(bool update_fsw)
 {
 	// first update the actual list
-	const wxString &paths_string = m_prefs.GetPath(Preferences::path_type::profiles);
-	std::vector<wxString> paths = util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::profiles);
 	m_profiles = profiles::profile::scan_directories(paths);
 
 	// now update the file system watcher if we're asked to
@@ -1477,6 +1480,55 @@ void MameFrame::UpdateProfileDirectories(bool update_fsw)
 		for (const wxString &path : paths)
 			m_fsw_profiles.Add(path);
 	}
+}
+
+
+//-------------------------------------------------
+//  CreateProfile
+//-------------------------------------------------
+
+void MameFrame::CreateProfile(const info::machine &machine)
+{
+	// find a path to create the new profile in
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::profiles);
+	auto iter = std::find_if(paths.begin(), paths.end(), wxDir::Exists);
+	if (iter == paths.end())
+	{
+		MessageBox("Cannot create profile without valid profile path");
+		return;
+	}
+	const wxString &path = *iter;
+
+	// create the file stream
+	std::optional<wxFileOutputStream> stream;
+	for (int attempt = 0; !stream && attempt < 10; attempt++)
+	{
+		// build the file path
+		wxString file_name = path + wxT("/") + machine.name() + wxT(" - New Profile");
+		if (attempt > 0)
+			file_name += wxT(" (") + std::to_string(attempt + 1) + wxT(")");
+		file_name += ".bletchmameprofile";
+
+		// create the file (if it doesn't exist)
+		if (!wxFile::Exists(file_name))
+		{
+			stream.emplace(file_name);
+			if (!stream->IsOk())
+				stream.reset();
+		}
+	}
+	if (!stream)
+	{
+		MessageBox("Could not create profile");
+		return;
+	}
+
+	// create the new profile
+	wxTextOutputStream text_stream(*stream);
+	profiles::profile::create(text_stream, machine);
+
+	// hop over to the profiles tab, and let the file system watcher pick it up
+	m_note_book->SetSelection(1);
 }
 
 

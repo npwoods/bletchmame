@@ -160,6 +160,17 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &mach
 
 
 //-------------------------------------------------
+//  GetSplitPaths
+//-------------------------------------------------
+
+std::vector<wxString> Preferences::GetSplitPaths(path_type type) const
+{
+	const wxString &paths_string = GetPath(type);
+	return util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
+}
+
+
+//-------------------------------------------------
 //  GetMachinePath
 //-------------------------------------------------
 
@@ -654,6 +665,13 @@ static void path_names()
 }
 
 
+static void multi_path()
+{
+	for (Preferences::path_type type : util::all_enums<Preferences::path_type>())
+		Preferences::IsMultiPath(type);
+}
+
+
 //-------------------------------------------------
 //  validity_checks
 //-------------------------------------------------
@@ -661,5 +679,6 @@ static void path_names()
 static validity_check validity_checks[] =
 {
 	general,
-	path_names
+	path_names,
+	multi_path
 };

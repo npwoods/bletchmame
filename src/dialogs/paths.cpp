@@ -66,7 +66,6 @@ namespace
 		void RefreshListView();
 		void CurrentPathListChanged();
 		bool IsMultiPath() const;
-		static bool IsMultiPath(Preferences::path_type path_type);
 		bool IsSelectingPath() const;
 		Preferences::path_type GetCurrentPath() const;
 		bool BrowseForPath();
@@ -455,34 +454,7 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 
 bool PathsDialog::IsMultiPath() const
 {
-	return IsMultiPath(GetCurrentPath());
-}
-
-
-bool PathsDialog::IsMultiPath(Preferences::path_type path_type)
-{
-	bool result;
-	switch (path_type)
-	{
-	case Preferences::path_type::emu_exectuable:
-	case Preferences::path_type::config:
-	case Preferences::path_type::nvram:
-		result = false;
-		break;
-
-	case Preferences::path_type::roms:
-	case Preferences::path_type::samples:
-	case Preferences::path_type::hash:
-	case Preferences::path_type::artwork:
-	case Preferences::path_type::plugins:
-	case Preferences::path_type::profiles:
-		result = true;
-		break;
-
-	default:
-		throw false;
-	}
-	return result;
+	return Preferences::IsMultiPath(GetCurrentPath());
 }
 
 
@@ -515,9 +487,6 @@ bool PathsDialog::IsSelectingPath() const
 void PathsDialog::ValidityChecks()
 {
 	BuildComboBoxStrings();
-
-	for (int i = 0; i < (int)Preferences::path_type::count; i++)
-		IsMultiPath(static_cast<Preferences::path_type>(i));
 }
 
 
