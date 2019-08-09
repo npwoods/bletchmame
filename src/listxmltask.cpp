@@ -363,6 +363,7 @@ string_table::string_table()
 
 std::uint32_t string_table::get(const std::string &s)
 {
+	// if we've already cached this value, look it up
 	auto iter = m_map.find(s);
 	if (iter != m_map.end())
 		return iter->second;
@@ -371,7 +372,7 @@ std::uint32_t string_table::get(const std::string &s)
 	std::uint32_t result = to_uint32(m_data.size());
 
 	// append the string (including trailing NUL) to m_data
-	m_data.insert(m_data.end(), &s[0], &s[0] + s.size() + 1);
+	m_data.insert(m_data.end(), s.c_str(), s.c_str() + s.size() + 1);
 
 	// and to m_map
 	m_map[s] = result;
