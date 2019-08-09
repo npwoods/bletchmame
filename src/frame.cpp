@@ -1410,7 +1410,7 @@ void MameFrame::OnMachineListItemContextMenu(wxListEvent &event)
 	// build the popup menu
 	int id = ID_POPUP_MENU_BEGIN;
 	wxMenu popup_menu;
-	wxMenuItem &run_menu_item				= *popup_menu.Append(id++, "Run");
+	wxMenuItem &run_menu_item				= *popup_menu.Append(id++, "Run \"" + machine.description() + "\"");
 	wxMenuItem &create_profile_menu_item	= *popup_menu.Append(id++, "Create profile");
 	Bind(wxEVT_MENU, [this, machine](auto &) { Run(machine);			}, run_menu_item.GetId());
 	Bind(wxEVT_MENU, [this, machine](auto &) { CreateProfile(machine);	}, create_profile_menu_item.GetId());
