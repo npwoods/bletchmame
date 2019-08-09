@@ -1481,6 +1481,10 @@ void MameFrame::OnProfileListEndLabelEdit(long index)
 	new_file_name.SetExt("bletchmameprofile");
 	wxString new_path = new_file_name.GetFullPath();
 
+	// are the paths the same?  if so, this has no meaning
+	if (profile.path() == new_path)
+		return;
+
 	// try to rename
 	if (wxRenameFile(profile.path(), new_path, false))
 		m_prefs.SetSelectedProfile(std::move(new_path));
