@@ -1474,14 +1474,17 @@ void MameFrame::OnProfileListItemContextMenu(wxListEvent &event)
 	// build the popup menu
 	int id = ID_POPUP_MENU_BEGIN;
 	wxMenu popup_menu;
-	wxMenuItem &run_menu_item		= *popup_menu.Append(id++, "Run \"" + profile.name() + "\"");
-	wxMenuItem &duplicate_menu_item	= *popup_menu.Append(id++, "Duplicate");
-	wxMenuItem &rename_menu_item	= *popup_menu.Append(id++, "Rename");
-	wxMenuItem &delete_menu_item	= *popup_menu.Append(id++, "Delete");
-	Bind(wxEVT_MENU, [this, &profile](auto &) { Run(profile);				}, run_menu_item.GetId());
-	Bind(wxEVT_MENU, [this, &profile](auto &) { DuplicateProfile(profile);	}, duplicate_menu_item.GetId());
-	Bind(wxEVT_MENU, [this, &profile](auto &) { RenameProfile(profile);		}, rename_menu_item.GetId());
-	Bind(wxEVT_MENU, [this, &profile](auto &) { DeleteProfile(profile);		}, delete_menu_item.GetId());
+	wxMenuItem &run_menu_item				= *popup_menu.Append(id++, "Run \"" + profile.name() + "\"");
+	wxMenuItem &duplicate_menu_item			= *popup_menu.Append(id++, "Duplicate");
+	wxMenuItem &rename_menu_item			= *popup_menu.Append(id++, "Rename");
+	wxMenuItem &delete_menu_item			= *popup_menu.Append(id++, "Delete");
+	popup_menu.AppendSeparator();
+	wxMenuItem &show_in_folder_menu_item	= *popup_menu.Append(id++, "Show in folder");
+	Bind(wxEVT_MENU, [this, &profile](auto &) { Run(profile);																}, run_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { DuplicateProfile(profile);													}, duplicate_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { RenameProfile(profile);														}, rename_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { DeleteProfile(profile);														}, delete_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, &profile](auto &) { wxExecute(wxT("explorer.exe /select,\"") + profile.path() + wxT("\""));		}, show_in_folder_menu_item.GetId());
 
 	// and display it
 	PopupMenu(&popup_menu);
