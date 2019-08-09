@@ -169,6 +169,7 @@ namespace
 
 		// profile list
 		observable::value<std::vector<profiles::profile>>	m_profiles;
+		observable::unique_subscription						m_profiles_subscription;
 
 		// status of running emulation
 		std::optional<status::state>			m_state;
@@ -182,7 +183,8 @@ namespace
 
 		// startup
 		void CreateMenuBar();
-		wxListView &CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const);
+		wxListView &CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const,
+			bool support_label_edit);
 
 		// event handlers (these functions should _not_ be virtual)
 		void OnKeyDown(wxKeyEvent &event);
@@ -204,6 +206,7 @@ namespace
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
 		void OnProfileListItemContextMenu(wxListEvent &event);
+		void OnProfileListEndLabelEdit(long index);
 		void OnSearchBoxTextChanged();
 
 		// task notifications
@@ -327,7 +330,7 @@ MameFrame::MameFrame()
 	m_search_box = new wxTextCtrl(machine_panel, id++, m_prefs.GetSearchBoxText());
 
 	// create the machine list
-	m_machine_view = &CreateListView(*machine_panel, id++, Preferences::list_view_type::machine, &MameFrame::GetMachineListItemText);
+	m_machine_view = &CreateListView(*machine_panel, id++, Preferences::list_view_type::machine, &MameFrame::GetMachineListItemText, false);
 	UpdateMachineList();
 	m_info_db.set_on_changed([this]() { UpdateMachineList(); });
 
@@ -338,8 +341,8 @@ MameFrame::MameFrame()
 	}});
 
 	// create the profile view
-	m_profile_view = &CreateListView(*m_note_book, id++, Preferences::list_view_type::profile, &MameFrame::GetProfileListItemText);
-	m_profiles.subscribe([this]
+	m_profile_view = &CreateListView(*m_note_book, id++, Preferences::list_view_type::profile, &MameFrame::GetProfileListItemText, true);
+	m_profiles_subscription = m_profiles.subscribe([this]
 	{
 		m_profile_view->SetItemCount(m_profiles.get().size());
 		m_profile_view->RefreshItems(0, m_profiles.get().size() - 1);
@@ -387,6 +390,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
+	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnProfileListEndLabelEdit(event.GetIndex());												}, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
 	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
 	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(false);															});
@@ -555,10 +559,15 @@ void MameFrame::CreateMenuBar()
 //  CreateListViewColumns
 //-------------------------------------------------
 
-wxListView &MameFrame::CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const)
+wxListView &MameFrame::CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const, bool support_label_edit)
 {
+	// determine the style
+	long style = wxLC_REPORT | wxLC_VIRTUAL | wxLC_SINGLE_SEL;
+	if (support_label_edit)
+		style |= wxLC_EDIT_LABELS;
+
 	// create the list view
-	VirtualListView *list_view = new VirtualListView(&parent, winid, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_VIRTUAL | wxLC_SINGLE_SEL);
+	VirtualListView *list_view = new VirtualListView(&parent, winid, wxDefaultPosition, wxDefaultSize, style);
 	list_view->SetOnGetItemText([this, on_get_item_text_func](long item, long column) -> wxString
 	{
 		return ((*this).*(on_get_item_text_func))(item, column);
@@ -1448,11 +1457,33 @@ void MameFrame::OnProfileListItemContextMenu(wxListEvent &event)
 	Bind(wxEVT_MENU, [this, &profile](auto &) { RenameProfile(profile);		}, rename_menu_item.GetId());
 	Bind(wxEVT_MENU, [this, &profile](auto &) { DeleteProfile(profile);		}, delete_menu_item.GetId());
 
-	// not enabled yet
-	rename_menu_item.Enable(false);
-
 	// and display it
 	PopupMenu(&popup_menu);
+}
+
+
+//-------------------------------------------------
+//  OnProfileListEndLabelEdit
+//-------------------------------------------------
+
+void MameFrame::OnProfileListEndLabelEdit(long index)
+{
+	// get the value entered in
+	wxTextCtrl *edit_control = m_profile_view->GetEditControl();
+	const wxString value = edit_control->GetValue();
+
+	// find the profile
+	const profiles::profile &profile = m_profiles.get()[index];
+
+	// come up with the new file name
+	wxFileName new_file_name(profile.directory_path() + "/");
+	new_file_name.SetName(value);
+	new_file_name.SetExt("bletchmameprofile");
+	wxString new_path = new_file_name.GetFullPath();
+
+	// try to rename
+	if (wxRenameFile(profile.path(), new_path, false))
+		m_prefs.SetSelectedProfile(std::move(new_path));
 }
 
 
@@ -1599,8 +1630,7 @@ void MameFrame::CreateProfile(const info::machine &machine)
 
 void MameFrame::DuplicateProfile(const profiles::profile &profile)
 {
-	wxString dir_path;
-	wxFileName::SplitPath(profile.path(), &dir_path, nullptr, nullptr);
+	wxString dir_path = profile.directory_path();
 
 	// get the full path for a new profile
 	wxString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
@@ -1631,8 +1661,9 @@ void MameFrame::DuplicateProfile(const profiles::profile &profile)
 
 void MameFrame::RenameProfile(const profiles::profile &profile)
 {
-	(void)profile;
-	throw false;
+	long item = &profile - &m_profiles.get()[0];
+	if (item >= 0 && item < m_profile_view->GetItemCount())
+		m_profile_view->EditLabel(item);
 }
 
 

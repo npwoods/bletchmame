@@ -38,10 +38,17 @@ namespace profiles
 		const wxString &path() const { return m_path; }
 		const wxString &machine() const { return m_machine; }
 		const std::vector<image> &images() const { return m_images; }
-
+		
 		// methods
 		bool is_valid() const;
 		void save_as(wxTextOutputStream &stream) const;
+
+		wxString directory_path() const
+		{
+			wxString result;
+			wxFileName::SplitPath(path(), &result, nullptr, nullptr);
+			return result;
+		}
 
 		// statics
 		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);

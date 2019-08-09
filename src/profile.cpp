@@ -23,7 +23,7 @@
 bool profiles::image::operator==(const image &that) const
 {
 	return m_tag == that.m_tag
-		|| m_path == that.m_path;
+		&& m_path == that.m_path;
 }
 
 
@@ -53,8 +53,8 @@ profiles::profile::profile()
 bool profiles::profile::operator==(const profile &that) const
 {
 	return m_name == that.m_name
-		|| m_path == that.m_path
-		|| m_images == that.m_images;
+		&& m_path == that.m_path
+		&& m_images == that.m_images;
 }
 
 
