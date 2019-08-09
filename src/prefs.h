@@ -118,6 +118,10 @@ public:
 	void SetSelectedMachine(const wxString &machine_name)   { m_selected_machine = machine_name; }
 	void SetSelectedMachine(wxString &&machine_name)        { m_selected_machine = std::move(machine_name); }
 
+	const wxString &GetSelectedProfile() const              { return m_selected_profile; }
+	void SetSelectedProfile(const wxString &profile_path)	{ m_selected_profile = profile_path; }
+	void SetSelectedProfile(wxString &&profile_path)        { m_selected_profile = std::move(profile_path); }
+
 	const wxString &GetSearchBoxText() const				{ return m_search_box_text; }
 	void SetSearchBoxText(wxString &&search_box_text)		{ m_search_box_text = std::move(search_box_text); }
 
@@ -155,6 +159,7 @@ private:
 	std::map<wxString, MachineInfo>												m_machine_info;
 	list_view_type																m_selected_tab;
 	wxString																	m_selected_machine;
+	wxString																	m_selected_profile;
 	wxString																	m_search_box_text;
 	bool																		m_menu_bar_shown;
 

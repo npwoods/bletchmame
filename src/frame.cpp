@@ -199,6 +199,7 @@ namespace
 		void OnMenuAbout();
 		void OnListColumnResized(wxListEvent &evt, wxListView &list_view, Preferences::list_view_type type);
 		void OnMachineListItemSelected(wxListEvent &event);
+		void OnProfileListItemSelected(wxListEvent &event);
 		void OnMachineListItemActivated(wxListEvent &event);
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
@@ -336,6 +337,22 @@ MameFrame::MameFrame()
 	{
 		m_profile_view->SetItemCount(m_profiles.get().size());
 		m_profile_view->RefreshItems(0, m_profiles.get().size() - 1);
+
+		// find the currently selected profile (this does a look up by path; perhaps if this fails, we should do
+		// a looser lookup (e.g. - filename?)
+		auto iter = std::find_if(m_profiles.get().begin(), m_profiles.get().end(), [this](const profiles::profile &p)
+		{
+			const wxString &s = m_prefs.GetSelectedProfile();
+			return p.path() == s;
+		});
+
+		// if successful, select it
+		if (iter < m_profiles.get().end())
+		{
+			long selected_index = iter - m_profiles.get().begin();
+			m_profile_view->Select(selected_index);
+			m_profile_view->EnsureVisible(selected_index);
+		}
 	});
 	UpdateProfileDirectories(true);
 
@@ -535,7 +552,7 @@ void MameFrame::CreateMenuBar()
 wxListView &MameFrame::CreateListView(wxWindow &parent, wxWindowID winid, Preferences::list_view_type type, wxString(MameFrame::*on_get_item_text_func)(long, long) const)
 {
 	// create the list view
-	VirtualListView *list_view = new VirtualListView(&parent, winid);
+	VirtualListView *list_view = new VirtualListView(&parent, winid, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_VIRTUAL | wxLC_SINGLE_SEL);
 	list_view->SetOnGetItemText([this, on_get_item_text_func](long item, long column) -> wxString
 	{
 		return ((*this).*(on_get_item_text_func))(item, column);
@@ -1356,6 +1373,18 @@ void MameFrame::OnListColumnResized(wxListEvent &evt, wxListView &list_view, Pre
 
 
 //-------------------------------------------------
+//  OnProfileListItemSelected
+//-------------------------------------------------
+
+void MameFrame::OnProfileListItemSelected(wxListEvent &evt)
+{
+	long index = evt.GetIndex();
+	const profiles::profile &profile = m_profiles.get()[index];
+	m_prefs.SetSelectedProfile(profile.path());
+}
+
+
+//-------------------------------------------------
 //  OnProfileListItemActivated
 //-------------------------------------------------
 
@@ -1499,20 +1528,26 @@ void MameFrame::CreateProfile(const info::machine &machine)
 	}
 	const wxString &path = *iter;
 
+	// prepare for building file paths
+	wxFileName file_name(path + "/");
+	wxString file_path;
+	file_name.SetExt("bletchmameprofile");
+
 	// create the file stream
 	std::optional<wxFileOutputStream> stream;
 	for (int attempt = 0; !stream && attempt < 10; attempt++)
 	{
 		// build the file path
-		wxString file_name = path + wxT("/") + machine.name() + wxT(" - New Profile");
-		if (attempt > 0)
-			file_name += wxT(" (") + std::to_string(attempt + 1) + wxT(")");
-		file_name += ".bletchmameprofile";
+		if (attempt == 0)
+			file_name.SetName(machine.name() + wxT(" - New Profile"));
+		else
+			file_name.SetName(machine.name() + wxT(" - New Profile (") + std::to_string(attempt + 1) + wxT(")"));
 
-		// create the file (if it doesn't exist)
-		if (!wxFile::Exists(file_name))
+		// create the file (if it doesn't exist)	
+		if (!file_name.Exists())
 		{
-			stream.emplace(file_name);
+			file_path = file_name.GetFullPath();
+			stream.emplace(file_path);
 			if (!stream->IsOk())
 				stream.reset();
 		}
@@ -1528,6 +1563,7 @@ void MameFrame::CreateProfile(const info::machine &machine)
 	profiles::profile::create(text_stream, machine);
 
 	// hop over to the profiles tab, and let the file system watcher pick it up
+	m_prefs.SetSelectedProfile(std::move(file_path));
 	m_note_book->SetSelection(1);
 }
 

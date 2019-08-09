@@ -318,6 +318,10 @@ bool Preferences::Load(wxInputStream &input)
 	{
 		SetSelectedMachine(std::move(content));
 	});
+	xml.OnElementEnd({ "preferences", "selectedprofile" }, [&](wxString &&content)
+	{
+		SetSelectedProfile(std::move(content));
+	});
 	xml.OnElementEnd({ "preferences", "searchboxtext" }, [&](wxString &&content)
 	{
 		SetSearchBoxText(std::move(content));
@@ -403,8 +407,10 @@ void Preferences::Save(std::ostream &output)
 	if (!m_mame_extra_arguments.IsEmpty())
 		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
-	if (!m_selected_machine.IsEmpty())
-		output << "\t<selectedmachine>" << m_selected_machine.ToStdString() << "</selectedmachine>" << std::endl;
+	if (!GetSelectedMachine().empty())
+		output << "\t<selectedmachine>" << GetSelectedMachine() << "</selectedmachine>" << std::endl;
+	if (!GetSelectedProfile().empty())
+		output << "\t<selectedprofile>" << GetSelectedProfile() << "</selectedprofile>" << std::endl;
 	if (!m_search_box_text.IsEmpty())
 		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
 	for (list_view_type type : util::all_enums<list_view_type>())
