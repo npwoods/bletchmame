@@ -798,6 +798,9 @@ void MameFrame::Run(const info::machine &machine, const profiles::profile *profi
 	// we have a session running; hide/show things respectively
 	UpdateEmulationSession();
 
+	// set the focus to the main window
+	SetFocus();
+
 	// wait for first ping
 	m_pinging = true;
 	while (m_pinging)
