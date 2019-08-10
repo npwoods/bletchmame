@@ -174,6 +174,7 @@ namespace
 		// status of running emulation
 		wxString								m_current_profile_path;
 		bool									m_current_profile_auto_save_state;
+		bool									m_current_profile_rename;
 		std::optional<status::state>			m_state;
 
 		static const float s_throttle_rates[];
@@ -309,6 +310,7 @@ MameFrame::MameFrame()
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 	, m_current_profile_auto_save_state(false)
+	, m_current_profile_rename(false)
 {
 	int id = wxID_LAST + 1;
 
@@ -367,7 +369,10 @@ MameFrame::MameFrame()
 			long selected_index = iter - m_profiles.get().begin();
 			m_profile_view->Select(selected_index);
 			m_profile_view->EnsureVisible(selected_index);
+			if (m_current_profile_rename)
+				m_profile_view->EditLabel(selected_index);
 		}
+		m_current_profile_rename = false;
 	});
 	UpdateProfileDirectories(true);
 
@@ -1767,6 +1772,10 @@ void MameFrame::RenameProfile(const profiles::profile &profile)
 
 void MameFrame::DeleteProfile(const profiles::profile &profile)
 {
+	wxString message = "Are you sure you want to delete profile \"" + profile.name() + "\"";
+	if (MessageBox(message, wxYES_NO | wxICON_QUESTION) != wxYES)
+		return;
+
 	if (!profiles::profile::profile_file_remove(profile.path()))
 	{
 		MessageBox("Could not delete profile");
@@ -1782,8 +1791,14 @@ void MameFrame::DeleteProfile(const profiles::profile &profile)
 
 void MameFrame::FocusOnNewProfile(wxString &&new_profile_path)
 {
-	m_prefs.SetSelectedProfile(std::move(new_profile_path));
+	// set the profiles tab as selected
 	m_note_book->SetSelection(1);
+
+	// set the profile as selected, so we focus on it when we rebuild the list view
+	m_prefs.SetSelectedProfile(std::move(new_profile_path));
+
+	// we want the current profile to be renamed
+	m_current_profile_rename = true;
 }
 
 
