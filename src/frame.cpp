@@ -228,6 +228,7 @@ namespace
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
 		bool ShouldPromptOnStop() const;
+		wxString QuickSaveStateFilePath() const;
 		void InitialCheckMameInfoDatabase();
 		check_mame_info_status CheckMameInfoDatabase();
 		bool PromptForMameExecutable();
@@ -431,8 +432,10 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *stop_menu_item					= file_menu->Append(id++, "Stop");
 	wxMenuItem *pause_menu_item					= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
 	file_menu->AppendSeparator();
-	wxMenuItem *load_state_menu_item			= file_menu->Append(id++, "Load State...\tF7");
-	wxMenuItem *save_state_menu_item			= file_menu->Append(id++, "Save State...\tShift+F7");
+	wxMenuItem *quick_load_state_menu_item		= file_menu->Append(id++, "Quick Load State...\tF7");
+	wxMenuItem *quick_save_state_menu_item		= file_menu->Append(id++, "Quick Save State...\tShift+F7");
+	wxMenuItem *load_state_menu_item			= file_menu->Append(id++, "Load State...");
+	wxMenuItem *save_state_menu_item			= file_menu->Append(id++, "Save State...");
 	wxMenuItem *save_screenshot_menu_item		= file_menu->Append(id++, "Save Screenshot...\tF12");
 	file_menu->AppendSeparator();
 	wxMenu *reset_menu = new wxMenu();
@@ -490,6 +493,8 @@ void MameFrame::CreateMenuBar()
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();																}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_state->paused().get());									}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue({ "state_load", QuickSaveStateFilePath() });						}, quick_load_state_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue({ "state_save", QuickSaveStateFilePath() });						}, quick_save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();														}, save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();														}, save_screenshot_menu_item->GetId());
@@ -516,6 +521,8 @@ void MameFrame::CreateMenuBar()
 	// Bind UI update events	
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, stop_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_state && m_state->paused().get());												}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, wxFileExists(QuickSaveStateFilePath()));										}, quick_load_state_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !QuickSaveStateFilePath().empty());											}, quick_save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, load_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_screenshot_menu_item->GetId());
@@ -956,6 +963,18 @@ void MameFrame::OnMenuStop()
 bool MameFrame::ShouldPromptOnStop() const
 {
 	return m_current_profile_path.empty() || !m_current_profile_auto_save_state;
+}
+
+
+//-------------------------------------------------
+//  QuickSaveStateFilePath
+//-------------------------------------------------
+
+wxString MameFrame::QuickSaveStateFilePath() const
+{
+	return m_current_profile_path.empty()
+		? wxString()
+		: profiles::profile::change_path_save_state(m_current_profile_path);
 }
 
 
