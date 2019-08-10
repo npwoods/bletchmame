@@ -140,12 +140,16 @@ void ImagesDialog::UpdateImageGrid()
 		// identify the tag (and drop the first colon)
 		assert(!images[i].m_tag.empty());
 
+		// identify the label and file name
+		const wxString &label = images[i].m_instance_name;
+		const wxString &file_name = images[i].m_file_name;
+
 		// do we have to create new rows?
 		if (m_grid_sizer->GetRows() <= i)
 		{
 			// we do - add controls
-			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, images[i].m_instance_name);
-			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, images[i].m_file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, label);
+			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
 			static_text->SetToolTip(images[i].m_tag);
@@ -159,8 +163,8 @@ void ImagesDialog::UpdateImageGrid()
 			// reuse existing controls
 			static_text = dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC));
 			text_ctrl = dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT));
-			static_text->SetLabel(images[i].m_tag);
-			text_ctrl->SetLabel(images[i].m_file_name);
+			static_text->SetLabel(label);
+			text_ctrl->SetLabel(file_name);
 		}
 
 		// if this is an image that must be loaded, make it black and disable "ok"
