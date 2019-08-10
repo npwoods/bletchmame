@@ -16,6 +16,10 @@
 #include "xmlparser.h"
 
 
+//**************************************************************************
+//  IMPLEMENTATION
+//**************************************************************************
+
 //-------------------------------------------------
 //  image::operator==
 //-------------------------------------------------
@@ -172,4 +176,57 @@ void profiles::profile::create(wxTextOutputStream &stream, const info::machine &
 	profile new_profile;
 	new_profile.m_machine = machine.name();
 	new_profile.save_as(stream);
+}
+
+
+//**************************************************************************
+//  UTILITY
+//**************************************************************************
+
+//-------------------------------------------------
+//  change_path_save_state
+//-------------------------------------------------
+
+wxString profiles::profile::change_path_save_state(const wxString &path)
+{
+	wxFileName file_name(path);
+	file_name.SetExt("sta");
+	return file_name.GetFullPath();
+}
+
+
+//-------------------------------------------------
+//  profile_file_rename
+//-------------------------------------------------
+
+bool profiles::profile::profile_file_rename(const wxString &old_path, const wxString &new_path)
+{
+	// this is a crude multi file renaming; unfortunately there is not a robust way to do this
+	bool success = wxRenameFile(old_path, new_path, false);
+	if (success)
+	{
+		wxString old_save_state_path = change_path_save_state(old_path);
+		wxString new_save_state_path = change_path_save_state(new_path);
+		if (wxFile::Exists(old_save_state_path))
+			wxRenameFile(old_save_state_path, new_save_state_path, true);
+	}
+	return success;
+}
+
+
+//-------------------------------------------------
+//  profile_file_remove
+//-------------------------------------------------
+
+bool profiles::profile::profile_file_remove(const wxString &path)
+{
+	// this is also crude
+	bool success = wxRemoveFile(path);
+	if (success)
+	{
+		wxString save_state_path = change_path_save_state(path);
+		if (wxFile::Exists(save_state_path))
+			wxRemoveFile(save_state_path);
+	}
+	return success;
 }

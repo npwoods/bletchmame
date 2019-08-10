@@ -173,6 +173,7 @@ namespace
 
 		// status of running emulation
 		wxString								m_current_profile_path;
+		bool									m_current_profile_auto_save_state;
 		std::optional<status::state>			m_state;
 
 		static const float s_throttle_rates[];
@@ -226,6 +227,7 @@ namespace
 
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
+		bool ShouldPromptOnStop() const;
 		void InitialCheckMameInfoDatabase();
 		check_mame_info_status CheckMameInfoDatabase();
 		bool PromptForMameExecutable();
@@ -256,6 +258,7 @@ namespace
 		void Issue(const std::initializer_list<wxString> &args);
 		void Issue(const char *command);
 		void InvokePing();
+		void InvokeExit();
 		void ChangePaused(bool paused);
 		void ChangeThrottled(bool throttled);
 		void ChangeThrottleRate(float throttle_rate);
@@ -304,6 +307,7 @@ MameFrame::MameFrame()
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
+	, m_current_profile_auto_save_state(false)
 {
 	int id = wxID_LAST + 1;
 
@@ -791,13 +795,21 @@ void MameFrame::Run(const info::machine &machine, const profiles::profile *profi
 		wxYield();
 	}
 
-	// set up profile
+	// set up profile (if we have one)
 	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
+	m_current_profile_auto_save_state = profile ? profile->auto_save_states() : false;
 	if (profile)
 	{
+		// load all images
 		for (const auto &image : profile->images())
-		{
 			Issue({ "load", image.m_tag, image.m_path });
+
+		// if we have a save state, start it
+		if (profile->auto_save_states())
+		{
+			wxString save_state_path = profiles::profile::change_path_save_state(profile->path());
+			if (wxFile::Exists(save_state_path))
+				Issue({ "state_load", save_state_path });
 		}
 	}
 
@@ -891,17 +903,21 @@ void MameFrame::OnClose(wxCloseEvent &event)
 {
 	if (m_state.has_value())
 	{
-		wxString message = "Do you really want to exit?\n"
-			"\n"
-			"All data in emulated RAM will be lost";
-		if (MessageBox(message, wxYES_NO | wxICON_QUESTION) != wxYES)
+		// prompt the user, if appropriate
+		if (ShouldPromptOnStop())
 		{
-			event.Veto();
-			return;
+			wxString message = "Do you really want to exit?\n"
+				"\n"
+				"All data in emulated RAM will be lost";
+			if (MessageBox(message, wxYES_NO | wxICON_QUESTION) != wxYES)
+			{
+				event.Veto();
+				return;
+			}
 		}
 
 		// issue exit command so we can shut down the emulation session gracefully
-		Issue({ "exit" });
+		InvokeExit();
 		while (m_state.has_value())
 			wxYield();
 	}
@@ -920,11 +936,26 @@ void MameFrame::OnClose(wxCloseEvent &event)
 
 void MameFrame::OnMenuStop()
 {
-	wxString message = "Do you really want to stop?\n"
-		"\n"
-		"All data in emulated RAM will be lost";
-	if (MessageBox(message, wxYES_NO | wxICON_QUESTION) == wxYES)
-		Issue("exit");
+	if (ShouldPromptOnStop())
+	{
+		wxString message = "Do you really want to stop?\n"
+			"\n"
+			"All data in emulated RAM will be lost";
+		if (MessageBox(message, wxYES_NO | wxICON_QUESTION) != wxYES)
+			return;
+	}
+
+	InvokeExit();
+}
+
+
+//-------------------------------------------------
+//  ShouldPromptOnStop
+//-------------------------------------------------
+
+bool MameFrame::ShouldPromptOnStop() const
+{
+	return m_current_profile_path.empty() || !m_current_profile_auto_save_state;
 }
 
 
@@ -1191,6 +1222,7 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 	m_client.Reset();
 	m_state.reset();
 	m_current_profile_path = util::g_empty_string;
+	m_current_profile_auto_save_state = false;
     UpdateEmulationSession();
 	UpdateStatusBar();
 
@@ -1515,7 +1547,7 @@ void MameFrame::OnProfileListEndLabelEdit(long index)
 		return;
 
 	// try to rename
-	if (wxRenameFile(profile.path(), new_path, false))
+	if (profiles::profile::profile_file_rename(profile.path(), new_path))
 		m_prefs.SetSelectedProfile(std::move(new_path));
 }
 
@@ -1681,9 +1713,19 @@ void MameFrame::DuplicateProfile(const profiles::profile &profile)
 		return;
 	}
 
-	// create the new profile and focus
+	// create the new profile
 	wxTextOutputStream text_stream(stream);
 	profile.save_as(text_stream);
+
+	// copy the save state file also, if present
+	wxString old_save_state_file = profiles::profile::change_path_save_state(profile.path());
+	if (wxFile::Exists(old_save_state_file))
+	{
+		wxString new_save_state_file = profiles::profile::change_path_save_state(new_profile_path);
+		wxCopyFile(old_save_state_file, new_save_state_file);
+	}
+
+	// finally focus
 	FocusOnNewProfile(std::move(new_profile_path));
 }
 
@@ -1706,7 +1748,7 @@ void MameFrame::RenameProfile(const profiles::profile &profile)
 
 void MameFrame::DeleteProfile(const profiles::profile &profile)
 {
-	if (!wxRemoveFile(profile.path()))
+	if (!profiles::profile::profile_file_remove(profile.path()))
 	{
 		MessageBox("Could not delete profile");
 		return;
@@ -1988,6 +2030,24 @@ void MameFrame::InvokePing()
 	{
 		m_pinging = true;
 		Issue("ping");
+	}
+}
+
+
+//-------------------------------------------------
+//  InvokeExit
+//-------------------------------------------------
+
+void MameFrame::InvokeExit()
+{
+	if (m_current_profile_auto_save_state)
+	{
+		wxString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);
+		Issue({ "state_save_and_exit", save_state_path });
+	}
+	else
+	{
+		Issue({ "exit" });
 	}
 }
 

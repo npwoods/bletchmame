@@ -376,6 +376,13 @@ function command_state_save(args)
 	print("OK ### Scheduled state save of '" .. args[2] .. "'")
 end
 
+-- STATE_SAVE_AND_EXIT command
+function command_state_save_and_exit(args)
+	manager:machine():save(args[2])
+	manager:machine():exit()
+	print("OK ### Scheduled state save of '" .. args[2] .. "' and an exit")
+end
+
 -- SAVE_SNAPSHOT command
 function command_save_snapshot(args)
 	-- hardcoded for first screen now
@@ -514,6 +521,7 @@ local commands =
 	["set_natural_keyboard_in_use"]	= command_set_natural_keyboard_in_use,
 	["state_load"]					= command_state_load,
 	["state_save"]					= command_state_save,
+	["state_save_and_exit"]			= command_state_save_and_exit,
 	["save_snapshot"]				= command_save_snapshot,
 	["load"]						= command_load,
 	["unload"]						= command_unload,
