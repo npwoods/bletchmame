@@ -437,8 +437,8 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *stop_menu_item					= file_menu->Append(id++, "Stop");
 	wxMenuItem *pause_menu_item					= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
 	file_menu->AppendSeparator();
-	wxMenuItem *quick_load_state_menu_item		= file_menu->Append(id++, "Quick Load State...\tF7");
-	wxMenuItem *quick_save_state_menu_item		= file_menu->Append(id++, "Quick Save State...\tShift+F7");
+	wxMenuItem *quick_load_state_menu_item		= file_menu->Append(id++, "Quick Load State\tF7");
+	wxMenuItem *quick_save_state_menu_item		= file_menu->Append(id++, "Quick Save State\tShift+F7");
 	wxMenuItem *load_state_menu_item			= file_menu->Append(id++, "Load State...");
 	wxMenuItem *save_state_menu_item			= file_menu->Append(id++, "Save State...");
 	wxMenuItem *save_screenshot_menu_item		= file_menu->Append(id++, "Save Screenshot...\tF12");
