@@ -561,13 +561,13 @@ function console.startplugin()
 	local session_active = true
 	emu.register_prestart(function()
 		-- prestart has been invoked; set up MAME for our control
-		emu.pause()
 		manager:machine():uiinput().presses_enabled = false
 		session_active = true
 
 		-- is this the very first time we have hit a pre-start?
 		if not initial_start then
 			-- and indicate that we're ready for commands
+			emu.pause()
 			print("OK STATUS ### Emulation commenced; ready for commands")
 			emit_status()
 			initial_start = true
