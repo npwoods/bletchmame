@@ -82,7 +82,7 @@ function xml_encode(str)
 		-- emit the character if appropriate
 		seq = seq - 1
 		if seq == 0 then
-			if val > 127 then
+			if (val > 127 or val < 32) then
 				res = res .. "&#" .. tostring(val) .. ";"
 			elseif string.char(val) == "\"" then
 				res = res .. "&quot;"
