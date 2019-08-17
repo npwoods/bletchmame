@@ -448,7 +448,7 @@ function command_seq_poll_start(args)
 	end
 
 	local input_seq_class
-	if field.is_analog then
+	if (field.is_analog and args[4] == "standard") then
 		input_seq_class = "absolute"
 	else
 		input_seq_class = "switch"
