@@ -143,18 +143,18 @@ namespace status
 		wxString							m_parse_error;
 
 		// the actual data
-		std::optional<machine_phase>		m_phase;
-		std::optional<bool>					m_paused;
-		std::optional<bool>					m_polling_input_seq;
-		std::optional<wxString>				m_startup_text;
-		std::optional<float>				m_speed_percent;
-		std::optional<wxString>				m_frameskip;
-		std::optional<int>					m_effective_frameskip;
-		std::optional<bool>					m_throttled;
-		std::optional<float>				m_throttle_rate;
-		std::optional<int>					m_sound_attenuation;
-		std::optional<std::vector<image>>	m_images;
-		std::optional<std::vector<input>>	m_inputs;
+		std::optional<machine_phase>				m_phase;
+		std::optional<bool>							m_paused;
+		std::optional<bool>							m_polling_input_seq;
+		std::optional<wxString>						m_startup_text;
+		std::optional<float>						m_speed_percent;
+		std::optional<wxString>						m_frameskip;
+		std::optional<int>							m_effective_frameskip;
+		std::optional<bool>							m_throttled;
+		std::optional<float>						m_throttle_rate;
+		std::optional<int>							m_sound_attenuation;
+		std::optional<std::vector<image>>			m_images;
+		std::optional<std::vector<input>>			m_inputs;
 
 		static update read(wxTextInputStream &input);
 	};
@@ -174,36 +174,36 @@ namespace status
 		void update(update &&that);
 
 		// state accessors
-		observable::value<machine_phase> &		phase()						{ return m_phase; }
-		observable::value<bool> &				paused()					{ return m_paused; }
-		observable::value<bool> &				polling_input_seq()			{ return m_polling_input_seq; }
-		observable::value<wxString> &			startup_text()				{ return m_startup_text; }
-		observable::value<float> &				speed_percent()				{ return m_speed_percent; }
-		observable::value<int> &				effective_frameskip()		{ return m_effective_frameskip; }
-		observable::value<std::vector<image>> &	images()					{ return m_images; }
-		observable::value<std::vector<input>> &	inputs()					{ return m_inputs; }
-		wxString								frameskip() const			{ return m_frameskip; }
-		bool									throttled() const			{ return m_throttled; }
-		float									throttle_rate() const		{ return m_throttle_rate; }
-		int										sound_attenuation() const	{ return m_sound_attenuation; }
+		observable::value<machine_phase> &				phase()						{ return m_phase; }
+		observable::value<bool> &						paused()					{ return m_paused; }
+		observable::value<bool> &						polling_input_seq()			{ return m_polling_input_seq; }
+		observable::value<wxString> &					startup_text()				{ return m_startup_text; }
+		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
+		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
+		observable::value<std::vector<image>> &			images()					{ return m_images; }
+		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
+		wxString										frameskip() const			{ return m_frameskip; }
+		bool											throttled() const			{ return m_throttled; }
+		float											throttle_rate() const		{ return m_throttle_rate; }
+		int												sound_attenuation() const	{ return m_sound_attenuation; }
 
 		// higher level methods
 		const image *find_image(const wxString &tag) const;
 		bool has_input_class(status::input::input_class input_class) const;
 
 	private:
-		observable::value<machine_phase>		m_phase;
-		observable::value<bool>					m_paused;
-		observable::value<bool>					m_polling_input_seq;
-		observable::value<wxString>				m_startup_text;
-		observable::value<float>				m_speed_percent;
-		observable::value<int>					m_effective_frameskip;
-		observable::value<std::vector<image>>	m_images;
-		observable::value<std::vector<input>>	m_inputs;
-		wxString								m_frameskip;
-		bool									m_throttled;
-		float									m_throttle_rate;
-		int										m_sound_attenuation;
+		observable::value<machine_phase>				m_phase;
+		observable::value<bool>							m_paused;
+		observable::value<bool>							m_polling_input_seq;
+		observable::value<wxString>						m_startup_text;
+		observable::value<float>						m_speed_percent;
+		observable::value<int>							m_effective_frameskip;
+		observable::value<std::vector<image>>			m_images;
+		observable::value<std::vector<input>>			m_inputs;
+		wxString										m_frameskip;
+		bool											m_throttled;
+		float											m_throttle_rate;
+		int												m_sound_attenuation;
 
 		template<typename TStateField, typename TUpdateField>
 		bool take(TStateField &state_field, std::optional<TUpdateField> &update_field);
