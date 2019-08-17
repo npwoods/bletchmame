@@ -187,7 +187,7 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	});
 	xml.OnElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{
-		result.m_images = std::vector<status::image>();
+		result.m_images.emplace();
 	});
 	xml.OnElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -204,7 +204,7 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	});
 	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
-		result.m_inputs = std::vector<status::input>();
+		result.m_inputs.emplace();
 	});
 	xml.OnElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
