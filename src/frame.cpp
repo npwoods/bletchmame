@@ -113,14 +113,17 @@ namespace
 		public:
 			InputsHost(MameFrame &host) : m_host(host) { }
 
-			virtual const std::vector<status::input> &GetInputs() override				{ return m_host.m_state->inputs().get(); }
+			virtual observable::value<std::vector<status::input>> &GetInputs() override	{ return m_host.m_state->inputs(); }
 			virtual const std::vector<status::input_class> &GetInputClasses() override	{ return m_host.m_state->input_classes().get(); }
 			virtual observable::value<bool> &GetPollingSeqChanged() override			{ return m_host.m_state->polling_input_seq(); }
-			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq) override;
+			virtual void SetInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &seq_tokens) override;
+			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &f) override;
 			virtual void StopPolling() override;
 
 		private:
 			MameFrame & m_host;
+
+			static const wxString &SeqTypeString(status::input_seq::type seq_type);
 		};
 
 		class SwitchesHost : public ISwitchesHost
@@ -2324,25 +2327,19 @@ const wxString &MameFrame::ImagesHost::GetMachineName() const
 //  StartPolling
 //-------------------------------------------------
 
-void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq)
+void MameFrame::InputsHost::SetInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &seq_tokens)
 {
-	wxString seq_type_string;
-	switch (seq_type)
-	{
-	case status::input_seq::type::STANDARD:
-		seq_type_string = "standard";
-		break;
-	case status::input_seq::type::INCREMENT:
-		seq_type_string = "increment";
-		break;
-	case status::input_seq::type::DECREMENT:
-		seq_type_string = "decrement";
-		break;
-	default:
-		throw false;
-	}
+	m_host.Issue({ "seq_set", port_tag, std::to_string(mask), SeqTypeString(seq_type), seq_tokens });
+}
 
-	m_host.Issue({ "seq_poll_start", port_tag, std::to_string(mask), seq_type_string, start_seq });
+
+//-------------------------------------------------
+//  StartPolling
+//-------------------------------------------------
+
+void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq_tokens)
+{
+	m_host.Issue({ "seq_poll_start", port_tag, std::to_string(mask), SeqTypeString(seq_type), start_seq_tokens });
 }
 
 
@@ -2353,6 +2350,27 @@ void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value 
 void MameFrame::InputsHost::StopPolling()
 {
 	m_host.Issue({ "seq_poll_stop" });
+}
+
+
+//-------------------------------------------------
+//  SeqTypeString
+//-------------------------------------------------
+
+const wxString &MameFrame::InputsHost::SeqTypeString(status::input_seq::type seq_type)
+{
+	static const wxString s_standard = wxT("standard");
+	static const wxString s_increment = wxT("increment");
+	static const wxString s_decrement = wxT("decrement");
+
+	switch (seq_type)
+	{
+	case status::input_seq::type::STANDARD:		return s_standard;
+	case status::input_seq::type::INCREMENT:	return s_increment;
+	case status::input_seq::type::DECREMENT:	return s_decrement;
+	default:
+		throw false;
+	}
 }
 
 

@@ -47,13 +47,14 @@ wxString BuildCommand(const std::vector<wxString> &args)
 		if (!command.IsEmpty())
 			command += " ";
 
-		bool has_space = arg.find(' ') != wxString::npos;
-		if (has_space)
+		// do we need quotes?
+		bool needs_quotes = arg.empty() || arg.find(' ') != wxString::npos;
+
+		// append the argument, with quotes if necessary
+		if (needs_quotes)
 			command += "\"";
-
 		command += arg;
-
-		if (has_space)
+		if (needs_quotes)
 			command += "\"";
 	}
 	command += "\r\n";

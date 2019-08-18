@@ -462,6 +462,28 @@ function command_create(args)
 	emit_status()
 end
 
+-- SEQ_SET command
+function command_seq_set(args)
+	-- identify port and field
+	local field = find_port_and_field(args[2], args[3])
+	if not field then
+		print("ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
+		return
+	end
+	if not field.enabled then
+		print("ERROR ### Field '" .. args[2] .. "':" .. tostring(tonumber(args[3])) .. " is disabled")
+		return
+	end
+
+	-- set the input seq with the specified tokens
+	seq = manager:machine():input():seq_from_tokens(args[5])
+	field:set_input_seq(args[4], seq)
+
+	-- and report success
+	print("OK STATUS ### Input seq set")
+	emit_status()
+end
+
 -- SEQ_POLL_START command
 function command_seq_poll_start(args)
 	-- identify port and field
@@ -562,6 +584,7 @@ local commands =
 	["load"]						= command_load,
 	["unload"]						= command_unload,
 	["create"]						= command_create,
+	["seq_set"]						= command_seq_set,
 	["seq_poll_start"]				= command_seq_poll_start,
 	["seq_poll_stop"]				= command_seq_poll_stop,
 	["set_input_value"]				= command_set_input_value,
