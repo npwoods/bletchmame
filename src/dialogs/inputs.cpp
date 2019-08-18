@@ -28,14 +28,17 @@ namespace
 		InputsDialog(wxWindow &parent, const wxString &title, IInputsHost &host, status::input::input_class input_class);
 
 	private:
-		IInputsHost &					m_host;
-		wxDialog *						m_current_dialog;
-		observable::unique_subscription	m_polling_seq_changed_subscription;
+		IInputsHost &							m_host;
+		wxDialog *								m_current_dialog;
+		observable::unique_subscription			m_polling_seq_changed_subscription;
+		std::unordered_map<wxString, wxString>	m_codes;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 
 		void StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type);
 		void OnPollingSeqChanged();
+		wxString GetSeqText(const status::input_seq &seq);
+		static std::unordered_map<wxString, wxString> BuildCodes(const std::vector<status::input_class> &devclasses);
 	};
 };
 
@@ -54,6 +57,9 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 	, m_current_dialog(nullptr)
 {
 	int id = wxID_LAST + 1;
+
+	// build codes map
+	m_codes = BuildCodes(m_host.GetInputClasses());
 
 	// scrolled view
 	std::unique_ptr<wxBoxSizer> outer_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
@@ -98,7 +104,7 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 				}
 
 				wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
-				wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, input_seq.m_text);
+				wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, GetSeqText(input_seq));
 
 				wxString port_tag = input.m_port_tag;
 				int mask = input.m_mask;
@@ -169,7 +175,8 @@ void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, c
 		});
 		if (seq_iter != input_iter->m_seqs.end())
 		{
-			static_text.SetLabel(seq_iter->m_text);
+			wxString seq_text = GetSeqText(*seq_iter);
+			static_text.SetLabel(seq_text);
 		}
 	}
 }
@@ -183,6 +190,95 @@ void InputsDialog::OnPollingSeqChanged()
 {
 	if (!m_host.GetPollingSeqChanged().get() && m_current_dialog)
 		m_current_dialog->Close();
+}
+
+
+//-------------------------------------------------
+//  BuildCodes
+//-------------------------------------------------
+
+std::unordered_map<wxString, wxString> InputsDialog::BuildCodes(const std::vector<status::input_class> &devclasses)
+{
+	std::unordered_map<wxString, wxString> result;
+	for (const status::input_class &devclass : devclasses)
+	{
+		if (devclass.m_enabled)
+		{
+			// similar logic to devclass_string_table in MAME input.cpp
+			wxString devclass_name;
+			if (devclass.m_name == "keyboard")
+				devclass_name = devclass.m_devices.size() > 1 ? "Kbd" : "";
+			else if (devclass.m_name == "joystick")
+				devclass_name = "Joy";
+			else if (devclass.m_name == "lightgun")
+				devclass_name = "Gun";
+			else
+				devclass_name = devclass.m_name;
+
+			// build codes for each device
+			for (const status::input_device &dev : devclass.m_devices)
+			{
+				wxString prefix = !devclass_name.empty()
+					? wxString::Format("%s #%d ", devclass_name, dev.m_index + 1)
+					: wxString();
+
+				for (const status::input_device_item &item : dev.m_items)
+				{
+					wxString label = prefix + item.m_name;
+					result.emplace(item.m_code, std::move(label));
+				}
+			}
+		}
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  GetSeqText
+//-------------------------------------------------
+
+wxString InputsDialog::GetSeqText(const status::input_seq &seq)
+{
+	// this replicates logic in core MAME; need to more fully build this out, and perhaps
+	// more fully dissect input sequences
+	wxString result;
+	std::vector<wxString> tokens = util::string_split(seq.m_tokens, [](wchar_t ch) { return ch == ' '; });
+	for (const wxString &token : tokens)
+	{
+		wxString word;
+		if (token == "OR" || token == "NOT" || token == "DEFAULT")
+		{
+			word = token.Lower();
+		}
+		else
+		{
+			auto iter = m_codes.find(token);
+			if (iter != m_codes.end())
+				word = iter->second;
+		}
+
+		if (!word.empty())
+		{
+			if (!result.empty())
+				result += " ";
+			result += word;
+		}
+	}
+
+	// quick and dirty hack to trim out "OR" tokens at the start and end
+	while (result.StartsWith("or "))
+		result = result.substr(3);
+	while (result.EndsWith(" or"))
+		result = result.substr(0, result.size() - 3);
+	if (result == "or")
+		result = "";
+
+	// show something at least
+	if (result.empty())
+		result = "None";
+
+	return result;
 }
 
 

@@ -111,10 +111,11 @@ namespace
 		class InputsHost : public IInputsHost
 		{
 		public:
-			InputsHost(MameFrame &host);
+			InputsHost(MameFrame &host) : m_host(host) { }
 
-			virtual const std::vector<status::input> &GetInputs() override;
-			virtual observable::value<bool> &GetPollingSeqChanged() override;
+			virtual const std::vector<status::input> &GetInputs() override				{ return m_host.m_state->inputs().get(); }
+			virtual const std::vector<status::input_class> &GetInputClasses() override	{ return m_host.m_state->input_classes().get(); }
+			virtual observable::value<bool> &GetPollingSeqChanged() override			{ return m_host.m_state->polling_input_seq(); }
 			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type) override;
 			virtual void StopPolling() override;
 
@@ -2318,36 +2319,6 @@ const wxString &MameFrame::ImagesHost::GetMachineName() const
 //**************************************************************************
 //  InputsHost
 //**************************************************************************
-
-//-------------------------------------------------
-//  InputsHost ctor
-//-------------------------------------------------
-
-MameFrame::InputsHost::InputsHost(MameFrame &host)
-	: m_host(host)
-{
-}
-
-
-//-------------------------------------------------
-//  GetInputs
-//-------------------------------------------------
-
-const std::vector<status::input> &MameFrame::InputsHost::GetInputs()
-{
-	return m_host.m_state->inputs().get();
-}
-
-
-//-------------------------------------------------
-//  GetPollingSeqChanged
-//-------------------------------------------------
-
-observable::value<bool> &MameFrame::InputsHost::GetPollingSeqChanged()
-{
-	return m_host.m_state->polling_input_seq();
-}
-
 
 //-------------------------------------------------
 //  StartPolling

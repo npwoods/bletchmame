@@ -23,6 +23,7 @@ class IInputsHost
 {
 public:
 	virtual const std::vector<status::input> &GetInputs() = 0;
+	virtual const std::vector<status::input_class> &GetInputClasses() = 0;
 	virtual observable::value<bool> &GetPollingSeqChanged() = 0;
 	virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type) = 0;
 	virtual void StopPolling() = 0;

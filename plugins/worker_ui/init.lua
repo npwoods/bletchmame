@@ -254,12 +254,18 @@ function emit_status(light)
 
 					-- emit input sequences for anything that is not DIP switches of configs
 					if not is_switch then
-						-- both analog and digital have "standard" seq types
-						print("\t\t\t<seq type=\"standard\" text=\"" .. xml_encode(manager:machine():input():seq_name(field:input_seq("standard"))) .. "\"/>")
 						if field.is_analog then
-							-- analog inputs also have increment and decrement
-							print("\t\t\t<seq type=\"increment\" text=\"" .. xml_encode(manager:machine():input():seq_name(field:input_seq("increment"))) .. "\"/>")
-							print("\t\t\t<seq type=\"decrement\" text=\"" .. xml_encode(manager:machine():input():seq_name(field:input_seq("decrement"))) .. "\"/>")						
+							-- analog sequences have increment/decrement in addition to "standard"
+							seq_types = {"standard", "increment", "decrement"}
+						else
+							-- digital sequences just have increment
+							seq_types = {"standard"}
+						end
+
+						for _,seq_type in pairs(seq_types) do
+							print("\t\t\t<seq type=\"" .. seq_type
+								.. "\" tokens=\"" .. xml_encode(manager:machine():input():seq_to_tokens(field:input_seq(seq_type)))
+								.. "\"/>")
 						end
 					end
 
@@ -268,6 +274,27 @@ function emit_status(light)
 			end
 		end
 		print("\t</inputs>")
+
+		print("\t<input_devices>")
+		for _,devclass in pairs(manager:machine():input().device_classes) do
+			print("\t\t<class name=\"" .. xml_encode(devclass.name)
+				.. "\" enabled=\"" .. string_from_bool(devclass.enabled)
+				.. "\" multi=\"" .. string_from_bool(devclass.multi) .. "\">")
+			for _,device in pairs(devclass.devices) do
+				print("\t\t\t<device name=\"" .. xml_encode(device.name)
+					.. "\" id=\"" .. xml_encode(device.id)
+					.. "\" devindex=\"" .. device.devindex .. "\">")
+				for id,item in pairs(device.items) do
+					print("\t\t\t\t<item name=\"" .. xml_encode(item.name)
+						.. "\" token=\"" .. xml_encode(item.token)
+						.. "\" code=\"" .. xml_encode(manager:machine():input():code_to_token(item:code()))
+						.. "\"/>")
+				end
+				print("\t\t\t</device>")
+			end
+			print("\t\t</class>")
+		end
+		print("\t</input_devices>")
 	end
 
 	print("</status>");

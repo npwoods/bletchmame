@@ -77,7 +77,7 @@ namespace status
 		};
 
 		type					m_type;
-		wxString				m_text;
+		wxString				m_tokens;
 
 		bool operator==(const input_seq &that) const;
 	};
@@ -119,6 +119,56 @@ namespace status
 	};
 
 
+	// ======================> input_device_class
+	struct input_device_item
+	{
+		input_device_item() = default;
+		input_device_item(const input_device_item &) = SHOULD_BE_DELETE;
+		input_device_item(input_device_item &&that) = default;
+
+		wxString		m_name;
+		wxString		m_token;
+		wxString		m_code;
+
+		input_device_item &operator=(input_device_item &&that) = default;
+		bool operator==(const input_device_item &that) const;
+	};
+
+
+	// ======================> input_device
+	struct input_device
+	{
+		input_device() = default;
+		input_device(const input_device &) = SHOULD_BE_DELETE;
+		input_device(input_device &&that) = default;
+
+		wxString						m_name;
+		wxString						m_id;
+		int								m_index;
+		std::vector<input_device_item>	m_items;
+		
+		input_device &operator=(input_device &&that) = default;
+		bool operator==(const input_device &that) const;
+	};
+
+
+	// ======================> input_class
+	struct input_class
+	{
+		input_class() = default;
+		input_class(const input_class &) = SHOULD_BE_DELETE;
+		input_class(input_class &&that) = default;
+
+		wxString						m_name;
+		bool							m_enabled;
+		bool							m_multi;
+		std::vector<input_device>		m_devices;
+
+		input_class &operator=(input_class &&that) = default;
+		bool operator==(const input_class &that) const;
+	};
+
+
 	// ======================> machine_phase
 	enum class machine_phase
 	{
@@ -155,6 +205,7 @@ namespace status
 		std::optional<int>							m_sound_attenuation;
 		std::optional<std::vector<image>>			m_images;
 		std::optional<std::vector<input>>			m_inputs;
+		std::optional<std::vector<input_class>>		m_input_classes;
 
 		static update read(wxTextInputStream &input);
 	};
@@ -182,6 +233,7 @@ namespace status
 		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
 		observable::value<std::vector<image>> &			images()					{ return m_images; }
 		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
+		observable::value<std::vector<input_class>> &	input_classes()				{ return m_input_classes; }
 		wxString										frameskip() const			{ return m_frameskip; }
 		bool											throttled() const			{ return m_throttled; }
 		float											throttle_rate() const		{ return m_throttle_rate; }
@@ -200,6 +252,7 @@ namespace status
 		observable::value<int>							m_effective_frameskip;
 		observable::value<std::vector<image>>			m_images;
 		observable::value<std::vector<input>>			m_inputs;
+		observable::value<std::vector<input_class>>		m_input_classes;
 		wxString										m_frameskip;
 		bool											m_throttled;
 		float											m_throttle_rate;

@@ -103,7 +103,7 @@ bool status::image::operator==(const status::image &that) const
 bool status::input_seq::operator==(const status::input_seq &that) const
 {
 	return m_type == that.m_type
-		&& m_text == that.m_text;
+		&& m_tokens == that.m_tokens;
 }
 
 
@@ -120,6 +120,43 @@ bool status::input::operator==(const status::input &that) const
 		&& m_type == that.m_type
 		&& m_value == that.m_value
 		&& m_seqs == that.m_seqs;
+}
+
+
+//-------------------------------------------------
+//  input_device_item::operator==
+//-------------------------------------------------
+
+bool status::input_device_item::operator==(const status::input_device_item &that) const
+{
+	return m_name == that.m_name
+		&& m_token == that.m_token
+		&& m_code == that.m_code;
+}
+
+
+//-------------------------------------------------
+//  input_device::operator==
+//-------------------------------------------------
+
+bool status::input_device::operator==(const status::input_device &that) const
+{
+	return m_name == that.m_name
+		&& m_id == that.m_id
+		&& m_items == that.m_items;
+}
+
+
+//-------------------------------------------------
+//  input_class::operator==
+//-------------------------------------------------
+
+bool status::input_class::operator==(const status::input_class &that) const
+{
+	return m_name == that.m_name
+		&& m_enabled == that.m_enabled
+		&& m_multi == that.m_multi
+		&& m_devices == that.m_devices;
 }
 
 
@@ -221,7 +258,32 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	{
 		input_seq &seq = util::last(result.m_inputs.value()).m_seqs.emplace_back();
 		attributes.Get("type",				seq.m_type, s_inputseq_type_parser);
-		attributes.Get("text",				seq.m_text);
+		attributes.Get("tokens",			seq.m_tokens);
+	});
+	xml.OnElementBegin({ "status", "input_devices" }, [&](const XmlParser::Attributes &)
+	{
+		result.m_input_classes.emplace();
+	});
+	xml.OnElementBegin({ "status", "input_devices", "class" }, [&](const XmlParser::Attributes &attributes)
+	{
+		input_class &input_class = result.m_input_classes.value().emplace_back();
+		attributes.Get("name",				input_class.m_name);
+		attributes.Get("enabled",			input_class.m_enabled);
+		attributes.Get("multi",				input_class.m_multi);
+	});
+	xml.OnElementBegin({ "status", "input_devices", "class", "device" }, [&](const XmlParser::Attributes &attributes)
+	{
+		input_device &input_device = result.m_input_classes.value().back().m_devices.emplace_back();
+		attributes.Get("name",				input_device.m_name);
+		attributes.Get("id",				input_device.m_id);
+		attributes.Get("devindex",			input_device.m_index);
+	});
+	xml.OnElementBegin({ "status", "input_devices", "class", "device", "item" }, [&](const XmlParser::Attributes &attributes)
+	{
+		input_device_item &item = result.m_input_classes.value().back().m_devices.back().m_items.emplace_back();
+		attributes.Get("name",				item.m_name);
+		attributes.Get("token",				item.m_token);
+		attributes.Get("code",				item.m_code);
 	});
 
 	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
@@ -296,6 +358,7 @@ void status::state::update(status::update &&that)
 	take(m_sound_attenuation,	that.m_sound_attenuation);
 	take(m_images,				that.m_images);
 	take(m_inputs,				that.m_inputs);
+	take(m_input_classes,		that.m_input_classes);
 }
 
 
