@@ -116,7 +116,7 @@ namespace
 			virtual const std::vector<status::input> &GetInputs() override				{ return m_host.m_state->inputs().get(); }
 			virtual const std::vector<status::input_class> &GetInputClasses() override	{ return m_host.m_state->input_classes().get(); }
 			virtual observable::value<bool> &GetPollingSeqChanged() override			{ return m_host.m_state->polling_input_seq(); }
-			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type) override;
+			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq) override;
 			virtual void StopPolling() override;
 
 		private:
@@ -2324,7 +2324,7 @@ const wxString &MameFrame::ImagesHost::GetMachineName() const
 //  StartPolling
 //-------------------------------------------------
 
-void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
+void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq)
 {
 	wxString seq_type_string;
 	switch (seq_type)
@@ -2342,7 +2342,7 @@ void MameFrame::InputsHost::StartPolling(const wxString &port_tag, ioport_value 
 		throw false;
 	}
 
-	m_host.Issue({ "seq_poll_start", port_tag, std::to_string(mask), seq_type_string });
+	m_host.Issue({ "seq_poll_start", port_tag, std::to_string(mask), seq_type_string, start_seq });
 }
 
 

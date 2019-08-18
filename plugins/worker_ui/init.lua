@@ -464,6 +464,7 @@ end
 
 -- SEQ_POLL_START command
 function command_seq_poll_start(args)
+	-- identify port and field
 	local field = find_port_and_field(args[2], args[3])
 	if not field then
 		print("ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
@@ -474,6 +475,7 @@ function command_seq_poll_start(args)
 		return
 	end
 
+	-- identify seq class (absolute/relative/switch)
 	local input_seq_class
 	if (field.is_analog and args[4] == "standard") then
 		input_seq_class = "absolute"
@@ -481,7 +483,14 @@ function command_seq_poll_start(args)
 		input_seq_class = "switch"
 	end
 
-	manager:machine():input():seq_poll_start(input_seq_class)
+	-- optional start seq
+	local start_seq
+	if (args[5] and args[5] ~= "") then
+		start_seq = manager:machine():input():seq_from_tokens(args[5])
+	end
+
+	-- start polling!
+	manager:machine():input():seq_poll_start(input_seq_class, start_seq)
 	manager:ui():set_aggressive_input_focus(true)
 	current_poll_field = field
 	current_poll_seq_type = args[4]

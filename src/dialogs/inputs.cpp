@@ -35,7 +35,9 @@ namespace
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 
-		void StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type);
+		bool ShowPopupMenu(const wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type);
+		const status::input_seq *FindInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type);
+		void StartInputPoll(const wxString &label, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq);
 		void OnPollingSeqChanged();
 		wxString GetSeqText(const status::input_seq &seq);
 		static std::unordered_map<wxString, wxString> BuildCodes(const std::vector<status::input_class> &devclasses);
@@ -106,10 +108,11 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 				wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
 				wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, GetSeqText(input_seq));
 
-				wxString port_tag = input.m_port_tag;
-				int mask = input.m_mask;
-				status::input_seq::type seq_type = input_seq.m_type;
-				Bind(wxEVT_BUTTON, [this, &button, &static_text, port_tag, mask, seq_type](auto &) { StartInputPoll(button, static_text, port_tag, mask, seq_type); }, button.GetId());
+				auto callback = [this, &button, &static_text, port_tag{input.m_port_tag}, mask{input.m_mask}, seq_type{input_seq.m_type}](auto &)
+				{
+					ShowPopupMenu(button, static_text, port_tag, mask, seq_type);
+				};
+				Bind(wxEVT_BUTTON, std::move(callback), button.GetId());
 			}
 		}
 	}
@@ -144,16 +147,90 @@ TControl &InputsDialog::AddControl(wxWindow &parent, wxSizer &sizer, int proport
 
 
 //-------------------------------------------------
+//  ShowPopupMenu
+//-------------------------------------------------
+
+bool InputsDialog::ShowPopupMenu(const wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
+{
+	enum
+	{
+		ID_SPECIFY_INPUT = wxID_HIGHEST + 1,
+		ID_ADD_INPUT
+	};
+
+	// create the pop up menu
+	MenuWithResult popup_menu;
+	popup_menu.Append(ID_SPECIFY_INPUT, "Specify...");
+	popup_menu.Append(ID_ADD_INPUT, "Add...");
+
+	// show the pop up menu
+	wxRect button_rectangle = button.GetRect();
+	if (!PopupMenu(&popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
+		return false;
+
+	switch (popup_menu.Result())
+	{
+	case ID_SPECIFY_INPUT:
+	case ID_ADD_INPUT:
+		// if we're adding (and not specifying), we need to find the input seq that
+		// we're appending to; this shouldn't fail unless something very odd is going
+		// on but so be it
+		const status::input_seq *append_to_seq = popup_menu.Result() == ID_ADD_INPUT
+			? FindInputSeq(port_tag, mask, seq_type)
+			: nullptr;
+
+		// based on that, identify the sequence of tokens that we're starting on
+		const wxString &start_seq_tokens = append_to_seq
+			? append_to_seq->m_tokens
+			: util::g_empty_string;
+
+		// and start polling!
+		StartInputPoll(button.GetLabel(), static_text, port_tag, mask, seq_type, start_seq_tokens);
+		break;
+	}
+
+	return true;
+}
+
+
+//-------------------------------------------------
+//  FindInputSeq
+//-------------------------------------------------
+
+const status::input_seq *InputsDialog::FindInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
+{
+	// look up the input port by tag and mask
+	const auto &inputs = m_host.GetInputs();
+	auto inputs_iter = std::find_if(inputs.begin(), inputs.end(), [&port_tag, mask](const status::input &input)
+	{
+		return input.m_port_tag == port_tag && input.m_mask == mask;
+	});
+	if (inputs_iter == inputs.end())
+		return nullptr;
+
+	// and once we have that, look up the seq
+	auto seq_iter = std::find_if(inputs_iter->m_seqs.begin(), inputs_iter->m_seqs.end(), [seq_type](const status::input_seq &seq)
+	{
+		return seq.m_type == seq_type;
+	});
+	if (seq_iter == inputs_iter->m_seqs.end())
+		return nullptr;
+
+	return &*seq_iter;
+}
+
+
+//-------------------------------------------------
 //  StartInputPoll
 //-------------------------------------------------
 
-void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
+void InputsDialog::StartInputPoll(const wxString &label, wxStaticText &static_text, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq)
 {
 	// start polling
-	m_host.StartPolling(port_tag, mask, seq_type);
+	m_host.StartPolling(port_tag, mask, seq_type, start_seq);
 
 	// present the dialog
-	wxDialog dialog(this, wxID_ANY, "Press key for " + button.GetLabel(), wxDefaultPosition, wxSize(250, 100));
+	wxDialog dialog(this, wxID_ANY, "Press key for " + label, wxDefaultPosition, wxSize(250, 100));
 	m_current_dialog = &dialog;
 	dialog.ShowModal();
 	m_current_dialog = nullptr;
@@ -175,6 +252,7 @@ void InputsDialog::StartInputPoll(wxButton &button, wxStaticText &static_text, c
 		});
 		if (seq_iter != input_iter->m_seqs.end())
 		{
+			// update the label on the control
 			wxString seq_text = GetSeqText(*seq_iter);
 			static_text.SetLabel(seq_text);
 		}
