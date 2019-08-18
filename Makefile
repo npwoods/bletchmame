@@ -58,6 +58,7 @@ OBJECTFILES=\
 	$(OBJ)/versiontask.o		\
 	$(OBJ)/virtuallistview.o	\
 	$(OBJ)/xmlparser.o			\
+	$(OBJ)/wxhelpers.o			\
 	$(OBJ)/bletchmame.res.o		\
 
 $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile

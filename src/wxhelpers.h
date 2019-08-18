@@ -11,8 +11,10 @@
 #ifndef WXHELPERS_H
 #define WXHELPERS_H
 
-#include <wx/window.h>
+#include <wx/menu.h>
 #include <wx/sizer.h>
+#include <wx/window.h>
+
 #include <memory>
 
 
@@ -184,5 +186,18 @@ void QueueEvent(wxEvtHandler &dest, const wxEventTypeTag<TEvent> &event_type, TA
 }
 
 
-#endif // WXHELPERS_H
+//**************************************************************************
+//  MENU WITH RESULT - makes popup menus simpler
+//**************************************************************************
 
+class MenuWithResult : public wxMenu
+{
+public:
+	MenuWithResult();
+	int Result() const { return m_result; }
+
+private:
+	int m_result;
+};
+
+#endif // WXHELPERS_H

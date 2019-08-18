@@ -36,11 +36,8 @@ namespace
 		enum
 		{
 			// user IDs
-			ID_CREATE_IMAGE = wxID_HIGHEST + 1,
-			ID_LOAD_IMAGE,
-			ID_UNLOAD_IMAGE,
-			ID_GRID_CONTROLS,
-			ID_RECENT_FILES
+			ID_GRID_CONTROLS = wxID_HIGHEST + 1,
+			ID_LAST
 		};
 
 		enum
@@ -55,12 +52,9 @@ namespace
 		IImagesHost &					m_host;
 		wxFlexGridSizer *				m_grid_sizer;
 		wxButton *						m_ok_button;
-		int								m_popup_menu_result;
 		observable::unique_subscription	m_images_event_subscription;
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
-
-		void AppendToPopupMenu(wxMenu &popup_menu, int id, const wxString &text);
 
 		bool ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable);
 		bool CreateImage(const wxString &tag);
@@ -215,13 +209,21 @@ TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
 
 bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool is_creatable, bool is_unloadable)
 {
-	wxMenu popup_menu;
+	enum
+	{
+		// popup menu IDs
+		ID_CREATE_IMAGE = ID_LAST + 1000,
+		ID_LOAD_IMAGE,
+		ID_UNLOAD_IMAGE,
+		ID_RECENT_FILES
+	};
 
 	// setup popup menu
+	MenuWithResult popup_menu;
 	if (is_creatable)
-		AppendToPopupMenu(popup_menu, ID_CREATE_IMAGE, "Create...");
-	AppendToPopupMenu(popup_menu, ID_LOAD_IMAGE, "Load...");
-	AppendToPopupMenu(popup_menu, ID_UNLOAD_IMAGE, "Unload");
+		popup_menu.Append(ID_CREATE_IMAGE, "Create...");
+	popup_menu.Append(ID_LOAD_IMAGE, "Load...");
+	popup_menu.Append(ID_UNLOAD_IMAGE, "Unload");
 	popup_menu.Enable(ID_UNLOAD_IMAGE, is_unloadable);
 
 	// recent files
@@ -235,19 +237,18 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 		{
 			wxString recent_file_basename, recent_file_extension;
 			wxFileName::SplitPath(recent_file, nullptr, &recent_file_basename, &recent_file_extension);
-			AppendToPopupMenu(popup_menu, id++, recent_file_basename + "." + recent_file_extension);
+			popup_menu.Append(id++, recent_file_basename + "." + recent_file_extension);
 		}
 	}
 
 	// display the popup menu
 	wxRect button_rectangle = button.GetRect();
-	m_popup_menu_result = 0;
 	if (!PopupMenu(&popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
 		return false;
 
 	// interpret the result
 	bool result = false;
-	switch (m_popup_menu_result)
+	switch (popup_menu.Result())
 	{
 	case ID_CREATE_IMAGE:
 		result = CreateImage(tag);
@@ -262,26 +263,15 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 		break;
 
 	default:
-		if (m_popup_menu_result >= ID_RECENT_FILES && m_popup_menu_result < ID_RECENT_FILES + recent_files.size())
+		if (popup_menu.Result() >= ID_RECENT_FILES && popup_menu.Result() < ID_RECENT_FILES + recent_files.size())
 		{
-			m_host.LoadImage(tag, wxString(recent_files[m_popup_menu_result - ID_RECENT_FILES]));
+			m_host.LoadImage(tag, wxString(recent_files[popup_menu.Result() - ID_RECENT_FILES]));
 			result = true;
 		}
 		break;
 	}
 
 	return false;
-}
-
-
-//-------------------------------------------------
-//  AppendToPopupMenu
-//-------------------------------------------------
-
-void ImagesDialog::AppendToPopupMenu(wxMenu &popup_menu, int id, const wxString &text)
-{
-	popup_menu.Append(id, text);
-	Bind(wxEVT_MENU, [this, id](auto &) { m_popup_menu_result = id; }, id);
 }
 
 

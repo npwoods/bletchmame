@@ -250,6 +250,7 @@
     <ClCompile Include="validity.cpp" />
     <ClCompile Include="versiontask.cpp" />
     <ClCompile Include="virtuallistview.cpp" />
+    <ClCompile Include="wxhelpers.cpp" />
     <ClCompile Include="xmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
