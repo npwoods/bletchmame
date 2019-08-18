@@ -33,13 +33,14 @@ namespace
 		class Entry
 		{
 		public:
-			Entry(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, wxButton &button, wxStaticText &static_text);
+			Entry(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, wxButton &button, wxStaticText &static_text, bool is_analog);
 
 			const wxString &		PortTag() const { return m_port_tag; }
 			ioport_value			Mask() const { return m_mask; }
 			status::input_seq::type	SeqType() const { return m_seq_type; }
 			wxButton &				Button() { return m_button;}
 			wxStaticText &			StaticText() { return m_static_text; }
+			bool					IsAnalog() const { return m_is_analog; }
 
 		private:
 			wxString				m_port_tag;
@@ -47,6 +48,21 @@ namespace
 			status::input_seq::type	m_seq_type;
 			wxButton &				m_button;
 			wxStaticText &			m_static_text;
+			bool					m_is_analog;
+		};
+
+		struct DeviceItemRef
+		{
+			DeviceItemRef(const status::input_class &devclass, const status::input_device &dev, const status::input_device_item &item)
+				: m_devclass(devclass)
+				, m_dev(dev)
+				, m_item(item)
+			{
+			}
+
+			const status::input_class &			m_devclass;
+			const status::input_device &		m_dev;
+			const status::input_device_item &	m_item;
 		};
 
 		IInputsHost &							m_host;
@@ -58,13 +74,15 @@ namespace
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxWindow &parent, wxSizer &sizer, int proportion, int flags, TArgs&&... args);
 
-		bool ShowPopupMenu(const wxButton &button, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type);
+		bool ShowPopupMenu(Entry &entry);
+		std::list<DeviceItemRef> SuggestAnalogInputDeviceItems() const;
 		const status::input_seq *FindInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type);
 		void StartInputPoll(const wxString &label, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &start_seq);
 		void OnInputsChanged();
 		void OnPollingSeqChanged();
 		wxString GetSeqTextFromTokens(const wxString &seq_tokens);
 		static std::unordered_map<wxString, wxString> BuildCodes(const std::vector<status::input_class> &devclasses);
+		static wxString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
 	};
 };
 
@@ -128,6 +146,8 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 				default:
 					throw false;
 				}
+				bool is_analog = input.m_type == status::input::input_type::ANALOG
+					&& input_seq.m_type == status::input_seq::type::STANDARD;
 
 				// create the controls
 				wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
@@ -139,14 +159,11 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 					input.m_mask,
 					input_seq.m_type,
 					button,
-					static_text);
+					static_text,
+					is_analog);
 
 				// bind the menu item
-				auto callback = [this, &entry](auto &)
-				{
-					ShowPopupMenu(entry.Button(), entry.PortTag(), entry.Mask(), entry.SeqType());
-				};
-				Bind(wxEVT_BUTTON, std::move(callback), entry.Button().GetId());
+				Bind(wxEVT_BUTTON, [this, &entry](auto &) { ShowPopupMenu(entry); }, entry.Button().GetId());
 			}
 		}
 	}
@@ -185,23 +202,53 @@ TControl &InputsDialog::AddControl(wxWindow &parent, wxSizer &sizer, int proport
 //  ShowPopupMenu
 //-------------------------------------------------
 
-bool InputsDialog::ShowPopupMenu(const wxButton &button, const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
+bool InputsDialog::ShowPopupMenu(Entry &entry)
 {
 	enum
 	{
 		ID_SPECIFY_INPUT = wxID_HIGHEST + 1,
 		ID_ADD_INPUT,
-		ID_CLEAR_INPUT
+		ID_QUICK_ITEMS_BEGIN,
+		ID_CLEAR_INPUT = ID_QUICK_ITEMS_BEGIN
 	};
+
+	// keep a list of so-called "quick" items; direct specifications of input seqs
+	std::vector<wxString> quick_items = { "" };
 
 	// create the pop up menu
 	MenuWithResult popup_menu;
+	if (entry.IsAnalog())
+	{
+		std::list<DeviceItemRef> items = SuggestAnalogInputDeviceItems();
+		if (!items.empty())
+		{
+			for (const DeviceItemRef &ref : items)
+			{
+				// put this quick item away
+				int id = ID_QUICK_ITEMS_BEGIN + (int)quick_items.size();
+				quick_items.push_back(ref.m_item.m_code);
+
+				// identify the label for the quick item
+				wxString label = wxString::Format("%s #%d %s (%s)",
+					GetDeviceClassName(ref.m_devclass, false),
+					ref.m_dev.m_index + 1,
+					ref.m_item.m_name,
+					ref.m_dev.m_name);
+
+				// and append
+				popup_menu.Append(id, label);
+			}
+
+			// finally append a separator
+			popup_menu.AppendSeparator();
+		}
+	}
 	popup_menu.Append(ID_SPECIFY_INPUT, "Specify...");
 	popup_menu.Append(ID_ADD_INPUT, "Add...");
 	popup_menu.Append(ID_CLEAR_INPUT, "Clear");
 
 	// show the pop up menu
-	wxRect button_rectangle = button.GetRect();
+	wxRect button_rectangle = entry.Button().GetRect();
 	if (!PopupMenu(&popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
 		return false;
 
@@ -214,7 +261,7 @@ bool InputsDialog::ShowPopupMenu(const wxButton &button, const wxString &port_ta
 			// we're appending to; this shouldn't fail unless something very odd is going
 			// on but so be it
 			const status::input_seq *append_to_seq = popup_menu.Result() == ID_ADD_INPUT
-				? FindInputSeq(port_tag, mask, seq_type)
+				? FindInputSeq(entry.PortTag(), entry.Mask(), entry.SeqType())
 				: nullptr;
 
 			// based on that, identify the sequence of tokens that we're starting on
@@ -223,16 +270,68 @@ bool InputsDialog::ShowPopupMenu(const wxButton &button, const wxString &port_ta
 				: util::g_empty_string;
 
 			// and start polling!
-			StartInputPoll(button.GetLabel(), port_tag, mask, seq_type, start_seq_tokens);
+			StartInputPoll(entry.Button().GetLabel(), entry.PortTag(), entry.Mask(), entry.SeqType(), start_seq_tokens);
 		}
 		break;
 
-	case ID_CLEAR_INPUT:
-		m_host.SetInputSeq(port_tag, mask, seq_type, "");
+	default:
+		if (popup_menu.Result() >= ID_QUICK_ITEMS_BEGIN && popup_menu.Result() < ID_QUICK_ITEMS_BEGIN + quick_items.size())
+		{
+			int index = popup_menu.Result() - ID_QUICK_ITEMS_BEGIN;
+			const wxString &seq_tokens = quick_items[index];
+			m_host.SetInputSeq(entry.PortTag(), entry.Mask(), entry.SeqType(), seq_tokens);
+		}
 		break;
 	}
 
 	return true;
+}
+
+
+//-------------------------------------------------
+//  SuggestAnalogInputDeviceItems
+//-------------------------------------------------
+
+std::list<InputsDialog::DeviceItemRef> InputsDialog::SuggestAnalogInputDeviceItems() const
+{
+	std::list<DeviceItemRef> results;
+
+	// build the results
+	const std::vector<status::input_class> &devclasses = m_host.GetInputClasses();
+	for (const status::input_class &devclass : devclasses)
+	{
+		for (const status::input_device &dev : devclass.m_devices)
+		{
+			for (const status::input_device_item &item : dev.m_items)
+			{
+				if (item.m_token == "XAXIS" || item.m_token == "YAXIS" || item.m_token == "ZAXIS")
+					results.emplace_back(devclass, dev, item);
+			}
+		}
+	}
+
+	// some postprocessing; remove lightgun devices that "echo" mouses; perhaps this is a specific
+	// example of a more general problem?
+	decltype(results)::iterator iter;
+	bool done = false;
+	while(!done)
+	{
+		iter = std::find_if(results.begin(), results.end(), [&results](const DeviceItemRef &x)
+		{
+			return (x.m_devclass.m_name == wxT("lightgun"))
+				&& util::find_if_ptr(results, [&results, &x](const DeviceItemRef &y)
+				{
+					return y.m_devclass.m_name == wxT("mouse")
+						&& x.m_dev.m_name == y.m_dev.m_name;
+				});
+		});
+		if (iter != results.end())
+			results.erase(iter);
+		else
+			done = true;
+	}
+
+	return results;
 }
 
 
@@ -243,23 +342,18 @@ bool InputsDialog::ShowPopupMenu(const wxButton &button, const wxString &port_ta
 const status::input_seq *InputsDialog::FindInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type)
 {
 	// look up the input port by tag and mask
-	const auto &inputs = m_host.GetInputs().get();
-	auto inputs_iter = std::find_if(inputs.begin(), inputs.end(), [&port_tag, mask](const status::input &input)
+	const status::input *input = util::find_if_ptr(m_host.GetInputs().get(), [&port_tag, mask](const status::input &x)
 	{
-		return input.m_port_tag == port_tag && input.m_mask == mask;
+		return x.m_port_tag == port_tag && x.m_mask == mask;
 	});
-	if (inputs_iter == inputs.end())
+	if (!input)
 		return nullptr;
 
 	// and once we have that, look up the seq
-	auto seq_iter = std::find_if(inputs_iter->m_seqs.begin(), inputs_iter->m_seqs.end(), [seq_type](const status::input_seq &seq)
+	return util::find_if_ptr(input->m_seqs, [seq_type](const status::input_seq &x)
 	{
-		return seq.m_type == seq_type;
+		return x.m_type == seq_type;
 	});
-	if (seq_iter == inputs_iter->m_seqs.end())
-		return nullptr;
-
-	return &*seq_iter;
 }
 
 
@@ -331,6 +425,8 @@ std::unordered_map<wxString, wxString> InputsDialog::BuildCodes(const std::vecto
 				devclass_name = "Joy";
 			else if (devclass.m_name == "lightgun")
 				devclass_name = "Gun";
+			else if (devclass.m_name == "mouse")
+				devclass_name = "Mouse";
 			else
 				devclass_name = devclass.m_name;
 
@@ -349,6 +445,27 @@ std::unordered_map<wxString, wxString> InputsDialog::BuildCodes(const std::vecto
 			}
 		}
 	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  GetDeviceClassName
+//-------------------------------------------------
+
+wxString InputsDialog::GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard)
+{
+	wxString result;
+	if (devclass.m_name == "keyboard")
+		result = !hide_single_keyboard || devclass.m_devices.size() > 1 ? "Kbd" : "";
+	else if (devclass.m_name == "joystick")
+		result = "Joy";
+	else if (devclass.m_name == "lightgun")
+		result = "Gun";
+	else if (devclass.m_name == "mouse")
+		result = "Mouse";
+	else
+		result = devclass.m_name;
 	return result;
 }
 
@@ -405,12 +522,13 @@ wxString InputsDialog::GetSeqTextFromTokens(const wxString &seq_tokens)
 //  Entry ctor
 //-------------------------------------------------
 
-InputsDialog::Entry::Entry(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, wxButton &button, wxStaticText &static_text)
+InputsDialog::Entry::Entry(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, wxButton &button, wxStaticText &static_text, bool is_analog)
 	: m_port_tag(port_tag)
 	, m_mask(mask)
 	, m_seq_type(seq_type)
 	, m_button(button)
 	, m_static_text(static_text)
+	, m_is_analog(is_analog)
 {
 }
 

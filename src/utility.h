@@ -43,6 +43,23 @@ private:
 };
 
 
+template<typename TIterator, typename TPredicate>
+auto find_if_ptr(TIterator first, TIterator last, TPredicate predicate)
+{
+	auto iter = std::find_if(first, last, predicate);
+	return iter != last
+		? &*iter
+		: nullptr;
+}
+
+
+template<typename TContainer, typename TPredicate>
+auto find_if_ptr(TContainer &container, TPredicate predicate)
+{
+	return find_if_ptr(container.begin(), container.end(), predicate);
+}
+
+
 //**************************************************************************
 //  ENUM UTILITY CLASSES
 //**************************************************************************
