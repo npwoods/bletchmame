@@ -551,6 +551,21 @@ function command_show_profiler(args)
 	emit_status()
 end
 
+-- arbitrary Lua
+function command_lua(expr)
+	local func, err = load(expr)
+	if not func then
+		print("ERROR ### " .. tostring(err))
+		return
+	end
+	local result = func()
+	if (result == nil) then
+		print("OK ### Command evaluated")
+	else
+		print("OK ### Command evaluated; result = " .. tostring(result))
+	end
+end
+
 -- not implemented command
 function command_nyi(args)
 	print("ERROR ### Command '" .. args[1] .. "' not yet implemeted")
@@ -595,11 +610,17 @@ local commands =
 function invoke_command_line(line)
 	-- invoke the appropriate command
 	local invocation = (function()
-		local args = quoted_string_split(line)
-		if (commands[args[1]:lower()]) then
-			commands[args[1]:lower()](args)
+		-- check for "?" syntax
+		if (line:sub(1, 1) == "?") then
+			command_lua(line:sub(2))
 		else
-			command_unknown(args)
+			-- split the arguments and invoke
+			local args = quoted_string_split(line)
+			if (commands[args[1]:lower()]) then
+				commands[args[1]:lower()](args)
+			else
+				command_unknown(args)
+			end
 		end
 	end)
 
