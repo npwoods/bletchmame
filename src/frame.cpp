@@ -252,6 +252,8 @@ namespace
 		void UpdateTitleBar();
 		void UpdateMenuBar();
 		void UpdateStatusBar();
+		void OnTimer();
+		bool IsMouseCaptured() const;
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
@@ -406,7 +408,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnProfileListEndLabelEdit(event.GetIndex());												}, m_profile_view->GetId());
-	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
+	Bind(wxEVT_TIMER,					[this](auto &)		{ OnTimer();																				});
 	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
 	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(false);															});
 
@@ -1987,6 +1989,54 @@ void MameFrame::UpdateStatusBar()
 		const wxString &text = i < (int)status_text.size() ? status_text[i] : std::reference_wrapper<const wxString>(util::g_empty_string);
 		SetStatusText(text, i);
 	}
+}
+
+
+//-------------------------------------------------
+//  OnTimer
+//-------------------------------------------------
+
+void MameFrame::OnTimer()
+{
+	// if MAME captured the mouse, we want to clear the cursor, as what MAME is doing won't work
+	if (IsMouseCaptured())
+		SetCursor(wxCursor(wxCURSOR_BLANK));
+	else
+		SetCursor(wxNullCursor);
+
+	InvokePing();
+}
+
+
+//-------------------------------------------------
+//  IsMouseCaptured
+//-------------------------------------------------
+
+bool MameFrame::IsMouseCaptured() const
+{
+	bool result = false;
+#ifdef WIN32
+	{
+		// get the window bounds
+		RECT window_bounds;
+		HWND hwnd = GetHWND();
+		::GetClientRect(hwnd, &window_bounds);
+		::ClientToScreen(hwnd, &reinterpret_cast<POINT *>(&window_bounds)[0]);
+		::ClientToScreen(hwnd, &reinterpret_cast<POINT *>(&window_bounds)[1]);
+
+		// get the cursor clip
+		RECT cursor_clip;
+		::GetClipCursor(&cursor_clip);
+
+		// are the rectangles identical?
+		if (window_bounds.left == cursor_clip.left && window_bounds.top == cursor_clip.top
+			&& window_bounds.right == cursor_clip.right && window_bounds.bottom == cursor_clip.bottom)
+		{
+			result = true;
+		}
+	}
+#endif // WIN32
+	return result;
 }
 
 
