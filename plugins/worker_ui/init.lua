@@ -605,7 +605,7 @@ function invoke_command_line(line)
 
 	local status, err = pcall(invocation)
 	if (not status) then
-		print("ERROR ## Lua runtime error " .. tostring(err.code))
+		print("ERROR ## Lua runtime error " .. tostring(err))
 	end
 end
 
