@@ -415,33 +415,20 @@ std::unordered_map<wxString, wxString> InputsDialog::BuildCodes(const std::vecto
 	std::unordered_map<wxString, wxString> result;
 	for (const status::input_class &devclass : devclasses)
 	{
-		if (devclass.m_enabled)
+		// similar logic to devclass_string_table in MAME input.cpp
+		wxString devclass_name = GetDeviceClassName(devclass, true);
+
+		// build codes for each device
+		for (const status::input_device &dev : devclass.m_devices)
 		{
-			// similar logic to devclass_string_table in MAME input.cpp
-			wxString devclass_name;
-			if (devclass.m_name == "keyboard")
-				devclass_name = devclass.m_devices.size() > 1 ? "Kbd" : "";
-			else if (devclass.m_name == "joystick")
-				devclass_name = "Joy";
-			else if (devclass.m_name == "lightgun")
-				devclass_name = "Gun";
-			else if (devclass.m_name == "mouse")
-				devclass_name = "Mouse";
-			else
-				devclass_name = devclass.m_name;
+			wxString prefix = !devclass_name.empty()
+				? wxString::Format("%s #%d ", devclass_name, dev.m_index + 1)
+				: wxString();
 
-			// build codes for each device
-			for (const status::input_device &dev : devclass.m_devices)
+			for (const status::input_device_item &item : dev.m_items)
 			{
-				wxString prefix = !devclass_name.empty()
-					? wxString::Format("%s #%d ", devclass_name, dev.m_index + 1)
-					: wxString();
-
-				for (const status::input_device_item &item : dev.m_items)
-				{
-					wxString label = prefix + item.m_name;
-					result.emplace(item.m_code, std::move(label));
-				}
+				wxString label = prefix + item.m_name;
+				result.emplace(item.m_code, std::move(label));
 			}
 		}
 	}
