@@ -747,13 +747,15 @@ function console.startplugin()
 	-- these on, but we need to apply a treatment to defaults that assume normal MAME
 	emu.register_before_load_settings(function()
 		function fix_default_input_seq(field, seq_type)
-			local tokens = manager:machine():input():seq_to_tokens(field:default_input_seq(seq_type))
-			local match = string.match(tokens, "JOYCODE_[0-9A-Z_]+ OR MOUSECODE_[0-9A-Z_]+")
+			local old_default_seq = field:default_input_seq(seq_type)
+			local cleaned_default_seq = manager:machine():input():seq_clean(old_default_seq)
+			local cleaned_default_seq_tokens = manager:machine():input():seq_to_tokens(cleaned_default_seq)
+			local match = string.match(cleaned_default_seq_tokens, "JOYCODE_[0-9A-Z_]+ OR MOUSECODE_[0-9A-Z_]+")
 			if match then		
-				local new_tokens = string.match(tokens, "JOYCODE_[0-9A-Z_]+")
-				if new_tokens then
-					local new_seq = manager:machine():input():seq_from_tokens(new_tokens)
-					field:set_default_input_seq(seq_type, new_seq)
+				local new_default_seq_tokens = string.match(cleaned_default_seq_tokens, "JOYCODE_[0-9A-Z_]+")
+				if new_default_seq_tokens then
+					local new_default_seq = manager:machine():input():seq_from_tokens(new_default_seq_tokens)
+					field:set_default_input_seq(seq_type, new_default_seq)
 				end
 			end
 		end
