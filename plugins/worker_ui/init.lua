@@ -32,6 +32,25 @@ function quoted_string_split(text)
 	return result
 end
 
+function split(text, delim)
+    -- returns an array of fields based on text and delimiter (one character only)
+    local result = {}
+    local magic = "().%+-*?[]^$"
+
+    if delim == nil then
+        delim = "%s"
+    elseif string.find(delim, magic, 1, true) then
+        -- escape magic
+        delim = "%"..delim
+    end
+
+    local pattern = "[^"..delim.."]+"
+    for w in string.gmatch(text, pattern) do
+        table.insert(result, w)
+    end
+    return result
+end
+
 function dump(o)
    if type(o) == 'table' then
       local s = '{ '
@@ -159,6 +178,31 @@ function stop_polling_input_seq()
 	current_poll_field = nil
 	current_poll_seq_type = nil
 	manager:ui():set_aggressive_input_focus(false)
+end
+
+function update_input_classes()
+	local mouse_enabled = false
+
+	function check_seq(field, seq_type)
+		local tokens = manager:machine():input():seq_to_tokens(field:input_seq(seq_type))
+		for _, token in pairs(split(tokens)) do
+			if (string.match(tokens, "MOUSECODE_")) then
+				mouse_enabled = true
+			end
+		end
+	end
+
+	for _,port in pairs(manager:machine():ioport().ports) do
+		for _,field in pairs(port.fields) do
+			check_seq(field, "standard")
+			if field.is_analog then
+				check_seq(field, "decrement")
+				check_seq(field, "increment")
+			end
+		end
+	end
+
+	manager:machine():input().device_classes["mouse"].enabled = mouse_enabled
 end
 
 function emit_status(light)
@@ -478,6 +522,7 @@ function command_seq_set(args)
 	-- set the input seq with the specified tokens
 	seq = manager:machine():input():seq_from_tokens(args[5])
 	field:set_input_seq(args[4], seq)
+	update_input_classes()
 
 	-- and report success
 	print("OK STATUS ### Input seq set")
@@ -523,6 +568,7 @@ end
 -- SEQ_POLL_STOP command
 function command_seq_poll_stop(args)
 	stop_polling_input_seq()
+	update_input_classes()
 	print("OK STATUS ### Stopped polling");
 	emit_status()
 end
@@ -643,6 +689,7 @@ function console.startplugin()
 		-- prestart has been invoked; set up MAME for our control
 		manager:machine():uiinput().presses_enabled = false
 		session_active = true
+		update_input_classes()
 
 		-- is this the very first time we have hit a pre-start?
 		if not initial_start then
@@ -692,6 +739,34 @@ function console.startplugin()
 	-- we do not want to use MAME's internal file manager - register a function
 	emu.register_mandatory_file_manager_override(function(instance_name)
 		return true
+	end)
+
+	-- we want to override MAME's default settings; by default MAME associates most joysticks
+	-- with the mouse and vice versa.  This is because normal MAME usage from the command line
+	-- will turn on input classes with options like '-[no]mouse'.  We want to automatically turn
+	-- these on, but we need to apply a treatment to defaults that assume normal MAME
+	emu.register_before_load_settings(function()
+		function fix_default_input_seq(field, seq_type)
+			local tokens = manager:machine():input():seq_to_tokens(field:default_input_seq(seq_type))
+			local match = string.match(tokens, "JOYCODE_[0-9A-Z_]+ OR MOUSECODE_[0-9A-Z_]+")
+			if match then		
+				local new_tokens = string.match(tokens, "JOYCODE_[0-9A-Z_]+")
+				if new_tokens then
+					local new_seq = manager:machine():input():seq_from_tokens(new_tokens)
+					field:set_default_input_seq(seq_type, new_seq)
+				end
+			end
+		end
+
+		for _,port in pairs(manager:machine():ioport().ports) do
+			for _,field in pairs(port.fields) do
+				fix_default_input_seq(field, "standard")
+				if field.is_analog then
+					fix_default_input_seq(field, "decrement")
+					fix_default_input_seq(field, "increment")
+				end
+			end
+		end
 	end)
 end
 
