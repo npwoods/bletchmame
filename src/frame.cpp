@@ -2017,6 +2017,9 @@ bool MameFrame::IsMouseCaptured() const
 	bool result = false;
 #ifdef WIN32
 	{
+		// this is crude logic that checks the window bounds to see if it matches with the cursor clip; it
+		// has known problems if the window goes off screen, and probably also multimonitor
+
 		// get the window bounds
 		RECT window_bounds;
 		HWND hwnd = GetHWND();
