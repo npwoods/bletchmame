@@ -443,6 +443,8 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *stop_menu_item					= file_menu->Append(id++, "Stop");
 	wxMenuItem *pause_menu_item					= file_menu->Append(id++, "Pause\tPause", wxEmptyString, wxITEM_CHECK);
 	file_menu->AppendSeparator();
+	wxMenuItem *images_menu_item				= file_menu->Append(id++, "Images...");
+	file_menu->AppendSeparator();
 	wxMenuItem *quick_load_state_menu_item		= file_menu->Append(id++, "Quick Load State\tF7");
 	wxMenuItem *quick_save_state_menu_item		= file_menu->Append(id++, "Quick Save State\tShift+F7");
 	wxMenuItem *load_state_menu_item			= file_menu->Append(id++, "Load State...");
@@ -465,7 +467,6 @@ void MameFrame::CreateMenuBar()
 	options_menu->AppendSubMenu(throttle_menu, "Throttle");
 	wxMenu *frameskip_menu = new wxMenu();
 	options_menu->AppendSubMenu(frameskip_menu, "Frame Skip");
-	wxMenuItem *images_menu_item				= options_menu->Append(id++, "Images...");
 	wxMenuItem *full_screen_menu_item			= options_menu->Append(id++, "Full Screen\tF11", wxEmptyString, wxITEM_CHECK);
 	wxMenuItem *sound_menu_item					= options_menu->Append(id++, "Sound", wxEmptyString, wxITEM_CHECK);
 	options_menu->AppendSeparator();
@@ -504,6 +505,7 @@ void MameFrame::CreateMenuBar()
 	// Bind menu item selected events
 	Bind(wxEVT_MENU, [this](auto &)	{ OnMenuStop();																}, stop_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangePaused(!m_state->paused().get());									}, pause_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue({ "state_load", QuickSaveStateFilePath() });						}, quick_load_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue({ "state_save", QuickSaveStateFilePath() });						}, quick_save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
@@ -515,7 +517,6 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(-1);													}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottleRate(+1);													}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ ChangeThrottled(!m_state->throttled());									}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuImages();															}, images_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ShowFullScreen(!IsFullScreen(), FULL_SCREEN_STYLE);						}, full_screen_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { ChangeSound(!IsSoundEnabled());											}, sound_menu_item->GetId());
 	
@@ -532,6 +533,7 @@ void MameFrame::CreateMenuBar()
 	// Bind UI update events	
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, stop_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_state && m_state->paused().get());												}, pause_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && !m_state->images().get().empty());									}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, wxFileExists(QuickSaveStateFilePath()));										}, quick_load_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, !QuickSaveStateFilePath().empty());											}, quick_save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, load_state_menu_item->GetId());
@@ -542,7 +544,6 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, increase_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, decrease_speed_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, m_state && !m_state->throttled());													}, warp_mode_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && !m_state->images().get().empty());									}, images_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Check(IsFullScreen());																				}, full_screen_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, IsSoundEnabled());																	}, sound_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, console_menu_item->GetId());
