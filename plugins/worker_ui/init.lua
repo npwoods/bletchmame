@@ -212,37 +212,46 @@ function update_input_classes()
 	manager:machine():input().device_classes["mouse"].enabled = mouse_enabled
 end
 
-function emit_status(light)
+function emit_status(light, out)
 	if light == nil then
 		light = false
 	end
+	local emit
+	if out then
+		emit = (function(s)
+			out:write(s)
+			out:write("\n")
+		end)
+	else
+		emit = print
+	end
 
-	print("<status");
-	print("\tphase=\"running\"");
-	print("\tpolling_input_seq=\"" .. tostring(is_polling_input_seq()) .. "\"");
-	print("\tnatural_keyboard_in_use=\"" .. tostring(manager:machine():ioport():natkeyboard().in_use) .. "\"");
-	print("\tpaused=\"" .. tostring(manager:machine().paused) .. "\"");
-	print("\tstartup_text=\"\"");
-	print("\tshow_profiler=\"" .. tostring(manager:ui().show_profiler) .. "\"");
-	print(">");
+	emit("<status");
+	emit("\tphase=\"running\"");
+	emit("\tpolling_input_seq=\"" .. tostring(is_polling_input_seq()) .. "\"");
+	emit("\tnatural_keyboard_in_use=\"" .. tostring(manager:machine():ioport():natkeyboard().in_use) .. "\"");
+	emit("\tpaused=\"" .. tostring(manager:machine().paused) .. "\"");
+	emit("\tstartup_text=\"\"");
+	emit("\tshow_profiler=\"" .. tostring(manager:ui().show_profiler) .. "\"");
+	emit(">");
 
 	-- <video> (video_manager)
-	print("\t<video");
-	print("\t\tspeed_percent=\"" .. tostring(manager:machine():video():speed_percent()) .. "\"");
-	print("\t\tframeskip=\"" .. tostring(manager:machine():video().frameskip) .. "\"");
-	print("\t\teffective_frameskip=\"" .. tostring(manager:machine():video():effective_frameskip()) .. "\"");
-	print("\t\tthrottled=\"" .. tostring(manager:machine():video().throttled) .. "\"");
-	print("\t\tthrottle_rate=\"" .. tostring(manager:machine():video().throttle_rate) .. "\"");
-	print("\t/>");
+	emit("\t<video");
+	emit("\t\tspeed_percent=\"" .. tostring(manager:machine():video():speed_percent()) .. "\"");
+	emit("\t\tframeskip=\"" .. tostring(manager:machine():video().frameskip) .. "\"");
+	emit("\t\teffective_frameskip=\"" .. tostring(manager:machine():video():effective_frameskip()) .. "\"");
+	emit("\t\tthrottled=\"" .. tostring(manager:machine():video().throttled) .. "\"");
+	emit("\t\tthrottle_rate=\"" .. tostring(manager:machine():video().throttle_rate) .. "\"");
+	emit("\t/>");
 
 	-- <sound> (sound_manager)
-	print("\t<sound");
-	print("\t\tattenuation=\"" .. tostring(manager:machine():sound().attenuation) .. "\"");
-	print("\t/>");
+	emit("\t<sound");
+	emit("\t\tattenuation=\"" .. tostring(manager:machine():sound().attenuation) .. "\"");
+	emit("\t/>");
 
 	if (not light or manager:machine().paused or is_polling_input_seq()) then
 		-- <images>
-		print("\t<images>")
+		emit("\t<images>")
 		for _,image in ipairs(get_images()) do
 
 			local filename = image:filename()
@@ -251,7 +260,7 @@ function emit_status(light)
 			end
 
 			-- basic image properties
-			print(string.format("\t\t<image tag=\"%s\" instance_name=\"%s\" is_readable=\"%s\" is_writeable=\"%s\" is_creatable=\"%s\" must_be_loaded=\"%s\"",
+			emit(string.format("\t\t<image tag=\"%s\" instance_name=\"%s\" is_readable=\"%s\" is_writeable=\"%s\" is_creatable=\"%s\" must_be_loaded=\"%s\"",
 				xml_encode(image.device:tag()),
 				xml_encode(image.instance_name),
 				string_from_bool(image.is_readable),
@@ -262,28 +271,28 @@ function emit_status(light)
 			-- filename
 			local filename = image:filename()
 			if filename ~= nil and filename ~= "" then
-				print("\t\t\tfilename=\"" .. xml_encode(filename) .. "\"")
+				emit("\t\t\tfilename=\"" .. xml_encode(filename) .. "\"")
 			end
 
 			-- display
 			local display = image:display()
 			if display ~= nil and display ~= "" then
-				print("\t\t\tdisplay=\"" .. xml_encode(display) .. "\"")
+				emit("\t\t\tdisplay=\"" .. xml_encode(display) .. "\"")
 			end
 
-			print("\t\t/>")
+			emit("\t\t/>")
 		end	
-		print("\t</images>")
+		emit("\t</images>")
 
 		-- <inputs>
-		print("\t<inputs>")
+		emit("\t<inputs>")
 		for _,port in pairs(manager:machine():ioport().ports) do
 			for _,field in pairs(port.fields) do
 				if field.enabled then
 					local type_class = field.type_class
 					local is_switch = type_class == "dipswitch" or type_class == "config"
 
-					print("\t\t<input"
+					emit("\t\t<input"
 						.. " port_tag=\"" .. xml_encode(port:tag()) .. "\""
 						.. " mask=\"" .. tostring(field.mask) .. "\""
 						.. " class=\"" .. type_class .. "\""
@@ -303,15 +312,15 @@ function emit_status(light)
 						end)
 						utf8_process(first_keyboard_code, callback)
 
-						print("\t\t\tfirst_keyboard_code=\"" .. tostring(val) .. "\"")
+						emit("\t\t\tfirst_keyboard_code=\"" .. tostring(val) .. "\"")
 					end
 
 					if is_switch then
 						-- DIP switches and configs have values
-						print("\t\t\tvalue=\"" .. tostring(field.user_value) .. "\"")
+						emit("\t\t\tvalue=\"" .. tostring(field.user_value) .. "\"")
 					end
 
-					print("\t\t>")
+					emit("\t\t>")
 
 					-- emit input sequences for anything that is not DIP switches of configs
 					if not is_switch then
@@ -324,41 +333,41 @@ function emit_status(light)
 						end
 
 						for _,seq_type in pairs(seq_types) do
-							print("\t\t\t<seq type=\"" .. seq_type
+							emit("\t\t\t<seq type=\"" .. seq_type
 								.. "\" tokens=\"" .. xml_encode(manager:machine():input():seq_to_tokens(field:input_seq(seq_type)))
 								.. "\"/>")
 						end
 					end
 
-					print("\t\t</input>")
+					emit("\t\t</input>")
 				end
 			end
 		end
-		print("\t</inputs>")
+		emit("\t</inputs>")
 
-		print("\t<input_devices>")
+		emit("\t<input_devices>")
 		for _,devclass in pairs(manager:machine():input().device_classes) do
-			print("\t\t<class name=\"" .. xml_encode(devclass.name)
+			emit("\t\t<class name=\"" .. xml_encode(devclass.name)
 				.. "\" enabled=\"" .. string_from_bool(devclass.enabled)
 				.. "\" multi=\"" .. string_from_bool(devclass.multi) .. "\">")
 			for _,device in pairs(devclass.devices) do
-				print("\t\t\t<device name=\"" .. xml_encode(device.name)
+				emit("\t\t\t<device name=\"" .. xml_encode(device.name)
 					.. "\" id=\"" .. xml_encode(device.id)
 					.. "\" devindex=\"" .. device.devindex .. "\">")
 				for id,item in pairs(device.items) do
-					print("\t\t\t\t<item name=\"" .. xml_encode(item.name)
+					emit("\t\t\t\t<item name=\"" .. xml_encode(item.name)
 						.. "\" token=\"" .. xml_encode(item.token)
 						.. "\" code=\"" .. xml_encode(manager:machine():input():code_to_token(item:code()))
 						.. "\"/>")
 				end
-				print("\t\t\t</device>")
+				emit("\t\t\t</device>")
 			end
-			print("\t\t</class>")
+			emit("\t\t</class>")
 		end
-		print("\t</input_devices>")
+		emit("\t</input_devices>")
 	end
 
-	print("</status>");
+	emit("</status>");
 end
 
 -- EXIT command
@@ -614,6 +623,15 @@ function command_show_profiler(args)
 	emit_status()
 end
 
+-- DUMP_STATUS command
+function command_dump_status(args)
+	local filename = args[2]
+	local out = io.open(filename, "w")
+	emit_status(false, out)
+	io.close(out)
+	print("OK ### Status dumped to \"" .. filename .. "\"")
+end
+
 -- arbitrary Lua
 function command_lua(expr)
 	local func, err = load(expr)
@@ -666,7 +684,8 @@ local commands =
 	["seq_poll_start"]				= command_seq_poll_start,
 	["seq_poll_stop"]				= command_seq_poll_stop,
 	["set_input_value"]				= command_set_input_value,
-	["show_profiler"]				= command_show_profiler
+	["show_profiler"]				= command_show_profiler,
+	["dump_status"]					= command_dump_status
 }
 
 -- invokes a command line
