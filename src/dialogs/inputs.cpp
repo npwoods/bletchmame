@@ -129,8 +129,14 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 	const std::vector<status::input> &unsorted_inputs = host.GetInputs().get();
 	for (const status::input &input : unsorted_inputs)
 	{
+		// is this input of the right class?
 		if (input.m_class == input_class)
-			input_refs.push_back(input);
+		{
+			// because of how the LUA "fields" property works, there may be dupes; only add if this
+			// is not a dupe
+			if (!util::find_if_ptr(input_refs, [&input](const status::input &x) { return x == input; }))
+				input_refs.push_back(input);
+		}
 	}
 	std::sort(input_refs.begin(), input_refs.end(), CompareInputs);
 
