@@ -77,8 +77,7 @@ function string_from_bool(b)
 	end
 end
 
-function xml_encode(str)
-	local res = ""
+function utf8_process(str, callback)
 	local seq = 0
 	local val = nil
 	for i = 1, #str do
@@ -101,22 +100,30 @@ function xml_encode(str)
 		-- emit the character if appropriate
 		seq = seq - 1
 		if seq == 0 then
-			if (val > 127 or val < 32) then
-				res = res .. "&#" .. tostring(val) .. ";"
-			elseif string.char(val) == "\"" then
-				res = res .. "&quot;"
-			elseif string.char(val) == "&" then
-				res = res .. "&amp;"
-			elseif string.char(val) == "<" then
-				res = res .. "&lt;"
-			elseif string.char(val) == ">" then
-				res = res .. "&gt;"
-			else
-				res = res .. string.char(val)
-			end
+			callback(val)
 			val = 0
 		end
 	end
+end
+
+function xml_encode(str)
+	local res = ""
+	local callback = (function(val)
+		if (val > 127 or val < 32) then
+			res = res .. "&#" .. tostring(val) .. ";"
+		elseif string.char(val) == "\"" then
+			res = res .. "&quot;"
+		elseif string.char(val) == "&" then
+			res = res .. "&amp;"
+		elseif string.char(val) == "<" then
+			res = res .. "&lt;"
+		elseif string.char(val) == ">" then
+			res = res .. "&gt;"
+		else
+			res = res .. string.char(val)
+		end
+	end)
+	utf8_process(str, callback)
 	return res
 end
 
@@ -275,19 +282,29 @@ function emit_status(light)
 				if field.enabled then
 					local type_class = field.type_class
 					local is_switch = type_class == "dipswitch" or type_class == "config"
-					local field_type
-					if field.is_analog then
-						field_type = "analog"
-					else
-						field_type = "digital"
-					end
 
 					print("\t\t<input"
 						.. " port_tag=\"" .. xml_encode(port:tag()) .. "\""
 						.. " mask=\"" .. tostring(field.mask) .. "\""
 						.. " class=\"" .. type_class .. "\""
-						.. " type=\"" .. field_type .. "\""
+						.. " group=\"" .. tostring(manager:machine():ioport():type_group(field.type, field.player)) .. "\""
+						.. " type=\"" .. field.type .. "\""
+						.. " player=\"" .. field.player .. "\""
+						.. " is_analog=\"" .. string_from_bool(field.is_analog) .. "\""
 						.. " name=\"" .. xml_encode(field.name) .. "\"")
+
+					local first_keyboard_code = field:keyboard_codes(0)[1]
+					if first_keyboard_code then
+						local val
+						local callback = (function(x)
+							if (val == nil) then
+								val = x
+							end
+						end)
+						utf8_process(first_keyboard_code, callback)
+
+						print("\t\t\tfirst_keyboard_code=\"" .. tostring(val) .. "\"")
+					end
 
 					if is_switch then
 						-- DIP switches and configs have values

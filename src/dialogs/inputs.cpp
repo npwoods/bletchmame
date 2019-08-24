@@ -81,7 +81,10 @@ namespace
 		void OnInputsChanged();
 		void OnPollingSeqChanged();
 		wxString GetSeqTextFromTokens(const wxString &seq_tokens);
+
+		// statics
 		static std::unordered_map<wxString, wxString> BuildCodes(const std::vector<status::input_class> &devclasses);
+		static bool CompareInputs(const status::input &a, const status::input &b);
 		static wxString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
 	};
 };
@@ -121,50 +124,56 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 	// main grid
 	std::unique_ptr<wxFlexGridSizer> grid_sizer = std::make_unique<wxFlexGridSizer>(2);
 
-	// build controls
-	wxString buffer;
-	for (const status::input &input : host.GetInputs().get())
+	// build sorted list of references
+	std::vector<std::reference_wrapper<const status::input>> input_refs;
+	const std::vector<status::input> &unsorted_inputs = host.GetInputs().get();
+	for (const status::input &input : unsorted_inputs)
 	{
 		if (input.m_class == input_class)
+			input_refs.push_back(input);
+	}
+	std::sort(input_refs.begin(), input_refs.end(), CompareInputs);
+
+	// build controls
+	wxString buffer;
+	for (const status::input &input : input_refs)
+	{
+		for (const status::input_seq &input_seq : input.m_seqs)
 		{
-			for (const status::input_seq &input_seq : input.m_seqs)
+			const wxString *name;
+			switch (input_seq.m_type)
 			{
-				const wxString *name;
-				switch (input_seq.m_type)
-				{
-				case status::input_seq::type::STANDARD:
-					name = &input.m_name;
-					break;
-				case status::input_seq::type::INCREMENT:
-					buffer = input.m_name + " Inc";
-					name = &buffer;
-					break;
-				case status::input_seq::type::DECREMENT:
-					buffer = input.m_name + " Dec";
-					name = &buffer;
-					break;
-				default:
-					throw false;
-				}
-				bool is_analog = input.m_type == status::input::input_type::ANALOG
-					&& input_seq.m_type == status::input_seq::type::STANDARD;
-
-				// create the controls
-				wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
-				wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, GetSeqTextFromTokens(input_seq.m_tokens));
-
-				// create the entry
-				Entry &entry = m_entries.emplace_back(
-					input.m_port_tag,
-					input.m_mask,
-					input_seq.m_type,
-					button,
-					static_text,
-					is_analog);
-
-				// bind the menu item
-				Bind(wxEVT_BUTTON, [this, &entry](auto &) { ShowPopupMenu(entry); }, entry.Button().GetId());
+			case status::input_seq::type::STANDARD:
+				name = &input.m_name;
+				break;
+			case status::input_seq::type::INCREMENT:
+				buffer = input.m_name + " Inc";
+				name = &buffer;
+				break;
+			case status::input_seq::type::DECREMENT:
+				buffer = input.m_name + " Dec";
+				name = &buffer;
+				break;
+			default:
+				throw false;
 			}
+			bool is_analog = input.m_is_analog && input_seq.m_type == status::input_seq::type::STANDARD;
+
+			// create the controls
+			wxButton &button			= AddControl<wxButton>(scrolled, *grid_sizer, 0, wxALL | wxEXPAND, id++, *name);
+			wxStaticText &static_text	= AddControl<wxStaticText>(scrolled, *grid_sizer, 0, wxALL, id++, GetSeqTextFromTokens(input_seq.m_tokens));
+
+			// create the entry
+			Entry &entry = m_entries.emplace_back(
+				input.m_port_tag,
+				input.m_mask,
+				input_seq.m_type,
+				button,
+				static_text,
+				is_analog);
+
+			// bind the menu item
+			Bind(wxEVT_BUTTON, [this, &entry](auto &) { ShowPopupMenu(entry); }, entry.Button().GetId());
 		}
 	}
 
@@ -433,6 +442,30 @@ std::unordered_map<wxString, wxString> InputsDialog::BuildCodes(const std::vecto
 		}
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  CompareInputs
+//-------------------------------------------------
+
+bool InputsDialog::CompareInputs(const status::input &a, const status::input &b)
+{
+	// logic follows src/frontend/mame/ui/inputmap.cpp in core MAME
+	if (a.m_group < b.m_group)
+		return true;
+	else if (a.m_group > b.m_group)
+		return false;
+	else if (a.m_type < b.m_type)
+		return true;
+	else if (a.m_type > b.m_type)
+		return false;
+	else if (a.m_first_keyboard_code < b.m_first_keyboard_code)
+		return true;
+	else if (a.m_first_keyboard_code > b.m_first_keyboard_code)
+		return false;
+	else
+		return a.m_name < b.m_name;
 }
 
 

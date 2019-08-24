@@ -35,12 +35,6 @@ static const util::enum_parser<status::input::input_class> s_input_class_parser 
 	{ "dipswitch", status::input::input_class::DIPSWITCH, },
 };
 
-static const util::enum_parser<status::input::input_type> s_input_type_parser =
-{
-	{ "analog", status::input::input_type::ANALOG, },
-	{ "digital", status::input::input_type::DIGITAL }
-};
-
 static const util::enum_parser<status::input_seq::type> s_inputseq_type_parser =
 {
 	{ "standard", status::input_seq::type::STANDARD },
@@ -52,32 +46,6 @@ static const util::enum_parser<status::input_seq::type> s_inputseq_type_parser =
 //**************************************************************************
 //  MISCELLANEOUS STATUS OBJECTS
 //**************************************************************************
-
-//-------------------------------------------------
-//  comparer
-//-------------------------------------------------
-
-namespace
-{
-	struct comparer
-	{
-		bool operator()(const status::image &x, const status::image &y)
-		{
-			return x.m_tag < y.m_tag;
-		}
-
-		bool operator()(const status::input &x, const status::input &y)
-		{
-			if (x.m_port_tag < y.m_port_tag)
-				return true;
-			else if (x.m_port_tag > y.m_port_tag)
-				return false;
-			else
-				return x.m_mask < y.m_mask;
-		}
-	};
-};
-
 
 //-------------------------------------------------
 //  image::operator==
@@ -117,7 +85,11 @@ bool status::input::operator==(const status::input &that) const
 		&& m_name == that.m_name
 		&& m_mask == that.m_mask
 		&& m_class == that.m_class
+		&& m_group == that.m_group
+		&& m_player == that.m_player
 		&& m_type == that.m_type
+		&& m_is_analog == that.m_is_analog
+		&& m_first_keyboard_code == that.m_first_keyboard_code
 		&& m_value == that.m_value
 		&& m_seqs == that.m_seqs;
 }
@@ -246,12 +218,16 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	xml.OnElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input &input = result.m_inputs.value().emplace_back();
-		attributes.Get("port_tag",			input.m_port_tag);
-		attributes.Get("mask",				input.m_mask);
-		attributes.Get("class",				input.m_class, s_input_class_parser);
-		attributes.Get("type",				input.m_type, s_input_type_parser);
-		attributes.Get("name",				input.m_name);
-		attributes.Get("value",				input.m_value);
+		attributes.Get("port_tag",				input.m_port_tag);
+		attributes.Get("name",					input.m_name);
+		attributes.Get("mask",					input.m_mask);
+		attributes.Get("class",					input.m_class, s_input_class_parser);
+		attributes.Get("group",					input.m_group);
+		attributes.Get("player",				input.m_player);
+		attributes.Get("type",					input.m_type);
+		attributes.Get("is_analog",				input.m_is_analog);
+		attributes.Get("first_keyboard_code",	input.m_first_keyboard_code);
+		attributes.Get("value",					input.m_value);
 		normalize_tag(input.m_port_tag);
 	});
 	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
@@ -309,9 +285,12 @@ status::update status::update::read(wxTextInputStream &input_stream)
 
 	// sort the results
 	if (result.m_images)
-		std::sort(result.m_images.value().begin(), result.m_images.value().end(), comparer());
-	if (result.m_inputs)
-		std::sort(result.m_inputs.value().begin(), result.m_inputs.value().end(), comparer());
+	{
+		std::sort(result.m_images.value().begin(), result.m_images.value().end(), [](const status::image &x, const status::image &y)
+		{
+			return x.m_tag < y.m_tag;
+		});
+	}
 
 	// and return them
 	return result;

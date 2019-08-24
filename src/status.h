@@ -100,17 +100,15 @@ namespace status
 			DIPSWITCH
 		};
 
-		enum class input_type
-		{
-			ANALOG,
-			DIGITAL
-		};
-
 		wxString				m_port_tag;
 		wxString				m_name;
 		ioport_value			m_mask;
 		input_class				m_class;
-		input_type				m_type;
+		int						m_group;
+		int						m_player;
+		int						m_type;
+		bool					m_is_analog;
+		int						m_first_keyboard_code;
 		ioport_value			m_value;
 		std::vector<input_seq>	m_seqs;
 
