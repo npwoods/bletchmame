@@ -11,11 +11,13 @@
 #include <wx/stattext.h>
 #include <wx/scrolwin.h>
 #include <wx/button.h>
+#include <wx/listctrl.h>
 
 #include <list>
 
 #include "dialogs/inputs.h"
 #include "runmachinetask.h"
+#include "virtuallistview.h"
 
 
 //**************************************************************************
@@ -62,6 +64,12 @@ namespace
 		const wxString &PortTag() const	{ return m_port_tag; }
 		ioport_value Mask() const		{ return m_mask; }
 
+		bool operator==(const InputFieldRef &that) const
+		{
+			return m_port_tag == that.m_port_tag
+				&& m_mask == that.m_mask;
+		}
+
 	private:
 		wxString				m_port_tag;
 		ioport_value			m_mask;
@@ -73,17 +81,16 @@ namespace
 	class InputEntry
 	{
 	public:
-		InputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text);
-
-		void UpdateText();
-
-	protected:
 		struct QuickItem
 		{
 			wxString																	m_label;
 			std::vector<std::tuple<InputFieldRef, status::input_seq::type, wxString>>	m_selections;
 		};
 
+		InputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text);
+		void UpdateText();
+
+	protected:
 		// overridden by child classes
 		virtual wxString GetText() = 0;
 		virtual void OnMainButtonPressed() = 0;
@@ -97,6 +104,7 @@ namespace
 		bool PopupMenu(wxMenu &popup_menu);
 		std::vector<QuickItem> BuildQuickItems(const std::optional<InputFieldRef> &x_field_ref, const std::optional<InputFieldRef> &y_field_ref, const std::optional<InputFieldRef> &all_axes_field_ref);
 		bool InvokeQuickItem(const std::vector<InputEntry::QuickItem> &quick_items, int index);
+		bool ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last);
 
 	private:
 		wxWindow &		m_parent;
@@ -206,6 +214,21 @@ namespace
 
 		InputsDialog &Host() { return m_host; }
 		void OnInputsChanged();
+	};
+
+
+	// ======================> MultipleQuickItemsDialog
+	class MultipleQuickItemsDialog : public wxDialog
+	{
+	public:
+		MultipleQuickItemsDialog(wxWindow &parent, std::vector<InputEntry::QuickItem>::const_iterator first, std::vector<InputEntry::QuickItem>::const_iterator last);
+		std::vector<std::reference_wrapper<const InputEntry::QuickItem>> GetSelectedQuickItems() const;
+
+	private:
+		VirtualListView *									m_list_view;
+		std::vector<InputEntry::QuickItem>::const_iterator	m_first, m_last;
+
+		const InputEntry::QuickItem &GetQuickItem(long index) const;
 	};
 };
 
@@ -786,6 +809,55 @@ bool InputEntry::InvokeQuickItem(const std::vector<InputEntry::QuickItem> &quick
 
 
 //-------------------------------------------------
+//  InputEntry::ShowMultipleQuickItemsDialog
+//-------------------------------------------------
+
+bool InputEntry::ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last)
+{
+	MultipleQuickItemsDialog dialog(m_parent, first, last);
+	if (dialog.ShowModal() != wxID_OK)
+		return false;
+
+	struct my_hash
+	{
+		std::size_t operator()(const std::tuple<InputFieldRef, status::input_seq::type> &x) const
+		{
+			const InputFieldRef &field_ref = std::get<0>(x);
+			status::input_seq::type seq_type = std::get<1>(x);
+
+			size_t result = 31337;
+			for (wxChar ch : field_ref.PortTag())
+				result = ((result << 5) + result) + ch;
+			result = (result << 5) + field_ref.Mask();
+			result = (result << 5) + static_cast<int>(seq_type);
+			return result;
+		}
+	};
+
+	// merge the quick items
+	std::unordered_map<std::tuple<InputFieldRef, status::input_seq::type>, wxString, my_hash> merged_quick_items;
+	for (const QuickItem &item : dialog.GetSelectedQuickItems())
+	{
+		for (const auto &[field_ref, seq_type, tokens] : item.m_selections)
+		{
+			wxString &value = merged_quick_items[std::make_tuple(field_ref, seq_type)];
+			if (!value.empty())
+				value += wxT(" or ");
+			value += tokens;
+		}
+	}
+
+	// and specify them
+	for (const auto &[key, tokens] : merged_quick_items)
+	{
+		const auto &[field_ref, seq_type] = key;
+		Host().SetInputSeq(field_ref, seq_type, tokens);
+	}
+	return true;
+}
+
+
+//-------------------------------------------------
 //  SingularInputEntry ctor
 //-------------------------------------------------
 
@@ -845,6 +917,7 @@ bool SingularInputEntry::OnMenuButtonPressed()
 		ID_SPECIFY_INPUT = wxID_HIGHEST + 1,
 		ID_ADD_INPUT,
 		ID_CLEAR_INPUT,
+		ID_MULTIPLE_QUICK_ITEMS,
 		ID_QUICK_ITEMS_BEGIN
 	};
 
@@ -862,13 +935,14 @@ bool SingularInputEntry::OnMenuButtonPressed()
 	{
 		for (int i = 0; i < quick_items.size(); i++)
 			popup_menu.Append(ID_QUICK_ITEMS_BEGIN + i, quick_items[i].m_label);
+		popup_menu.Append(ID_MULTIPLE_QUICK_ITEMS, wxT("Multiple..."));
 		popup_menu.AppendSeparator();
 	}
 
 	// append the normal items
-	popup_menu.Append(ID_SPECIFY_INPUT, "Specify...");
-	popup_menu.Append(ID_ADD_INPUT, "Add...");
-	popup_menu.Append(ID_CLEAR_INPUT, "Clear");
+	popup_menu.Append(ID_SPECIFY_INPUT, wxT("Specify..."));
+	popup_menu.Append(ID_ADD_INPUT, wxT("Add..."));
+	popup_menu.Append(ID_CLEAR_INPUT, wxT("Clear"));
 
 	// show the pop up menu
 	if (!PopupMenu(popup_menu))
@@ -901,6 +975,11 @@ bool SingularInputEntry::OnMenuButtonPressed()
 		Host().SetInputSeq(m_field_ref, m_seq_type, util::g_empty_string);
 		if (m_seq_type != status::input_seq::type::STANDARD)
 			Host().SetInputSeq(m_field_ref, status::input_seq::type::STANDARD, util::g_empty_string);
+		break;
+
+	case ID_MULTIPLE_QUICK_ITEMS:
+		if (!ShowMultipleQuickItemsDialog(std::next(quick_items.begin()), quick_items.end()))
+			return false;
 		break;
 
 	default:
@@ -988,6 +1067,7 @@ bool MultiAxisInputEntry::OnMenuButtonPressed()
 	enum
 	{
 		ID_SPECIFY_INPUT = wxID_HIGHEST + 1,
+		ID_MULTIPLE_QUICK_ITEMS,
 		ID_QUICK_ITEMS_BEGIN
 	};
 
@@ -1001,24 +1081,32 @@ bool MultiAxisInputEntry::OnMenuButtonPressed()
 	for (int i = 1; i < quick_items.size(); i++)
 		popup_menu.Append(ID_QUICK_ITEMS_BEGIN + i, quick_items[i].m_label);
 
-	// finally append a separator and show the normal items
+	// finally append "multiple...", a separator, specify and clear
+	popup_menu.Append(ID_MULTIPLE_QUICK_ITEMS, wxT("Multiple..."));
 	popup_menu.AppendSeparator();
-	popup_menu.Append(ID_SPECIFY_INPUT, "Specify...");
+	popup_menu.Append(ID_SPECIFY_INPUT, wxT("Specify..."));
 	popup_menu.Append(ID_QUICK_ITEMS_BEGIN + 0, quick_items[0].m_label);
 
 	// show the pop up menu
 	if (!PopupMenu(popup_menu))
 		return false;
 
-	if (popup_menu.Result() == ID_SPECIFY_INPUT)
+	switch(popup_menu.Result())
 	{
+	case ID_SPECIFY_INPUT:
 		Specify();
-	}
-	else
-	{
+		break;
+
+	case ID_MULTIPLE_QUICK_ITEMS:
+		if (!ShowMultipleQuickItemsDialog(std::next(quick_items.begin()), quick_items.end()))
+			return false;
+		break;
+
+	default:
 		// everything else is a quick item
 		if (!InvokeQuickItem(quick_items, popup_menu.Result() - ID_QUICK_ITEMS_BEGIN))
 			return false;
+		break;
 	}
 	return true;
 }
@@ -1134,6 +1222,74 @@ void MultiAxisInputDialog::OnInputsChanged()
 {
 	for (SingularInputEntry &entry : m_singular_inputs)
 		entry.UpdateText();
+}
+
+
+//**************************************************************************
+//  MULTIPLE QUICK ITEMS DIALOG
+//**************************************************************************
+
+//-------------------------------------------------
+//  MultipleQuickItemsDialog ctor
+//-------------------------------------------------
+
+MultipleQuickItemsDialog::MultipleQuickItemsDialog(wxWindow &parent, std::vector<InputEntry::QuickItem>::const_iterator first, std::vector<InputEntry::QuickItem>::const_iterator last)
+	: wxDialog(&parent, wxID_ANY, wxT("Multiple"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+	, m_list_view(nullptr)
+	, m_first(first)
+	, m_last(last)
+{
+	int id = wxID_LAST + 1;
+
+	// create the list view
+	m_list_view = new VirtualListView(this, id++);
+	m_list_view->AppendColumn(wxT("Item"));
+	m_list_view->SetOnGetItemText([this](long item, long)
+	{
+		return GetQuickItem(item).m_label;
+	});
+	m_list_view->SetItemCount(last - first);
+
+	// specify the sizer
+	SpecifySizer(*this, { boxsizer_orientation::VERTICAL, 10, {
+		{ 1, wxALL | wxEXPAND,		*m_list_view },
+		{ 0, wxALL | wxALIGN_RIGHT,	CreateButtonSizer(wxOK | wxCANCEL) }
+	} });
+
+	// set the column width
+	m_list_view->SetColumnWidth(0, m_list_view->GetSize().GetWidth());
+}
+
+
+//-------------------------------------------------
+//  MultipleQuickItemsDialog::GetSelectedQuickItems
+//-------------------------------------------------
+
+std::vector<std::reference_wrapper<const InputEntry::QuickItem>> MultipleQuickItemsDialog::GetSelectedQuickItems() const
+{
+	std::vector<std::reference_wrapper<const InputEntry::QuickItem>> results;
+	results.reserve(m_list_view->GetSelectedItemCount());
+
+	long item = -1;
+	while ((item = m_list_view->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) >= 0)
+	{
+		const InputEntry::QuickItem &qi = GetQuickItem(item);
+		results.push_back(qi);
+	}
+
+	return results;
+}
+
+
+//-------------------------------------------------
+//  MultipleQuickItemsDialog::GetQuickItem
+//-------------------------------------------------
+
+const InputEntry::QuickItem &MultipleQuickItemsDialog::GetQuickItem(long index) const
+{
+	auto iter = m_first + index;
+	assert(iter < m_last);
+	return *iter;
 }
 
 
