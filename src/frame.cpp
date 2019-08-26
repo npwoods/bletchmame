@@ -116,7 +116,7 @@ namespace
 			virtual observable::value<std::vector<status::input>> &GetInputs() override	{ return m_host.m_state->inputs(); }
 			virtual const std::vector<status::input_class> &GetInputClasses() override	{ return m_host.m_state->input_classes().get(); }
 			virtual observable::value<bool> &GetPollingSeqChanged() override			{ return m_host.m_state->polling_input_seq(); }
-			virtual void SetInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &seq_tokens) override;
+			virtual void SetInputSeqs(const std::vector<SetInputSeqRequest> &seqs) override;
 			virtual void StartPolling(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &f) override;
 			virtual void StopPolling() override;
 
@@ -2381,9 +2381,10 @@ const wxString &MameFrame::ImagesHost::GetMachineName() const
 //  StartPolling
 //-------------------------------------------------
 
-void MameFrame::InputsHost::SetInputSeq(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, const wxString &seq_tokens)
+void MameFrame::InputsHost::SetInputSeqs(const std::vector<SetInputSeqRequest> &seqs)
 {
-	m_host.Issue({ "seq_set", port_tag, std::to_string(mask), SeqTypeString(seq_type), seq_tokens });
+	for (const SetInputSeqRequest &seq : seqs)
+		m_host.Issue({ "seq_set", seq.m_port_tag, std::to_string(seq.m_mask), SeqTypeString(seq.m_seq_type), seq.m_tokens });
 }
 
 

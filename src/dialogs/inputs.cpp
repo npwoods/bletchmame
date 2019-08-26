@@ -83,8 +83,8 @@ namespace
 	public:
 		struct QuickItem
 		{
-			wxString																	m_label;
-			std::vector<std::tuple<InputFieldRef, status::input_seq::type, wxString>>	m_selections;
+			wxString						m_label;
+			std::vector<SetInputSeqRequest>	m_selections;
 		};
 
 		InputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text);
@@ -164,9 +164,9 @@ namespace
 		void StartInputPoll(const wxString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const wxString &start_seq = util::g_empty_string);
 
 		// trampolines
-		void SetInputSeq(const InputFieldRef &field_ref, status::input_seq::type seq_type, const wxString &seq_tokens)
+		void SetInputSeqs(const std::vector<SetInputSeqRequest> &seqs)
 		{
-			m_host.SetInputSeq(field_ref.PortTag(), field_ref.Mask(), seq_type, seq_tokens);
+			m_host.SetInputSeqs(seqs);
 		}
 		const std::vector<status::input_class> &GetInputClasses()
 		{
@@ -714,32 +714,32 @@ std::vector<InputEntry::QuickItem> InputEntry::BuildQuickItems(const std::option
 
 		if (x_field_ref)
 		{
-			clear_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::STANDARD, wxString());
-			clear_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::DECREMENT, wxString());
-			clear_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::INCREMENT, wxString());
+			clear_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::STANDARD, wxString());
+			clear_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::DECREMENT, wxString());
+			clear_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::INCREMENT, wxString());
 
-			arrows_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::STANDARD, wxString());
-			arrows_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::DECREMENT, wxT("KEYCODE_LEFT"));
-			arrows_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::INCREMENT, wxT("KEYCODE_RIGHT"));
+			arrows_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::STANDARD, wxString());
+			arrows_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::DECREMENT, wxT("KEYCODE_LEFT"));
+			arrows_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::INCREMENT, wxT("KEYCODE_RIGHT"));
 
-			numpad_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::STANDARD, wxString());
-			numpad_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::DECREMENT, wxT("KEYCODE_4PAD"));
-			numpad_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::INCREMENT, wxT("KEYCODE_6PAD"));
+			numpad_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::STANDARD, wxString());
+			numpad_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::DECREMENT, wxT("KEYCODE_4PAD"));
+			numpad_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::INCREMENT, wxT("KEYCODE_6PAD"));
 		}
 
 		if (y_field_ref)
 		{
-			clear_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::STANDARD, wxString());
-			clear_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::DECREMENT, wxString());
-			clear_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::INCREMENT, wxString());
+			clear_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::STANDARD, wxString());
+			clear_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::DECREMENT, wxString());
+			clear_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::INCREMENT, wxString());
 
-			arrows_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::STANDARD, wxString());
-			arrows_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::DECREMENT, wxT("KEYCODE_UP"));
-			arrows_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::INCREMENT, wxT("KEYCODE_DOWN"));
+			arrows_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::STANDARD, wxString());
+			arrows_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::DECREMENT, wxT("KEYCODE_UP"));
+			arrows_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::INCREMENT, wxT("KEYCODE_DOWN"));
 
-			numpad_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::STANDARD, wxString());
-			numpad_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::DECREMENT, wxT("KEYCODE_8PAD"));
-			numpad_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::INCREMENT, wxT("KEYCODE_2PAD"));
+			numpad_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::STANDARD, wxString());
+			numpad_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::DECREMENT, wxT("KEYCODE_8PAD"));
+			numpad_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::INCREMENT, wxT("KEYCODE_2PAD"));
 		}
 	}
 
@@ -755,15 +755,15 @@ std::vector<InputEntry::QuickItem> InputEntry::BuildQuickItems(const std::option
 			{
 				if (x_field_ref && item.m_token == "XAXIS")
 				{
-					dev_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::STANDARD, item.m_code);
-					dev_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::DECREMENT, wxString());
-					dev_quick_item.m_selections.emplace_back(*x_field_ref, status::input_seq::type::INCREMENT, wxString());
+					dev_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::STANDARD, item.m_code);
+					dev_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::DECREMENT, wxString());
+					dev_quick_item.m_selections.emplace_back(x_field_ref->PortTag(), x_field_ref->Mask(), status::input_seq::type::INCREMENT, wxString());
 				}
 				if (y_field_ref && item.m_token == "YAXIS")
 				{
-					dev_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::STANDARD, item.m_code);
-					dev_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::DECREMENT, wxString());
-					dev_quick_item.m_selections.emplace_back(*y_field_ref, status::input_seq::type::INCREMENT, wxString());
+					dev_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::STANDARD, item.m_code);
+					dev_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::DECREMENT, wxString());
+					dev_quick_item.m_selections.emplace_back(y_field_ref->PortTag(), y_field_ref->Mask(), status::input_seq::type::INCREMENT, wxString());
 				}
 				if (all_axes_field_ref && (item.m_token == "XAXIS" || item.m_token == "YAXIS" || item.m_token == "ZAXIS"))
 				{
@@ -773,9 +773,9 @@ std::vector<InputEntry::QuickItem> InputEntry::BuildQuickItems(const std::option
 						dev.m_index + 1,
 						item.m_name,
 						dev.m_name);
-					axis_quick_item.m_selections.emplace_back(*all_axes_field_ref, status::input_seq::type::STANDARD, item.m_code);
-					axis_quick_item.m_selections.emplace_back(*all_axes_field_ref, status::input_seq::type::DECREMENT, wxString());
-					axis_quick_item.m_selections.emplace_back(*all_axes_field_ref, status::input_seq::type::INCREMENT, wxString());
+					axis_quick_item.m_selections.emplace_back(all_axes_field_ref->PortTag(), all_axes_field_ref->Mask(), status::input_seq::type::STANDARD, item.m_code);
+					axis_quick_item.m_selections.emplace_back(all_axes_field_ref->PortTag(), all_axes_field_ref->Mask(), status::input_seq::type::DECREMENT, wxString());
+					axis_quick_item.m_selections.emplace_back(all_axes_field_ref->PortTag(), all_axes_field_ref->Mask(), status::input_seq::type::INCREMENT, wxString());
 				}
 			}
 
@@ -802,8 +802,7 @@ bool InputEntry::InvokeQuickItem(const std::vector<InputEntry::QuickItem> &quick
 	if (index < 0 || index >= quick_items.size())
 		return false;
 
-	for (const auto &[field_ref, seq_type, tokens] : quick_items[index].m_selections)
-		Host().SetInputSeq(field_ref, seq_type, tokens);
+	Host().SetInputSeqs(quick_items[index].m_selections);
 	return true;
 }
 
@@ -835,24 +834,33 @@ bool InputEntry::ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iter
 	};
 
 	// merge the quick items
-	std::unordered_map<std::tuple<InputFieldRef, status::input_seq::type>, wxString, my_hash> merged_quick_items;
+	std::vector<SetInputSeqRequest> merged_quick_items;
 	for (const QuickItem &item : dialog.GetSelectedQuickItems())
 	{
-		for (const auto &[field_ref, seq_type, tokens] : item.m_selections)
+		for (const SetInputSeqRequest &req : item.m_selections)
 		{
-			wxString &value = merged_quick_items[std::make_tuple(field_ref, seq_type)];
-			if (!value.empty())
-				value += wxT(" or ");
-			value += tokens;
+			auto iter = std::find_if(merged_quick_items.begin(), merged_quick_items.end(), [&req](const SetInputSeqRequest &x)
+			{
+				return x.m_port_tag == req.m_port_tag
+					&& x.m_mask == req.m_mask
+					&& x.m_seq_type == req.m_seq_type;
+			});
+			if (iter == merged_quick_items.end())
+			{
+				SetInputSeqRequest &new_merged_quick_item = merged_quick_items.emplace_back();
+				new_merged_quick_item.m_port_tag = req.m_port_tag;
+				new_merged_quick_item.m_mask = req.m_mask;
+				new_merged_quick_item.m_seq_type = req.m_seq_type;
+				iter = merged_quick_items.end() - 1;
+			}
+			if (!iter->m_tokens.empty())
+				iter->m_tokens += wxT(" or ");
+			iter->m_tokens += req.m_tokens;
 		}
 	}
 
 	// and specify them
-	for (const auto &[key, tokens] : merged_quick_items)
-	{
-		const auto &[field_ref, seq_type] = key;
-		Host().SetInputSeq(field_ref, seq_type, tokens);
-	}
+	Host().SetInputSeqs(merged_quick_items);
 	return true;
 }
 
@@ -972,9 +980,22 @@ bool SingularInputEntry::OnMenuButtonPressed()
 		break;
 
 	case ID_CLEAR_INPUT:
-		Host().SetInputSeq(m_field_ref, m_seq_type, util::g_empty_string);
-		if (m_seq_type != status::input_seq::type::STANDARD)
-			Host().SetInputSeq(m_field_ref, status::input_seq::type::STANDARD, util::g_empty_string);
+		{
+			std::vector<SetInputSeqRequest> reqs;
+			SetInputSeqRequest &req1 = reqs.emplace_back();
+			req1.m_port_tag = m_field_ref.PortTag();
+			req1.m_mask = m_field_ref.Mask();
+			req1.m_seq_type = m_seq_type;
+
+			if (m_seq_type != status::input_seq::type::STANDARD)
+			{
+				SetInputSeqRequest &req2 = reqs.emplace_back();
+				req2.m_port_tag = m_field_ref.PortTag();
+				req2.m_mask = m_field_ref.Mask();
+				req2.m_seq_type = status::input_seq::type::STANDARD;
+			}
+			Host().SetInputSeqs(reqs);
+		}
 		break;
 
 	case ID_MULTIPLE_QUICK_ITEMS:
