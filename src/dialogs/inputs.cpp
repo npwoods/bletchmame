@@ -103,7 +103,7 @@ namespace
 		// methods
 		bool PopupMenu(wxMenu &popup_menu);
 		std::vector<QuickItem> BuildQuickItems(const std::optional<InputFieldRef> &x_field_ref, const std::optional<InputFieldRef> &y_field_ref, const std::optional<InputFieldRef> &all_axes_field_ref);
-		bool InvokeQuickItem(const std::vector<InputEntry::QuickItem> &quick_items, int index);
+		bool InvokeQuickItem(std::vector<InputEntry::QuickItem> &&quick_items, int index);
 		bool ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last);
 
 	private:
@@ -164,9 +164,9 @@ namespace
 		void StartInputPoll(const wxString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const wxString &start_seq = util::g_empty_string);
 
 		// trampolines
-		void SetInputSeqs(const std::vector<SetInputSeqRequest> &seqs)
+		void SetInputSeqs(std::vector<SetInputSeqRequest> &&seqs)
 		{
-			m_host.SetInputSeqs(seqs);
+			m_host.SetInputSeqs(std::move(seqs));
 		}
 		const std::vector<status::input_class> &GetInputClasses()
 		{
@@ -797,12 +797,12 @@ std::vector<InputEntry::QuickItem> InputEntry::BuildQuickItems(const std::option
 //  InputEntry::InvokeQuickItem
 //-------------------------------------------------
 
-bool InputEntry::InvokeQuickItem(const std::vector<InputEntry::QuickItem> &quick_items, int index)
+bool InputEntry::InvokeQuickItem(std::vector<InputEntry::QuickItem> &&quick_items, int index)
 {
 	if (index < 0 || index >= quick_items.size())
 		return false;
 
-	Host().SetInputSeqs(quick_items[index].m_selections);
+	Host().SetInputSeqs(std::move(quick_items[index].m_selections));
 	return true;
 }
 
@@ -860,7 +860,7 @@ bool InputEntry::ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iter
 	}
 
 	// and specify them
-	Host().SetInputSeqs(merged_quick_items);
+	Host().SetInputSeqs(std::move(merged_quick_items));
 	return true;
 }
 
@@ -994,7 +994,7 @@ bool SingularInputEntry::OnMenuButtonPressed()
 				req2.m_mask = m_field_ref.Mask();
 				req2.m_seq_type = status::input_seq::type::STANDARD;
 			}
-			Host().SetInputSeqs(reqs);
+			Host().SetInputSeqs(std::move(reqs));
 		}
 		break;
 
@@ -1005,7 +1005,7 @@ bool SingularInputEntry::OnMenuButtonPressed()
 
 	default:
 		// anothing else is a quick item
-		if (!InvokeQuickItem(quick_items, popup_menu.Result() - ID_QUICK_ITEMS_BEGIN))
+		if (!InvokeQuickItem(std::move(quick_items), popup_menu.Result() - ID_QUICK_ITEMS_BEGIN))
 			return false;
 		break;
 	}
@@ -1125,7 +1125,7 @@ bool MultiAxisInputEntry::OnMenuButtonPressed()
 
 	default:
 		// everything else is a quick item
-		if (!InvokeQuickItem(quick_items, popup_menu.Result() - ID_QUICK_ITEMS_BEGIN))
+		if (!InvokeQuickItem(std::move(quick_items), popup_menu.Result() - ID_QUICK_ITEMS_BEGIN))
 			return false;
 		break;
 	}

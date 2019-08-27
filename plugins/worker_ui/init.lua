@@ -534,24 +534,45 @@ end
 
 -- SEQ_SET command
 function command_seq_set(args)
-	-- identify port and field
-	local field = find_port_and_field(args[2], args[3])
-	if not field then
-		print("ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
-		return
-	end
-	if not field.enabled then
-		print("ERROR ### Field '" .. args[2] .. "':" .. tostring(tonumber(args[3])) .. " is disabled")
-		return
+	local field_ids = ""
+
+	-- loop; this is a batch command
+	for i = 2,#args-3,4 do
+		-- get fields off of args
+		local port_tag = args[i + 0]
+		local mask = tonumber(args[i + 1])
+		local seq_type = args[i + 2]
+		local tokens = args[i + 3]
+		local field_id = port_tag .. ":" .. tostring(mask)
+
+		-- identify port and field
+		local field = find_port_and_field(port_tag, mask)
+		if not field then
+			print("ERROR ### Can't find field mask '" .. tostring(mask) .. "' on port '" .. port_tag .. "'")
+			return
+		end
+		if not field.enabled then
+			print("ERROR ### Field '" .. field_id .. "' is disabled")
+			return
+		end
+
+		-- set the input seq with the specified tokens
+		seq = manager:machine():input():seq_from_tokens(tokens)
+		field:set_input_seq(seq_type, seq)
+
+		-- append the ids
+		if (field_ids ~= "") then
+			field_ids = field_ids .. "," .. field_id
+		else
+			field_ids = field_id
+		end
 	end
 
-	-- set the input seq with the specified tokens
-	seq = manager:machine():input():seq_from_tokens(args[5])
-	field:set_input_seq(args[4], seq)
+	-- update input classes at the end
 	update_input_classes()
 
 	-- and report success
-	print("OK STATUS ### Input seq set")
+	print("OK STATUS ### Input seqs set: " .. field_ids)
 	emit_status()
 end
 
