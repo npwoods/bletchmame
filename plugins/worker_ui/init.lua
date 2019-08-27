@@ -556,8 +556,13 @@ function command_seq_set(args)
 			return
 		end
 
-		-- set the input seq with the specified tokens
-		seq = manager:machine():input():seq_from_tokens(tokens)
+		-- set the input seq with the specified tokens (or "*" for default)
+		local seq
+		if (tokens == "*") then
+			seq = field:default_input_seq(seq_type)
+		else
+			seq = manager:machine():input():seq_from_tokens(tokens)
+		end
 		field:set_input_seq(seq_type, seq)
 
 		-- append the ids

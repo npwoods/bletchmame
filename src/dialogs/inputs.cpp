@@ -89,6 +89,7 @@ namespace
 
 		InputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text);
 		void UpdateText();
+		virtual void AppendDefaultSeqRequest(std::vector<SetInputSeqRequest> &seqs) = 0;
 
 	protected:
 		// overridden by child classes
@@ -121,6 +122,8 @@ namespace
 	public:
 		SingularInputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text, InputFieldRef &&field_ref, status::input_seq::type seq_type);
 
+		virtual void AppendDefaultSeqRequest(std::vector<SetInputSeqRequest> &seqs);
+
 	protected:
 		virtual wxString GetText() override;
 		virtual void OnMainButtonPressed() override;
@@ -138,10 +141,11 @@ namespace
 	public:
 		MultiAxisInputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text, const status::input *x_input, const status::input *y_input);
 
-		virtual void OnMainButtonPressed() override;
-		virtual bool OnMenuButtonPressed() override;
+		virtual void AppendDefaultSeqRequest(std::vector<SetInputSeqRequest> &seqs);
 
 	protected:
+		virtual void OnMainButtonPressed() override;
+		virtual bool OnMenuButtonPressed() override;
 		virtual wxString GetText() override;
 
 	private:
@@ -190,6 +194,7 @@ namespace
 
 		void OnInputsChanged();
 		void OnPollingSeqChanged();
+		void OnRestoreButtonPressed();
 		std::vector<InputEntryDesc> BuildInitialEntryDescriptions(status::input::input_class input_class) const;
 
 		// statics
@@ -261,8 +266,8 @@ InputsDialog::InputsDialog(wxWindow &parent, const wxString &title, IInputsHost 
 	wxButton &ok_button			= AddControl<wxButton>(*this, *button_sizer, 0, wxALL, wxID_OK, "OK");
 	outer_sizer->Add(button_sizer.release(), 0, wxALIGN_RIGHT);
 	
-	// restore button is not yet implemented
-	restore_button.Disable();
+	// bind the restore button
+	Bind(wxEVT_BUTTON, [this](auto &) { OnRestoreButtonPressed(); }, restore_button.GetId());
 
 	// build list of input sequences
 	auto entry_descs = BuildInitialEntryDescriptions(input_class);
@@ -423,6 +428,22 @@ void InputsDialog::OnPollingSeqChanged()
 {
 	if (!m_host.GetPollingSeqChanged().get() && m_current_dialog)
 		m_current_dialog->Close();
+}
+
+
+//-------------------------------------------------
+//  OnRestoreButtonPressed
+//-------------------------------------------------
+
+void InputsDialog::OnRestoreButtonPressed()
+{
+	std::vector<SetInputSeqRequest> seqs;
+	seqs.reserve(m_entries.size());
+
+	for (const std::unique_ptr<InputEntry> &entry : m_entries)
+		entry->AppendDefaultSeqRequest(seqs);
+
+	SetInputSeqs(std::move(seqs));
 }
 
 
@@ -1014,6 +1035,16 @@ bool SingularInputEntry::OnMenuButtonPressed()
 
 
 //-------------------------------------------------
+//  SingularInputEntry::AppendDefaultSeqRequest
+//-------------------------------------------------
+
+void SingularInputEntry::AppendDefaultSeqRequest(std::vector<SetInputSeqRequest> &seqs)
+{
+	seqs.emplace_back(m_field_ref.PortTag(), m_field_ref.Mask(), m_seq_type, wxT("*"));
+}
+
+
+//-------------------------------------------------
 //  MultiAxisInputEntry ctor
 //-------------------------------------------------
 
@@ -1141,6 +1172,27 @@ bool MultiAxisInputEntry::Specify()
 {
 	MultiAxisInputDialog dialog(Host(), MainButton().GetLabel(), m_x_field_ref, m_y_field_ref);
 	return dialog.ShowModal() == wxID_OK;
+}
+
+
+//-------------------------------------------------
+//  MultiAxisInputEntry::AppendDefaultSeqRequest
+//-------------------------------------------------
+
+void MultiAxisInputEntry::AppendDefaultSeqRequest(std::vector<SetInputSeqRequest> &seqs)
+{
+	if (m_x_field_ref)
+	{
+		seqs.emplace_back(m_x_field_ref->PortTag(), m_x_field_ref->Mask(), status::input_seq::type::STANDARD, wxT("*"));
+		seqs.emplace_back(m_x_field_ref->PortTag(), m_x_field_ref->Mask(), status::input_seq::type::DECREMENT, wxT("*"));
+		seqs.emplace_back(m_x_field_ref->PortTag(), m_x_field_ref->Mask(), status::input_seq::type::INCREMENT, wxT("*"));
+	}
+	if (m_y_field_ref)
+	{
+		seqs.emplace_back(m_y_field_ref->PortTag(), m_x_field_ref->Mask(), status::input_seq::type::STANDARD, wxT("*"));
+		seqs.emplace_back(m_y_field_ref->PortTag(), m_x_field_ref->Mask(), status::input_seq::type::DECREMENT, wxT("*"));
+		seqs.emplace_back(m_y_field_ref->PortTag(), m_x_field_ref->Mask(), status::input_seq::type::INCREMENT, wxT("*"));
+	}
 }
 
 
