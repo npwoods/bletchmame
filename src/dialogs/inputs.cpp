@@ -21,6 +21,16 @@
 
 
 //**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+static const wxString s_menu_item_text_specify = wxT("Specify...");
+static const wxString s_menu_item_text_add = wxT("Add...");
+static const wxString s_menu_item_text_multiple = wxT("Multiple...");
+static const wxString s_menu_item_text_clear = wxT("Clear");
+
+
+//**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
@@ -952,14 +962,14 @@ bool SingularInputEntry::OnMenuButtonPressed()
 	{
 		for (int i = 0; i < quick_items.size(); i++)
 			popup_menu.Append(ID_QUICK_ITEMS_BEGIN + i, quick_items[i].m_label);
-		popup_menu.Append(ID_MULTIPLE_QUICK_ITEMS, wxT("Multiple..."));
+		popup_menu.Append(ID_MULTIPLE_QUICK_ITEMS, s_menu_item_text_multiple);
 		popup_menu.AppendSeparator();
 	}
 
 	// append the normal items
-	popup_menu.Append(ID_SPECIFY_INPUT, wxT("Specify..."));
-	popup_menu.Append(ID_ADD_INPUT, wxT("Add..."));
-	popup_menu.Append(ID_CLEAR_INPUT, wxT("Clear"));
+	popup_menu.Append(ID_SPECIFY_INPUT, s_menu_item_text_specify);
+	popup_menu.Append(ID_ADD_INPUT, s_menu_item_text_add);
+	popup_menu.Append(ID_CLEAR_INPUT, s_menu_item_text_clear);
 
 	// show the pop up menu
 	if (!PopupMenu(popup_menu))
@@ -1128,9 +1138,9 @@ bool MultiAxisInputEntry::OnMenuButtonPressed()
 		popup_menu.Append(ID_QUICK_ITEMS_BEGIN + i, quick_items[i].m_label);
 
 	// finally append "multiple...", a separator, specify and clear
-	popup_menu.Append(ID_MULTIPLE_QUICK_ITEMS, wxT("Multiple..."));
+	popup_menu.Append(ID_MULTIPLE_QUICK_ITEMS, s_menu_item_text_multiple);
 	popup_menu.AppendSeparator();
-	popup_menu.Append(ID_SPECIFY_INPUT, wxT("Specify..."));
+	popup_menu.Append(ID_SPECIFY_INPUT, s_menu_item_text_specify);
 	popup_menu.Append(ID_QUICK_ITEMS_BEGIN + 0, quick_items[0].m_label);
 
 	// show the pop up menu
