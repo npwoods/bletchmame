@@ -364,14 +364,10 @@ bool status::state::take(TStateField &state_field, std::optional<TUpdateField> &
 
 const status::image *status::state::find_image(const wxString &tag) const
 {
-	auto iter = std::find_if(
-		m_images.get().begin(),
-		m_images.get().end(),
-		[&tag](const status::image &image) { return image.m_tag == tag; });
-
-	return iter != m_images.get().end()
-		? &*iter
-		: nullptr;
+	return util::find_if_ptr(m_images.get(), [&tag](const status::image &image)
+	{
+		return image.m_tag == tag;
+	});
 }
 
 
@@ -381,12 +377,9 @@ const status::image *status::state::find_image(const wxString &tag) const
 
 bool status::state::has_input_class(status::input::input_class input_class) const
 {
-	auto iter = std::find_if(
-		m_inputs.get().begin(),
-		m_inputs.get().end(),
-		[input_class](const auto &input)
-		{
-			return input.m_class == input_class;
-		});
-	return iter != m_inputs.get().end();
+	const status::input *input = util::find_if_ptr(m_inputs.get(), [input_class](const auto &input)
+	{
+		return input.m_class == input_class;
+	});
+	return input != nullptr;
 }
