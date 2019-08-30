@@ -373,52 +373,54 @@ end
 -- EXIT command
 function command_exit(args)
 	manager:machine():exit()
-	print "OK ### Exit scheduled"
+	print("@OK ### Exit scheduled")
 end
 
 -- PING command
+local next_ping_should_be_light = false
 function command_ping(args)
-	print "OK STATUS ### Ping... pong..."
-	emit_status(true)
+	print("@OK STATUS ### Ping... pong...")
+	emit_status(next_ping_should_be_light)
+	next_ping_should_be_light = true
 end
 
 -- SOFT_RESET command
 function command_soft_reset(args)
 	manager:machine():soft_reset()
-	print("OK ### Soft Reset Scheduled")
+	print("@OK ### Soft Reset Scheduled")
 end
 
 -- HARD_RESET command
 function command_hard_reset(args)
 	manager:machine():hard_reset()
-	print("OK ### Hard Reset Scheduled")
+	print("@OK ### Hard Reset Scheduled")
 end
 
 -- PAUSE command
 function command_pause(args)
 	emu.pause()
-	print("OK STATUS ### Paused")
+	print("@OK STATUS ### Paused")
 	emit_status()
 end
 
 -- RESUME command
 function command_resume(args)
 	emu.unpause()
-	print("OK STATUS ### Resumed")
+	print("@OK STATUS ### Resumed")
 	emit_status()
 end
 
 -- THROTTLED command
 function command_throttled(args)
 	manager:machine():video().throttled = toboolean(args[2])
-	print("OK STATUS ### Throttled set to " .. tostring(manager:machine():video().throttled))
+	print("@OK STATUS ### Throttled set to " .. tostring(manager:machine():video().throttled))
 	emit_status()
 end
 
 -- THROTTLE_RATE command
 function command_throttle_rate(args)
 	manager:machine():video().throttle_rate = tonumber(args[2])
-	print("OK STATUS ### Throttle rate set to " .. tostring(manager:machine():video().throttle_rate))
+	print("@OK STATUS ### Throttle rate set to " .. tostring(manager:machine():video().throttle_rate))
 	emit_status()
 end
 
@@ -431,53 +433,53 @@ function command_frameskip(args)
 		frameskip = tonumber(args[2])
 	end
 	manager:machine():video().frameskip = frameskip
-	print("OK STATUS ### Frame skip rate set to " .. tostring(manager:machine():video().frameskip))
+	print("@OK STATUS ### Frame skip rate set to " .. tostring(manager:machine():video().frameskip))
 	emit_status()
 end
 
 -- INPUT command
 function command_input(args)
 	manager:machine():ioport():natkeyboard():post(args[2])
-	print("OK ### Text inputted")
+	print("@OK ### Text inputted")
 end
 
 -- PASTE command
 function command_paste(args)
 	manager:machine():ioport():natkeyboard():paste(args[2])
-	print("OK ### Text inputted from clipboard")
+	print("@OK ### Text inputted from clipboard")
 end
 
 -- SET_ATTENUATION command
 function command_set_attenuation(args)
 	manager:machine():sound().attenuation = tonumber(args[2])
-	print("OK STATUS ### Sound attenuation set to " .. tostring(manager:machine():sound().attenuation))
+	print("@OK STATUS ### Sound attenuation set to " .. tostring(manager:machine():sound().attenuation))
 	emit_status()
 end
 
 -- SET_NATURAL_KEYBOARD_IN_USE command
 function command_set_natural_keyboard_in_use(args)
 	manager:machine():ioport():natkeyboard().in_use = toboolean(args[2])
-	print("OK STATUS ### Natural keyboard in use set to " .. tostring(manager:machine():ioport():natkeyboard().in_use))
+	print("@OK STATUS ### Natural keyboard in use set to " .. tostring(manager:machine():ioport():natkeyboard().in_use))
 	emit_status()
 end
 
 -- STATE_LOAD command
 function command_state_load(args)
 	manager:machine():load(args[2])
-	print("OK ### Scheduled state load of '" .. args[2] .. "'")
+	print("@OK ### Scheduled state load of '" .. args[2] .. "'")
 end
 
 -- STATE_SAVE command
 function command_state_save(args)
 	manager:machine():save(args[2])
-	print("OK ### Scheduled state save of '" .. args[2] .. "'")
+	print("@OK ### Scheduled state save of '" .. args[2] .. "'")
 end
 
 -- STATE_SAVE_AND_EXIT command
 function command_state_save_and_exit(args)
 	manager:machine():save(args[2])
 	manager:machine():exit()
-	print("OK ### Scheduled state save of '" .. args[2] .. "' and an exit")
+	print("@OK ### Scheduled state save of '" .. args[2] .. "' and an exit")
 end
 
 -- SAVE_SNAPSHOT command
@@ -493,18 +495,18 @@ function command_save_snapshot(args)
 	end
 
 	screen:snapshot(args[3])
-	print("OK ### Successfully saved screenshot '" .. args[3] .. "'")
+	print("@OK ### Successfully saved screenshot '" .. args[3] .. "'")
 end
 
 -- LOAD command
 function command_load(args)
 	local image = find_image_by_tag(args[2])
 	if not image then
-		print("ERROR ### Cannot find device '" .. args[2] .. "'")
+		print("@ERROR ### Cannot find device '" .. args[2] .. "'")
 		return
 	end
 	image:load(args[3])
-	print("OK STATUS ### Device '" .. args[2] .. "' loaded '" .. args[3] .. "' successfully")
+	print("@OK STATUS ### Device '" .. args[2] .. "' loaded '" .. args[3] .. "' successfully")
 	emit_status()
 end
 
@@ -512,11 +514,11 @@ end
 function command_unload(args)
 	local image = find_image_by_tag(args[2])
 	if not image then
-		print("ERROR ### Cannot find device '" .. args[2] .. "'")
+		print("@ERROR ### Cannot find device '" .. args[2] .. "'")
 		return
 	end
 	image:unload()
-	print("OK STATUS ### Device '" .. args[2] .. "' unloaded successfully")
+	print("@OK STATUS ### Device '" .. args[2] .. "' unloaded successfully")
 	emit_status()
 end
 
@@ -524,11 +526,11 @@ end
 function command_create(args)
 	local image = find_image_by_tag(args[2])
 	if not image then
-		print("ERROR ### Cannot find device '" .. args[2] .. "'")
+		print("@ERROR ### Cannot find device '" .. args[2] .. "'")
 		return
 	end
 	image:create(args[3])
-	print("OK STATUS ### Device '" .. args[2] .. "' created image '" .. args[3] .. "' successfully")
+	print("@OK STATUS ### Device '" .. args[2] .. "' created image '" .. args[3] .. "' successfully")
 	emit_status()
 end
 
@@ -548,11 +550,11 @@ function command_seq_set(args)
 		-- identify port and field
 		local field = find_port_and_field(port_tag, mask)
 		if not field then
-			print("ERROR ### Can't find field mask '" .. tostring(mask) .. "' on port '" .. port_tag .. "'")
+			print("@ERROR ### Can't find field mask '" .. tostring(mask) .. "' on port '" .. port_tag .. "'")
 			return
 		end
 		if not field.enabled then
-			print("ERROR ### Field '" .. field_id .. "' is disabled")
+			print("@ERROR ### Field '" .. field_id .. "' is disabled")
 			return
 		end
 
@@ -577,7 +579,7 @@ function command_seq_set(args)
 	update_input_classes()
 
 	-- and report success
-	print("OK STATUS ### Input seqs set: " .. field_ids)
+	print("@OK STATUS ### Input seqs set: " .. field_ids)
 	emit_status()
 end
 
@@ -586,11 +588,11 @@ function command_seq_poll_start(args)
 	-- identify port and field
 	local field = find_port_and_field(args[2], args[3])
 	if not field then
-		print("ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
+		print("@ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
 		return
 	end
 	if not field.enabled then
-		print("ERROR ### Field '" .. args[2] .. "':" .. tostring(tonumber(args[3])) .. " is disabled")
+		print("@ERROR ### Field '" .. args[2] .. "':" .. tostring(tonumber(args[3])) .. " is disabled")
 		return
 	end
 
@@ -613,7 +615,7 @@ function command_seq_poll_start(args)
 	manager:ui():set_aggressive_input_focus(true)
 	current_poll_field = field
 	current_poll_seq_type = args[4]
-	print("OK STATUS ### Starting polling")
+	print("@OK STATUS ### Starting polling")
 	emit_status()
 end
 
@@ -621,7 +623,7 @@ end
 function command_seq_poll_stop(args)
 	stop_polling_input_seq()
 	update_input_classes()
-	print("OK STATUS ### Stopped polling");
+	print("@OK STATUS ### Stopped polling");
 	emit_status()
 end
 
@@ -629,23 +631,23 @@ end
 function command_set_input_value(args)
 	local field = find_port_and_field(args[2], args[3])
 	if not field then
-		print("ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
+		print("@ERROR ### Can't find field mask '" .. tostring(tonumber(args[3])) .. "' on port '" .. args[2] .. "'")
 		return
 	end
 	if not field.enabled then
-		print("ERROR ### Field '" .. args[2] .. "':" .. tostring(tonumber(args[3])) .. " is disabled")
+		print("@ERROR ### Field '" .. args[2] .. "':" .. tostring(tonumber(args[3])) .. " is disabled")
 		return
 	end
 
 	field.user_value = tonumber(args[4]);
-	print("OK STATUS ### Field '" .. args[2] .. "':" .. tostring(args[3]) .. " set to " .. tostring(field.user_value))
+	print("@OK STATUS ### Field '" .. args[2] .. "':" .. tostring(args[3]) .. " set to " .. tostring(field.user_value))
 	emit_status()
 end
 
 -- SHOW_PROFILER Command
 function command_show_profiler(args)
 	manager:ui().show_profiler = toboolean(args[2])
-	print("OK STATUS ### Show profiler set to " .. tostring(manager:ui().show_profiler))
+	print("@OK STATUS ### Show profiler set to " .. tostring(manager:ui().show_profiler))
 	emit_status()
 end
 
@@ -655,32 +657,32 @@ function command_dump_status(args)
 	local out = io.open(filename, "w")
 	emit_status(false, out)
 	io.close(out)
-	print("OK ### Status dumped to \"" .. filename .. "\"")
+	print("@OK ### Status dumped to \"" .. filename .. "\"")
 end
 
 -- arbitrary Lua
 function command_lua(expr)
 	local func, err = load(expr)
 	if not func then
-		print("ERROR ### " .. tostring(err))
+		print("@ERROR ### " .. tostring(err))
 		return
 	end
 	local result = func()
 	if (result == nil) then
-		print("OK ### Command evaluated")
+		print("@OK ### Command evaluated")
 	else
-		print("OK ### Command evaluated; result = " .. tostring(result))
+		print("@OK ### Command evaluated; result = " .. tostring(result))
 	end
 end
 
 -- not implemented command
 function command_nyi(args)
-	print("ERROR ### Command '" .. args[1] .. "' not yet implemeted")
+	print("@ERROR ### Command '" .. args[1] .. "' not yet implemeted")
 end
 
 -- unknown command
 function command_unknown(args)
-	print("ERROR ### Unrecognized command '" .. args[1] .. "'")
+	print("@ERROR ### Unrecognized command '" .. args[1] .. "'")
 end
 
 -- command list
@@ -734,7 +736,7 @@ function invoke_command_line(line)
 
 	local status, err = pcall(invocation)
 	if (not status) then
-		print("ERROR ## Lua runtime error " .. tostring(err))
+		print("@ERROR ## Lua runtime error " .. tostring(err))
 	end
 end
 
@@ -757,10 +759,14 @@ function console.startplugin()
 		if not initial_start then
 			-- and indicate that we're ready for commands
 			emu.pause()
-			print("OK STATUS ### Emulation commenced; ready for commands")
+			print("@OK STATUS ### Emulation commenced; ready for commands")
 			emit_status()
 			initial_start = true
 		end
+
+		-- since we had a reset, we might have images that were just loaded, therefore
+		-- the status returned by the next PING should not be light
+		 next_ping_should_be_light = false
 	end)
 
 	emu.register_stop(function()

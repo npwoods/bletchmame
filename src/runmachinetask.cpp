@@ -264,7 +264,14 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 
 void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
 {
-	wxString str = input.ReadLine();
+	// MAME has a pesky habit of emitting human readable messages to standard output, therefore
+	// we have a convention with the worker_ui plugin by which actual messages are preceeded with
+	// an at-sign
+	wxString str;
+	do
+	{
+		str = input.ReadLine();
+	} while (!input.GetInputStream().Eof() && (str.empty() || str[0] != '@'));
 	wxLogDebug("MAME ==> %s", str);
 
 	// chatter
@@ -276,7 +283,7 @@ void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &i
 	std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
 
 	// did we get a status reponse
-	if (args.size() >= 2 && args[0] == "OK" && args[1] == "STATUS")
+	if (args.size() >= 2 && args[0] == "@OK" && args[1] == "STATUS")
 	{
 		status::update status_update = status::update::read(input);
 		util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
