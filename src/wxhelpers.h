@@ -200,4 +200,12 @@ private:
 	int m_result;
 };
 
+
+//**************************************************************************
+//  PLATFORM SPECIFIC WRAPPERS
+//**************************************************************************
+
+bool WindowHasMenuBar(wxWindow &window);
+
+
 #endif // WXHELPERS_H

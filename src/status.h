@@ -194,6 +194,7 @@ namespace status
 		std::optional<machine_phase>				m_phase;
 		std::optional<bool>							m_paused;
 		std::optional<bool>							m_polling_input_seq;
+		std::optional<bool>							m_has_input_using_mouse;
 		std::optional<wxString>						m_startup_text;
 		std::optional<float>						m_speed_percent;
 		std::optional<wxString>						m_frameskip;
@@ -226,6 +227,7 @@ namespace status
 		observable::value<machine_phase> &				phase()						{ return m_phase; }
 		observable::value<bool> &						paused()					{ return m_paused; }
 		observable::value<bool> &						polling_input_seq()			{ return m_polling_input_seq; }
+		observable::value<bool> &						has_input_using_mouse()		{ return m_has_input_using_mouse; }
 		observable::value<wxString> &					startup_text()				{ return m_startup_text; }
 		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
 		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
@@ -245,6 +247,7 @@ namespace status
 		observable::value<machine_phase>				m_phase;
 		observable::value<bool>							m_paused;
 		observable::value<bool>							m_polling_input_seq;
+		observable::value<bool>							m_has_input_using_mouse;
 		observable::value<wxString>						m_startup_text;
 		observable::value<float>						m_speed_percent;
 		observable::value<int>							m_effective_frameskip;

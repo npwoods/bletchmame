@@ -177,10 +177,11 @@ status::update status::update::read(wxTextInputStream &input_stream)
 	XmlParser xml;
 	xml.OnElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("phase",				result.m_phase, s_machine_phase_parser);
-		attributes.Get("paused",			result.m_paused);
-		attributes.Get("polling_input_seq",	result.m_polling_input_seq);
-		attributes.Get("startup_text",		result.m_startup_text);
+		attributes.Get("phase",					result.m_phase, s_machine_phase_parser);
+		attributes.Get("paused",				result.m_paused);
+		attributes.Get("polling_input_seq",		result.m_polling_input_seq);
+		attributes.Get("has_input_using_mouse",	result.m_has_input_using_mouse);
+		attributes.Get("startup_text",			result.m_startup_text);
 	});
 	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -325,19 +326,20 @@ status::state::~state()
 
 void status::state::update(status::update &&that)
 {
-	take(m_phase,				that.m_phase);
-	take(m_paused,				that.m_paused);
-	take(m_polling_input_seq,	that.m_polling_input_seq);
-	take(m_startup_text,		that.m_startup_text);
-	take(m_speed_percent,		that.m_speed_percent);
-	take(m_frameskip,			that.m_frameskip);
-	take(m_effective_frameskip,	that.m_effective_frameskip);
-	take(m_throttled,			that.m_throttled);
-	take(m_throttle_rate,		that.m_throttle_rate);
-	take(m_sound_attenuation,	that.m_sound_attenuation);
-	take(m_images,				that.m_images);
-	take(m_inputs,				that.m_inputs);
-	take(m_input_classes,		that.m_input_classes);
+	take(m_phase,					that.m_phase);
+	take(m_paused,					that.m_paused);
+	take(m_polling_input_seq,		that.m_polling_input_seq);
+	take(m_has_input_using_mouse,	that.m_has_input_using_mouse);
+	take(m_startup_text,			that.m_startup_text);
+	take(m_speed_percent,			that.m_speed_percent);
+	take(m_frameskip,				that.m_frameskip);
+	take(m_effective_frameskip,		that.m_effective_frameskip);
+	take(m_throttled,				that.m_throttled);
+	take(m_throttle_rate,			that.m_throttle_rate);
+	take(m_sound_attenuation,		that.m_sound_attenuation);
+	take(m_images,					that.m_images);
+	take(m_inputs,					that.m_inputs);
+	take(m_input_classes,			that.m_input_classes);
 }
 
 

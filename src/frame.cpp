@@ -154,6 +154,8 @@ namespace
 		wxListView *						    m_profile_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
+		observable::value<bool>					m_menu_bar_shown;
+		observable::value<bool>					m_capture_mouse;
 		wxTimer									m_ping_timer;
 		bool									m_pinging;
 		const Pauser *							m_current_pauser;
@@ -252,8 +254,6 @@ namespace
 		void UpdateTitleBar();
 		void UpdateMenuBar();
 		void UpdateStatusBar();
-		void OnTimer();
-		bool IsMouseCaptured() const;
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
@@ -312,6 +312,7 @@ MameFrame::MameFrame()
 	, m_machine_view(nullptr)
 	, m_profile_view(nullptr)
 	, m_menu_bar(nullptr)
+	, m_menu_bar_shown(false)
 	, m_ping_timer(this, ID_PING_TIMER)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
@@ -408,7 +409,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnProfileListEndLabelEdit(event.GetIndex());												}, m_profile_view->GetId());
-	Bind(wxEVT_TIMER,					[this](auto &)		{ OnTimer();																				});
+	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
 	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
 	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(false);															});
 
@@ -801,6 +802,17 @@ void MameFrame::Run(const info::machine &machine, const profiles::profile *profi
 	m_state->effective_frameskip().subscribe(	[this]() { UpdateStatusBar(); });
 	m_state->startup_text().subscribe(			[this]() { UpdateStatusBar(); });
 	m_state->images().subscribe(				[this]() { UpdateStatusBar(); });
+
+	// mouse capturing is a bit more involved
+	m_capture_mouse = observable::observe(m_state->has_input_using_mouse() && !m_menu_bar_shown);
+	m_capture_mouse.subscribe([this]()
+	{
+		Issue({ "SET_MOUSE_ENABLED", m_capture_mouse ? "true" : "false" });
+		if (m_capture_mouse)
+			SetCursor(wxCursor(wxCURSOR_BLANK));
+		else
+			SetCursor(wxNullCursor);
+	});
 
 	// we have a session running; hide/show things respectively
 	UpdateEmulationSession();
@@ -1933,17 +1945,25 @@ void MameFrame::UpdateTitleBar()
 
 void MameFrame::UpdateMenuBar()
 {
+	// are we supposed to show the menu bar?
 	bool menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
 
-	// when we hide the menu bar, we disable the accelerators
-	m_menu_bar->SetAcceleratorTable(menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
+	// is this different than the current state?
+	if (menu_bar_shown != WindowHasMenuBar(*this))
+	{
+		// record this state
+		m_menu_bar_shown = menu_bar_shown;
+
+		// when we hide the menu bar, we disable the accelerators
+		m_menu_bar->SetAcceleratorTable(menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
 
 #ifdef WIN32
-	// Win32 specific code
-	SetMenu(GetHWND(), menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
+		// Win32 specific code
+		SetMenu(GetHWND(), menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
 #else
-	throw false;
+		throw false;
 #endif
+	}
 }
 
 
@@ -1990,57 +2010,6 @@ void MameFrame::UpdateStatusBar()
 		const wxString &text = i < (int)status_text.size() ? status_text[i] : std::reference_wrapper<const wxString>(util::g_empty_string);
 		SetStatusText(text, i);
 	}
-}
-
-
-//-------------------------------------------------
-//  OnTimer
-//-------------------------------------------------
-
-void MameFrame::OnTimer()
-{
-	// if MAME captured the mouse, we want to clear the cursor, as what MAME is doing won't work
-	if (IsMouseCaptured())
-		SetCursor(wxCursor(wxCURSOR_BLANK));
-	else
-		SetCursor(wxNullCursor);
-
-	InvokePing();
-}
-
-
-//-------------------------------------------------
-//  IsMouseCaptured
-//-------------------------------------------------
-
-bool MameFrame::IsMouseCaptured() const
-{
-	bool result = false;
-#ifdef WIN32
-	{
-		// this is crude logic that checks the window bounds to see if it matches with the cursor clip; it
-		// has known problems if the window goes off screen, and probably also multimonitor
-
-		// get the window bounds
-		RECT window_bounds;
-		HWND hwnd = GetHWND();
-		::GetClientRect(hwnd, &window_bounds);
-		::ClientToScreen(hwnd, &reinterpret_cast<POINT *>(&window_bounds)[0]);
-		::ClientToScreen(hwnd, &reinterpret_cast<POINT *>(&window_bounds)[1]);
-
-		// get the cursor clip
-		RECT cursor_clip;
-		::GetClipCursor(&cursor_clip);
-
-		// are the rectangles identical?
-		if (window_bounds.left == cursor_clip.left && window_bounds.top == cursor_clip.top
-			&& window_bounds.right == cursor_clip.right && window_bounds.bottom == cursor_clip.bottom)
-		{
-			result = true;
-		}
-	}
-#endif // WIN32
-	return result;
 }
 
 

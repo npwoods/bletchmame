@@ -169,9 +169,10 @@ function find_port_and_field(tag, mask)
 	end
 end
 
--- input polling
-local current_poll_field
-local current_poll_seq_type
+-- input polling and mouse
+local current_poll_field = nil
+local current_poll_seq_type = nul
+local mouse_enabled_by_ui = false
 
 function is_polling_input_seq()
 	if current_poll_field then
@@ -181,43 +182,45 @@ function is_polling_input_seq()
 	end
 end
 
+function update_mouse_enabled()
+	manager:machine():input().device_classes["mouse"].enabled = mouse_enabled_by_ui and not is_polling_input_seq()
+end
+
 function stop_polling_input_seq()
 	current_poll_field = nil
 	current_poll_seq_type = nil
 	manager:ui():set_aggressive_input_focus(false)
+	update_mouse_enabled()
 end
 
-function update_input_classes()
-	local mouse_enabled = false
+function has_input_using_mouse()
+	local result = false
 
-	-- only enable the mouse if we're not polling
-	if (not is_polling_input_seq()) then
-		function check_seq(field, seq_type)
-			-- check this input seq for mouse codes; we clean the seq before checking because if
-			-- it references an unknown mouse we don't care about it
-			local seq = field:input_seq(seq_type)
-			local cleaned_seq = manager:machine():input():seq_clean(seq)
-			local tokens = manager:machine():input():seq_to_tokens(cleaned_seq)
+	function check_seq(field, seq_type)
+		-- check this input seq for mouse codes; we clean the seq before checking because if
+		-- it references an unknown mouse we don't care about it
+		local seq = field:input_seq(seq_type)
+		local cleaned_seq = manager:machine():input():seq_clean(seq)
+		local tokens = manager:machine():input():seq_to_tokens(cleaned_seq)
 
-			for _, token in pairs(split(tokens)) do
-				if (string.match(tokens, "MOUSECODE_")) then
-					mouse_enabled = true
-				end
-			end
-		end
-
-		for _,port in pairs(manager:machine():ioport().ports) do
-			for _,field in pairs(port.fields) do
-				check_seq(field, "standard")
-				if field.is_analog then
-					check_seq(field, "decrement")
-					check_seq(field, "increment")
-				end
+		for _, token in pairs(split(tokens)) do
+			if (string.match(tokens, "MOUSECODE_")) then
+				result = true
 			end
 		end
 	end
 
-	manager:machine():input().device_classes["mouse"].enabled = mouse_enabled
+	for _,port in pairs(manager:machine():ioport().ports) do
+		for _,field in pairs(port.fields) do
+			check_seq(field, "standard")
+			if field.is_analog then
+				check_seq(field, "decrement")
+				check_seq(field, "increment")
+			end
+		end
+	end
+
+	return result
 end
 
 function emit_status(light, out)
@@ -241,6 +244,9 @@ function emit_status(light, out)
 	emit("\tpaused=\"" .. tostring(manager:machine().paused) .. "\"");
 	emit("\tstartup_text=\"\"");
 	emit("\tshow_profiler=\"" .. tostring(manager:ui().show_profiler) .. "\"");
+	if (not light) then
+		emit("\thas_input_using_mouse=\"" .. tostring(has_input_using_mouse()) .. "\"");
+	end
 	emit(">");
 
 	-- <video> (video_manager)
@@ -583,9 +589,6 @@ function command_seq_set(args)
 		end
 	end
 
-	-- update input classes at the end
-	update_input_classes()
-
 	-- and report success
 	print("@OK STATUS ### Input seqs set: " .. field_ids)
 	emit_status()
@@ -623,7 +626,7 @@ function command_seq_poll_start(args)
 	manager:ui():set_aggressive_input_focus(true)
 	current_poll_field = field
 	current_poll_seq_type = args[4]
-	update_input_classes()
+	update_mouse_enabled()
 	print("@OK STATUS ### Starting polling")
 	emit_status()
 end
@@ -631,7 +634,6 @@ end
 -- SEQ_POLL_STOP command
 function command_seq_poll_stop(args)
 	stop_polling_input_seq()
-	update_input_classes()
 	print("@OK STATUS ### Stopped polling");
 	emit_status()
 end
@@ -651,6 +653,13 @@ function command_set_input_value(args)
 	field.user_value = tonumber(args[4]);
 	print("@OK STATUS ### Field '" .. args[2] .. "':" .. tostring(args[3]) .. " set to " .. tostring(field.user_value))
 	emit_status()
+end
+
+-- SET_MOUSE_ENABLED command
+function command_set_mouse_enabled(args)
+	mouse_enabled_by_ui = toboolean(args[2])
+	update_mouse_enabled()
+	print("@OK ### Mouse enabled set to " .. tostring(toboolean(args[2])))
 end
 
 -- SHOW_PROFILER Command
@@ -721,6 +730,7 @@ local commands =
 	["seq_poll_start"]				= command_seq_poll_start,
 	["seq_poll_stop"]				= command_seq_poll_stop,
 	["set_input_value"]				= command_set_input_value,
+	["set_mouse_enabled"]			= command_set_mouse_enabled,
 	["show_profiler"]				= command_show_profiler,
 	["dump_status"]					= command_dump_status
 }
@@ -762,7 +772,7 @@ function console.startplugin()
 		-- prestart has been invoked; set up MAME for our control
 		manager:machine():uiinput().presses_enabled = false
 		session_active = true
-		update_input_classes()
+		update_mouse_enabled()
 
 		-- is this the very first time we have hit a pre-start?
 		if not initial_start then
