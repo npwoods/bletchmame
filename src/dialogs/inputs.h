@@ -29,6 +29,13 @@ struct SetInputSeqRequest
 		, m_tokens(tokens)
 	{
 	}
+	SetInputSeqRequest(const wxString &port_tag, ioport_value mask, status::input_seq::type seq_type, wxString &&tokens)
+		: m_port_tag(port_tag)
+		, m_mask(mask)
+		, m_seq_type(seq_type)
+		, m_tokens(std::move(tokens))
+	{
+	}
 
 	wxString				m_port_tag;
 	ioport_value			m_mask;

@@ -190,26 +190,29 @@ end
 function update_input_classes()
 	local mouse_enabled = false
 
-	function check_seq(field, seq_type)
-		-- check this input seq for mouse codes; we clean the seq before checking because if
-		-- it references an unknown mouse we don't care about it
-		local seq = field:input_seq(seq_type)
-		local cleaned_seq = manager:machine():input():seq_clean(seq)
-		local tokens = manager:machine():input():seq_to_tokens(cleaned_seq)
+	-- only enable the mouse if we're not polling
+	if (not is_polling_input_seq()) then
+		function check_seq(field, seq_type)
+			-- check this input seq for mouse codes; we clean the seq before checking because if
+			-- it references an unknown mouse we don't care about it
+			local seq = field:input_seq(seq_type)
+			local cleaned_seq = manager:machine():input():seq_clean(seq)
+			local tokens = manager:machine():input():seq_to_tokens(cleaned_seq)
 
-		for _, token in pairs(split(tokens)) do
-			if (string.match(tokens, "MOUSECODE_")) then
-				mouse_enabled = true
+			for _, token in pairs(split(tokens)) do
+				if (string.match(tokens, "MOUSECODE_")) then
+					mouse_enabled = true
+				end
 			end
 		end
-	end
 
-	for _,port in pairs(manager:machine():ioport().ports) do
-		for _,field in pairs(port.fields) do
-			check_seq(field, "standard")
-			if field.is_analog then
-				check_seq(field, "decrement")
-				check_seq(field, "increment")
+		for _,port in pairs(manager:machine():ioport().ports) do
+			for _,field in pairs(port.fields) do
+				check_seq(field, "standard")
+				if field.is_analog then
+					check_seq(field, "decrement")
+					check_seq(field, "increment")
+				end
 			end
 		end
 	end
@@ -620,6 +623,7 @@ function command_seq_poll_start(args)
 	manager:ui():set_aggressive_input_focus(true)
 	current_poll_field = field
 	current_poll_seq_type = args[4]
+	update_input_classes()
 	print("@OK STATUS ### Starting polling")
 	emit_status()
 end

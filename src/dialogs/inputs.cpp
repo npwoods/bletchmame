@@ -36,6 +36,14 @@ static const wxString s_menu_item_text_clear = wxT("Clear");
 
 namespace
 {
+	enum class axis_type
+	{
+		NONE,
+		X,
+		Y,
+		Z
+	};
+
 	class InputsDialog;
 
 	// ======================> InputEntryDesc
@@ -208,8 +216,24 @@ namespace
 		std::vector<InputEntryDesc> BuildInitialEntryDescriptions(status::input::input_class input_class) const;
 
 		// statics
-		static std::unordered_map<wxString, wxString> BuildCodes(const std::vector<status::input_class> &devclasses);
 		static bool CompareInputs(const status::input &a, const status::input &b);
+		static std::unordered_map<wxString, wxString> BuildCodes(const std::vector<status::input_class> &devclasses);
+	};
+
+
+	// ======================> SeqPollingDialog
+	class SeqPollingDialog : public wxDialog
+	{
+	public:
+		SeqPollingDialog(InputsDialog &host, const wxString &title_text, const wxString &instructions_text);
+		wxString &DialogSelectedResult() { return m_dialog_selected_result; }
+
+	private:
+		InputsDialog &	m_host;
+		wxButton *		m_mouse_inputs_button;
+		wxString		m_dialog_selected_result;
+
+		void OnMouseButtonPressed();
 	};
 
 
@@ -247,6 +271,25 @@ namespace
 		const InputEntry::QuickItem &GetQuickItem(long index) const;
 	};
 };
+
+
+//**************************************************************************
+//  UTILITY
+//**************************************************************************
+
+static axis_type AxisType(const status::input_device_item &item)
+{
+	axis_type result;
+	if (item.m_token == "XAXIS")
+		result = axis_type::X;
+	else if (item.m_token == "YAXIS")
+		result = axis_type::Y;
+	else if (item.m_token == "ZAXIS")
+		result = axis_type::Z;
+	else
+		result = axis_type::NONE;
+	return result;
+}
 
 
 //**************************************************************************
@@ -406,17 +449,36 @@ const status::input_seq &InputsDialog::FindInputSeq(const InputFieldRef &field_r
 
 void InputsDialog::StartInputPoll(const wxString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const wxString &start_seq)
 {
+	// create title and instruction text
+	const char *title_text_format		= start_seq.empty() ? "Specify %s" : "Add To %s";
+	const char *instruction_text_format = start_seq.empty() ? "Press key or button to specify %s" : "Press key or button to add to %s";
+	wxString title_text			= wxString::Format(title_text_format, label);
+	wxString instruction_text	= wxString::Format(instruction_text_format, label);
+
 	// start polling
 	m_host.StartPolling(field_ref.m_port_tag, field_ref.m_mask, seq_type, start_seq);
 
 	// present the dialog
-	wxDialog dialog(this, wxID_ANY, "Press key for " + label, wxDefaultPosition, wxSize(250, 100));
+	SeqPollingDialog dialog(*this, title_text, instruction_text);
 	m_current_dialog = &dialog;
 	dialog.ShowModal();
 	m_current_dialog = nullptr;
 
 	// stop polling (though this might have happened implicitly)
 	m_host.StopPolling();
+
+	// did the user select an input through the dialog?  if so, we need to
+	// specify it (as opposed to MAME handling things)
+	if (!dialog.DialogSelectedResult().empty())
+	{
+		// assemble the tokens
+		wxString new_tokens = !start_seq.empty()
+			? start_seq + wxT(" or ") + dialog.DialogSelectedResult()
+			: std::move(dialog.DialogSelectedResult());
+
+		// and set it
+		SetInputSeqs({ { field_ref.m_port_tag, field_ref.m_mask, seq_type, std::move(new_tokens) } });
+	}
 }
 
 
@@ -642,6 +704,92 @@ wxString InputsDialog::GetSeqTextFromTokens(const wxString &seq_tokens)
 
 
 //**************************************************************************
+//  SEQ POLLING DIALOG
+//**************************************************************************
+
+//-------------------------------------------------
+//  SeqPollingDialog ctor
+//-------------------------------------------------
+
+SeqPollingDialog::SeqPollingDialog(InputsDialog &host, const wxString &title_text, const wxString &instructions_text)
+	: wxDialog(&host, wxID_ANY, title_text, wxDefaultPosition, wxSize(350, 200))
+	, m_host(host)
+	, m_mouse_inputs_button(nullptr)
+{
+	// controls
+	int id = wxID_LAST + 1;
+	wxStaticText &instructions_static_text	= *new wxStaticText(this, wxID_ANY, instructions_text);
+	wxStaticText &spacer_static_text		= *new wxStaticText(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(50, 20));
+	wxStaticText &mouse_inputs_static_text	= *new wxStaticText(this, wxID_ANY, wxT("For mouse inputs, press the button to the right"));
+	m_mouse_inputs_button					= new wxButton(this, id++, wxT("Mouse Inputs"));
+
+	// events
+	Bind(wxEVT_BUTTON, [this](auto &) { OnMouseButtonPressed(); }, m_mouse_inputs_button->GetId());
+
+	// sizer layout
+	SpecifySizerAndFit(*this, { boxsizer_orientation::VERTICAL, 10, {
+		{ 1, wxALL,					instructions_static_text },
+		{ 1, wxALL | wxEXPAND,		spacer_static_text },
+		{ 0, wxALL | wxALIGN_RIGHT,	boxsizer_orientation::HORIZONTAL, 4, {
+			{ 0, wxALL | wxALIGN_CENTER_VERTICAL, mouse_inputs_static_text },
+			{ 0, wxALL | wxALIGN_CENTER_VERTICAL, *m_mouse_inputs_button }
+		}}
+	} });
+}
+
+
+//-------------------------------------------------
+//  SeqPollingDialog::OnMouseButtonPressed
+//-------------------------------------------------
+
+void SeqPollingDialog::OnMouseButtonPressed()
+{
+	enum
+	{
+		ID_START = wxID_HIGHEST + 1
+	};
+
+	// identify pertinent mouse inputs
+	std::vector<const status::input_device_item *> items;
+	for (const status::input_class &devclass : m_host.GetInputClasses())
+	{
+		if (devclass.m_name == "mouse")
+		{
+			for (const status::input_device &dev : devclass.m_devices)
+			{
+				for (const status::input_device_item &item : dev.m_items)
+				{
+					if (AxisType(item) == axis_type::NONE)
+						items.emplace_back(&item);
+				}
+			}
+		}
+	}
+
+	// sort the mouse inputs
+	std::sort(items.begin(), items.end(), [](const status::input_device_item *x, const status::input_device_item *y)
+	{
+		return x->m_code < y->m_code;
+	});
+
+	// build the popup menu
+	MenuWithResult popup_menu;
+	for (int i = 0; i < items.size(); i++)
+		popup_menu.Append(ID_START + i, items[i]->m_name);
+
+	// and display it
+	wxRect button_rectangle = m_mouse_inputs_button->GetRect();
+	if (!PopupMenu(&popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
+		return;
+
+	// the user selected a result; specify the result and close out
+	m_dialog_selected_result = items[popup_menu.Result() - ID_START]->m_code;
+	Close();
+}
+
+
+
+//**************************************************************************
 //  INPUT ENTRY DESCRIPTIONS
 //**************************************************************************
 
@@ -788,19 +936,20 @@ std::vector<InputEntry::QuickItem> InputEntry::BuildQuickItems(const std::option
 
 			for (const status::input_device_item &item : dev.m_items)
 			{
-				if (x_field_ref && item.m_token == "XAXIS")
+				axis_type at = AxisType(item);
+				if (x_field_ref && at == axis_type::X)
 				{
 					dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
 					dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, wxString());
 					dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, wxString());
 				}
-				if (y_field_ref && item.m_token == "YAXIS")
+				if (y_field_ref && at == axis_type::Y)
 				{
 					dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
 					dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, wxString());
 					dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, wxString());
 				}
-				if (all_axes_field_ref && (item.m_token == "XAXIS" || item.m_token == "YAXIS" || item.m_token == "ZAXIS"))
+				if (all_axes_field_ref && at != axis_type::NONE)
 				{
 					QuickItem &axis_quick_item = results.emplace_back();
 					axis_quick_item.m_label = wxString::Format("%s #%d %s (%s)",
