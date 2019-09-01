@@ -198,6 +198,9 @@ namespace
 		{
 			return m_host.GetInputs();
 		}
+
+		// statics
+		static std::tuple<wxString, wxString> ParseIndividualToken(wxString &&token);
 		static wxString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
 
 	private:
@@ -669,18 +672,35 @@ wxString InputsDialog::GetSeqTextFromTokens(const wxString &seq_tokens)
 	// more fully dissect input sequences
 	wxString result;
 	std::vector<wxString> tokens = util::string_split(seq_tokens, [](wchar_t ch) { return ch == ' '; });
-	for (const wxString &token : tokens)
+	for (wxString &token : tokens)
 	{
 		wxString word;
 		if (token == "OR" || token == "NOT" || token == "DEFAULT")
 		{
+			// modifier tokens; just "lowercase" it (this will need to be reevaluated when it 
+			// is time to localize this
 			word = token.Lower();
 		}
 		else
 		{
-			auto iter = m_codes.find(token);
+			// look up this token, but we need to remove modifiers
+			auto [token_base, modifier] = ParseIndividualToken(std::move(token));
+
+			// now do the lookup
+			auto iter = m_codes.find(token_base);
 			if (iter != m_codes.end())
 				word = iter->second;
+
+			// do we have a modifier?  if so, append it
+			if (!modifier.empty())
+			{
+				// another thing that will need to be reevaluated when we want to localize
+				modifier = modifier.substr(0, 1) + modifier.substr(1).Lower();
+
+				// append the "localized" modifier
+				word += wxT(" ");
+				word += modifier;
+			}
 		}
 
 		if (!word.empty())
@@ -700,6 +720,43 @@ wxString InputsDialog::GetSeqTextFromTokens(const wxString &seq_tokens)
 		result = "";
 
 	return result;
+}
+
+
+//-------------------------------------------------
+//  ParseIndividualToken
+//-------------------------------------------------
+
+std::tuple<wxString, wxString> InputsDialog::ParseIndividualToken(wxString &&token)
+{
+	// token parsing
+	wxString::iterator current_position = token.begin();
+	auto next_token = [&current_position, &token]() -> wxString::iterator
+	{
+		wxString::iterator iter = std::find(current_position, token.end(), '_');
+		current_position = iter;
+		while (current_position < token.end() && *current_position == '_')
+			current_position++;
+		return iter;
+	};
+
+	// parse out the item part
+	wxString::iterator item_end = next_token();
+	if (current_position < token.end() && *current_position >= '0' && *current_position <= '9')
+		item_end = next_token();	// device number
+	item_end = next_token();
+
+	// do we have more?  if so, parse out the modifier
+	wxString modifier;
+	if (item_end < token.end())
+	{
+		wxString::iterator modifier_begin = current_position;
+		wxString::iterator modifier_end = next_token();
+		modifier = wxString(modifier_begin, modifier_end);
+		token.resize(item_end - token.begin());
+	}
+
+	return { std::move(token), std::move(modifier) };
 }
 
 
