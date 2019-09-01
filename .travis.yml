@@ -21,3 +21,13 @@ deploy:
   skip_cleanup: true
   local_dir: rel
   upload-dir: files
+
+git:
+  depth: false
+
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#bletchmame"
+    on_success: change # default: always
+    on_failure: always # default: always
