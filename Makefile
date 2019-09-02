@@ -28,7 +28,7 @@ CPP_RULE		= g++ $(CFLAGS) -c -o $@ $<
 DASM_RULE		= g++ $(CFLAGS) -S -o $@ $<
 
 OLD_GIT_VERSION := $(shell cat $(OBJ)/git_desc.txt 2>NUL)
-NEW_GIT_VERSION := $(shell git describe --dirty)
+NEW_GIT_VERSION := $(shell git describe --tags)
 
 ifndef WXWIDGETS_DIR
 WXWIDGETS_DIR=lib/wxWidgets
@@ -92,11 +92,14 @@ $(OBJ)/%.res.o:	src/%.rc Makefile
 	$(MKDIR_RULE)
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
-$(OBJ)/version.gen.cpp:	$(OBJ)/git_desc.txt
-	@sh -c 'echo extern const char build_version[]\;'					> $@
-	@sh -c 'echo extern const char build_date_time[]\;'					>> $@
-	@sh -c 'echo const char build_version[] = \"$(NEW_GIT_VERSION)\"\;'	>> $@
-	@sh -c 'echo const char build_date_time[] = \"`date -Ins`\"\;'		>> $@
+$(OBJ)/version.gen.cpp:	$(OBJ)/version.txt
+	sh >$@  -c 'echo extern const char build_version[]\;'
+	sh >>$@ -c 'echo extern const char build_date_time[]\;'
+	sh >>$@ -c 'echo const char build_version[] = \"$(shell cat $(OBJ)/version.txt 2>NUL)\"\;'
+	sh >>$@ -c 'echo const char build_date_time[] = \"`date -Ins`\"\;'
+
+$(OBJ)/version.txt:	$(OBJ)/git_desc.txt version.py
+	python version.py <$(OBJ)/git_desc.txt >$@
 
 ifneq ($(NEW_GIT_VERSION),$(OLD_GIT_VERSION))
 
