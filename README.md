@@ -12,4 +12,4 @@ TBD; BletchMAME is not 1.0 yet!
 
 ## Support for BletchMAME
 
-Visit the IRC FreeNode channels #mame and #bletchmame
+Visit the BletchMAME website at http://bletchmame.s3-website-us-east-1.amazonaws.com/ or the IRC FreeNode channels #mame and #bletchmame
