@@ -20,6 +20,9 @@
             <Component Id="BletchMAME.exe" Guid="1cd267f9-1e1d-4205-9289-b857f6c842ea" Win64="yes">
                 <File Id="BletchMAME.exe" Source="bin\mingw_win64\release\BletchMAME.exe" KeyPath="yes" Checksum="yes"/>
             </Component>
+            <Component Id="readme.html" Guid="326b1d99-f61a-4ba9-b5a6-794a49a8e246" Win64="yes">
+                <File Id="readme.html" Source="readme.html" KeyPath="yes" Checksum="yes"/>
+            </Component>
         </DirectoryRef>
         <DirectoryRef Id="WorkerUiDirectory">
             <Component Id="plugin.json" Guid="f493b04f-bf32-4616-8ee8-8ea9d20842bd" Win64="yes">
@@ -37,6 +40,9 @@
         <Feature Id="WorkerUiPlugin" Title="Worker UI LUA Plugin" Level="1" ConfigurableDirectory="PLUGINSDIRECTORY">
           <ComponentRef Id="plugin.json" />
           <ComponentRef Id="init.lua" />
+        </Feature>
+        <Feature Id="ReadMeFile" Title="Read Me File" Level="1" ConfigurableDirectory="APPLICATIONROOTDIRECTORY">
+            <ComponentRef Id="readme.html" />
         </Feature>
 
       <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />

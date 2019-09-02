@@ -2,13 +2,13 @@ language: cpp
 os: windows
 script:
   - choco install pandoc
-  - pandoc README.md -o readme.html
   - choco install wixtoolset -y --version 3.10.3.300702 || true
   - choco install wxWidgets --version 3.1.2
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
   - mingw32-make WXWIDGETS_DIR=C:/wxWidgets-3.1.2 -j 8
   - echo Version is `cat obj/mingw_win64/release/version.txt`
+  - pandoc README.md -o readme.html
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/candle -v bletchmame.wxs -dVERSION=`cat obj/mingw_win64/release/version.txt` -out bletchmame.wixobj
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
   - mkdir rel
