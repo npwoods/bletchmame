@@ -1,8 +1,8 @@
 language: cpp
 os: windows
 script:
-  - pip install md-to-html
-  - md-to-html --input README.md --output readme.html
+  - choco install pandoc
+  - pandoc README.md -o readme.html
   - choco install wixtoolset -y --version 3.10.3.300702 || true
   - choco install wxWidgets --version 3.1.2
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
