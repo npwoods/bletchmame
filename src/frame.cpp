@@ -284,9 +284,11 @@ namespace
 #ifdef _MSC_VER
 // we're not supporing build numbers for MSVC builds
 static const char build_version[] = "MSVC";
+static const char build_revision[] = "MSVC";
 static const char build_date_time[] = "MSVC";
 #else
 extern const char build_version[];
+extern const char build_revision[];
 extern const char build_date_time[];
 #endif
 
@@ -1151,6 +1153,7 @@ void MameFrame::OnMenuAbout()
 	const wxString eoln = wxTextFile::GetEOL();
 	wxString message = wxTheApp->GetAppName() + eoln
 		+ build_version + eoln
+		+ build_revision + eoln
 		+ build_date_time + eoln
 		+ eoln;
 

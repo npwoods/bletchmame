@@ -92,10 +92,12 @@ $(OBJ)/%.res.o:	src/%.rc Makefile
 	$(MKDIR_RULE)
 	windres -I$(WXWIDGETS_DIR)/include -o $@ $<
 
-$(OBJ)/version.gen.cpp:	$(OBJ)/version.txt
+$(OBJ)/version.gen.cpp:	$(OBJ)/version.txt $(OBJ)/git_desc.txt
 	sh >$@  -c 'echo extern const char build_version[]\;'
+	sh >>$@ -c 'echo extern const char build_revision[]\;'
 	sh >>$@ -c 'echo extern const char build_date_time[]\;'
 	sh >>$@ -c 'echo const char build_version[] = \"$(shell cat $(OBJ)/version.txt 2>NUL)\"\;'
+	sh >>$@ -c 'echo const char build_revision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
 	sh >>$@ -c 'echo const char build_date_time[] = \"`date -Ins`\"\;'
 
 $(OBJ)/version.txt:	$(OBJ)/git_desc.txt version.py
