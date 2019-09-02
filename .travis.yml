@@ -6,11 +6,12 @@ script:
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
   - pushd C:/wxWidgets-3.1.2/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
   - mingw32-make WXWIDGETS_DIR=C:/wxWidgets-3.1.2 -j 8
-  - echo -v bletchmame.wxs -dVERSION=`cat obj/mingw_win64/release/version.txt` -out bletchmame.wixobj
+  - echo Version is `cat obj/mingw_win64/release/version.txt`
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/candle -v bletchmame.wxs -dVERSION=`cat obj/mingw_win64/release/version.txt` -out bletchmame.wixobj
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
   - mkdir rel
-  - mv BletchMAME.msi rel
+  - cp obj/mingw_win64/release/version_latest.txt rel
+  - mv BletchMAME.msi rel/BletchMAME_latest.msi
 
 cache:
   directories:
