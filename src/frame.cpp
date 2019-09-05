@@ -1206,6 +1206,7 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 
 bool MameFrame::IsSupportedMameVersion(const wxString &version)
 {
+	// BletchMAME requires MAME 0.213 or later
 	const int REQUIRED_MAJOR_MAME_VERSION = 0;
 	const int REQUIRED_MINOR_MAME_VERSION = 213;
 
