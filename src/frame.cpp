@@ -1193,8 +1193,8 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 	m_mame_version = std::move(payload.m_version);
 
 	// warn the user if this is version of MAME is not supported
-	if (IsSupportedMameVersion(m_mame_version))
-		MessageBox("This version of MAME doesn't seem to be supported; BletchMAME requires MAME 0.213 or newer to unction correctly");
+	if (!IsSupportedMameVersion(m_mame_version))
+		MessageBox(wxT("This version of MAME doesn't seem to be supported; BletchMAME requires MAME 0.213 or newer to function correctly"));
 
 	m_client.Reset();
 }
@@ -1209,12 +1209,15 @@ bool MameFrame::IsSupportedMameVersion(const wxString &version)
 	const int REQUIRED_MAJOR_MAME_VERSION = 0;
 	const int REQUIRED_MINOR_MAME_VERSION = 213;
 
+	// first parse the version string; if we fail to parse it then there is a possibility
+	// that this version of MAME is very old (and doesn't have a -version options)
 	int major_version, minor_version;
 	if (sscanf(std::string(version).c_str(), "%d.%d", &major_version, &minor_version) != 2)
 		return false;
 
+	// we have a major/minor version; perform the calculus
 	return (major_version > REQUIRED_MAJOR_MAME_VERSION)
-		|| (major_version == REQUIRED_MAJOR_MAME_VERSION && minor_version < REQUIRED_MINOR_MAME_VERSION);
+		|| (major_version == REQUIRED_MAJOR_MAME_VERSION && minor_version >= REQUIRED_MINOR_MAME_VERSION);
 }
 
 
