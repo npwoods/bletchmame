@@ -234,6 +234,7 @@ namespace
 
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
+		static bool IsSupportedMameVersion(const wxString &version);
 		bool ShouldPromptOnStop() const;
 		wxString QuickSaveStateFilePath() const;
 		void InitialCheckMameInfoDatabase();
@@ -1191,12 +1192,29 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 	VersionResult &payload(event.Payload());
 	m_mame_version = std::move(payload.m_version);
 
-	// warn the user if this is not a worker-ui compatible build of MAME; looking forward
-	// to this going away
-	if (!payload.m_version.empty() && !payload.m_version.EndsWith("-worker-ui)"))
-		MessageBox("This does not appear to be a worker-ui build of MAME; BletchMAME may not function correctly");
+	// warn the user if this is version of MAME is not supported
+	if (IsSupportedMameVersion(m_mame_version))
+		MessageBox("This version of MAME doesn't seem to be supported; BletchMAME requires MAME 0.213 or newer to unction correctly");
 
 	m_client.Reset();
+}
+
+
+//-------------------------------------------------
+//  IsSupportedMameVersion
+//-------------------------------------------------
+
+bool MameFrame::IsSupportedMameVersion(const wxString &version)
+{
+	const int REQUIRED_MAJOR_MAME_VERSION = 0;
+	const int REQUIRED_MINOR_MAME_VERSION = 213;
+
+	int major_version, minor_version;
+	if (sscanf(std::string(version).c_str(), "%d.%d", &major_version, &minor_version) != 2)
+		return false;
+
+	return (major_version > REQUIRED_MAJOR_MAME_VERSION)
+		|| (major_version == REQUIRED_MAJOR_MAME_VERSION && minor_version < REQUIRED_MINOR_MAME_VERSION);
 }
 
 
