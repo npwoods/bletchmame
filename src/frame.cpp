@@ -235,6 +235,7 @@ namespace
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
 		static bool IsSupportedMameVersion(const wxString &version);
+		wxString GetPrettyMameVersion() const;
 		bool ShouldPromptOnStop() const;
 		wxString QuickSaveStateFilePath() const;
 		void InitialCheckMameInfoDatabase();
@@ -1151,6 +1152,8 @@ void MameFrame::OnMenuSwitches(status::input::input_class input_class)
 
 void MameFrame::OnMenuAbout()
 {
+	wxString mame_version = GetPrettyMameVersion();
+
 	const wxString eoln = wxTextFile::GetEOL();
 	wxString message = wxTheApp->GetAppName() + eoln
 		+ build_version + eoln
@@ -1159,13 +1162,40 @@ void MameFrame::OnMenuAbout()
 		+ eoln;
 
 	// MAME version
-	if (!m_info_db.version().IsEmpty())
-		message += wxT("MAME ") + m_info_db.version() + eoln;
+	if (!mame_version.empty())
+		message += mame_version + eoln;
 
 	// wxWidgets version
 	message += wxVERSION_STRING;
 
 	MessageBox(message, wxOK | wxICON_INFORMATION, "About BletchMAME");
+}
+
+
+//-------------------------------------------------
+//  GetPrettyMameVersion
+//-------------------------------------------------
+
+wxString MameFrame::GetPrettyMameVersion() const
+{
+	wxString result;
+	if (!m_info_db.version().IsEmpty())
+	{
+		int major_version, minor_version;
+		if (sscanf(m_info_db.version().ToStdString().c_str(), "%d.%d", &major_version, &minor_version) == 2
+			&& m_info_db.version() == wxString::Format("%d.%d (mame%d%d)", major_version, minor_version, major_version, minor_version))
+		{
+			// simple MAME version (e.g. - "0.213 (mame0213)"); this should be the case when the user
+			// is using an off the shelf version of MAME and we want to present a simple version string
+			result = wxString::Format("MAME %d.%d", major_version, minor_version);
+		}
+		else
+		{
+			// non-simple MAME version; probably an interim build
+			result = wxT("MAME ") + m_info_db.version();
+		}
+	}
+	return result;
 }
 
 
