@@ -25,6 +25,9 @@ deploy:
   skip_cleanup: true
   local_dir: rel
   upload-dir: files
+  on:
+    all_branches: true
+    condition: $TRAVIS_BRANCH =~ ^(master|v.*)$ 
 
 git:
   depth: false
