@@ -42,6 +42,10 @@
 //  CONSTANTS
 //**************************************************************************
 
+// BletchMAME requires MAME 0.213 or later
+const int REQUIRED_MAJOR_MAME_VERSION = 0;
+const int REQUIRED_MINOR_MAME_VERSION = 213;
+
 // IDs for the controls and the menu commands
 enum
 {
@@ -1224,7 +1228,13 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 
 	// warn the user if this is version of MAME is not supported
 	if (!IsSupportedMameVersion(m_mame_version))
-		MessageBox(wxT("This version of MAME doesn't seem to be supported; BletchMAME requires MAME 0.213 or newer to function correctly"));
+	{
+		wxString message = wxString::Format(
+			wxT("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %d.%d or newer to function correctly"),
+			REQUIRED_MAJOR_MAME_VERSION,
+			REQUIRED_MINOR_MAME_VERSION);
+		MessageBox(message);
+	}
 
 	m_client.Reset();
 }
@@ -1236,10 +1246,6 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 
 bool MameFrame::IsSupportedMameVersion(const wxString &version)
 {
-	// BletchMAME requires MAME 0.213 or later
-	const int REQUIRED_MAJOR_MAME_VERSION = 0;
-	const int REQUIRED_MINOR_MAME_VERSION = 213;
-
 	// first parse the version string; if we fail to parse it then there is a possibility
 	// that this version of MAME is very old (and doesn't have a -version options)
 	int major_version, minor_version;
