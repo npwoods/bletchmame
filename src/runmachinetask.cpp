@@ -113,7 +113,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"-skip_gameinfo",
 		"-nomouse",
 		"-plugin",
-		"worker_ui" 
+		WORKER_UI_PLUGIN_NAME
 	};
 }
 

@@ -250,6 +250,7 @@ namespace
 		info::machine GetRunningMachine() const;
 		void Run(const info::machine &machine, const profiles::profile *profile = nullptr);
 		void Run(const profiles::profile &profile);
+		wxString PreflightCheck();
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
@@ -793,6 +794,14 @@ info::machine MameFrame::GetRunningMachine() const
 
 void MameFrame::Run(const info::machine &machine, const profiles::profile *profile)
 {
+	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
+	wxString preflight_errors = PreflightCheck();
+	if (!preflight_errors.empty())
+	{
+		MessageBox(preflight_errors);
+		return;
+	}
+
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
 	Pauser fake_pauser(*this, false);
@@ -888,6 +897,52 @@ void MameFrame::Run(const profiles::profile &profile)
 	}
 
 	Run(machine.value(), &profile);
+}
+
+
+//-------------------------------------------------
+//  PreflightCheck - run checks on MAME to catch
+//	obvious problems
+//-------------------------------------------------
+
+wxString MameFrame::PreflightCheck()
+{
+	// get a list of the plugin paths, checking for the obvious problem where there are no paths
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::plugins);
+	if (paths.empty())
+		return wxString::Format("No plug-in paths are specified.  Under these circumstances, the required \"%s\" plug-in cannot be loaded.", WORKER_UI_PLUGIN_NAME);
+
+	// apply substitutions and normalize the paths
+	wxString path_separator = wxFileName::GetPathSeparator();
+	for (wxString &path : paths)
+	{
+		path = m_prefs.ApplySubstitutions(path);
+		if (!path.EndsWith(path_separator))
+			path += path_separator;
+	}
+
+	// check to see if worker_ui exists
+	wxString worker_ui_subpath = wxString(WORKER_UI_PLUGIN_NAME) + path_separator;
+	bool worker_ui_exists = util::find_if_ptr(paths, [&worker_ui_subpath](const wxString &path)
+	{
+		return wxFile::Exists(path + worker_ui_subpath + wxT("init.lua"))
+			&& wxFile::Exists(path + worker_ui_subpath + wxT("plugin.json"));
+	});
+
+	// if worker_ui doesn't exist, report an error message
+	if (!worker_ui_exists)
+	{
+		wxString message = wxString::Format("Could not find the %s plug in in the following directories:\n\n", WORKER_UI_PLUGIN_NAME);
+		for (const wxString &path : paths)
+		{
+			message += path;
+			message += wxT("\n");
+		}
+		return message;
+	}
+
+	// success!
+	return wxString();
 }
 
 

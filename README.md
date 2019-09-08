@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 1.1 (TBD):
 	- Fixed bugs related to starting with a fresh configuration directory
+	- Added basic "preflight checks" prior to starting MAME emulation sessions, to better catch obvious problems
 
 - 1.0 (2019-Sep-7):
 	- Initial Release

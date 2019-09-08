@@ -35,6 +35,9 @@
 #define SHOULD_BE_DELETE	delete
 #endif // !SHOULD_BE_DELETE
 
+// the name of the worker_ui plugin
+#define WORKER_UI_PLUGIN_NAME	wxT("worker_ui")
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
