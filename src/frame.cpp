@@ -235,6 +235,7 @@ namespace
 		void RenameProfile(const profiles::profile &profile);
 		void DeleteProfile(const profiles::profile &profile);
 		void FocusOnNewProfile(wxString &&new_profile_path);
+		static bool DirExistsOrMake(const wxString &path);
 
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
@@ -252,7 +253,7 @@ namespace
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
 		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
 		void UpdateMachineList();
-		void UpdateProfileDirectories(bool update_fsw);		
+		void UpdateProfileDirectories(bool update_profile_list, bool update_file_system_watcher);
 		info::machine GetMachineFromIndex(long item) const;
 		wxString GetMachineListItemText(long item, long column) const;
 		wxString GetProfileListItemText(long item, long column) const;
@@ -389,7 +390,7 @@ MameFrame::MameFrame()
 		}
 		m_current_profile_rename = false;
 	});
-	UpdateProfileDirectories(true);
+	UpdateProfileDirectories(true, true);
 
 	// add the notebook pages
 	m_note_book->AddPage(machine_panel, "Machines");
@@ -419,7 +420,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnProfileListEndLabelEdit(event.GetIndex());												}, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
 	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
-	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(false);															});
+	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(true, false);													});
 
 	// nothing is running yet...
 	UpdateEmulationSession();
@@ -1120,7 +1121,7 @@ void MameFrame::OnMenuPaths()
 
 	// did the user change the profiles path?
 	if (is_changed(Preferences::path_type::profiles))
-		UpdateProfileDirectories(true);
+		UpdateProfileDirectories(true, true);
 }
 
 
@@ -1714,18 +1715,27 @@ void MameFrame::UpdateMachineList()
 //  UpdateProfileDirectories
 //-------------------------------------------------
 
-void MameFrame::UpdateProfileDirectories(bool update_fsw)
+void MameFrame::UpdateProfileDirectories(bool update_profile_list, bool update_file_system_watcher)
 {
-	// first update the actual list
+	// sanity checks
+	assert(update_profile_list || update_file_system_watcher);
+
+	// get the paths
 	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::profiles);
-	m_profiles = profiles::profile::scan_directories(paths);
+
+	// now update the list if we are asked to
+	if (update_profile_list)
+		m_profiles = profiles::profile::scan_directories(paths);
 
 	// now update the file system watcher if we're asked to
-	if (update_fsw)
+	if (update_file_system_watcher)
 	{
 		m_fsw_profiles.RemoveAll();
 		for (const wxString &path : paths)
-			m_fsw_profiles.Add(path);
+		{
+			if (wxDir::Exists(path))
+				m_fsw_profiles.Add(path);
+		}
 	}
 }
 
@@ -1768,6 +1778,11 @@ void MameFrame::CreateProfile(const info::machine &machine)
 	auto iter = std::find_if(paths.begin(), paths.end(), wxDir::Exists);
 	if (iter == paths.end())
 	{
+		iter = std::find_if(paths.begin(), paths.end(), DirExistsOrMake);
+		UpdateProfileDirectories(false, true);
+	}
+	if (iter == paths.end())
+	{
 		MessageBox("Cannot create profile without valid profile path");
 		return;
 	}
@@ -1793,6 +1808,19 @@ void MameFrame::CreateProfile(const info::machine &machine)
 	wxTextOutputStream text_stream(stream);
 	profiles::profile::create(text_stream, machine);
 	FocusOnNewProfile(std::move(new_profile_path));
+}
+
+
+//-------------------------------------------------
+//  DirExistsOrMake
+//-------------------------------------------------
+
+bool MameFrame::DirExistsOrMake(const wxString &path)
+{
+	bool result = wxDir::Exists(path);
+	if (!result)
+		result = wxDir::Make(path);
+	return result;
 }
 
 
