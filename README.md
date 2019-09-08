@@ -8,7 +8,11 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 1.0 (2019-Sep-7): Initial release
+- 1.1 (TBD):
+	- Fixed bugs related to starting with a fresh configuration directory
+
+- 1.0 (2019-Sep-7):
+	- Initial Release
 
 ## Support for BletchMAME
 
