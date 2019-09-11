@@ -108,13 +108,27 @@ private:
 		emu_error					m_status;
     };
 
+	struct Response
+	{
+		enum class type
+		{
+			UNKNOWN,
+			OK,
+			END_OF_FILE,
+			ERR
+		};
+
+		type						m_type;
+		wxString	                m_text;
+	};
+
 	info::machine					m_machine;
 	std::uintptr_t					m_target_window;
 	wxMessageQueue<Message>         m_message_queue;
 	volatile bool					m_chatter_enabled;
 
 	void InternalPost(Message::type type, wxString &&command, emu_error status = emu_error::INVALID);
-	void ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
+	Response ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
 	void PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text);
 };
 

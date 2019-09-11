@@ -244,19 +244,6 @@ TStr string_join(const TStr &delim, const TColl &collection)
 }
 
 //-------------------------------------------------
-//  string_truncate
-//-------------------------------------------------
-
-template<typename TStr, typename TChar>
-void string_truncate(TStr &str, TChar ch)
-{
-	size_t index = str.find(ch);
-	if (index != std::string::npos)
-		str.resize(index);
-}
-
-
-//-------------------------------------------------
 //  string_icontains
 //-------------------------------------------------
 

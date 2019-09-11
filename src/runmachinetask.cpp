@@ -194,14 +194,25 @@ void RunMachineTask::InternalPost(Message::type type, wxString &&command, emu_er
 void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 {
 	RunMachineResult result;
+	Response response;
 
 	// set up streams
 	wxTextInputStream input(*process.GetInputStream());
 	wxTextOutputStream output(*process.GetOutputStream());
 	wxTextInputStream error(*process.GetErrorStream());
 
-	// receive the inaugural response from MAME
-	ReceiveResponse(handler, input);
+	// receive the inaugural response from MAME; we want to call it quicks if this doesn't work
+	response = ReceiveResponse(handler, input);
+	if (response.m_type != Response::type::OK)
+	{
+		// alas, we have an error starting MAME
+		result.m_success = false;
+		result.m_error_message = !response.m_text.empty()
+			? std::move(response.m_text)
+			: wxT("Error starting MAME");
+		util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
+		return;
+	}
 
 	// loop until the process terminates
 	bool done = false;
@@ -223,7 +234,7 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 				PostChatter(handler, Chatter::chatter_type::COMMAND_LINE, std::move(message.m_command));
 
 			// and receive a response from MAME
-			ReceiveResponse(handler, input);
+			response = ReceiveResponse(handler, input);
 			break;
 
 		case Message::type::TERMINATED:
@@ -263,8 +274,15 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 //  ReceiveResponse
 //-------------------------------------------------
 
-void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
+RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
 {
+	static const util::enum_parser<Response::type> s_response_type_parser =
+	{
+		{ "@OK", Response::type::OK, },
+		{ "@ERROR", Response::type::ERR }
+	};
+	Response response;
+
 	// MAME has a pesky habit of emitting human readable messages to standard output, therefore
 	// we have a convention with the worker_ui plugin by which actual messages are preceeded with
 	// an at-sign
@@ -272,23 +290,50 @@ void RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &i
 	do
 	{
 		str = input.ReadLine();
-	} while (!input.GetInputStream().Eof() && (str.empty() || str[0] != '@'));
+	} while ((!str.empty() && str[0] != '@') || (str.empty() && !input.GetInputStream().Eof()));
 	wxLogDebug("MAME ==> %s", str);
+
+	// special case; check for EOF
+	if (str.empty())
+	{
+		response.m_type = Response::type::END_OF_FILE;
+		return response;
+	}
 
 	// chatter
 	if (m_chatter_enabled)
 		PostChatter(handler, Chatter::chatter_type::RESPONSE, wxString(str));
 
-	// interpret the response
-	util::string_truncate(str, '#');
+	// start interpreting the response; first get the text
+	size_t index = str.find('#');
+	if (index != std::string::npos)
+	{
+		// get the response text
+		size_t response_text_position = index + 1;
+		while (response_text_position < str.size() && str[response_text_position] == '#')
+			response_text_position++;
+		while (response_text_position < str.size() && str[response_text_position] == ' ')
+			response_text_position++;
+		response.m_text = str.substr(response_text_position);
+
+		// and resize the original string
+		str.resize(index);
+	}
+
+	// now get the arguments; there should be at least one
 	std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
+	assert(!args.empty());
+
+	// interpret the main message
+	s_response_type_parser(args[0].ToStdString(), response.m_type);
 
 	// did we get a status reponse
-	if (args.size() >= 2 && args[0] == "@OK" && args[1] == "STATUS")
+	if (response.m_type == Response::type::OK && args.size() >= 2 && args[1] == "STATUS")
 	{
 		status::update status_update = status::update::read(input);
 		util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
 	}
+	return response;
 }
 
 

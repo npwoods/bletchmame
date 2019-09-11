@@ -5,8 +5,6 @@ exports.description = "worker-ui plugin"
 exports.license = "The BSD 3-Clause License"
 exports.author = { name = "Bletch" }
 
-local console = exports
-
 function quoted_string_split(text)
 	local result = {}
 	local e = 0
@@ -759,7 +757,7 @@ function invoke_command_line(line)
 	end
 end
 
-function console.startplugin()
+function startplugin()
 	-- start a thread to read from stdin
 	local scr = "return io.read()"
 	local conth = emu.thread()
@@ -857,6 +855,14 @@ function console.startplugin()
 			end
 		end
 	end)
+end
+
+function exports.startplugin()
+	-- run startplugin through pcall; we want to catch errors
+	local status, err = pcall(startplugin)
+	if (not status) then
+		print("@ERROR ## Lua runtime error on plugin startup " .. tostring(err))
+	end
 end
 
 return exports
