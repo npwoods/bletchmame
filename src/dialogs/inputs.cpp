@@ -140,7 +140,7 @@ namespace
 	public:
 		SingularInputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text, InputFieldRef &&field_ref, status::input_seq::type seq_type);
 
-		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs();
+		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override;
 
 	protected:
 		virtual wxString GetText() override;
@@ -159,7 +159,7 @@ namespace
 	public:
 		MultiAxisInputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text, const status::input *x_input, const status::input *y_input);
 
-		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs();
+		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override;
 
 	protected:
 		virtual void OnMainButtonPressed() override;
