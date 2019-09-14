@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 1.next (TBD):
+	- Improvements to the error reporting in the LUA plugin
+
 - 1.1 (2019-Sep-8):
 	- Fixed bugs related to starting with a fresh configuration directory
 	- Added basic "preflight checks" prior to starting MAME emulation sessions, to better catch obvious problems
