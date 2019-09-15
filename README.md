@@ -11,6 +11,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 1.next (TBD):
 	- Improvements to the error reporting in the LUA plugin
 	- Distributing BletchMAME as a ZIP file in addition to MSI
+	- Fixed issues surrounding the "Mouse Inputs" button when changing inputs, including potential crashes
 
 - 1.1 (2019-Sep-8):
 	- Fixed bugs related to starting with a fresh configuration directory

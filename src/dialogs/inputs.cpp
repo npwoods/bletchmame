@@ -779,9 +779,14 @@ SeqPollingDialog::SeqPollingDialog(InputsDialog &host, const wxString &title_tex
 	wxStaticText &spacer_static_text		= *new wxStaticText(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(50, 20));
 	wxStaticText &mouse_inputs_static_text	= *new wxStaticText(this, wxID_ANY, wxT("For mouse inputs, press the button to the right"));
 	m_mouse_inputs_button					= new wxButton(this, id++, wxT("Mouse Inputs"));
+	wxButton &decoy_button					= *new wxButton(this, id++, wxT(""), wxPoint(-1000, -1000));
 
 	// events
 	Bind(wxEVT_BUTTON, [this](auto &) { OnMouseButtonPressed(); }, m_mouse_inputs_button->GetId());
+
+	// we don't want the mouse inputs button to have focus (it might be triggered by the user specifying inputs), so
+	// we're creating a decoy button and giving it focus
+	decoy_button.SetFocus();
 
 	// sizer layout
 	SpecifySizerAndFit(*this, { boxsizer_orientation::VERTICAL, 10, {
@@ -840,7 +845,8 @@ void SeqPollingDialog::OnMouseButtonPressed()
 		return;
 
 	// the user selected a result; specify the result and close out
-	m_dialog_selected_result = items[popup_menu.Result() - ID_START]->m_code;
+	if (popup_menu.Result() >= ID_START)
+		m_dialog_selected_result = items[popup_menu.Result() - ID_START]->m_code;
 	Close();
 }
 
