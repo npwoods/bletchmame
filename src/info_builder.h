@@ -17,11 +17,18 @@
 
 namespace info
 {
+	// ======================> database_builder
 	class database_builder
 	{
 	public:
+		// ctors
+		database_builder() = default;
+		database_builder(const database_builder &) = delete;
+		database_builder(database_builder &&) = default;
+
+		// methods
 		bool process_xml(wxInputStream &input, wxString &error_message);
-		void emit(wxOutputStream &stream);
+		void emit(wxOutputStream &stream) const;
 
 	private:
 		// ======================> string_table

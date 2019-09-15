@@ -175,11 +175,14 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	}
 	catch (std::exception &ex)
 	{
+		// did an exception (probably thrown by to_uint32) get thrown?
 		error_message = ex.what();
 		return false;
 	}
 	if (!success)
 	{
+		// now check for XML parsing errors; this is likely the result of somebody aborting the DB rebuild, but
+		// it is the caller's responsibility to handle that situation
 		error_message = xml.ErrorMessage();
 		return false;
 	}
@@ -207,7 +210,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 //  emit()
 //-------------------------------------------------
 
-void info::database_builder::emit(wxOutputStream &output)
+void info::database_builder::emit(wxOutputStream &output) const
 {
 	output.Write(&m_salted_header, sizeof(m_salted_header));
 	output.Write(m_machines.data(), m_machines.size() * sizeof(m_machines[0]));
