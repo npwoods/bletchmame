@@ -59,13 +59,12 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	// parse the -listxml output
 	XmlParser xml;
 	std::string current_device_extensions;
-	xml.OnElementBegin({ "mame" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
 	{
 		std::string build;
-		header.m_build_strindex = attributes.Get("build", build) ? m_strings.get(build) : 0;
-			
+		header.m_build_strindex = attributes.Get("build", build) ? m_strings.get(build) : 0;		
 	});
-	xml.OnElementBegin({ "mame", "machine" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
 		bool runnable;
 		if (attributes.Get("runnable", runnable) && !runnable)
@@ -86,20 +85,20 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		machine.m_manufacturer_strindex = 0;
 		return XmlParser::element_result::OK;
 	});
-	xml.OnElementEnd({ "mame", "machine", "description" }, [&](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "description" }, [this](wxString &&content)
 	{
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
 	});
-	xml.OnElementEnd({ "mame", "machine", "year" }, [&](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "year" }, [this](wxString &&content)
 	{
 		util::last(m_machines).m_year_strindex = m_strings.get(content);
 	});
-	xml.OnElementEnd({ "mame", "machine", "manufacturer" }, [&](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "manufacturer" }, [this](wxString &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
 	});
 	xml.OnElementBegin({ { "mame", "machine", "configuration" },
-						 { "mame", "machine", "dipswitch" } }, [&](const XmlParser::Attributes &attributes)
+						 { "mame", "machine", "dipswitch" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration &configuration = m_configurations.emplace_back();
@@ -112,7 +111,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		util::last(m_machines).m_configurations_count++;
 	});
 	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting" },
-						 { "mame", "machine", "dipswitch", "dipvalue" } }, [&](const XmlParser::Attributes &attributes)
+						 { "mame", "machine", "dipswitch", "dipvalue" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration_setting &configuration_setting = m_configuration_settings.emplace_back();
@@ -123,7 +122,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		util::last(m_configurations).m_configuration_settings_count++;
 	});
 	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting", "condition" },
-						 { "mame", "machine", "dipswitch", "dipvalue", "condition" } }, [&](const XmlParser::Attributes &attributes)
+						 { "mame", "machine", "dipswitch", "dipvalue", "condition" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = m_configuration_conditions.emplace_back();
@@ -132,7 +131,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		attributes.Get("mask", configuration_condition.m_mask);
 		attributes.Get("value", configuration_condition.m_value);
 	});
-	xml.OnElementBegin({ "mame", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		bool mandatory;
@@ -147,13 +146,13 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 
 		util::last(m_machines).m_devices_count++;
 	});
-	xml.OnElementBegin({ "mame", "machine", "device", "instance" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "mame", "machine", "device", "instance" }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		if (attributes.Get("name", data))
 			util::last(m_devices).m_instance_name_strindex = m_strings.get(data);
 	});
-	xml.OnElementBegin({ "mame", "machine", "device", "extension" }, [&](const XmlParser::Attributes &attributes)
+	xml.OnElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
 		std::string name;
 		if (attributes.Get("name", name))
@@ -162,7 +161,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 			current_device_extensions.append(",");
 		}
 	});
-	xml.OnElementEnd({ "mame", "machine", "device" }, [&](wxString &&)
+	xml.OnElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](wxString &&)
 	{
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
