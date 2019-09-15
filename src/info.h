@@ -186,7 +186,6 @@ namespace info
 		// views
 		device::view 				devices() const;
 		configuration::view			configurations() const;
-		configuration_setting::view	configuration_settings() const;
 	};
 
 
@@ -211,6 +210,7 @@ namespace info
 
 		// publically usable functions
 		bool load(const wxString &file_name, const wxString &expected_version = wxT(""));
+		bool load(wxInputStream &input, const wxString &expected_version = wxT(""));
 		void reset();
 		std::optional<machine> find_machine(const wxString &machine_name) const;
 		const wxString &version() const			{ return *m_version; }

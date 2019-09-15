@@ -6,8 +6,12 @@
 
 ***************************************************************************/
 
+#include <wx/wfstream.h>
+#include <wx/mstream.h>
+
 #include "info_builder.h"
 #include "xmlparser.h"
+#include "validity.h"
 
 
 //**************************************************************************
@@ -279,3 +283,109 @@ const std::vector<char> &info::database_builder::string_table::data() const
 {
 	return m_data;
 }
+
+
+//**************************************************************************
+//  VALIDITY CHECKS
+//**************************************************************************
+
+//-------------------------------------------------
+//  read_sample_listxml
+//-------------------------------------------------
+
+static bool read_sample_listxml(wxOutputStream &output)
+{
+#ifdef __WINDOWS__
+	// load the resource
+	const void *buffer;
+	size_t buffer_length;
+	bool success = wxLoadUserResource(&buffer, &buffer_length, wxT("sample_listxml"));
+	assert(success);
+	assert(buffer);
+	assert(buffer_length > 0);
+	wxMemoryInputStream input(buffer, buffer_length);
+
+	// process the sample -listxml output
+	info::database_builder builder;
+	wxString error_message;
+	success = builder.process_xml(input, error_message);
+	assert(success);
+	assert(error_message.empty());
+	(void)success;
+
+	// and emit the results into the memory stream
+	builder.emit(output);
+	return true;
+#else
+	// gracefully fail if not on Windows
+	return false;
+#endif
+}
+
+
+//-------------------------------------------------
+//  test
+//-------------------------------------------------
+
+static void test()
+{
+	// build the sample database
+	wxMemoryOutputStream mem_output_stream;
+	if (!read_sample_listxml(mem_output_stream))
+		return;
+
+	// and process it, validating we've done so successfully
+	wxMemoryInputStream mem_input_stream(mem_output_stream);
+	info::database db;
+	bool db_changed = false;
+	db.set_on_changed([&db_changed]() { db_changed = true; });
+	bool success = db.load(mem_input_stream);
+	assert(success);
+	assert(db_changed);
+	(void)success;
+
+	// spelunk through the resulting db
+	for (info::machine machine : db.machines())
+	{
+		// basic machine properties
+		const wxString &name = machine.name();
+		const wxString &description = machine.description();
+		assert(!name.empty());
+		assert(!description.empty());
+		(void)name;
+		(void)description;
+
+		for (info::device dev : machine.devices())
+		{
+			const wxString &type = dev.type();
+			const wxString &tag = dev.tag();
+			const wxString &instance_name = dev.instance_name();
+			const wxString &extensions = dev.extensions();
+			assert(!type.empty());
+			assert(!tag.empty());
+			assert(!instance_name.empty());
+			assert(!extensions.empty());
+			(void)type;
+			(void)tag;
+			(void)instance_name;
+			(void)extensions;
+		}
+
+		for (info::configuration cfg : machine.configurations())
+		{
+			for (info::configuration_setting setting : cfg.settings())
+			{
+			}
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  validity_checks
+//-------------------------------------------------
+
+static validity_check validity_checks[] =
+{
+	test,
+};

@@ -34,17 +34,8 @@ static bool unaligned_check(const void *ptr, T value)
 //  load_data
 //-------------------------------------------------
 
-static std::vector<std::uint8_t> load_data(const wxString &file_name, info::binaries::header &header)
+static std::vector<std::uint8_t> load_data(wxInputStream &input, info::binaries::header &header)
 {
-	// check for file existance
-	if (!wxFileExists(file_name))
-		return {};
-
-	// open up the file
-	wxFileInputStream input(file_name);
-	if (!input.IsOk())
-		return {};
-
 	// get the file size and read the header
 	size_t size = input.GetSize();
 	if (size <= sizeof(header))
@@ -85,9 +76,24 @@ static const char *get_string_from_data(const std::vector<std::uint8_t> &data, s
 
 bool info::database::load(const wxString &file_name, const wxString &expected_version)
 {
+	// check for file existance
+	if (!wxFileExists(file_name))
+		return false;
+
+	// open up the file
+	wxFileInputStream input(file_name);
+	if (!input.IsOk())
+		return false;
+
+	return load(input, expected_version);
+}
+
+
+bool info::database::load(wxInputStream &input, const wxString &expected_version)
+{
 	// try to load the data
 	binaries::header salted_hdr;
-	std::vector<std::uint8_t> data = load_data(file_name, salted_hdr);
+	std::vector<std::uint8_t> data = load_data(input, salted_hdr);
 	if (data.empty())
 		return false;
 

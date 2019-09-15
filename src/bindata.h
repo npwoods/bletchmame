@@ -83,7 +83,7 @@ namespace bindata
 
 		view subview(std::uint32_t index, std::uint32_t count) const
 		{
-			if (index >= m_count || (index + count > m_count))
+			if (index > m_count || (index + count > m_count))
 				throw false;
 			return count > 0
 				? view(*m_db, m_offset + index * sizeof(TBinary), count)

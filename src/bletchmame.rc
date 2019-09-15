@@ -7,6 +7,10 @@ aaaaaaaa ICON "bletchmame.ico"
 // this icon is used in frame.cpp
 bletchmame ICON "bletchmame.ico"
 
+#ifdef _DEBUG
+sample_listxml TEXT "sample_listxml.xml"
+#endif
+
 // set this to 1 if you don't want to use manifest resource (manifest resource
 // is needed to enable visual styles on Windows XP - see docs/msw/winxp.txt
 // for more information)
