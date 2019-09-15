@@ -41,12 +41,12 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	// prepare data
 	info::binaries::header header = { 0, };
 
-	// reserve space based on what we know about MAME as of 24-Jun-2019 (MAME 0.211)
-	m_machines.reserve(45000);					// 40455 machines
-	m_devices.reserve(9000);					// 8396 devices
-	m_configurations.reserve(32000);			// 29662 configurations
-	m_configuration_conditions.reserve(250);	// 216 conditions
-	m_configuration_settings.reserve(350000);	// 312460 settings
+	// reserve space based on what we know about MAME 0.213
+	m_machines.reserve(40000);					// 36111 machines
+	m_devices.reserve(9000);					// 8211 devices
+	m_configurations.reserve(500000);			// 474840 configurations
+	m_configuration_conditions.reserve(6000);	// 5910 conditions
+	m_configuration_settings.reserve(1500000);	// 1454273 settings
 
 	// header magic variables
 	header.m_size_header					= sizeof(info::binaries::header);
