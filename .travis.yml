@@ -14,6 +14,8 @@ script:
   - mkdir rel
   - cp obj/mingw_win64/release/version.txt rel/version_latest.txt
   - mv BletchMAME.msi rel/BletchMAME_latest.msi
+  - 7z a rel/BletchMAME_latest.zip ./bin/mingw_win64/release/BletchMAME.exe
+  - 7z a rel/BletchMAME_latest.zip plugins
 
 cache:
   directories:
