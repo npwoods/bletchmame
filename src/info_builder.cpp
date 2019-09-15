@@ -226,8 +226,8 @@ void info::database_builder::emit(wxOutputStream &output)
 info::database_builder::string_table::string_table()
 {
 	// reserve space based on expected size (see comments above)
-	m_data.reserve(2400000);		// 2012056 bytes
-	m_map.reserve(100000);			// 91699 entries
+	m_data.reserve(2400000);		// 2001943 bytes
+	m_map.reserve(105000);			// 96686 entries
 
 	// special case; prime empty string to be #0
 	get(std::string());
