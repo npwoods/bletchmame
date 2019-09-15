@@ -57,6 +57,8 @@ namespace info
 		std::vector<info::binaries::configuration>				m_configurations;
 		std::vector<info::binaries::configuration_condition>	m_configuration_conditions;
 		std::vector<info::binaries::configuration_setting>		m_configuration_settings;
+		std::vector<info::binaries::software_list>				m_software_lists;
+		std::vector<info::binaries::ram_option>					m_ram_options;
 		string_table											m_strings;
 	};
 };

@@ -106,7 +106,9 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 		|| (hdr.m_size_device != sizeof(binaries::device))
 		|| (hdr.m_size_configuration != sizeof(binaries::configuration))
 		|| (hdr.m_size_configuration_setting != sizeof(binaries::configuration_setting))
-		|| (hdr.m_size_configuration_condition != sizeof(binaries::configuration_condition)))
+		|| (hdr.m_size_configuration_condition != sizeof(binaries::configuration_condition))
+		|| (hdr.m_size_software_list != sizeof(binaries::software_list))
+		|| (hdr.m_size_ram_option != sizeof(binaries::ram_option)))
 	{
 		return false;
 	}
@@ -116,7 +118,9 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 	size_t configurations_offset			= devices_offset					+ (hdr.m_devices_count					* sizeof(binaries::device));
 	size_t configuration_settings_offset	= configurations_offset				+ (hdr.m_configurations_count			* sizeof(binaries::configuration));
 	size_t configuration_conditions_offset	= configuration_settings_offset		+ (hdr.m_configuration_settings_count	* sizeof(binaries::configuration_setting));
-	size_t string_table_offset				= configuration_conditions_offset	+ (hdr.m_configuration_conditions_count	* sizeof(binaries::configuration_condition));
+	size_t software_lists_offset			= configuration_conditions_offset	+ (hdr.m_configuration_conditions_count * sizeof(binaries::configuration_condition));
+	size_t ram_options_offset				= software_lists_offset				+ (hdr.m_software_lists_count			* sizeof(binaries::software_list));
+	size_t string_table_offset				= ram_options_offset				+ (hdr.m_ram_options_count				* sizeof(binaries::ram_option));
 
 	// sanity check the string table
 	if (data.size() < string_table_offset + 1)
@@ -148,6 +152,10 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 	m_configurations_count = hdr.m_configurations_count;
 	m_configuration_settings_offset = configuration_settings_offset;
 	m_configuration_settings_count = hdr.m_configuration_settings_count;
+	m_software_lists_offset = software_lists_offset;
+	m_software_lists_count = hdr.m_software_lists_count;
+	m_ram_options_offset = ram_options_offset;
+	m_ram_options_count = hdr.m_ram_options_count;
 
 	// ...and set up string table info
 	m_loaded_strings.clear();
@@ -176,6 +184,10 @@ void info::database::reset()
 	m_configurations_count = 0;
 	m_configuration_settings_offset = 0;
 	m_configuration_settings_count = 0;
+	m_software_lists_offset = 0;
+	m_software_lists_count = 0;
+	m_ram_options_offset = 0;
+	m_ram_options_count = 0;
 	m_string_table_offset = 0;
 	m_loaded_strings.clear();
 	m_version = &util::g_empty_string;

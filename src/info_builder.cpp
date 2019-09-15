@@ -15,6 +15,17 @@
 
 
 //**************************************************************************
+//  LOCALS
+//**************************************************************************
+
+static const util::enum_parser<info::software_list::status_type> s_status_type =
+{
+	{ "original", info::software_list::status_type::ORIGINAL, },
+	{ "compatible", info::software_list::status_type::COMPATIBLE }
+};
+
+
+//**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
 
@@ -51,6 +62,8 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	m_configurations.reserve(500000);			// 474840 configurations
 	m_configuration_conditions.reserve(6000);	// 5910 conditions
 	m_configuration_settings.reserve(1500000);	// 1454273 settings
+	m_software_lists.reserve(4200);				// 3977 software lists
+	m_ram_options.reserve(3800);				// 3616 ram options
 
 	// header magic variables
 	header.m_size_header					= sizeof(info::binaries::header);
@@ -59,6 +72,8 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	header.m_size_configuration				= sizeof(info::binaries::configuration);
 	header.m_size_configuration_setting		= sizeof(info::binaries::configuration_setting);
 	header.m_size_configuration_condition	= sizeof(info::binaries::configuration_condition);
+	header.m_size_software_list				= sizeof(info::binaries::software_list);
+	header.m_size_ram_option				= sizeof(info::binaries::ram_option);
 
 	// parse the -listxml output
 	XmlParser xml;
@@ -82,6 +97,10 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		machine.m_rom_of_strindex		= attributes.Get("romof", data) ? m_strings.get(data) : 0;
 		machine.m_configurations_index	= to_uint32(m_configurations.size());
 		machine.m_configurations_count	= 0;
+		machine.m_software_lists_index	= to_uint32(m_software_lists.size());
+		machine.m_software_lists_count	= 0;
+		machine.m_ram_options_index		= to_uint32(m_ram_options.size());
+		machine.m_ram_options_count		= 0;
 		machine.m_devices_index			= to_uint32(m_devices.size());
 		machine.m_devices_count			= 0;
 		machine.m_description_strindex	= 0;
@@ -170,6 +189,31 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
 	});
+	xml.OnElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		info::software_list::status_type status;
+		info::binaries::software_list &software_list = m_software_lists.emplace_back();
+		software_list.m_name_strindex			= attributes.Get("name", data) ? m_strings.get(data) : 0;
+		software_list.m_filter_strindex			= attributes.Get("filter", data) ? m_strings.get(data) : 0;
+		software_list.m_status					= (uint8_t) (attributes.Get("status", status, s_status_type) ? status : info::software_list::status_type::ORIGINAL);
+		util::last(m_machines).m_software_lists_count++;
+	});
+	xml.OnElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		bool b;
+		info::binaries::ram_option &ram_option = m_ram_options.emplace_back();
+		ram_option.m_name_strindex				= attributes.Get("name", data) ? m_strings.get(data) : 0;
+		ram_option.m_is_default					= attributes.Get("default", b) && b;
+		ram_option.m_value						= 0;
+		util::last(m_machines).m_ram_options_count++;
+	});
+	xml.OnElementEnd({ "mame", "machine", "ramoption" }, [this](wxString &&content)
+	{
+		unsigned long val;
+		util::last(m_ram_options).m_value = content.ToULong(&val) ? val : 0;
+	});
 
 	// parse!
 	bool success;
@@ -200,6 +244,8 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	header.m_configurations_count			= to_uint32(m_configurations.size());
 	header.m_configuration_settings_count	= to_uint32(m_configuration_settings.size());
 	header.m_configuration_conditions_count	= to_uint32(m_configuration_conditions.size());
+	header.m_software_lists_count			= to_uint32(m_software_lists.size());
+	header.m_ram_options_count				= to_uint32(m_ram_options.size());
 
 	// and salt it
 	m_salted_header = util::salt(header, info::binaries::salt());
@@ -217,12 +263,14 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 void info::database_builder::emit(wxOutputStream &output) const
 {
 	output.Write(&m_salted_header, sizeof(m_salted_header));
-	output.Write(m_machines.data(), m_machines.size() * sizeof(m_machines[0]));
-	output.Write(m_devices.data(), m_devices.size() * sizeof(m_devices[0]));
-	output.Write(m_configurations.data(), m_configurations.size() * sizeof(m_configurations[0]));
-	output.Write(m_configuration_settings.data(), m_configuration_settings.size() * sizeof(m_configuration_settings[0]));
-	output.Write(m_configuration_conditions.data(), m_configuration_conditions.size() * sizeof(m_configuration_conditions[0]));
-	output.Write(m_strings.data().data(), m_strings.data().size() * sizeof(m_strings.data()[0]));
+	output.Write(m_machines.data(),					m_machines.size()					* sizeof(m_machines[0]));
+	output.Write(m_devices.data(),					m_devices.size()					* sizeof(m_devices[0]));
+	output.Write(m_configurations.data(),			m_configurations.size()				* sizeof(m_configurations[0]));
+	output.Write(m_configuration_settings.data(),	m_configuration_settings.size()		* sizeof(m_configuration_settings[0]));
+	output.Write(m_configuration_conditions.data(),	m_configuration_conditions.size()	* sizeof(m_configuration_conditions[0]));
+	output.Write(m_software_lists.data(),			m_software_lists.size()				* sizeof(m_software_lists[0]));
+	output.Write(m_ram_options.data(),				m_ram_options.size()				* sizeof(m_ram_options[0]));
+	output.Write(m_strings.data().data(),			m_strings.data().size()				* sizeof(m_strings.data()[0]));
 }
 
 
@@ -345,6 +393,7 @@ static void test()
 	(void)success;
 
 	// spelunk through the resulting db
+	int setting_count = 0, software_list_count = 0, ram_option_count = 0;
 	for (info::machine machine : db.machines())
 	{
 		// basic machine properties
@@ -374,10 +423,18 @@ static void test()
 		for (info::configuration cfg : machine.configurations())
 		{
 			for (info::configuration_setting setting : cfg.settings())
-			{
-			}
+				setting_count++;
 		}
+
+		for (info::software_list swlist : machine.software_lists())
+			software_list_count++;
+
+		for (info::ram_option ramopt : machine.ram_options())
+			ram_option_count++;
 	}
+	assert(setting_count > 0);
+	assert(software_list_count > 0);
+	assert(ram_option_count > 0);
 }
 
 

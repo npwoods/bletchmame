@@ -40,12 +40,16 @@ namespace info
 			std::uint8_t	m_size_configuration;
 			std::uint8_t	m_size_configuration_setting;
 			std::uint8_t	m_size_configuration_condition;
+			std::uint8_t	m_size_software_list;
+			std::uint8_t	m_size_ram_option;
 			std::uint32_t	m_build_strindex;
 			std::uint32_t	m_machines_count;
 			std::uint32_t	m_devices_count;
 			std::uint32_t	m_configurations_count;
 			std::uint32_t	m_configuration_settings_count;
 			std::uint32_t	m_configuration_conditions_count;
+			std::uint32_t	m_software_lists_count;
+			std::uint32_t	m_ram_options_count;
 		};
 
 		struct machine
@@ -59,6 +63,10 @@ namespace info
 			std::uint32_t	m_manufacturer_strindex;
 			std::uint32_t	m_configurations_index;
 			std::uint32_t	m_configurations_count;
+			std::uint32_t	m_software_lists_index;
+			std::uint32_t	m_software_lists_count;
+			std::uint32_t	m_ram_options_index;
+			std::uint32_t	m_ram_options_count;
 			std::uint32_t	m_devices_index;
 			std::uint32_t	m_devices_count;
 		};
@@ -94,6 +102,20 @@ namespace info
 			std::uint32_t	m_instance_name_strindex;
 			std::uint32_t	m_extensions_strindex;
 			std::uint8_t	m_mandatory;
+		};
+
+		struct software_list
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint32_t	m_filter_strindex;
+			std::uint8_t	m_status;
+		};
+
+		struct ram_option
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint32_t	m_value;
+			std::uint8_t	m_is_default;
 		};
 
 		class salt
@@ -149,7 +171,7 @@ namespace info
 	};
 
 
-	// ======================> configuration_setting
+	// ======================> configuration
 	class configuration : public bindata::entry<database, configuration, binaries::configuration>
 	{
 	public:
@@ -165,7 +187,49 @@ namespace info
 	};
 
 
-	// ======================> configuration_setting
+	// ======================> software_list
+	class software_list : public bindata::entry<database, software_list, binaries::software_list>
+	{
+	public:
+		enum class status_type
+		{
+			ORIGINAL,
+			COMPATIBLE
+		};
+
+		software_list(const database &db, const binaries::software_list &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const wxString &name() const { return get_string(inner().m_name_strindex); }
+		const wxString &filter() const { return get_string(inner().m_filter_strindex); }
+		status_type status() const { return static_cast<status_type>(inner().m_status); }
+	};
+
+
+	// ======================> ram_option
+	class ram_option : public bindata::entry<database, ram_option, binaries::ram_option>
+	{
+	public:
+		enum class status_type
+		{
+			ORIGINAL,
+			COMPATIBLE
+		};
+
+		ram_option(const database &db, const binaries::ram_option &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const wxString &name() const { return get_string(inner().m_name_strindex); }
+		std::uint32_t value() const { return inner().m_value; }
+		bool is_default() const { return inner().m_is_default; }
+	};
+
+
+	// ======================> machine
 	class machine : public bindata::entry<database, machine, binaries::machine>
 	{
 	public:
@@ -186,6 +250,8 @@ namespace info
 		// views
 		device::view 				devices() const;
 		configuration::view			configurations() const;
+		software_list::view			software_lists() const;
+		ram_option::view			ram_options() const;
 	};
 
 
@@ -203,6 +269,10 @@ namespace info
 			, m_configurations_count(0)
 			, m_configuration_settings_offset(0)
 			, m_configuration_settings_count(0)
+			, m_software_lists_offset(0)
+			, m_software_lists_count(0)
+			, m_ram_options_offset(0)
+			, m_ram_options_count(0)
 			, m_string_table_offset(0)
 			, m_version(&util::g_empty_string)
 		{
@@ -221,6 +291,8 @@ namespace info
 		auto devices() const				{ return device::view(*this, m_devices_offset, m_devices_count); }
 		auto configurations() const			{ return configuration::view(*this, m_configurations_offset, m_configurations_count); }
 		auto configuration_settings() const	{ return configuration_setting::view(*this, m_configuration_settings_offset, m_configuration_settings_count); }
+		auto software_lists() const			{ return software_list::view(*this, m_software_lists_offset, m_software_lists_count); }
+		auto ram_options() const			{ return ram_option::view(*this, m_ram_options_offset, m_ram_options_count); }
 
 		// should only be called by info classes
 		const wxString &get_string(std::uint32_t offset) const;
@@ -235,6 +307,10 @@ namespace info
 		std::uint32_t										m_configurations_count;
 		std::uint32_t										m_configuration_settings_offset;
 		std::uint32_t										m_configuration_settings_count;
+		std::uint32_t										m_software_lists_offset;
+		std::uint32_t										m_software_lists_count;
+		std::uint32_t										m_ram_options_offset;
+		std::uint32_t										m_ram_options_count;
 		size_t												m_string_table_offset;
 		mutable std::unordered_map<std::uint32_t, wxString>	m_loaded_strings;
 		const wxString *									m_version;
@@ -247,6 +323,8 @@ namespace info
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
 	inline configuration::view			machine::configurations() const	{ return db().configurations().subview(inner().m_configurations_index, inner().m_configurations_count); }
 	inline configuration_setting::view	configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }
+	inline software_list::view			machine::software_lists() const			{ return db().software_lists().subview(inner().m_software_lists_index, inner().m_software_lists_count); }
+	inline ram_option::view				machine::ram_options() const			{ return db().ram_options().subview(inner().m_ram_options_index, inner().m_ram_options_count); }
 };
 
 
