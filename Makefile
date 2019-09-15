@@ -45,6 +45,7 @@ OBJECTFILES=\
 	$(OBJ)/dialogs/switches.o	\
 	$(OBJ)/frame.o				\
 	$(OBJ)/info.o				\
+	$(OBJ)/info_builder.o		\
 	$(OBJ)/job.o				\
 	$(OBJ)/listxmltask.o		\
 	$(OBJ)/prefs.o				\

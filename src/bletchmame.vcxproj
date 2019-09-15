@@ -239,6 +239,7 @@
     <ClCompile Include="dialogs/switches.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="info.cpp" />
+    <ClCompile Include="info_builder.cpp" />
     <ClCompile Include="job.cpp" />
     <ClCompile Include="listxmltask.cpp" />
     <ClCompile Include="prefs.cpp" />
@@ -267,6 +268,7 @@
     <ClInclude Include="dialogs/switches.h" />
     <ClInclude Include="frame.h" />
     <ClInclude Include="info.h" />
+    <ClInclude Include="info_builder.h" />
     <ClInclude Include="job.h" />
     <ClInclude Include="listxmltask.h" />
     <ClInclude Include="prefs.h" />
