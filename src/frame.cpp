@@ -2090,20 +2090,17 @@ void MameFrame::UpdateTitleBar()
 void MameFrame::UpdateMenuBar()
 {
 	// are we supposed to show the menu bar?
-	bool menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
+	m_menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
 
 	// is this different than the current state?
-	if (menu_bar_shown != WindowHasMenuBar(*this))
+	if (m_menu_bar_shown.get() != WindowHasMenuBar(*this))
 	{
-		// record this state
-		m_menu_bar_shown = menu_bar_shown;
-
 		// when we hide the menu bar, we disable the accelerators
-		m_menu_bar->SetAcceleratorTable(menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
+		m_menu_bar->SetAcceleratorTable(m_menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
 
 #ifdef WIN32
 		// Win32 specific code
-		SetMenu(GetHWND(), menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
+		SetMenu(GetHWND(), m_menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
 #else
 		throw false;
 #endif
