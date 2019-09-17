@@ -20,29 +20,6 @@ const wxString util::g_empty_string;
 
 
 //-------------------------------------------------
-//  string_hash::operator()
-//-------------------------------------------------
-
-size_t util::string_hash::operator()(const char *s) const
-{
-	size_t result = 31337;
-	for (size_t i = 0; s[i]; i++)
-		result = ((result << 5) + result) + s[i];
-	return result;
-}
-
-
-//-------------------------------------------------
-//  string_compare::operator()
-//-------------------------------------------------
-
-bool util::string_compare::operator()(const char *s1, const char *s2) const
-{
-	return !strcmp(s1, s2);
-}
-
-
-//-------------------------------------------------
 //  append_conditionally_quoted
 //-------------------------------------------------
 

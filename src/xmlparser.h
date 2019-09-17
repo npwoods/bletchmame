@@ -128,7 +128,7 @@ private:
 	{
 		typedef std::shared_ptr<Node> ptr;
 		typedef std::weak_ptr<Node> weak_ptr;
-		typedef std::unordered_map<const char *, Node::ptr, util::string_hash, util::string_compare> Map;
+		typedef std::unordered_map<const char *, Node::ptr> Map;
 
 		OnBeginElementCallback	m_begin_func;
 		OnEndElementCallback	m_end_func;

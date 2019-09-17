@@ -14,6 +14,69 @@
 #include <wx/event.h>
 #include <unordered_map>
 #include <optional>
+#include <functional>
+
+
+//**************************************************************************
+//  HASHES AND EQUIVALENCY
+//**************************************************************************
+
+namespace util
+{
+	template<class TStr>
+	std::size_t string_hash(const TStr *s, std::size_t length)
+	{
+		std::size_t result = 31337;
+		for (std::size_t i = 0; i < length; i++)
+			result = ((result << 5) + result) + s[i];
+		return result;
+	}
+};
+
+
+namespace std
+{
+	template<> class hash<const char *>
+	{
+	public:
+		std::size_t operator()(const char *s) const
+		{
+			return util::string_hash(s, strlen(s));
+		}
+	};
+
+	template<> class equal_to<const char *>
+	{
+	public:
+		bool operator()(const char *s1, const char *s2) const
+		{
+			return !strcmp(s1, s2);
+		}
+	};
+
+#if !wxUSE_STD_STRING
+	template<> class hash<wxString>
+	{
+	public:
+		std::size_t operator()(const wxString &s) const
+		{
+			const wxChar *ptr = s.c_str();
+			return util::string_hash(ptr, s.size());
+		}
+	};
+
+	template<> class equal_to<const char *>
+	{
+	public:
+		bool operator()(const wxString &s1, const wxString &s2) const
+		{
+			return s1 == s2;
+		}
+	};
+#endif // wxUSE_STD_STRING
+}
+
+
 
 namespace util {
 
@@ -64,22 +127,6 @@ auto find_if_ptr(TContainer &container, TPredicate predicate)
 //  ENUM UTILITY CLASSES
 //**************************************************************************
 
-// ======================> string_hash
-class string_hash
-{
-public:
-	size_t operator()(const char *s) const;
-};
-
-
-// ======================> string_compare
-class string_compare
-{
-public:
-	bool operator()(const char *s1, const char *s2) const;
-};
-
-
 // ======================> enum_parser
 template<typename T>
 class enum_parser
@@ -107,7 +154,7 @@ public:
 	}
 
 private:
-	const std::unordered_map<const char *, T, string_hash, string_compare> m_map;
+	const std::unordered_map<const char *, T> m_map;
 };
 
 
