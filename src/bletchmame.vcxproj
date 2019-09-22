@@ -245,6 +245,7 @@
     <ClCompile Include="prefs.cpp" />
     <ClCompile Include="profile.cpp" />
     <ClCompile Include="runmachinetask.cpp" />
+    <ClCompile Include="softwarelist.cpp" />
     <ClCompile Include="status.cpp" />
     <ClCompile Include="task.cpp" />
     <ClCompile Include="utility.cpp" />
@@ -274,6 +275,7 @@
     <ClInclude Include="prefs.h" />
     <ClInclude Include="profile.h" />
     <ClInclude Include="runmachinetask.h" />
+    <ClInclude Include="softwarelist.h" />
     <ClInclude Include="status.h" />
     <ClInclude Include="task.h" />
     <ClInclude Include="utility.h" />

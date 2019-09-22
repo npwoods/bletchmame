@@ -9,6 +9,7 @@ bletchmame ICON "bletchmame.ico"
 
 #ifdef _DEBUG
 testasset_listxml TEXT "testassets/listxml.xml"
+testasset_softlist TEXT "testassets/softlist.xml"
 #endif
 
 // set this to 1 if you don't want to use manifest resource (manifest resource

@@ -51,6 +51,7 @@ OBJECTFILES=\
 	$(OBJ)/prefs.o				\
 	$(OBJ)/profile.o			\
 	$(OBJ)/runmachinetask.o		\
+	$(OBJ)/softwarelist.o		\
 	$(OBJ)/status.o				\
 	$(OBJ)/task.o				\
 	$(OBJ)/utility.o			\
