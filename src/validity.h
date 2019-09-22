@@ -12,6 +12,13 @@
 #define VALIDITY_H
 
 #include <functional>
+#include <optional>
+#include <string_view>
+
+
+//**************************************************************************
+//  VALIDITY CHECK CLASSES
+//**************************************************************************
 
 // ======================> real_validity_check
 class real_validity_check
@@ -49,5 +56,12 @@ typedef real_validity_check	validity_check;
 #else
 typedef fake_validity_check	validity_check;
 #endif // _DEBUG
+
+
+//**************************************************************************
+//  TEST ASSET LOADING
+//**************************************************************************
+
+std::optional<std::string_view> load_test_asset(const char *asset_name);
 
 #endif // VALIDITY_H

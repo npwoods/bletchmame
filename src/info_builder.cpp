@@ -343,31 +343,22 @@ const std::vector<char> &info::database_builder::string_table::data() const
 
 static bool read_sample_listxml(wxOutputStream &output)
 {
-#ifdef __WINDOWS__
-	// load the resource
-	const void *buffer;
-	size_t buffer_length;
-	bool success = wxLoadUserResource(&buffer, &buffer_length, wxT("testasset_listxml"));
-	assert(success);
-	assert(buffer);
-	assert(buffer_length > 0);
-	wxMemoryInputStream input(buffer, buffer_length);
+	std::optional<std::string_view> asset = load_test_asset("listxml");
+	if (asset.has_value())
+	{
+		wxMemoryInputStream input(asset.value().data(), asset.value().size());
 
-	// process the sample -listxml output
-	info::database_builder builder;
-	wxString error_message;
-	success = builder.process_xml(input, error_message);
-	assert(success);
-	assert(error_message.empty());
-	(void)success;
+		// process the sample -listxml output
+		info::database_builder builder;
+		wxString error_message;
+		bool success = builder.process_xml(input, error_message);
+		if (!success || !error_message.empty())
+			throw false;
 
-	// and emit the results into the memory stream
-	builder.emit(output);
-	return true;
-#else
-	// gracefully fail if not on Windows
-	return false;
-#endif
+		// and emit the results into the memory stream
+		builder.emit(output);
+	}
+	return asset.has_value();
 }
 
 
