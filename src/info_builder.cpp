@@ -347,7 +347,7 @@ static bool read_sample_listxml(wxOutputStream &output)
 	// load the resource
 	const void *buffer;
 	size_t buffer_length;
-	bool success = wxLoadUserResource(&buffer, &buffer_length, wxT("sample_listxml"));
+	bool success = wxLoadUserResource(&buffer, &buffer_length, wxT("testasset_listxml"));
 	assert(success);
 	assert(buffer);
 	assert(buffer_length > 0);

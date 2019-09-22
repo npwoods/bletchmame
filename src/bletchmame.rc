@@ -8,7 +8,7 @@ aaaaaaaa ICON "bletchmame.ico"
 bletchmame ICON "bletchmame.ico"
 
 #ifdef _DEBUG
-sample_listxml TEXT "sample_listxml.xml"
+testasset_listxml TEXT "testassets/listxml.xml"
 #endif
 
 // set this to 1 if you don't want to use manifest resource (manifest resource
