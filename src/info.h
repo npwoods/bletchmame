@@ -84,8 +84,8 @@ namespace info
 		{
 			std::uint32_t	m_tag_strindex;
 			std::uint32_t	m_mask;
-			std::uint32_t	m_relation_strindex;
 			std::uint32_t	m_value;
+			std::uint8_t	m_relation;
 		};
 
 		struct configuration_setting
@@ -170,6 +170,33 @@ namespace info
 
 		const wxString &name() const { return get_string(inner().m_name_strindex); }
 		std::uint32_t value() const { return inner().m_value; }
+	};
+
+
+	// ======================> configuration_condition
+	class configuration_condition : public bindata::entry<database, configuration_condition, binaries::configuration_condition>
+	{
+	public:
+		enum class relation_t
+		{
+			UNKNOWN,
+			EQ,
+			NE,
+			GT,
+			LE,
+			LT,
+			GE
+		};
+
+		configuration_condition(const database &db, const binaries::configuration_condition &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const wxString &tag() const { return get_string(inner().m_tag_strindex); }
+		std::uint32_t mask() const { return inner().m_mask; }
+		std::uint32_t value() const { return inner().m_value; }
+		relation_t relation() const { return static_cast<relation_t>(inner().m_relation); }
 	};
 
 
@@ -289,12 +316,13 @@ namespace info
 		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
 
 		// views
-		auto machines() const				{ return machine::view(*this, 0, m_machines_count); }
-		auto devices() const				{ return device::view(*this, m_devices_offset, m_devices_count); }
-		auto configurations() const			{ return configuration::view(*this, m_configurations_offset, m_configurations_count); }
-		auto configuration_settings() const	{ return configuration_setting::view(*this, m_configuration_settings_offset, m_configuration_settings_count); }
-		auto software_lists() const			{ return software_list::view(*this, m_software_lists_offset, m_software_lists_count); }
-		auto ram_options() const			{ return ram_option::view(*this, m_ram_options_offset, m_ram_options_count); }
+		auto machines() const					{ return machine::view(*this, 0, m_machines_count); }
+		auto devices() const					{ return device::view(*this, m_devices_offset, m_devices_count); }
+		auto configurations() const				{ return configuration::view(*this, m_configurations_offset, m_configurations_count); }
+		auto configuration_settings() const		{ return configuration_setting::view(*this, m_configuration_settings_offset, m_configuration_settings_count); }
+		auto configuration_conditions() const	{ return configuration_condition::view(*this, m_configuration_conditions_offset, m_configuration_conditions_count); }
+		auto software_lists() const				{ return software_list::view(*this, m_software_lists_offset, m_software_lists_count); }
+		auto ram_options() const				{ return ram_option::view(*this, m_ram_options_offset, m_ram_options_count); }
 
 		// should only be called by info classes
 		const wxString &get_string(std::uint32_t offset) const;
@@ -309,6 +337,8 @@ namespace info
 		std::uint32_t										m_configurations_count;
 		std::uint32_t										m_configuration_settings_offset;
 		std::uint32_t										m_configuration_settings_count;
+		std::uint32_t										m_configuration_conditions_offset;
+		std::uint32_t										m_configuration_conditions_count;
 		std::uint32_t										m_software_lists_offset;
 		std::uint32_t										m_software_lists_count;
 		std::uint32_t										m_ram_options_offset;

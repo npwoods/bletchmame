@@ -152,6 +152,8 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 	m_configurations_count = hdr.m_configurations_count;
 	m_configuration_settings_offset = configuration_settings_offset;
 	m_configuration_settings_count = hdr.m_configuration_settings_count;
+	m_configuration_conditions_offset = configuration_conditions_offset;
+	m_configuration_conditions_count = hdr.m_configuration_conditions_count;
 	m_software_lists_offset = software_lists_offset;
 	m_software_lists_count = hdr.m_software_lists_count;
 	m_ram_options_offset = ram_options_offset;
@@ -184,6 +186,8 @@ void info::database::reset()
 	m_configurations_count = 0;
 	m_configuration_settings_offset = 0;
 	m_configuration_settings_count = 0;
+	m_configuration_conditions_offset = 0;
+	m_configuration_conditions_count = 0;
 	m_software_lists_offset = 0;
 	m_software_lists_count = 0;
 	m_ram_options_offset = 0;

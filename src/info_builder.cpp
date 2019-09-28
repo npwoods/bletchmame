@@ -18,10 +18,21 @@
 //  LOCALS
 //**************************************************************************
 
-static const util::enum_parser<info::software_list::status_type> s_status_type =
+static const util::enum_parser<info::software_list::status_type> s_status_parser =
 {
 	{ "original", info::software_list::status_type::ORIGINAL, },
 	{ "compatible", info::software_list::status_type::COMPATIBLE }
+};
+
+
+static const util::enum_parser<info::configuration_condition::relation_t> s_relation_parser =
+{
+	{ "eq", info::configuration_condition::relation_t::EQ },
+	{ "ne", info::configuration_condition::relation_t::NE },
+	{ "gt", info::configuration_condition::relation_t::GT },
+	{ "le", info::configuration_condition::relation_t::LE },
+	{ "lt", info::configuration_condition::relation_t::LT },
+	{ "ge", info::configuration_condition::relation_t::GE }
 };
 
 
@@ -149,8 +160,9 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = m_configuration_conditions.emplace_back();
+		configuration_condition::relation_t relation;
 		configuration_condition.m_tag_strindex			= attributes.Get("tag", data) ? m_strings.get(data) : 0;
-		configuration_condition.m_relation_strindex		= attributes.Get("relation", data) ? m_strings.get(data) : 0;
+		configuration_condition.m_relation				= (uint8_t)(attributes.Get("relation", relation, s_relation_parser) ? relation : info::configuration_condition::relation_t::UNKNOWN);
 		attributes.Get("mask", configuration_condition.m_mask);
 		attributes.Get("value", configuration_condition.m_value);
 	});
@@ -197,7 +209,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		info::binaries::software_list &software_list = m_software_lists.emplace_back();
 		software_list.m_name_strindex			= attributes.Get("name", data) ? m_strings.get(data) : 0;
 		software_list.m_filter_strindex			= attributes.Get("filter", data) ? m_strings.get(data) : 0;
-		software_list.m_status					= (uint8_t) (attributes.Get("status", status, s_status_type) ? status : info::software_list::status_type::ORIGINAL);
+		software_list.m_status					= (uint8_t) (attributes.Get("status", status, s_status_parser) ? status : info::software_list::status_type::ORIGINAL);
 		util::last(m_machines).m_software_lists_count++;
 	});
 	xml.OnElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
