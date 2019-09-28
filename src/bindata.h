@@ -80,6 +80,7 @@ namespace bindata
 		}
 
 		size_t size() const { return m_count; }
+		bool empty() const { return size() == 0; }
 
 		view subview(std::uint32_t index, std::uint32_t count) const
 		{
