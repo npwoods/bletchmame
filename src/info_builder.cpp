@@ -161,6 +161,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		info::binaries::device &device = m_devices.emplace_back();
 		device.m_type_strindex			= attributes.Get("type", data) ? m_strings.get(data) : 0;
 		device.m_tag_strindex			= attributes.Get("tag", data) ? m_strings.get(data) : 0;
+		device.m_interface_strindex		= attributes.Get("interface", data) ? m_strings.get(data) : 0;
 		device.m_mandatory				= attributes.Get("mandatory", mandatory) && mandatory ? 1 : 0;
 		device.m_instance_name_strindex	= 0;
 		device.m_extensions_strindex	= 0;

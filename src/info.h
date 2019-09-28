@@ -99,6 +99,7 @@ namespace info
 		{
 			std::uint32_t	m_type_strindex;
 			std::uint32_t	m_tag_strindex;
+			std::uint32_t	m_interface_strindex;
 			std::uint32_t	m_instance_name_strindex;
 			std::uint32_t	m_extensions_strindex;
 			std::uint8_t	m_mandatory;
@@ -151,6 +152,7 @@ namespace info
 
 		const wxString &type() const { return get_string(inner().m_type_strindex); }
 		const wxString &tag() const { return get_string(inner().m_tag_strindex); }
+		const wxString &devinterface() const { return get_string(inner().m_interface_strindex); }
 		const wxString &instance_name() const { return get_string(inner().m_instance_name_strindex); }
 		const wxString &extensions() const { return get_string(inner().m_extensions_strindex); }
 		bool mandatory() const { return inner().m_mandatory != 0; }
