@@ -232,6 +232,7 @@
     <ClCompile Include="app.cpp" />
     <ClCompile Include="client.cpp" />
     <ClCompile Include="dialogs/images.cpp" />
+    <ClCompile Include="dialogs/choosesw.cpp" />
     <ClCompile Include="dialogs/console.cpp" />
     <ClCompile Include="dialogs/inputs.cpp" />
     <ClCompile Include="dialogs/loading.cpp" />
@@ -262,6 +263,7 @@
     <ClInclude Include="bindata.h" />
     <ClInclude Include="client.h" />
     <ClInclude Include="dialogs/images.h" />
+    <ClInclude Include="dialogs/choosesw.h" />
     <ClInclude Include="dialogs/console.h" />
     <ClInclude Include="dialogs/inputs.h" />
     <ClInclude Include="dialogs/loading.h" />

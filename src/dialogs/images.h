@@ -16,6 +16,9 @@
 #include <observable/observable.hpp>
 
 #include "status.h"
+#include "softwarelist.h"
+#include "info.h"
+
 
 // pesky Win32 declaration
 #ifdef LoadImage
@@ -25,9 +28,11 @@
 class IImagesHost
 {
 public:
+	virtual info::machine GetMachine() = 0;
 	virtual observable::value<std::vector<status::image>> &GetImages() = 0;
 	virtual const wxString &GetWorkingDirectory() const = 0;
 	virtual void SetWorkingDirectory(wxString &&dir) = 0;
+	virtual const std::vector<software_list> &GetSoftwareLists() = 0;
 	virtual const std::vector<wxString> &GetRecentFiles(const wxString &tag) const = 0;
 	virtual std::vector<wxString> GetExtensions(const wxString &tag) const = 0;
 	virtual void CreateImage(const wxString &tag, wxString &&path) = 0;

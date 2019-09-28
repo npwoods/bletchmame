@@ -16,9 +16,18 @@
 #include <wx/filedlg.h>
 
 #include "dialogs/images.h"
+#include "dialogs/choosesw.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "utility.h"
+
+
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+// software list support is not fully baked yet
+#define HAS_SOFTWARE_LISTS	0
 
 
 //**************************************************************************
@@ -57,8 +66,10 @@ namespace
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
 		bool ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable);
+		std::vector<SoftwareAndPart> GetSoftwareListParts(const wxString &tag);
 		bool CreateImage(const wxString &tag);
 		bool LoadImage(const wxString &tag);
+		bool LoadSoftwareListPart(const wxString &tag, const std::vector<SoftwareAndPart> &parts);
 		bool UnloadImage(const wxString &tag);
 		wxString GetWildcardString(const wxString &tag, bool support_zip) const;
 		void UpdateImageGrid();
@@ -214,17 +225,25 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 		// popup menu IDs
 		ID_CREATE_IMAGE = ID_LAST + 1000,
 		ID_LOAD_IMAGE,
-		ID_UNLOAD_IMAGE,
+		ID_LOAD_SOFTWARE_PART,
+		ID_UNLOAD,
 		ID_RECENT_FILES
 	};
+
+	// get software list parts that can be loaded (if enabled)
+	std::vector<SoftwareAndPart> parts;
+	if (HAS_SOFTWARE_LISTS)
+		parts = GetSoftwareListParts(tag);
 
 	// setup popup menu
 	MenuWithResult popup_menu;
 	if (is_creatable)
 		popup_menu.Append(ID_CREATE_IMAGE, "Create...");
-	popup_menu.Append(ID_LOAD_IMAGE, "Load...");
-	popup_menu.Append(ID_UNLOAD_IMAGE, "Unload");
-	popup_menu.Enable(ID_UNLOAD_IMAGE, is_unloadable);
+	popup_menu.Append(ID_LOAD_IMAGE, HAS_SOFTWARE_LISTS ? "Load Image..." : "Load...");
+	if (!parts.empty())
+		popup_menu.Append(ID_LOAD_SOFTWARE_PART, "Load Software List Part...");
+	popup_menu.Append(ID_UNLOAD, "Unload");
+	popup_menu.Enable(ID_UNLOAD, is_unloadable);
 
 	// recent files
 	const std::vector<wxString> &recent_files = m_host.GetRecentFiles(tag);
@@ -258,7 +277,11 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 		result = LoadImage(tag);
 		break;
 
-	case ID_UNLOAD_IMAGE:
+	case ID_LOAD_SOFTWARE_PART:
+		result = LoadSoftwareListPart(tag, parts);
+		break;
+
+	case ID_UNLOAD:
 		result = UnloadImage(tag);
 		break;
 
@@ -272,6 +295,42 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 	}
 
 	return false;
+}
+
+
+//-------------------------------------------------
+//  GetSoftwareListParts
+//-------------------------------------------------
+
+std::vector<SoftwareAndPart> ImagesDialog::GetSoftwareListParts(const wxString &tag)
+{
+	std::vector<SoftwareAndPart> results;
+
+	// find the device
+	auto iter = std::find_if(
+		m_host.GetMachine().devices().cbegin(),
+		m_host.GetMachine().devices().end(),
+		[&tag](info::device dev) { return tag == dev.tag(); });
+	if (iter != m_host.GetMachine().devices().end())
+	{
+		const wxString &dev_interface = (*iter).devinterface();
+
+		// check software lists
+		const std::vector<software_list> &softlists = m_host.GetSoftwareLists();
+		for (const software_list &softlist : softlists)
+		{
+			for (const software_list::software &software : softlist.get_software())
+			{
+				for (const software_list::part &part : software.m_parts)
+				{
+					if (dev_interface == part.m_interface)
+						results.emplace_back(software, part);
+				}
+			}
+		}
+	}
+
+	return results;
 }
 
 
@@ -331,6 +390,22 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 	// and load the image
 	m_host.LoadImage(tag, std::move(path));
 	return true;
+}
+
+
+//-------------------------------------------------
+//  LoadSoftwareListPart
+//-------------------------------------------------
+
+bool ImagesDialog::LoadSoftwareListPart(const wxString &tag, const std::vector<SoftwareAndPart> &parts)
+{
+	std::optional<int> rc = show_choose_software_dialog(*this, parts);
+	if (rc.has_value())
+	{
+		wxString part_name = wxString::Format("%s:%s", parts[rc.value()].software().m_name, parts[rc.value()].part().m_name);
+		m_host.LoadImage(tag, std::move(part_name));
+	}
+	return rc.has_value();
 }
 
 

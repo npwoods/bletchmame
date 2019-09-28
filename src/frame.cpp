@@ -97,9 +97,15 @@ namespace
 		public:
 			ImagesHost(MameFrame &host);
 
+			virtual info::machine GetMachine()
+			{
+				return m_host.GetRunningMachine();
+			}
+
 			virtual observable::value<std::vector<status::image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
+			virtual const std::vector<software_list> &GetSoftwareLists();
 			virtual const std::vector<wxString> &GetRecentFiles(const wxString &tag) const;
 			virtual std::vector<wxString> GetExtensions(const wxString &tag) const;
 			virtual void CreateImage(const wxString &tag, wxString &&path);
@@ -176,6 +182,9 @@ namespace
 
 		// machine list indirection
 		std::vector<int>						m_machine_list_indirections;
+
+		// software lists
+		std::optional<std::vector<software_list>>			m_software_lists;
 
 		// profile list
 		observable::value<std::vector<profiles::profile>>	m_profiles;
@@ -267,6 +276,7 @@ namespace
 		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
 		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
+		const std::vector<software_list> &GetSoftwareLists();
 		void WatchForImageMount(const wxString &tag);
 
 		// runtime control
@@ -813,6 +823,7 @@ void MameFrame::Run(const info::machine &machine, const profiles::profile *profi
 	m_client.Launch(std::move(task));
 
 	// set up running state and subscribe to events
+	m_software_lists.reset();
 	m_state.emplace();
 	m_state->paused().subscribe(				[this]() { UpdateTitleBar(); });
 	m_state->phase().subscribe(					[this]() { UpdateStatusBar(); });
@@ -1384,6 +1395,7 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 	// clear out all of the state
 	m_client.Reset();
 	m_state.reset();
+	m_software_lists.reset();
 	m_current_profile_path = util::g_empty_string;
 	m_current_profile_auto_save_state = false;
     UpdateEmulationSession();
@@ -1406,6 +1418,34 @@ void MameFrame::OnStatusUpdate(PayloadEvent<status::update> &event)
 	status::update &payload = event.Payload();
 	m_state->update(std::move(payload));
 	m_pinging = false;
+}
+
+
+//-------------------------------------------------
+//  GetSoftwareLists
+//-------------------------------------------------
+
+const std::vector<software_list> &MameFrame::GetSoftwareLists()
+{
+	// we load software lists on demand - did we load them?
+	if (!m_software_lists.has_value())
+	{
+		// we didn't - first emplace the list
+		m_software_lists.emplace();
+
+		// next load the lists
+		if (!GetRunningMachine().software_lists().empty())
+		{
+			std::vector<wxString> hash_paths = m_prefs.GetSplitPaths(Preferences::path_type::hash);
+			for (const info::software_list softlist_info : GetRunningMachine().software_lists())
+			{
+				std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());
+				if (softlist.has_value())
+					m_software_lists.value().push_back(std::move(softlist.value()));
+			}
+		}
+	}
+	return *m_software_lists;
 }
 
 
@@ -2406,6 +2446,16 @@ const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 {
 	m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::working_directory, std::move(dir));
+}
+
+
+//-------------------------------------------------
+//  GetSoftwareLists
+//-------------------------------------------------
+
+const std::vector<software_list> &MameFrame::ImagesHost::GetSoftwareLists()
+{
+	return m_host.GetSoftwareLists();
 }
 
 
