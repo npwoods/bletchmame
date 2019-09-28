@@ -15,20 +15,7 @@
 #include <wx/string.h>
 #include <optional>
 
-//**************************************************************************
-//  MACROS
-//**************************************************************************
-
-// workaround for GCC bug fixed in 7.4
-#ifdef __GNUC__
-#if __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#define SHOULD_BE_DELETE	default
-#endif	// __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#endif // __GNUC__
-
-#ifndef SHOULD_BE_DELETE
-#define SHOULD_BE_DELETE	delete
-#endif // !SHOULD_BE_DELETE
+#include "utility.h"
 
 
 //**************************************************************************

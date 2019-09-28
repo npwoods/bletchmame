@@ -52,7 +52,7 @@ bool software_list::load(wxInputStream &stream, wxString &error_message)
 	});
 	xml.OnElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
 	{
-		software_part &p = util::last(m_software).m_parts.emplace_back();
+		part &p = util::last(m_software).m_parts.emplace_back();
 		attributes.Get("name", p.m_name);
 		attributes.Get("interface", p.m_interface);
 	});
@@ -119,6 +119,15 @@ void software_list::test()
 	// did we succeed?
 	if (!success || !error_message.empty())
 		throw false;
+
+	for (const software_list::software &sw : softlist.get_software())
+	{
+		for (const software_list::part &part : sw.m_parts)
+		{
+			if (part.m_interface.empty() || part.m_name.empty())
+				throw false;
+		}
+	}
 }
 
 
