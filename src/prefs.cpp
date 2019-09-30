@@ -66,45 +66,6 @@ static bool IsValidDimension(int dimension)
 
 
 //-------------------------------------------------
-//  GetColumnNames
-//-------------------------------------------------
-
-const ColumnDesc *Preferences::GetColumnDescs(list_view_type type)
-{
-	static const ColumnDesc s_machine_columns[] =
-	{
-		{ "name",			wxT("Name"),			85 },
-		{ "description",	wxT("Description"),		370 },
-		{ "year",			wxT("Year"),			50 },
-		{ "manufacturer",	wxT("Manufacturer"),	320 },
-		{ nullptr }
-	};
-
-	static const ColumnDesc s_profile_columns[] =
-	{
-		{ "name",			wxT("Name"),			85 },
-		{ "machine",		wxT("Machine"),			85 },
-		{ "path",			wxT("Path"),			600 },
-		{ nullptr }
-	};
-
-	const ColumnDesc *result;
-	switch (type)
-	{
-	case list_view_type::machine:
-		result = s_machine_columns;
-		break;
-	case list_view_type::profile:
-		result = s_profile_columns;
-		break;
-	default:
-		throw false;
-	}
-	return result;
-}
-
-
-//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -113,29 +74,6 @@ Preferences::Preferences()
 	, m_menu_bar_shown(true)
 	, m_selected_tab(list_view_type::machine)
 {
-	// default column order
-	for (list_view_type type : util::all_enums<list_view_type>())
-	{
-		std::vector<int> &column_widths = GetColumnWidths(type);
-		std::vector<int> &columns_order = GetColumnsOrder(type);
-		const ColumnDesc *desc = GetColumnDescs(type);
-
-		// count the number of columns
-		int column_count = 0;
-		while (desc[column_count].m_id)
-			column_count++;
-
-		// populate the widths
-		column_widths.resize(column_count);
-		for (int i = 0; i < column_count; i++)
-			column_widths[i] = desc[i].m_default_width;
-
-		// populate the order
-		columns_order.resize(column_count);
-		for (int i = 0; i < column_count; i++)
-			columns_order[i] = i;
-	}
-	
 	// default paths
 	SetPath(path_type::config, GetConfigDirectory(true));
 	SetPath(path_type::nvram, GetConfigDirectory(true));
@@ -328,24 +266,12 @@ bool Preferences::Load(wxInputStream &input)
 	});
 	xml.OnElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		list_view_type type;
-		std::string id;
-		if (attributes.Get("type", type, s_list_view_type_parser) && attributes.Get("id", id))
+		std::string view_type, id;
+		if (attributes.Get("type", view_type) && attributes.Get("id", id))
 		{
-			const ColumnDesc *descs = GetColumnDescs(type);
-			int index = 0;
-			while (descs[index].m_id && id != descs[index].m_id)
-				index++;
-
-			if (descs[index].m_id)
-			{
-				int width, order;
-
-				if (attributes.Get("width", width) && IsValidDimension(width))
-					SetColumnWidth(type, index, width);
-				if (attributes.Get("order", order) && order >= 0 && order < GetColumnsOrder(type).size())
-					m_columns_order[static_cast<size_t>(type)][index] = order;
-			}
+			ColumnPrefs &col_prefs = m_column_prefs[view_type][id];
+			attributes.Get("width", col_prefs.m_width);
+			attributes.Get("order", col_prefs.m_order);
 		}
 	});
 	xml.OnElementBegin({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
@@ -413,16 +339,16 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<selectedprofile>" << GetSelectedProfile() << "</selectedprofile>" << std::endl;
 	if (!m_search_box_text.IsEmpty())
 		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
-	for (list_view_type type : util::all_enums<list_view_type>())
-	{
-		const char *type_string = s_list_view_type_parser[type];
-		const ColumnDesc *desc = GetColumnDescs(type);
-		std::vector<int> &column_widths = GetColumnWidths(type);
-		std::vector<int> &columns_order = GetColumnsOrder(type);
 
-		for (size_t i = 0; desc[i].m_id && i < column_widths.size() && i < columns_order.size(); i++)
+	// column width/order
+	for (const auto &view_prefs : m_column_prefs)
+	{
+		for (const auto &col_prefs : view_prefs.second)
 		{
-			output << "\t<column type=\"" << type_string << "\" id=\"" << desc[i].m_id << "\" width=\"" << column_widths[i] << "\" order=\"" << columns_order[i] << "\"/>" << std::endl;
+			output << "\t<column type=\"" << view_prefs.first << "\" id=\"" << col_prefs.first
+				<< "\" width=\"" << col_prefs.second.m_width
+				<< "\" order=\"" << col_prefs.second.m_order
+				<< "\"/>" << std::endl;
 		}
 	}
 	output << std::endl;

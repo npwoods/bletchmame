@@ -37,6 +37,7 @@ endif
 OBJECTFILES=\
 	$(OBJ)/app.o				\
 	$(OBJ)/client.o				\
+	$(OBJ)/collectionlistview.o	\
 	$(OBJ)/dialogs/choosesw.o	\
 	$(OBJ)/dialogs/console.o	\
 	$(OBJ)/dialogs/images.o		\

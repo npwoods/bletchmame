@@ -231,6 +231,7 @@
   <ItemGroup>
     <ClCompile Include="app.cpp" />
     <ClCompile Include="client.cpp" />
+    <ClCompile Include="collectionlistview.cpp" />
     <ClCompile Include="dialogs/images.cpp" />
     <ClCompile Include="dialogs/choosesw.cpp" />
     <ClCompile Include="dialogs/console.cpp" />
@@ -262,6 +263,7 @@
   <ItemGroup>
     <ClInclude Include="bindata.h" />
     <ClInclude Include="client.h" />
+    <ClInclude Include="collectionlistview.h" />
     <ClInclude Include="dialogs/images.h" />
     <ClInclude Include="dialogs/choosesw.h" />
     <ClInclude Include="dialogs/console.h" />
