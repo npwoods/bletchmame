@@ -34,6 +34,8 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 	, m_desc(desc)
 	, m_prefs(prefs)
 	, m_coll_impl(std::move(coll_impl))
+	, m_sort_column(0)
+	, m_sort_type(ColumnPrefs::sort_type::ASCENDING)
 {
 	// get preferences
 	const std::unordered_map<std::string, ColumnPrefs> &col_prefs = m_prefs.GetColumnPrefs(desc.m_name);
@@ -44,21 +46,30 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 
 	// build the columns
 	ClearAll();
-
 	for (int i = 0; i < desc.m_columns.size(); i++)
 	{
+		// defaults
+		int width = desc.m_columns[i].m_default_width;
+		order[i] = i;
+
 		// look up this column
 		auto iter = col_prefs.find(desc.m_columns[i].m_id);
+		if (iter != col_prefs.end())
+		{
+			// figure out the width
+			if (iter->second.m_width > 0)
+				width = iter->second.m_width;
 
-		// figure out the width
-		int width = iter != col_prefs.end() && iter->second.m_width > 0
-			? iter->second.m_width
-			: desc.m_columns[i].m_default_width;
+			// figure out the order
+			order[i] = iter->second.m_order;
 
-		// figure out the order
-		order[i] = iter != col_prefs.end()
-			? iter->second.m_order
-			: i;
+			// is there a sort?
+			if (iter->second.m_sort.has_value())
+			{
+				m_sort_column = i;
+				m_sort_type = iter->second.m_sort.value();
+			}
+		}
 
 		// append the actual column
 		AppendColumn(desc.m_columns[i].m_description, wxLIST_FORMAT_LEFT, width);
@@ -68,9 +79,8 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 	SetColumnsOrder(wxArrayInt(order.begin(), order.end()));
 
 	// bind events
-	Bind(wxEVT_LIST_COL_END_DRAG, [this](auto &) { UpdateColumnPrefs(); });
-
-	// TODO - column sorts
+	Bind(wxEVT_LIST_COL_END_DRAG,	[this](auto &)		{ UpdateColumnPrefs();					});
+	Bind(wxEVT_LIST_COL_CLICK,		[this](auto &event)	{ ToggleColumnSort(event.GetColumn());	});
 }
 
 
@@ -104,6 +114,17 @@ void CollectionListView::UpdateListView()
 		if (match)
 			m_indirections.push_back(i);
 	}
+
+	// sort the indirection list
+	std::sort(m_indirections.begin(), m_indirections.end(), [this](int a, int b)
+	{
+		const wxString &a_string = GetActualItemText(a, m_sort_column);
+		const wxString &b_string = GetActualItemText(b, m_sort_column);
+		int compare_result = util::string_icompare(a_string, b_string);
+		return m_sort_type == ColumnPrefs::sort_type::ASCENDING
+			? compare_result < 0
+			: compare_result > 0;
+	});
 
 	// set the list view size
 	SetItemCount(m_indirections.size());
@@ -179,8 +200,19 @@ void CollectionListView::UpdateColumnPrefs()
 		ColumnPrefs &this_col_pref = col_prefs[m_desc.m_columns[i].m_id];
 		this_col_pref.m_width = GetColumnWidth(i);
 		this_col_pref.m_order = order[i];
+		this_col_pref.m_sort = m_sort_column == i ? m_sort_type : std::optional<ColumnPrefs::sort_type>();
 	}
 
 	// and save it
 	m_prefs.SetColumnPrefs(m_desc.m_name, std::move(col_prefs));
+}
+
+
+//-------------------------------------------------
+//  UpdateColumnPrefs
+//-------------------------------------------------
+
+void CollectionListView::ToggleColumnSort(int column_index)
+{
+	(void)column_index;
 }

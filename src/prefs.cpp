@@ -40,6 +40,13 @@ static std::array<const char *, static_cast<size_t>(Preferences::path_type::coun
 };
 
 
+static const util::enum_parser_bidirectional<ColumnPrefs::sort_type> s_column_sort_type_parser =
+{
+	{ "ascending", ColumnPrefs::sort_type::ASCENDING, },
+	{ "descending", ColumnPrefs::sort_type::DESCENDING }
+};
+
+
 static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list_view_type_parser =
 {
 	{ "machine", Preferences::list_view_type::machine, },
@@ -272,6 +279,7 @@ bool Preferences::Load(wxInputStream &input)
 			ColumnPrefs &col_prefs = m_column_prefs[view_type][id];
 			attributes.Get("width", col_prefs.m_width);
 			attributes.Get("order", col_prefs.m_order);
+			attributes.Get("sort", col_prefs.m_sort, s_column_sort_type_parser);
 		}
 	});
 	xml.OnElementBegin({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
@@ -347,8 +355,12 @@ void Preferences::Save(std::ostream &output)
 		{
 			output << "\t<column type=\"" << view_prefs.first << "\" id=\"" << col_prefs.first
 				<< "\" width=\"" << col_prefs.second.m_width
-				<< "\" order=\"" << col_prefs.second.m_order
-				<< "\"/>" << std::endl;
+				<< "\" order=\"" << col_prefs.second.m_order;
+
+			if (col_prefs.second.m_sort.has_value())
+				output << "\" sort=\"" << s_column_sort_type_parser[col_prefs.second.m_sort.value()];
+
+			output << "\"/>" << std::endl;
 		}
 	}
 	output << std::endl;

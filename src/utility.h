@@ -325,6 +325,22 @@ inline bool string_icontains(const TStr &str, const TStr &target)
 
 	
 //-------------------------------------------------
+//  string_icompare
+//-------------------------------------------------
+
+template<typename TStr>
+inline int string_icompare(const TStr &a, const TStr &b)
+{
+	// using Windows specific clib functions; should use different functions on POSIX
+	if (sizeof(wxChar) == sizeof(wchar_t))
+		return _wcsicmp((const wchar_t *) a.c_str(), (const wchar_t *)b.c_str());
+	else if (sizeof(wxChar) == sizeof(char))
+		return _stricmp((const char *)a.c_str(), (const char *)b.c_str());
+	throw false;
+}
+
+
+//-------------------------------------------------
 //  last
 //-------------------------------------------------
 

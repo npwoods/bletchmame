@@ -23,8 +23,15 @@
 
 struct ColumnPrefs
 {
-	int m_width;
-	int m_order;
+	enum class sort_type
+	{
+		ASCENDING,
+		DESCENDING
+	};
+
+	int							m_width;
+	int							m_order;
+	std::optional<sort_type>	m_sort;
 };
 
 

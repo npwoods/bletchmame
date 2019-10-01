@@ -14,7 +14,8 @@
 #include <wx/listctrl.h>
 #include <memory>
 
-class Preferences;
+#include "prefs.h"
+
 
 // ======================> ColumnDesc
 
@@ -94,10 +95,13 @@ private:
 	std::unique_ptr<ICollectionImpl>	m_coll_impl;
 	std::vector<int>					m_indirections;
 	wxString							m_filter_text;
+	int									m_sort_column;
+	ColumnPrefs::sort_type				m_sort_type;
 
 	CollectionListView(wxWindow &parent, wxWindowID winid, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
 
 	const wxString &GetActualItemText(long item, long column) const;
+	void ToggleColumnSort(int column_index);
 };
 
 
