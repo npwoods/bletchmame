@@ -214,5 +214,16 @@ void CollectionListView::UpdateColumnPrefs()
 
 void CollectionListView::ToggleColumnSort(int column_index)
 {
-	(void)column_index;
+	if (m_sort_column != column_index)
+	{
+		m_sort_column = column_index;
+		m_sort_type = ColumnPrefs::sort_type::ASCENDING;
+	}
+	else
+	{
+		m_sort_type = m_sort_type == ColumnPrefs::sort_type::ASCENDING
+			? ColumnPrefs::sort_type::DESCENDING
+			: ColumnPrefs::sort_type::ASCENDING;
+	}
+	UpdateListView();
 }
