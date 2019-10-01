@@ -102,6 +102,7 @@ private:
 
 	const wxString &GetActualItemText(long item, long column) const;
 	void ToggleColumnSort(int column_index);
+	int CompareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const;
 };
 
 

@@ -116,14 +116,20 @@ void CollectionListView::UpdateListView()
 	}
 
 	// sort the indirection list
-	std::sort(m_indirections.begin(), m_indirections.end(), [this](int a, int b)
+	std::sort(m_indirections.begin(), m_indirections.end(), [this, column_count](int a, int b)
 	{
-		const wxString &a_string = GetActualItemText(a, m_sort_column);
-		const wxString &b_string = GetActualItemText(b, m_sort_column);
-		int compare_result = util::string_icompare(a_string, b_string);
-		return m_sort_type == ColumnPrefs::sort_type::ASCENDING
-			? compare_result < 0
-			: compare_result > 0;
+		// first compare the actual sort
+		int rc = CompareActualRows(a, b, m_sort_column, m_sort_type);
+		if (rc != 0)
+			return rc < 0;
+
+		// in the unlikely event of a tie, try comparing the other columns
+		for (int column_index = 0; rc == 0 && column_index < column_count; column_index++)
+		{
+			if (column_index != m_sort_column)
+				rc = CompareActualRows(a, b, column_index, ColumnPrefs::sort_type::ASCENDING);
+		}
+		return rc < 0;
 	});
 
 	// set the list view size
@@ -142,6 +148,21 @@ void CollectionListView::UpdateListView()
 			EnsureVisible(index);
 		}
 	}
+}
+
+
+//-------------------------------------------------
+//  CompareActualRows
+//-------------------------------------------------
+
+int CollectionListView::CompareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const
+{
+	const wxString &a_string = GetActualItemText(row_a, sort_column);
+	const wxString &b_string = GetActualItemText(row_b, sort_column);
+	int compare_result = util::string_icompare(a_string, b_string);
+	return sort_type == ColumnPrefs::sort_type::ASCENDING
+		? compare_result
+		: -compare_result;
 }
 
 
