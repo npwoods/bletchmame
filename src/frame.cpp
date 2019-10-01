@@ -103,6 +103,11 @@ namespace
 				return m_host.GetRunningMachine();
 			}
 
+			virtual Preferences &GetPreferences()
+			{
+				return m_host.m_prefs;
+			}
+
 			virtual observable::value<std::vector<status::image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);

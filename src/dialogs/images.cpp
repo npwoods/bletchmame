@@ -399,7 +399,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 
 bool ImagesDialog::LoadSoftwareListPart(const wxString &tag, const std::vector<SoftwareAndPart> &parts)
 {
-	std::optional<int> rc = show_choose_software_dialog(*this, parts);
+	std::optional<int> rc = show_choose_software_dialog(*this, m_host.GetPreferences(), parts);
 	if (rc.has_value())
 	{
 		wxString part_name = wxString::Format("%s:%s", parts[rc.value()].software().m_name, parts[rc.value()].part().m_name);

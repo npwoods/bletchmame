@@ -25,9 +25,12 @@
 #undef LoadImage
 #endif
 
+class Preferences;
+
 class IImagesHost
 {
 public:
+	virtual Preferences &GetPreferences() = 0;
 	virtual info::machine GetMachine() = 0;
 	virtual observable::value<std::vector<status::image>> &GetImages() = 0;
 	virtual const wxString &GetWorkingDirectory() const = 0;
