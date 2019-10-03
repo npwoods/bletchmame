@@ -222,8 +222,6 @@ namespace
 		void OnMenuInputs(status::input::input_class input_class);
 		void OnMenuSwitches(status::input::input_class input_class);
 		void OnMenuAbout();
-		void OnMachineListItemSelected(wxListEvent &event);
-		void OnProfileListItemSelected(wxListEvent &event);
 		void OnMachineListItemActivated(wxListEvent &event);
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
@@ -322,6 +320,7 @@ const wxString MameFrame::s_wc_save_snapshot = wxT("PNG Files (*.png)|*.png|All 
 static const CollectionViewDesc s_machine_collection_view_desc =
 {
 	"machine",
+	"name",
 	{
 		{ "name",			wxT("Name"),			85 },
 		{ "description",	wxT("Description"),		370 },
@@ -333,6 +332,7 @@ static const CollectionViewDesc s_machine_collection_view_desc =
 static const CollectionViewDesc s_profile_collection_view_desc =
 {
 	"profile",
+	"path",
 	{
 		{ "name",			wxT("Name"),			85 },
 		{ "machine",		wxT("Machine"),			85 },
@@ -418,24 +418,13 @@ MameFrame::MameFrame()
 	{
 		m_profile_view->UpdateListView();
 
-		// find the currently selected profile (this does a look up by path; perhaps if this fails, we should do
-		// a looser lookup (e.g. - filename?)
-		auto iter = std::find_if(m_profiles.get().begin(), m_profiles.get().end(), [this](const profiles::profile &p)
+		// are we renaming the current profile?
+		if (m_current_profile_rename)
 		{
-			const wxString &s = m_prefs.GetSelectedProfile();
-			return p.path() == s;
-		});
-
-		// if successful, select it
-		if (iter < m_profiles.get().end())
-		{
-			long selected_index = iter - m_profiles.get().begin();
-			m_profile_view->Select(selected_index);
-			m_profile_view->EnsureVisible(selected_index);
-			if (m_current_profile_rename)
-				m_profile_view->EditLabel(selected_index);
+			long selected_index = m_profile_view->GetFirstSelected();
+			m_profile_view->EditLabel(selected_index);
+			m_current_profile_rename = false;
 		}
-		m_current_profile_rename = false;
 	});
 	UpdateProfileDirectories(true, true);
 
@@ -457,7 +446,6 @@ MameFrame::MameFrame()
 	Bind(wxEVT_SIZE,					[this](auto &event) { OnSize(event);																			});
 	Bind(wxEVT_CLOSE_WINDOW,			[this](auto &event) { OnClose(event);																			});
 	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &event) { m_prefs.SetSelectedTab(static_cast<Preferences::list_view_type>(event.GetSelection()));	}, m_note_book->GetId());
-	Bind(wxEVT_LIST_ITEM_SELECTED,		[this](auto &event) { OnMachineListItemSelected(event);															}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
@@ -1598,18 +1586,6 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 
 
 //-------------------------------------------------
-//  OnMachineListItemSelected
-//-------------------------------------------------
-
-void MameFrame::OnMachineListItemSelected(wxListEvent &evt)
-{
-	long index = evt.GetIndex();
-	const info::machine machine = GetMachineFromIndex(index);
-	m_prefs.SetSelectedMachine(machine.name());
-}
-
-
-//-------------------------------------------------
 //  OnMachineListItemActivated
 //-------------------------------------------------
 
@@ -1618,18 +1594,6 @@ void MameFrame::OnMachineListItemActivated(wxListEvent &evt)
 	long index = evt.GetIndex();
 	const info::machine machine = GetMachineFromIndex(index);
 	Run(machine);
-}
-
-
-//-------------------------------------------------
-//  OnProfileListItemSelected
-//-------------------------------------------------
-
-void MameFrame::OnProfileListItemSelected(wxListEvent &evt)
-{
-	long index = evt.GetIndex();
-	const profiles::profile &profile = m_profiles.get()[index];
-	m_prefs.SetSelectedProfile(profile.path());
 }
 
 
@@ -1724,7 +1688,7 @@ void MameFrame::OnProfileListEndLabelEdit(long index)
 
 	// try to rename
 	if (profiles::profile::profile_file_rename(profile.path(), new_path))
-		m_prefs.SetSelectedProfile(std::move(new_path));
+		m_prefs.SetListViewSelection(s_profile_collection_view_desc.m_name, std::move(new_path));
 }
 
 
@@ -1920,7 +1884,7 @@ void MameFrame::DeleteProfile(const profiles::profile &profile)
 		MessageBox("Could not delete profile");
 		return;
 	}
-	m_prefs.SetSelectedProfile(util::g_empty_string);
+	m_prefs.SetListViewSelection(s_profile_collection_view_desc.m_name, wxT(""));
 }
 
 
@@ -1934,7 +1898,7 @@ void MameFrame::FocusOnNewProfile(wxString &&new_profile_path)
 	m_note_book->SetSelection(1);
 
 	// set the profile as selected, so we focus on it when we rebuild the list view
-	m_prefs.SetSelectedProfile(std::move(new_profile_path));
+	m_prefs.SetListViewSelection(s_profile_collection_view_desc.m_name, std::move(new_profile_path));
 
 	// we want the current profile to be renamed
 	m_current_profile_rename = true;

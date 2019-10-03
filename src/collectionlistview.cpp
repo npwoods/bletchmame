@@ -34,6 +34,7 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 	, m_desc(desc)
 	, m_prefs(prefs)
 	, m_coll_impl(std::move(coll_impl))
+	, m_key_column_index(-1)
 	, m_sort_column(0)
 	, m_sort_type(ColumnPrefs::sort_type::ASCENDING)
 {
@@ -48,6 +49,9 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 	ClearAll();
 	for (int i = 0; i < desc.m_columns.size(); i++)
 	{
+		if (!strcmp(desc.m_columns[i].m_id, desc.m_key_column))
+			m_key_column_index = i;
+
 		// defaults
 		int width = desc.m_columns[i].m_default_width;
 		order[i] = i;
@@ -75,12 +79,16 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 		AppendColumn(desc.m_columns[i].m_description, wxLIST_FORMAT_LEFT, width);
 	}
 
+	// sanity checks
+	assert(m_key_column_index >= 0);
+
 	// set the column order
 	SetColumnsOrder(wxArrayInt(order.begin(), order.end()));
 
 	// bind events
 	Bind(wxEVT_LIST_COL_END_DRAG,	[this](auto &)		{ UpdateColumnPrefs();					});
 	Bind(wxEVT_LIST_COL_CLICK,		[this](auto &event)	{ ToggleColumnSort(event.GetColumn());	});
+	Bind(wxEVT_LIST_ITEM_SELECTED,	[this](auto &event) { OnListItemSelected(event.GetIndex());	});
 }
 
 
@@ -90,10 +98,6 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 
 void CollectionListView::UpdateListView()
 {
-	// identify the selsection
-	long first_selected = GetFirstSelected();
-	int actual_selected = first_selected >= 0 ? GetActualIndex(first_selected) : -1;
-
 	// get basic info about things
 	long collection_size = m_coll_impl->GetSize();
 	int column_count = GetColumnCount();
@@ -136,18 +140,19 @@ void CollectionListView::UpdateListView()
 	SetItemCount(m_indirections.size());
 	RefreshItems(0, m_indirections.size() - 1);
 
-	// restore the selection, if appropriate (note this will cause filtering to drop the selection if
-	// it is lost; this should really be fixed)
-	if (actual_selected > 0)
+	// restore the selection
+	const wxString &selected_item = m_prefs.GetListViewSelection(m_desc.m_name, m_machine_key);
+	const int *selected_actual_index = nullptr;
+	if (!selected_item.empty())
 	{
-		auto iter = std::find(m_indirections.begin(), m_indirections.end(), actual_selected);
-		if (iter != m_indirections.end())
+		selected_actual_index = util::find_if_ptr(m_indirections, [this, &selected_item](int actual_index)
 		{
-			int index = iter - m_indirections.begin();
-			Select(index);
-			EnsureVisible(index);
-		}
+			return selected_item == GetActualItemText(actual_index, m_key_column_index);
+		});
 	}
+	Select(selected_actual_index ? selected_actual_index - &m_indirections[0] : -1);
+	if (selected_actual_index)
+		EnsureVisible(selected_actual_index - &m_indirections[0]);
 }
 
 
@@ -188,6 +193,18 @@ wxString CollectionListView::OnGetItemText(long item, long column) const
 {
 	long actual_item = m_indirections[item];
 	return GetActualItemText(actual_item, column);
+}
+
+
+//-------------------------------------------------
+//  GetActualItemText
+//-------------------------------------------------
+
+void CollectionListView::OnListItemSelected(long item)
+{
+	long actual_item = m_indirections[item];
+	const wxString &val = GetActualItemText(actual_item, m_key_column_index);
+	m_prefs.SetListViewSelection(m_desc.m_name, m_machine_key, wxString(val));
 }
 
 

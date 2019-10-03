@@ -32,6 +32,7 @@ struct ColumnDesc
 struct CollectionViewDesc
 {
 	const char *			m_name;
+	const char *			m_key_column;
 	std::vector<ColumnDesc>	m_columns;
 };
 
@@ -49,7 +50,8 @@ public:
 	void UpdateListView();
 	void UpdateColumnPrefs();
 	void SetFilterText(wxString &&filter_text);
-	int GetActualIndex(long indirect_index) const { return m_indirections[indirect_index]; }
+	void SetMachine(const wxString &machine_key)	{ m_machine_key = machine_key; }
+	int GetActualIndex(long indirect_index) const	{ return m_indirections[indirect_index]; }
 
 protected:
 	virtual wxString OnGetItemText(long item, long column) const override;
@@ -90,10 +92,15 @@ private:
 		TFuncGetSize		m_func_get_size;
 	};
 
+	// invariant fields that do not change at runtime
 	const CollectionViewDesc &			m_desc;
 	Preferences &						m_prefs;
 	std::unique_ptr<ICollectionImpl>	m_coll_impl;
+	int									m_key_column_index;
+
+	// mutable fields
 	std::vector<int>					m_indirections;
+	wxString							m_machine_key;
 	wxString							m_filter_text;
 	int									m_sort_column;
 	ColumnPrefs::sort_type				m_sort_type;
@@ -103,6 +110,7 @@ private:
 	const wxString &GetActualItemText(long item, long column) const;
 	void ToggleColumnSort(int column_index);
 	int CompareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const;
+	void OnListItemSelected(long index);
 };
 
 

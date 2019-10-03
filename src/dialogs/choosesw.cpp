@@ -24,7 +24,7 @@ namespace
 	class ChooseSoftlistPartDialog : public wxDialog
 	{
 	public:
-		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts);
+		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts);
 
 		const std::optional<int> &Selection() const { return m_selection; }
 
@@ -47,6 +47,7 @@ namespace
 static const CollectionViewDesc s_view_desc =
 {
 	"softlist",
+	"name",
 	{
 		{ "name",			wxT("Name"),			85 },
 		{ "description",	wxT("Description"),		370 },
@@ -60,7 +61,7 @@ static const CollectionViewDesc s_view_desc =
 //  ctor
 //-------------------------------------------------
 
-ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
+ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts)
 	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_parts(parts)
 	, m_list_view(nullptr)
@@ -75,6 +76,7 @@ ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences
 		[this](long item, long column) -> const wxString &	{ return GetListItemText(m_parts[item].software(), column); },
 		[this]()											{ return m_parts.size(); },
 		false);
+	m_list_view->SetMachine(machine);
 	m_list_view->UpdateListView();
 
 	// bind events
@@ -129,9 +131,9 @@ const wxString &ChooseSoftlistPartDialog::GetListItemText(const software_list::s
 //  show_choose_software_dialog
 //-------------------------------------------------
 
-std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
+std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts)
 {
-	ChooseSoftlistPartDialog dialog(parent, prefs, parts);
+	ChooseSoftlistPartDialog dialog(parent, prefs, machine, parts);
 	int rc = dialog.ShowModal();
 	return rc == wxID_OK ? dialog.Selection() : std::optional<int>();
 }

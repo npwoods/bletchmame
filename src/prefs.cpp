@@ -139,6 +139,41 @@ const wxString &Preferences::GetMachinePath(const wxString &machine_name, machin
 
 
 //-------------------------------------------------
+//  GetListViewSelectionKey
+//-------------------------------------------------
+
+static wxString GetListViewSelectionKey(const char *view_type, const wxString &machine_name)
+{
+	return wxString(view_type) + wxString(1, '\0') + machine_name;
+}
+
+
+//-------------------------------------------------
+//  GetListViewSelection
+//-------------------------------------------------
+
+const wxString &Preferences::GetListViewSelection(const char *view_type, const wxString &machine_name) const
+{
+	wxString key = GetListViewSelectionKey(view_type, machine_name);
+	auto iter = m_list_view_selection.find(key);
+	return iter != m_list_view_selection.end()
+		? iter->second
+		: util::g_empty_string;
+}
+
+
+//-------------------------------------------------
+//  SetListViewSelection
+//-------------------------------------------------
+
+void Preferences::SetListViewSelection(const char *view_type, const wxString &machine_name, wxString &&selection)
+{
+	wxString key = GetListViewSelectionKey(view_type, machine_name);
+	m_list_view_selection[key] = std::move(selection);
+}
+
+
+//-------------------------------------------------
 //  SetMachinePath
 //-------------------------------------------------
 
@@ -212,6 +247,7 @@ bool Preferences::Load(wxInputStream &input)
 	path_type type = path_type::count;
 	wxString current_machine_name;
 	wxString current_device_type;
+	wxString *current_list_view_selection = nullptr;
 
 	// clear out state
 	m_machine_info.clear();
@@ -259,13 +295,22 @@ bool Preferences::Load(wxInputStream &input)
 			SetSize(size);
 		}
 	});
-	xml.OnElementEnd({ "preferences", "selectedmachine" }, [&](wxString &&content)
+	xml.OnElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
-		SetSelectedMachine(std::move(content));
+		std::string list_view;
+		std::string machine;
+		if (attributes.Get("view", list_view))
+		{
+			attributes.Get("machine", machine);		
+			wxString key = GetListViewSelectionKey(list_view.c_str(), machine);
+			current_list_view_selection = &m_list_view_selection[key];
+		}
 	});
-	xml.OnElementEnd({ "preferences", "selectedprofile" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "selection" }, [&](wxString &&content)
 	{
-		SetSelectedProfile(std::move(content));
+		assert(current_list_view_selection);
+		*current_list_view_selection = std::move(content);
+		current_list_view_selection = nullptr;
 	});
 	xml.OnElementEnd({ "preferences", "searchboxtext" }, [&](wxString &&content)
 	{
@@ -341,12 +386,18 @@ void Preferences::Save(std::ostream &output)
 	if (!m_mame_extra_arguments.IsEmpty())
 		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
-	if (!GetSelectedMachine().empty())
-		output << "\t<selectedmachine>" << GetSelectedMachine() << "</selectedmachine>" << std::endl;
-	if (!GetSelectedProfile().empty())
-		output << "\t<selectedprofile>" << GetSelectedProfile() << "</selectedprofile>" << std::endl;
 	if (!m_search_box_text.IsEmpty())
 		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
+
+	for (const auto &pair : m_list_view_selection)
+	{
+		output << "\t<selection view=\"" << pair.first.c_str();
+
+		std::size_t null_pos = pair.first.find('\0');
+		if (pair.first.size() > null_pos + 1)
+			output << "\" machine=\"" + (pair.first.c_str() + null_pos + 1);
+		output << "\">" << XmlParser::Escape(pair.second) << "</selection>" << std::endl;
+	}
 
 	// column width/order
 	for (const auto &view_prefs : m_column_prefs)

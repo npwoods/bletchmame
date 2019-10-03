@@ -118,13 +118,9 @@ public:
 	const std::unordered_map<std::string, ColumnPrefs> &GetColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
 	void SetColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
-	const wxString &GetSelectedMachine() const              { return m_selected_machine; }
-	void SetSelectedMachine(const wxString &machine_name)   { m_selected_machine = machine_name; }
-	void SetSelectedMachine(wxString &&machine_name)        { m_selected_machine = std::move(machine_name); }
-
-	const wxString &GetSelectedProfile() const              { return m_selected_profile; }
-	void SetSelectedProfile(const wxString &profile_path)	{ m_selected_profile = profile_path; }
-	void SetSelectedProfile(wxString &&profile_path)        { m_selected_profile = std::move(profile_path); }
+	const wxString &GetListViewSelection(const char *view_type, const wxString &machine_name) const;
+	void SetListViewSelection(const char *view_type, const wxString &machine_name, wxString &&selection);
+	void SetListViewSelection(const char *view_type, wxString &&selection)						{ SetListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
 
 	const wxString &GetSearchBoxText() const				{ return m_search_box_text; }
 	void SetSearchBoxText(wxString &&search_box_text)		{ m_search_box_text = std::move(search_box_text); }
@@ -161,8 +157,7 @@ private:
 	mutable std::unordered_map<std::string, std::unordered_map<std::string, ColumnPrefs>>	m_column_prefs;
 	std::map<wxString, MachineInfo>															m_machine_info;
 	list_view_type																			m_selected_tab;
-	wxString																				m_selected_machine;
-	wxString																				m_selected_profile;
+	std::unordered_map<wxString, wxString>													m_list_view_selection;
 	wxString																				m_search_box_text;
 	bool																					m_menu_bar_shown;
 

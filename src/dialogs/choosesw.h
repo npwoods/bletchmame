@@ -33,7 +33,7 @@ private:
 };
 
 
-std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts);
+std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts);
 
 
 #endif // DIALOGS_CHOOSESW_H
