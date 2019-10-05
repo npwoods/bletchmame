@@ -47,6 +47,11 @@ namespace
 
 		const std::optional<int> &Selection() const { return m_selection; }
 
+		void UpdateColumnPrefs()
+		{
+			m_list_view->UpdateColumnPrefs();
+		}
+
 	private:
 		std::optional<int>						m_selection;
 		CollectionListView *					m_list_view;
@@ -67,9 +72,9 @@ static const CollectionViewDesc s_view_desc =
 	"name",
 	{
 		{ "name",			wxT("Name"),			85 },
-		{ "description",	wxT("Description"),		370 },
+		{ "description",	wxT("Description"),		220 },
 		{ "year",			wxT("Year"),			50 },
-		{ "publisher",		wxT("Publisher"),		320 }
+		{ "publisher",		wxT("Publisher"),		190 }
 	}
 };
 
@@ -79,7 +84,7 @@ static const CollectionViewDesc s_view_desc =
 //-------------------------------------------------
 
 ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
-	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxSize(600, 400), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_list_view(nullptr)
 	, m_ok_button(nullptr)
 {
@@ -152,8 +157,8 @@ const wxString &SoftwareListView::GetListItemText(const software_list::software 
 	{
 	case 0:	return sw.m_name;
 	case 1:	return sw.m_description;
-	case 2:	return sw.m_publisher;
-	case 3:	return sw.m_year;
+	case 2:	return sw.m_year;
+	case 3:	return sw.m_publisher;
 	}
 	throw false;
 }
@@ -202,5 +207,6 @@ std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &pr
 {
 	ChooseSoftlistPartDialog dialog(parent, prefs, parts);
 	int rc = dialog.ShowModal();
+	dialog.UpdateColumnPrefs();
 	return rc == wxID_OK ? dialog.Selection() : std::optional<int>();
 }
