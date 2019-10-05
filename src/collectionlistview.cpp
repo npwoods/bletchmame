@@ -141,7 +141,7 @@ void CollectionListView::UpdateListView()
 	RefreshItems(0, m_indirections.size() - 1);
 
 	// restore the selection
-	const wxString &selected_item = m_prefs.GetListViewSelection(m_desc.m_name, m_machine_key);
+	const wxString &selected_item = GetListViewSelection();
 	const int *selected_actual_index = nullptr;
 	if (!selected_item.empty())
 	{
@@ -204,7 +204,7 @@ void CollectionListView::OnListItemSelected(long item)
 {
 	long actual_item = m_indirections[item];
 	const wxString &val = GetActualItemText(actual_item, m_key_column_index);
-	m_prefs.SetListViewSelection(m_desc.m_name, m_machine_key, wxString(val));
+	SetListViewSelection(val);
 }
 
 
@@ -247,7 +247,7 @@ void CollectionListView::UpdateColumnPrefs()
 
 
 //-------------------------------------------------
-//  UpdateColumnPrefs
+//  ToggleColumnSort
 //-------------------------------------------------
 
 void CollectionListView::ToggleColumnSort(int column_index)
@@ -264,4 +264,24 @@ void CollectionListView::ToggleColumnSort(int column_index)
 			: ColumnPrefs::sort_type::ASCENDING;
 	}
 	UpdateListView();
+}
+
+
+//-------------------------------------------------
+//  GetListViewSelection
+//-------------------------------------------------
+
+const wxString &CollectionListView::GetListViewSelection() const
+{
+	return m_prefs.GetListViewSelection(m_desc.m_name, util::g_empty_string);
+}
+
+
+//-------------------------------------------------
+//  SetListViewSelection
+//-------------------------------------------------
+
+void CollectionListView::SetListViewSelection(const wxString &selection)
+{
+	m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, wxString(selection));
 }

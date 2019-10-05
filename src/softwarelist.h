@@ -46,7 +46,8 @@ public:
 	static std::optional<software_list> try_load(const std::vector<wxString> &hash_paths, const wxString &softlist_name);
 
 	// accessors
-	const std::vector<software> &get_software() const { return m_software; }
+	const wxString &name() const						{ return m_name; }
+	const std::vector<software> &get_software() const	{ return m_software; }
 
 	// validity checks
 	static void test();

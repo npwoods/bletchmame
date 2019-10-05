@@ -73,6 +73,36 @@ static bool IsValidDimension(int dimension)
 
 
 //-------------------------------------------------
+//  GetListViewSelectionKey
+//-------------------------------------------------
+
+static wxString GetListViewSelectionKey(const char *view_type, const wxString &softlist)
+{
+	return wxString(view_type) + wxString(1, '\0') + softlist;
+}
+
+
+//-------------------------------------------------
+//  SplitListViewSelectionKey
+//-------------------------------------------------
+
+static std::tuple<const wxChar *, const wxChar *> SplitListViewSelectionKey(const wxString &key)
+{
+	// get the view type
+	const wxChar *view_type = key.c_str();
+
+	// get the machine key, if present
+	std::size_t null_pos = key.find('\0');
+	const wxChar *machine = key.size() > null_pos + 1
+		? view_type + null_pos + 1
+		: nullptr;
+
+	// and return them as a tuple
+	return std::make_tuple(view_type, machine);
+}
+
+
+//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -135,16 +165,6 @@ const wxString &Preferences::GetMachinePath(const wxString &machine_name, machin
 	default:
 		throw false;
 	}
-}
-
-
-//-------------------------------------------------
-//  GetListViewSelectionKey
-//-------------------------------------------------
-
-static wxString GetListViewSelectionKey(const char *view_type, const wxString &machine_name)
-{
-	return wxString(view_type) + wxString(1, '\0') + machine_name;
 }
 
 
@@ -298,11 +318,11 @@ bool Preferences::Load(wxInputStream &input)
 	xml.OnElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::string list_view;
-		std::string machine;
+		std::string softlist;
 		if (attributes.Get("view", list_view))
 		{
-			attributes.Get("machine", machine);		
-			wxString key = GetListViewSelectionKey(list_view.c_str(), machine);
+			attributes.Get("softlist", softlist);
+			wxString key = GetListViewSelectionKey(list_view.c_str(), softlist);
 			current_list_view_selection = &m_list_view_selection[key];
 		}
 	});
@@ -391,12 +411,14 @@ void Preferences::Save(std::ostream &output)
 
 	for (const auto &pair : m_list_view_selection)
 	{
-		output << "\t<selection view=\"" << pair.first.c_str();
-
-		std::size_t null_pos = pair.first.find('\0');
-		if (pair.first.size() > null_pos + 1)
-			output << "\" machine=\"" + (pair.first.c_str() + null_pos + 1);
-		output << "\">" << XmlParser::Escape(pair.second) << "</selection>" << std::endl;
+		if (!pair.second.empty())
+		{
+			auto [view_type, softlist] = SplitListViewSelectionKey(pair.first);
+			output << "\t<selection view=\"" << wxString(view_type);
+			if (softlist)
+				output << "\" softlist=\"" + wxString(softlist);
+			output << "\">" << XmlParser::Escape(pair.second) << "</selection>" << std::endl;
+		}
 	}
 
 	// column width/order

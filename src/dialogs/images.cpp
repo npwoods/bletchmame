@@ -324,7 +324,7 @@ std::vector<SoftwareAndPart> ImagesDialog::GetSoftwareListParts(const wxString &
 				for (const software_list::part &part : software.m_parts)
 				{
 					if (dev_interface == part.m_interface)
-						results.emplace_back(software, part);
+						results.emplace_back(softlist, software, part);
 				}
 			}
 		}
@@ -399,7 +399,7 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 
 bool ImagesDialog::LoadSoftwareListPart(const wxString &tag, const std::vector<SoftwareAndPart> &parts)
 {
-	std::optional<int> rc = show_choose_software_dialog(*this, m_host.GetPreferences(), m_host.GetMachine().name(), parts);
+	std::optional<int> rc = show_choose_software_dialog(*this, m_host.GetPreferences(), parts);
 	if (rc.has_value())
 	{
 		wxString part_name = wxString::Format("%s:%s", parts[rc.value()].software().m_name, parts[rc.value()].part().m_name);

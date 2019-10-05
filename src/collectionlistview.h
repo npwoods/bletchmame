@@ -50,11 +50,15 @@ public:
 	void UpdateListView();
 	void UpdateColumnPrefs();
 	void SetFilterText(wxString &&filter_text);
-	void SetMachine(const wxString &machine_key)	{ m_machine_key = machine_key; }
 	int GetActualIndex(long indirect_index) const	{ return m_indirections[indirect_index]; }
 
 protected:
+	Preferences &Prefs() { return m_prefs; }
+	const Preferences &Prefs() const { return m_prefs; }
+
 	virtual wxString OnGetItemText(long item, long column) const override;
+	virtual const wxString &GetListViewSelection() const;
+	virtual void SetListViewSelection(const wxString &selection);
 
 private:
 	// ======================> ICollectionImpl
@@ -100,7 +104,7 @@ private:
 
 	// mutable fields
 	std::vector<int>					m_indirections;
-	wxString							m_machine_key;
+	wxString							m_softlist;
 	wxString							m_filter_text;
 	int									m_sort_column;
 	ColumnPrefs::sort_type				m_sort_type;

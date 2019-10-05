@@ -118,8 +118,8 @@ public:
 	const std::unordered_map<std::string, ColumnPrefs> &GetColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
 	void SetColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
-	const wxString &GetListViewSelection(const char *view_type, const wxString &machine_name) const;
-	void SetListViewSelection(const char *view_type, const wxString &machine_name, wxString &&selection);
+	const wxString &GetListViewSelection(const char *view_type, const wxString &softlist_name) const;
+	void SetListViewSelection(const char *view_type, const wxString &softlist_name, wxString &&selection);
 	void SetListViewSelection(const char *view_type, wxString &&selection)						{ SetListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
 
 	const wxString &GetSearchBoxText() const				{ return m_search_box_text; }

@@ -21,21 +21,38 @@
 
 namespace
 {
+	// ======================> SoftwareListView
+	class SoftwareListView : public CollectionListView
+	{
+	public:
+		SoftwareListView(wxWindow &parent, wxWindowID winid, Preferences &prefs, const std::vector<SoftwareAndPart> &parts);
+
+	protected:
+		virtual const wxString &GetListViewSelection() const override;
+		virtual void SetListViewSelection(const wxString &selection) override;
+
+	private:
+		const std::vector<SoftwareAndPart> &	m_parts;
+		std::vector<wxString>					m_softlist_names;
+
+		const wxString &GetListItemText(const software_list::software &sw, long column);
+	};
+
+
+	// ======================> ChooseSoftlistPartDialog
 	class ChooseSoftlistPartDialog : public wxDialog
 	{
 	public:
-		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts);
+		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts);
 
 		const std::optional<int> &Selection() const { return m_selection; }
 
 	private:
-		const std::vector<SoftwareAndPart> &	m_parts;
 		std::optional<int>						m_selection;
 		CollectionListView *					m_list_view;
 		wxButton *								m_ok_button;
 
 		void OnSelectionChanged();
-		const wxString &GetListItemText(const software_list::software &sw, long column);
 	};
 };
 
@@ -61,22 +78,13 @@ static const CollectionViewDesc s_view_desc =
 //  ctor
 //-------------------------------------------------
 
-ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts)
+ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
 	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
-	, m_parts(parts)
 	, m_list_view(nullptr)
 	, m_ok_button(nullptr)
 {
 	// create a list view
-	m_list_view = new CollectionListView(
-		*this,
-		wxID_ANY,
-		prefs,
-		s_view_desc,
-		[this](long item, long column) -> const wxString &	{ return GetListItemText(m_parts[item].software(), column); },
-		[this]()											{ return m_parts.size(); },
-		false);
-	m_list_view->SetMachine(machine);
+	m_list_view = new SoftwareListView(*this, wxID_ANY, prefs, parts);
 	m_list_view->UpdateListView();
 
 	// bind events
@@ -111,10 +119,34 @@ void ChooseSoftlistPartDialog::OnSelectionChanged()
 
 
 //-------------------------------------------------
-//  show_choose_software_dialog
+//  SoftwareListView ctor
 //-------------------------------------------------
 
-const wxString &ChooseSoftlistPartDialog::GetListItemText(const software_list::software &sw, long column)
+SoftwareListView::SoftwareListView(wxWindow &parent, wxWindowID winid, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
+	: CollectionListView(
+		parent,
+		winid,
+		prefs,
+		s_view_desc,
+		[this](long item, long column) -> const wxString &	{ return GetListItemText(m_parts[item].software(), column); },
+		[this]()											{ return m_parts.size(); },
+		false)
+	, m_parts(parts)
+{
+	for (const auto &part : parts)
+	{
+		const wxString &name = part.softlist().name();
+		if (std::find(m_softlist_names.begin(), m_softlist_names.end(), name) == m_softlist_names.end())
+			m_softlist_names.push_back(name);
+	}
+}
+
+
+//-------------------------------------------------
+//  SoftwareListView::GetListItemText()
+//-------------------------------------------------
+
+const wxString &SoftwareListView::GetListItemText(const software_list::software &sw, long column)
 {
 	switch (column)
 	{
@@ -128,12 +160,47 @@ const wxString &ChooseSoftlistPartDialog::GetListItemText(const software_list::s
 
 
 //-------------------------------------------------
+//  SoftwareListView::GetListViewSelection
+//-------------------------------------------------
+
+const wxString &SoftwareListView::GetListViewSelection() const
+{
+	for (const wxString &softlist_name : m_softlist_names)
+	{
+		const wxString &selection = Prefs().GetListViewSelection(s_view_desc.m_name, softlist_name);
+		if (!selection.empty())
+			return selection;
+	}
+	return util::g_empty_string;
+}
+
+
+//-------------------------------------------------
+//  SoftwareListView::SetListViewSelection
+//-------------------------------------------------
+
+void SoftwareListView::SetListViewSelection(const wxString &selection)
+{
+	for (const wxString &softlist_name : m_softlist_names)
+	{
+		bool found = util::find_if_ptr(m_parts, [&softlist_name, &selection](const SoftwareAndPart &x)
+		{
+			return x.softlist().name() == softlist_name && x.software().m_name == selection;
+		});
+
+		wxString this_selection = found ? selection : wxString();
+		Prefs().SetListViewSelection(s_view_desc.m_name, softlist_name, std::move(this_selection));
+	}
+}
+
+
+//-------------------------------------------------
 //  show_choose_software_dialog
 //-------------------------------------------------
 
-std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const wxString &machine, const std::vector<SoftwareAndPart> &parts)
+std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
 {
-	ChooseSoftlistPartDialog dialog(parent, prefs, machine, parts);
+	ChooseSoftlistPartDialog dialog(parent, prefs, parts);
 	int rc = dialog.ShowModal();
 	return rc == wxID_OK ? dialog.Selection() : std::optional<int>();
 }
