@@ -65,6 +65,9 @@ namespace
 
 		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
 
+		const wxString &PrettifyImageFileName(const wxString &tag, const wxString &file_name, wxString &buffer, bool full_path);
+		const software_list::software *FindSoftwareByName(const wxString &device_tag, const wxString &name);
+		const wxString *DeviceInterfaceFromTag(const wxString &tag);
 		bool ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable);
 		std::vector<SoftwareAndPart> GetSoftwareListParts(const wxString &tag);
 		bool CreateImage(const wxString &tag);
@@ -129,6 +132,7 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 
 void ImagesDialog::UpdateImageGrid()
 {
+	wxString pretty_buffer;
 	bool ok_enabled = true;
 
 	// get the list of images
@@ -148,13 +152,14 @@ void ImagesDialog::UpdateImageGrid()
 		// identify the label and file name
 		const wxString &label = images[i].m_instance_name;
 		const wxString &file_name = images[i].m_file_name;
+		const wxString &pretty_name = PrettifyImageFileName(images[i].m_tag, file_name, pretty_buffer, true);
 
 		// do we have to create new rows?
 		if (m_grid_sizer->GetRows() <= i)
 		{
 			// we do - add controls
 			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, label);
-			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, file_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, pretty_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
 
 			static_text->SetToolTip(images[i].m_tag);
@@ -169,7 +174,7 @@ void ImagesDialog::UpdateImageGrid()
 			static_text = dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC));
 			text_ctrl = dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT));
 			static_text->SetLabel(label);
-			text_ctrl->SetLabel(file_name);
+			text_ctrl->SetLabel(pretty_name);
 		}
 
 		// if this is an image that must be loaded, make it black and disable "ok"
@@ -215,6 +220,98 @@ TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
 
 
 //-------------------------------------------------
+//  PrettifyImageFileName
+//-------------------------------------------------
+
+const wxString &ImagesDialog::PrettifyImageFileName(const wxString &tag, const wxString &file_name, wxString &buffer, bool full_path)
+{
+	const wxString *result = nullptr;
+	const software_list::software *software = FindSoftwareByName(tag, file_name);
+
+	if (software)
+	{
+		result = &software->m_description;
+	}
+	else if (full_path && !file_name.empty())
+	{
+		// we want to show the base name plus the extension
+		wxString file_basename, file_extension;
+		wxFileName::SplitPath(file_name, nullptr, &file_basename, &file_extension);
+		buffer = file_basename + wxT(".") + file_extension;
+		result = &buffer;
+	}
+	else
+	{
+		// we want to show the full filename; our job is easy
+		result = &file_name;
+	}
+	return *result;
+}
+
+
+//-------------------------------------------------
+//  FindSoftwareByName
+//-------------------------------------------------
+
+const software_list::software *ImagesDialog::FindSoftwareByName(const wxString &device_tag, const wxString &name)
+{
+	// local function to determine if there is a special character
+	auto has_special_character = [&name]()
+	{
+		return std::find_if(name.cbegin(), name.cend(), [](wxChar ch)
+		{
+			return ch == '.' || ch == ':' || ch == '/' || ch == '\\';
+		}) != name.cend();
+	};
+
+	// first step - only search for software lists if:
+	//   1.  name is not empty
+	//   2.  there are not special characters that are the telltale signs of file paths
+	//   3.  we can identify the device interface
+	const wxString *dev_interface;
+	if (HAS_SOFTWARE_LISTS && !name.empty() && !has_special_character() && ((dev_interface = DeviceInterfaceFromTag(device_tag)) != nullptr))
+	{
+		const std::vector<software_list> &softlists = m_host.GetSoftwareLists();
+		for (const software_list &softlist : softlists)
+		{
+			auto iter = std::find_if(
+				softlist.get_software().begin(),
+				softlist.get_software().end(),
+				[dev_interface, &name](const software_list::software &x)
+			{
+				bool has_part_for_interface = std::find_if(x.m_parts.begin(), x.m_parts.end(),
+					[dev_interface, &name](const software_list::part &p)
+					{
+						return p.m_interface == *dev_interface;
+					}) != x.m_parts.end();
+				return has_part_for_interface && x.m_name == name;
+			});
+			if (iter != softlist.get_software().end())
+				return &*iter;
+		}
+	}
+	return nullptr;
+}
+
+
+//-------------------------------------------------
+//  DeviceInterfaceFromTag
+//-------------------------------------------------
+
+const wxString *ImagesDialog::DeviceInterfaceFromTag(const wxString &tag)
+{
+	// find the device
+	auto iter = std::find_if(
+		m_host.GetMachine().devices().cbegin(),
+		m_host.GetMachine().devices().end(),
+		[&tag](info::device dev) { return tag == dev.tag(); });
+	return iter != m_host.GetMachine().devices().end()
+		? &(*iter).devinterface()
+		: nullptr;
+}
+
+
+//-------------------------------------------------
 //  ImageMenu
 //-------------------------------------------------
 
@@ -252,11 +349,11 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 		popup_menu.AppendSeparator();
 
 		int id = ID_RECENT_FILES;
+		wxString pretty_buffer;
 		for (const wxString &recent_file : recent_files)
 		{
-			wxString recent_file_basename, recent_file_extension;
-			wxFileName::SplitPath(recent_file, nullptr, &recent_file_basename, &recent_file_extension);
-			popup_menu.Append(id++, recent_file_basename + "." + recent_file_extension);
+			const wxString &pretty_recent_file = PrettifyImageFileName(tag, recent_file, pretty_buffer, false);
+			popup_menu.Append(id++, pretty_recent_file);
 		}
 	}
 
@@ -306,15 +403,10 @@ std::vector<SoftwareAndPart> ImagesDialog::GetSoftwareListParts(const wxString &
 {
 	std::vector<SoftwareAndPart> results;
 
-	// find the device
-	auto iter = std::find_if(
-		m_host.GetMachine().devices().cbegin(),
-		m_host.GetMachine().devices().end(),
-		[&tag](info::device dev) { return tag == dev.tag(); });
-	if (iter != m_host.GetMachine().devices().end())
+	// find the device interface
+	const wxString *dev_interface = DeviceInterfaceFromTag(tag);
+	if (dev_interface)
 	{
-		const wxString &dev_interface = (*iter).devinterface();
-
 		// check software lists
 		const std::vector<software_list> &softlists = m_host.GetSoftwareLists();
 		for (const software_list &softlist : softlists)
@@ -323,7 +415,7 @@ std::vector<SoftwareAndPart> ImagesDialog::GetSoftwareListParts(const wxString &
 			{
 				for (const software_list::part &part : software.m_parts)
 				{
-					if (dev_interface == part.m_interface)
+					if (*dev_interface == part.m_interface)
 						results.emplace_back(softlist, software, part);
 				}
 			}
