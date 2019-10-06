@@ -23,14 +23,6 @@
 
 
 //**************************************************************************
-//  CONSTANTS
-//**************************************************************************
-
-// software list support is not fully baked yet
-#define HAS_SOFTWARE_LISTS	0
-
-
-//**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
@@ -269,7 +261,7 @@ const software_list::software *ImagesDialog::FindSoftwareByName(const wxString &
 	//   2.  there are not special characters that are the telltale signs of file paths
 	//   3.  we can identify the device interface
 	const wxString *dev_interface;
-	if (HAS_SOFTWARE_LISTS && !name.empty() && !has_special_character() && ((dev_interface = DeviceInterfaceFromTag(device_tag)) != nullptr))
+	if (!name.empty() && !has_special_character() && ((dev_interface = DeviceInterfaceFromTag(device_tag)) != nullptr))
 	{
 		const std::vector<software_list> &softlists = m_host.GetSoftwareLists();
 		for (const software_list &softlist : softlists)
@@ -327,16 +319,14 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 		ID_RECENT_FILES
 	};
 
-	// get software list parts that can be loaded (if enabled)
-	std::vector<SoftwareAndPart> parts;
-	if (HAS_SOFTWARE_LISTS)
-		parts = GetSoftwareListParts(tag);
+	// get software list parts that can be loaded
+	std::vector<SoftwareAndPart> parts = GetSoftwareListParts(tag);
 
 	// setup popup menu
 	MenuWithResult popup_menu;
 	if (is_creatable)
 		popup_menu.Append(ID_CREATE_IMAGE, "Create...");
-	popup_menu.Append(ID_LOAD_IMAGE, HAS_SOFTWARE_LISTS ? "Load Image..." : "Load...");
+	popup_menu.Append(ID_LOAD_IMAGE, "Load Image...");
 	if (!parts.empty())
 		popup_menu.Append(ID_LOAD_SOFTWARE_PART, "Load Software List Part...");
 	popup_menu.Append(ID_UNLOAD, "Unload");

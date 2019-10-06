@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 1.next (TBD):
+	- Support for loading software list parts individually (but not yet full softlist software entries)
 	- List views can now be sorted by column
 
 - 1.2 (2019-Sep-18):
