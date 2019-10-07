@@ -115,6 +115,14 @@ public:
 	{
 		GetNode(elements)->m_end_func = std::move(func);
 	}
+	void OnElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func)
+	{
+		for (auto iter = elements.begin(); iter != elements.end(); iter++)
+		{
+			OnEndElementCallback func_duplicate(func);
+			OnElementEnd(*iter, std::move(func_duplicate));
+		}
+	}
 
 	bool Parse(wxInputStream &input);
 	bool Parse(const wxString &file_name);

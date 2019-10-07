@@ -383,7 +383,7 @@ MameFrame::MameFrame()
 	wxPanel *machine_panel = new wxPanel(m_note_book, id++);
 
 	// create the machine list search box
-	m_search_box = new wxTextCtrl(machine_panel, id++, m_prefs.GetSearchBoxText());
+	m_search_box = new wxTextCtrl(machine_panel, id++, m_prefs.GetSearchBoxText(s_machine_collection_view_desc.m_name));
 
 	// create the machine list
 	m_machine_view = new CollectionListView(
@@ -394,7 +394,6 @@ MameFrame::MameFrame()
 		[this](long item, long column) -> const wxString &	{ return GetMachineListItemText(m_info_db.machines()[item], column); },
 		[this]()											{ return m_info_db.machines().size(); },
 		false);
-	m_machine_view->SetFilterText(m_search_box->GetValue());
 	m_info_db.set_on_changed([this]() { m_machine_view->UpdateListView(); });
 	m_on_close_funcs.emplace_back([this]() { m_machine_view->UpdateColumnPrefs(); });
 
@@ -1698,8 +1697,8 @@ void MameFrame::OnProfileListEndLabelEdit(long index)
 
 void MameFrame::OnSearchBoxTextChanged()
 {
-	m_prefs.SetSearchBoxText(m_search_box->GetValue());
-	m_machine_view->SetFilterText(m_search_box->GetValue());
+	m_prefs.SetSearchBoxText(s_machine_collection_view_desc.m_name, m_search_box->GetValue());
+	m_machine_view->UpdateListView();
 }
 
 

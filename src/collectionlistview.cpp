@@ -102,17 +102,20 @@ void CollectionListView::UpdateListView()
 	long collection_size = m_coll_impl->GetSize();
 	int column_count = GetColumnCount();
 
+	// get the filter text
+	const wxString &filter_text = m_prefs.GetSearchBoxText(m_desc.m_name);
+
 	// rebuild the indirection list
 	m_indirections.clear();
 	m_indirections.reserve(collection_size);
 	for (long i = 0; i < collection_size; i++)
 	{
 		// check for a match
-		bool match = m_filter_text.empty();
+		bool match = filter_text.empty();
 		for (int column = 0; !match && (column < column_count); column++)
 		{
 			wxString cell_text = GetActualItemText(i, column);
-			match = util::string_icontains(cell_text, m_filter_text);
+			match = util::string_icontains(cell_text, filter_text);
 		}
 
 		if (match)
@@ -168,20 +171,6 @@ int CollectionListView::CompareActualRows(int row_a, int row_b, int sort_column,
 	return sort_type == ColumnPrefs::sort_type::ASCENDING
 		? compare_result
 		: -compare_result;
-}
-
-
-//-------------------------------------------------
-//  SetFilterText
-//-------------------------------------------------
-
-void CollectionListView::SetFilterText(wxString &&filter_text)
-{
-	if (m_filter_text != filter_text)
-	{
-		m_filter_text = std::move(filter_text);
-		UpdateListView();
-	}
 }
 
 

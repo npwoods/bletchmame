@@ -49,7 +49,6 @@ public:
 
 	void UpdateListView();
 	void UpdateColumnPrefs();
-	void SetFilterText(wxString &&filter_text);
 	int GetActualIndex(long indirect_index) const	{ return m_indirections[indirect_index]; }
 
 protected:
@@ -105,7 +104,6 @@ private:
 	// mutable fields
 	std::vector<int>					m_indirections;
 	wxString							m_softlist;
-	wxString							m_filter_text;
 	int									m_sort_column;
 	ColumnPrefs::sort_type				m_sort_type;
 

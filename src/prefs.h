@@ -122,8 +122,8 @@ public:
 	void SetListViewSelection(const char *view_type, const wxString &softlist_name, wxString &&selection);
 	void SetListViewSelection(const char *view_type, wxString &&selection)						{ SetListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
 
-	const wxString &GetSearchBoxText() const				{ return m_search_box_text; }
-	void SetSearchBoxText(wxString &&search_box_text)		{ m_search_box_text = std::move(search_box_text); }
+	const wxString &GetSearchBoxText(const char *view_type) const								{ return m_list_view_filter[view_type]; }
+	void SetSearchBoxText(const char *view_type, wxString &&search_box_text)					{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
 	bool GetMenuBarShown() const							{ return m_menu_bar_shown; }
 	void SetMenuBarShown(bool menu_bar_shown)				{ m_menu_bar_shown = menu_bar_shown; }
@@ -158,7 +158,7 @@ private:
 	std::map<wxString, MachineInfo>															m_machine_info;
 	list_view_type																			m_selected_tab;
 	std::unordered_map<wxString, wxString>													m_list_view_selection;
-	wxString																				m_search_box_text;
+	mutable std::unordered_map<wxString, wxString>											m_list_view_filter;
 	bool																					m_menu_bar_shown;
 
 	void Save(std::ostream &output);

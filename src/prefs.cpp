@@ -267,7 +267,7 @@ bool Preferences::Load(wxInputStream &input)
 	path_type type = path_type::count;
 	wxString current_machine_name;
 	wxString current_device_type;
-	wxString *current_list_view_selection = nullptr;
+	wxString *current_list_view_parameter = nullptr;
 
 	// clear out state
 	m_machine_info.clear();
@@ -323,18 +323,22 @@ bool Preferences::Load(wxInputStream &input)
 		{
 			attributes.Get("softlist", softlist);
 			wxString key = GetListViewSelectionKey(list_view.c_str(), softlist);
-			current_list_view_selection = &m_list_view_selection[key];
+			current_list_view_parameter = &m_list_view_selection[key];
 		}
 	});
-	xml.OnElementEnd({ "preferences", "selection" }, [&](wxString &&content)
+	xml.OnElementBegin({ "preferences", "searchboxtext" }, [&](const XmlParser::Attributes &attributes)
 	{
-		assert(current_list_view_selection);
-		*current_list_view_selection = std::move(content);
-		current_list_view_selection = nullptr;
+		wxString list_view;
+		if (!attributes.Get("view", list_view))
+			list_view = "machine";
+		current_list_view_parameter = &m_list_view_filter[list_view];
 	});
-	xml.OnElementEnd({ "preferences", "searchboxtext" }, [&](wxString &&content)
+	xml.OnElementEnd({{ "preferences", "selection" },
+					  { "preferences", "searchboxtext" }}, [&](wxString &&content)
 	{
-		SetSearchBoxText(std::move(content));
+		assert(current_list_view_parameter);
+		*current_list_view_parameter = std::move(content);
+		current_list_view_parameter = nullptr;
 	});
 	xml.OnElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -406,8 +410,6 @@ void Preferences::Save(std::ostream &output)
 	if (!m_mame_extra_arguments.IsEmpty())
 		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
-	if (!m_search_box_text.IsEmpty())
-		output << "\t<searchboxtext>" << m_search_box_text.ToStdString() << "</searchboxtext>" << std::endl;
 
 	for (const auto &pair : m_list_view_selection)
 	{
@@ -419,6 +421,12 @@ void Preferences::Save(std::ostream &output)
 				output << "\" softlist=\"" + wxString(softlist);
 			output << "\">" << XmlParser::Escape(pair.second) << "</selection>" << std::endl;
 		}
+	}
+
+	for (const auto &[view_type, text] : m_list_view_filter)
+	{
+		if (!text.empty())
+			output << "\t<searchboxtext view=\"" << view_type << "\">" << text << "</searchboxtext>" << std::endl;
 	}
 
 	// column width/order
