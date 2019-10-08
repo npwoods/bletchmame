@@ -53,11 +53,14 @@ namespace
 		}
 
 	private:
+		Preferences &							m_prefs;
 		std::optional<int>						m_selection;
+		wxTextCtrl *							m_search_box;
 		CollectionListView *					m_list_view;
 		wxButton *								m_ok_button;
 
 		void OnSelectionChanged();
+		void OnSearchBoxTextChanged();
 	};
 };
 
@@ -85,21 +88,31 @@ static const CollectionViewDesc s_view_desc =
 
 ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
 	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxSize(600, 400), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+	, m_prefs(prefs)
+	, m_search_box(nullptr)
 	, m_list_view(nullptr)
 	, m_ok_button(nullptr)
 {
+	int id = wxID_LAST + 1;
+
+	// create the search box
+	const wxString &search_box_text = prefs.GetSearchBoxText(s_view_desc.m_name);
+	m_search_box = new wxTextCtrl(this, id++, search_box_text);
+
 	// create a list view
-	m_list_view = new SoftwareListView(*this, wxID_ANY, prefs, parts);
+	m_list_view = new SoftwareListView(*this, id++, prefs, parts);
 	m_list_view->UpdateListView();
 
 	// bind events
-	Bind(wxEVT_LIST_ITEM_SELECTED,	[this](auto &) { OnSelectionChanged();	}, m_list_view->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED,	[this](auto &) { EndDialog(wxID_OK);	}, m_list_view->GetId());
+	Bind(wxEVT_LIST_ITEM_SELECTED,	[this](auto &) { OnSelectionChanged();		}, m_list_view->GetId());
+	Bind(wxEVT_LIST_ITEM_ACTIVATED,	[this](auto &) { EndDialog(wxID_OK);		}, m_list_view->GetId());
+	Bind(wxEVT_TEXT,				[this](auto &) { OnSearchBoxTextChanged();	}, m_search_box->GetId());
 
 	// specify the sizer
 	SpecifySizer(*this, { boxsizer_orientation::VERTICAL, 10, {
-		{ 1, wxALL | wxEXPAND,		*m_list_view },
-		{ 0, wxALL | wxALIGN_RIGHT,	CreateButtonSizer(wxOK | wxCANCEL) }
+		{ 0, wxRIGHT | wxLEFT | wxEXPAND,	*m_search_box },
+		{ 1, wxALL | wxEXPAND,				*m_list_view },
+		{ 0, wxALL | wxALIGN_RIGHT,			CreateButtonSizer(wxOK | wxCANCEL) }
 	} });
 
 	m_ok_button = dynamic_cast<wxButton *>(FindWindowById(wxID_OK, this));
@@ -120,6 +133,17 @@ void ChooseSoftlistPartDialog::OnSelectionChanged()
 
 	if (m_ok_button)
 		m_ok_button->Enable(m_selection.has_value());
+}
+
+
+//-------------------------------------------------
+//  OnSearchBoxTextChanged
+//-------------------------------------------------
+
+void ChooseSoftlistPartDialog::OnSearchBoxTextChanged()
+{
+	m_prefs.SetSearchBoxText(s_view_desc.m_name, m_search_box->GetValue());
+	m_list_view->UpdateListView();
 }
 
 
