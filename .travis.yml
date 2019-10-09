@@ -24,6 +24,7 @@ cache:
   
 deploy:
   provider: s3
+  edge: true
   bucket: bletchmame
   skip_cleanup: true
   local_dir: rel
