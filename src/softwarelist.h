@@ -38,7 +38,6 @@ public:
 		std::vector<part>	m_parts;
 	};
 
-
 	software_list(const software_list &) = SHOULD_BE_DELETE;
 	software_list(software_list &&) = default;
 
