@@ -297,6 +297,8 @@ const wxString *ImagesDialog::DeviceInterfaceFromTag(const wxString &tag)
 		m_host.GetMachine().devices().cbegin(),
 		m_host.GetMachine().devices().end(),
 		[&tag](info::device dev) { return tag == dev.tag(); });
+
+	// if we found a device, return the interface
 	return iter != m_host.GetMachine().devices().end()
 		? &(*iter).devinterface()
 		: nullptr;
