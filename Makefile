@@ -53,6 +53,7 @@ OBJECTFILES=\
 	$(OBJ)/prefs.o				\
 	$(OBJ)/profile.o			\
 	$(OBJ)/runmachinetask.o		\
+	$(OBJ)/softlistview.o		\
 	$(OBJ)/softwarelist.o		\
 	$(OBJ)/status.o				\
 	$(OBJ)/task.o				\

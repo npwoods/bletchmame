@@ -12,29 +12,9 @@
 #define DIALOGS_CHOOSESW_H
 
 #include "softwarelist.h"
+#include "softlistview.h"
 
 class Preferences;
-
-class SoftwareAndPart
-{
-public:
-	SoftwareAndPart(const software_list &sl, const software_list::software &sw, const software_list::part &p)
-		: m_softlist(sl)
-		, m_software(sw)
-		, m_part(p)
-	{
-	}
-
-	const software_list &softlist() const { return m_softlist; }
-	const software_list::software &software() const { return m_software; }
-	const software_list::part &part() const { return m_part; }
-
-private:
-	const software_list &			m_softlist;
-	const software_list::software &	m_software;
-	const software_list::part &		m_part;
-};
-
 
 std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts);
 
