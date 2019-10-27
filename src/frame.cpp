@@ -431,6 +431,7 @@ MameFrame::MameFrame()
 	m_note_book->AddPage(machine_panel, "Machines");
 	m_note_book->AddPage(m_profile_view, "Profiles");
 	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
+	assert(m_note_book->GetPageCount() == static_cast<size_t>(Preferences::list_view_type::count));
 
 	// set up the file system watcher
 	m_fsw_profiles.SetOwner(this);
@@ -1894,7 +1895,7 @@ void MameFrame::DeleteProfile(const profiles::profile &profile)
 void MameFrame::FocusOnNewProfile(wxString &&new_profile_path)
 {
 	// set the profiles tab as selected
-	m_note_book->SetSelection(1);
+	m_note_book->SetSelection(static_cast<long>(Preferences::list_view_type::profile));
 
 	// set the profile as selected, so we focus on it when we rebuild the list view
 	m_prefs.SetListViewSelection(s_profile_collection_view_desc.m_name, std::move(new_profile_path));
