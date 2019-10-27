@@ -15,6 +15,9 @@
 #include <optional>
 
 #include "utility.h"
+#include "info.h"
+
+class Preferences;
 
 
 // ======================> software_list
@@ -63,5 +66,24 @@ private:
 	bool load(wxInputStream &stream, wxString &error_message);
 };
 
+
+// ======================> software_list_collection
+class software_list_collection
+{
+public:
+	software_list_collection() = default;
+	software_list_collection(const software_list_collection &) = SHOULD_BE_DELETE;
+	software_list_collection(software_list_collection &&) = default;
+
+	// accessors
+	const std::vector<software_list> &software_lists() const { return m_software_lists; }
+
+	// methods
+	void load(const Preferences &prefs, info::machine machine);
+	const software_list::software *find_software_by_name(const wxString &name, const wxString &dev_interface) const;
+
+private:
+	std::vector<software_list>		m_software_lists;
+};
 
 #endif // SOFTWARELIST_H

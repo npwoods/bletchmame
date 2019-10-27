@@ -25,9 +25,9 @@ namespace
 	class ChooseSoftlistPartDialog : public wxDialog
 	{
 	public:
-		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts);
+		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const software_list_collection &software_col, const wxString &dev_interface);
 
-		const std::optional<int> &Selection() const { return m_selection; }
+		wxString Selection() const { return m_list_view->GetSelectedItem(); }
 
 		void UpdateColumnPrefs()
 		{
@@ -36,9 +36,8 @@ namespace
 
 	private:
 		Preferences &							m_prefs;
-		std::optional<int>						m_selection;
 		wxTextCtrl *							m_search_box;
-		CollectionListView *					m_list_view;
+		SoftwareListView *						m_list_view;
 		wxButton *								m_ok_button;
 
 		void OnSelectionChanged();
@@ -55,7 +54,7 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
+ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const software_list_collection &software_col, const wxString &dev_interface)
 	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxSize(600, 400), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	, m_prefs(prefs)
 	, m_search_box(nullptr)
@@ -69,7 +68,8 @@ ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences
 	m_search_box = new wxTextCtrl(this, id++, search_box_text);
 
 	// create a list view
-	m_list_view = new SoftwareListView(*this, id++, prefs, parts);
+	m_list_view = new SoftwareListView(*this, id++, prefs);
+	m_list_view->Load(software_col, true, dev_interface);
 	m_list_view->UpdateListView();
 
 	// bind events
@@ -95,13 +95,9 @@ ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences
 
 void ChooseSoftlistPartDialog::OnSelectionChanged()
 {
-	long first_selected = m_list_view->GetFirstSelected();
-	m_selection = first_selected >= 0
-		? m_list_view->GetActualIndex(first_selected)
-		: std::optional<int>();
-
+	bool has_selection = m_list_view->GetFirstSelected() >= 0;
 	if (m_ok_button)
-		m_ok_button->Enable(m_selection.has_value());
+		m_ok_button->Enable(has_selection);
 }
 
 
@@ -120,10 +116,10 @@ void ChooseSoftlistPartDialog::OnSearchBoxTextChanged()
 //  show_choose_software_dialog
 //-------------------------------------------------
 
-std::optional<int> show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
+wxString show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const software_list_collection &software_col, const wxString &dev_interface)
 {
-	ChooseSoftlistPartDialog dialog(parent, prefs, parts);
+	ChooseSoftlistPartDialog dialog(parent, prefs, software_col, dev_interface);
 	int rc = dialog.ShowModal();
 	dialog.UpdateColumnPrefs();
-	return rc == wxID_OK ? dialog.Selection() : std::optional<int>();
+	return rc == wxID_OK ? dialog.Selection() : wxString();
 }

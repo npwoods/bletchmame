@@ -38,6 +38,10 @@
 #include "info.h"
 #include "status.h"
 
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+#include "softlistview.h"
+#endif
+
 
 //**************************************************************************
 //  CONSTANTS
@@ -111,7 +115,6 @@ namespace
 			virtual observable::value<std::vector<status::image>> &GetImages();
 			virtual const wxString &GetWorkingDirectory() const;
 			virtual void SetWorkingDirectory(wxString &&dir);
-			virtual const std::vector<software_list> &GetSoftwareLists();
 			virtual const std::vector<wxString> &GetRecentFiles(const wxString &tag) const;
 			virtual std::vector<wxString> GetExtensions(const wxString &tag) const;
 			virtual void CreateImage(const wxString &tag, wxString &&path);
@@ -167,6 +170,9 @@ namespace
 		wxTextCtrl *							m_search_box;
 		wxNotebook *							m_note_book;
 		CollectionListView *				    m_machine_view;
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+		SoftwareListView *						m_software_list_view;
+#endif
 		CollectionListView *				    m_profile_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
@@ -179,15 +185,14 @@ namespace
 		observable::unique_subscription			m_watch_subscription;
 		std::vector<std::function<void()>>		m_on_close_funcs;
 		wxFileSystemWatcher						m_fsw_profiles;
+		software_list_collection				m_software_list_collection;
+		wxString								m_software_list_collection_machine_name;
 
 		// information retrieved by -version
 		wxString								m_mame_version;
 
 		// information retrieved by -listxml
 		info::database							m_info_db;
-
-		// software lists
-		std::optional<std::vector<software_list>>			m_software_lists;
 
 		// profile list
 		observable::value<std::vector<profiles::profile>>	m_profiles;
@@ -274,8 +279,10 @@ namespace
 		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
 		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
-		const std::vector<software_list> &GetSoftwareLists();
 		void WatchForImageMount(const wxString &tag);
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+		void UpdateSoftwareList();
+#endif
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -352,6 +359,9 @@ MameFrame::MameFrame()
 	, m_search_box(nullptr)
 	, m_note_book(nullptr)
 	, m_machine_view(nullptr)
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	, m_software_list_view(nullptr)
+#endif
 	, m_profile_view(nullptr)
 	, m_menu_bar(nullptr)
 	, m_menu_bar_shown(false)
@@ -404,6 +414,11 @@ MameFrame::MameFrame()
 		{ 1, wxEXPAND, *m_machine_view }
 	}});
 
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	// create the software list
+	m_software_list_view = new SoftwareListView(*m_note_book, id++, m_prefs);
+#endif
+
 	// create the profile view
 	m_profile_view = new CollectionListView(
 		*m_note_book,
@@ -430,6 +445,9 @@ MameFrame::MameFrame()
 
 	// add the notebook pages
 	m_note_book->AddPage(machine_panel, "Machines");
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	m_note_book->AddPage(m_software_list_view, "Software");
+#endif
 	m_note_book->AddPage(m_profile_view, "Profiles");
 	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
 	assert(m_note_book->GetPageCount() == static_cast<size_t>(Preferences::list_view_type::count));
@@ -797,7 +815,6 @@ void MameFrame::Run(const info::machine &machine, const profiles::profile *profi
 	m_client.Launch(std::move(task));
 
 	// set up running state and subscribe to events
-	m_software_lists.reset();
 	m_state.emplace();
 	m_state->paused().subscribe(				[this]() { UpdateTitleBar(); });
 	m_state->phase().subscribe(					[this]() { UpdateStatusBar(); });
@@ -1369,7 +1386,6 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 	// clear out all of the state
 	m_client.Reset();
 	m_state.reset();
-	m_software_lists.reset();
 	m_current_profile_path = util::g_empty_string;
 	m_current_profile_auto_save_state = false;
     UpdateEmulationSession();
@@ -1384,6 +1400,34 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 
 
 //-------------------------------------------------
+//  UpdateSoftwareList
+//-------------------------------------------------
+
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+void MameFrame::UpdateSoftwareList()
+{
+	long selected = m_machine_view->GetFirstSelected();
+	if (selected >= 0)
+	{
+		int actual_selected = m_machine_view->GetActualIndex(selected);
+		info::machine machine = m_info_db.machines()[actual_selected];
+		if (machine.name() != m_software_list_collection_machine_name)
+		{
+			m_software_list_collection.load(m_prefs, machine);
+			m_software_list_collection_machine_name = machine.name();
+		}
+		m_software_list_view->Load(m_software_list_collection, false);
+	}
+	else
+	{
+		m_software_list_view->Clear();
+	}
+	m_software_list_view->UpdateListView();
+}
+#endif
+
+
+//-------------------------------------------------
 //  OnStatusUpdate
 //-------------------------------------------------
 
@@ -1392,34 +1436,6 @@ void MameFrame::OnStatusUpdate(PayloadEvent<status::update> &event)
 	status::update &payload = event.Payload();
 	m_state->update(std::move(payload));
 	m_pinging = false;
-}
-
-
-//-------------------------------------------------
-//  GetSoftwareLists
-//-------------------------------------------------
-
-const std::vector<software_list> &MameFrame::GetSoftwareLists()
-{
-	// we load software lists on demand - did we load them?
-	if (!m_software_lists.has_value())
-	{
-		// we didn't - first emplace the list
-		m_software_lists.emplace();
-
-		// next load the lists
-		if (!GetRunningMachine().software_lists().empty())
-		{
-			std::vector<wxString> hash_paths = m_prefs.GetSplitPaths(Preferences::path_type::hash);
-			for (const info::software_list softlist_info : GetRunningMachine().software_lists())
-			{
-				std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());
-				if (softlist.has_value())
-					m_software_lists.value().push_back(std::move(softlist.value()));
-			}
-		}
-	}
-	return *m_software_lists;
 }
 
 
@@ -1594,6 +1610,19 @@ void MameFrame::OnNotebookPageChanged(wxNotebookEvent &event)
 {
 	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(event.GetSelection());
 	m_prefs.SetSelectedTab(list_view_type);
+
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	switch (list_view_type)
+	{
+	case Preferences::list_view_type::softwarelist:
+		if (!m_state)
+		{
+			m_software_list_collection_machine_name.clear();
+			UpdateSoftwareList();
+		}
+		break;
+	}
+#endif
 }
 
 
@@ -2331,16 +2360,6 @@ const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 {
 	m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::working_directory, std::move(dir));
-}
-
-
-//-------------------------------------------------
-//  GetSoftwareLists
-//-------------------------------------------------
-
-const std::vector<software_list> &MameFrame::ImagesHost::GetSoftwareLists()
-{
-	return m_host.GetSoftwareLists();
 }
 
 

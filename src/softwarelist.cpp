@@ -11,9 +11,14 @@
 #include <wx/filename.h>
 
 #include "softwarelist.h"
+#include "prefs.h"
 #include "xmlparser.h"
 #include "validity.h"
 
+
+//**************************************************************************
+//  SOFTWARE LIST
+//**************************************************************************
 
 //-------------------------------------------------
 //  load
@@ -130,6 +135,66 @@ void software_list::test()
 	}
 }
 
+
+//**************************************************************************
+//  SOFTWARE LIST COLLECTION
+//**************************************************************************
+
+//-------------------------------------------------
+//  software_list_collection::load
+//-------------------------------------------------
+
+void software_list_collection::load(const Preferences &prefs, info::machine machine)
+{
+	m_software_lists.clear();
+	std::vector<wxString> hash_paths = prefs.GetSplitPaths(Preferences::path_type::hash);
+	for (const info::software_list softlist_info : machine.software_lists())
+	{
+		std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());
+		if (softlist.has_value())
+			m_software_lists.push_back(std::move(softlist.value()));
+	}
+}
+
+
+//-------------------------------------------------
+//  software_list_collection::find_software_by_name
+//-------------------------------------------------
+ 
+const software_list::software *software_list_collection::find_software_by_name(const wxString &name, const wxString &dev_interface) const
+{
+	// local function to determine if there is a special character
+	auto has_special_character = [&name]()
+	{
+		return std::find_if(name.cbegin(), name.cend(), [](wxChar ch)
+		{
+			return ch == '.' || ch == ':' || ch == '/' || ch == '\\';
+		}) != name.cend();
+	};
+
+	if (!name.empty() && !has_special_character())
+	{
+		for (const software_list &swlist : software_lists())
+		{
+			const software_list::software *sw = util::find_if_ptr(swlist.get_software(), [&name, &dev_interface](const software_list::software &sw)
+			{
+				return sw.m_name == name
+					&& (dev_interface.empty() || util::find_if_ptr(sw.m_parts, [&dev_interface](const software_list::part &x)
+					{
+						return x.m_interface == dev_interface;
+					}));
+			});
+			if (sw)
+				return sw;
+		}
+	}
+	return nullptr;
+}
+
+
+//**************************************************************************
+//  VALIDITY CHECKS
+//**************************************************************************
 
 //-------------------------------------------------
 //  validity_checks

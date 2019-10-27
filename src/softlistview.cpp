@@ -30,7 +30,7 @@ static const CollectionViewDesc s_view_desc =
 //  ctor
 //-------------------------------------------------
 
-SoftwareListView::SoftwareListView(wxWindow &parent, wxWindowID winid, Preferences &prefs, const std::vector<SoftwareAndPart> &parts)
+SoftwareListView::SoftwareListView(wxWindow &parent, wxWindowID winid, Preferences &prefs)
 	: CollectionListView(
 		parent,
 		winid,
@@ -39,14 +39,57 @@ SoftwareListView::SoftwareListView(wxWindow &parent, wxWindowID winid, Preferenc
 		[this](long item, long column) -> const wxString &{ return GetListItemText(m_parts[item].software(), column); },
 		[this]() { return m_parts.size(); },
 		false)
-	, m_parts(parts)
 {
-	for (const auto &part : parts)
+}
+
+
+//-------------------------------------------------
+//  Load
+//-------------------------------------------------
+
+void SoftwareListView::Load(const software_list_collection &software_col, bool load_parts, const wxString &dev_interface)
+{
+	// clear things out
+	Clear();
+
+	// now enumerate through each list and build the m_parts vector
+	for (const software_list &softlist : software_col.software_lists())
 	{
-		const wxString &name = part.softlist().name();
-		if (std::find(m_softlist_names.begin(), m_softlist_names.end(), name) == m_softlist_names.end())
-			m_softlist_names.push_back(name);
+		// if the name of this software list is not in m_softlist_names, add it
+		if (std::find(m_softlist_names.begin(), m_softlist_names.end(), softlist.name()) == m_softlist_names.end())
+			m_softlist_names.push_back(softlist.name());
+
+		// now enumerate through all software
+		for (const software_list::software &software : softlist.get_software())
+		{
+			if (load_parts)
+			{
+				// we're loading individual parts; enumerate through them and add them
+				for (const software_list::part &part : software.m_parts)
+				{
+					if (dev_interface.empty() || dev_interface == part.m_interface)
+						m_parts.emplace_back(softlist, software, &part);
+				}
+			}
+			else
+			{
+				// we're not loading individual parts
+				assert(dev_interface.empty());
+				m_parts.emplace_back(softlist, software, nullptr);
+			}
+		}
 	}
+}
+
+
+//-------------------------------------------------
+//  Clear
+//-------------------------------------------------
+
+void SoftwareListView::Clear()
+{
+	m_parts.clear();
+	m_softlist_names.clear();
 }
 
 
@@ -99,4 +142,24 @@ void SoftwareListView::SetListViewSelection(const wxString &selection)
 		wxString this_selection = found ? selection : wxString();
 		Prefs().SetListViewSelection(s_view_desc.m_name, softlist_name, std::move(this_selection));
 	}
+}
+
+
+//-------------------------------------------------
+//  GetSelectedItem
+//-------------------------------------------------
+
+wxString SoftwareListView::GetSelectedItem() const
+{
+	wxString result;
+
+	long selected_item = GetFirstSelected();
+	if (selected_item >= 0)
+	{
+		int actual_selected_item = GetActualIndex(selected_item);
+		result = m_parts[actual_selected_item].has_part()
+			? m_parts[actual_selected_item].software().m_name
+			: wxString::Format("%s:%s", m_parts[actual_selected_item].software().m_name, m_parts[actual_selected_item].part().m_name);
+	}
+	return result;
 }

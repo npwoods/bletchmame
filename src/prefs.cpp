@@ -50,6 +50,9 @@ static const util::enum_parser_bidirectional<ColumnPrefs::sort_type> s_column_so
 static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list_view_type_parser =
 {
 	{ "machine", Preferences::list_view_type::machine, },
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	{ "softwarelist", Preferences::list_view_type::softwarelist, },
+#endif
 	{ "profile", Preferences::list_view_type::profile }
 };
 

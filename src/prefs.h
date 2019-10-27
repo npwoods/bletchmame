@@ -20,6 +20,9 @@
 
 #include "utility.h"
 
+// this feature is not ready yet; conditionally enabling
+#define HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW	0
+
 
 struct ColumnPrefs
 {
@@ -64,6 +67,9 @@ public:
 	enum class list_view_type
 	{
 		machine,
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+		softwarelist,
+#endif
 		profile,
 
 		count
