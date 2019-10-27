@@ -222,6 +222,7 @@ namespace
 		void OnMenuInputs(status::input::input_class input_class);
 		void OnMenuSwitches(status::input::input_class input_class);
 		void OnMenuAbout();
+		void OnNotebookPageChanged(wxNotebookEvent &event);
 		void OnMachineListItemActivated(wxListEvent &event);
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
@@ -445,7 +446,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_KEY_DOWN,				[this](auto &event) { OnKeyDown(event);             															});
 	Bind(wxEVT_SIZE,					[this](auto &event) { OnSize(event);																			});
 	Bind(wxEVT_CLOSE_WINDOW,			[this](auto &event) { OnClose(event);																			});
-	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &event) { m_prefs.SetSelectedTab(static_cast<Preferences::list_view_type>(event.GetSelection()));	}, m_note_book->GetId());
+	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &event) { OnNotebookPageChanged(event);																}, m_note_book->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
@@ -1582,6 +1583,17 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 
 	// finally issue the actual commands
 	Issue(commands);
+}
+
+
+//-------------------------------------------------
+//  OnNotebookPageChanged
+//-------------------------------------------------
+
+void MameFrame::OnNotebookPageChanged(wxNotebookEvent &event)
+{
+	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(event.GetSelection());
+	m_prefs.SetSelectedTab(list_view_type);
 }
 
 
