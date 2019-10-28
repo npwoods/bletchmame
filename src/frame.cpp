@@ -413,8 +413,20 @@ MameFrame::MameFrame()
 	}});
 
 #if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	// create the software list panel
+	wxPanel &software_panel = *new wxPanel(m_note_book, id++);
+
 	// create the software list
-	m_software_list_view = new SoftwareListView(*m_note_book, id++, m_prefs);
+	m_software_list_view = new SoftwareListView(software_panel, id++, m_prefs);
+
+	// create the machine list search box
+	wxTextCtrl &software_search_box = CreateSearchBox(software_panel, id, SOFTLIST_VIEW_DESC_NAME, *m_software_list_view);
+
+	// specify the sizer on the software panel
+	SpecifySizer(software_panel, { boxsizer_orientation::VERTICAL, 0, {
+		{ 0, wxEXPAND, software_search_box },
+		{ 1, wxEXPAND, *m_software_list_view }
+	} });
 #endif
 
 	// create the profile view
@@ -444,7 +456,7 @@ MameFrame::MameFrame()
 	// add the notebook pages
 	m_note_book->AddPage(&machine_panel, "Machines");
 #if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
-	m_note_book->AddPage(m_software_list_view, "Software");
+	m_note_book->AddPage(&software_panel, "Software");
 #endif
 	m_note_book->AddPage(m_profile_view, "Profiles");
 	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
