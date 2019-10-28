@@ -167,7 +167,6 @@ namespace
 
 		MameClient								m_client;
 		Preferences							    m_prefs;
-		wxTextCtrl *							m_search_box;
 		wxNotebook *							m_note_book;
 		CollectionListView *				    m_machine_view;
 #if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
@@ -233,7 +232,6 @@ namespace
 		void OnMachineListItemContextMenu(wxListEvent &event);
 		void OnProfileListItemContextMenu(wxListEvent &event);
 		void OnProfileListEndLabelEdit(long index);
-		void OnSearchBoxTextChanged();
 
 		// task notifications
 		void OnVersionCompleted(PayloadEvent<VersionResult> &event);
@@ -270,6 +268,7 @@ namespace
 		info::machine GetMachineFromIndex(long item) const;
 		const wxString &GetMachineListItemText(info::machine machine, long column) const;
 		const wxString &GetProfileListItemText(const profiles::profile &p, long column) const;
+		wxTextCtrl &CreateSearchBox(wxWindow &parent, int &id, const char *collection_view_desc_name, CollectionListView &view);
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
 		void UpdateMenuBar();
@@ -356,7 +355,6 @@ static const CollectionViewDesc s_profile_collection_view_desc =
 MameFrame::MameFrame()
 	: wxFrame(nullptr, wxID_ANY, wxTheApp->GetAppName())
 	, m_client(*this, m_prefs)
-	, m_search_box(nullptr)
 	, m_note_book(nullptr)
 	, m_machine_view(nullptr)
 #if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
@@ -391,14 +389,11 @@ MameFrame::MameFrame()
 	m_note_book = new wxNotebook(this, id++);
 
 	// create the machine list panel
-	wxPanel *machine_panel = new wxPanel(m_note_book, id++);
-
-	// create the machine list search box
-	m_search_box = new wxTextCtrl(machine_panel, id++, m_prefs.GetSearchBoxText(s_machine_collection_view_desc.m_name));
+	wxPanel &machine_panel = *new wxPanel(m_note_book, id++);
 
 	// create the machine list
 	m_machine_view = new CollectionListView(
-		*machine_panel,
+		machine_panel,
 		id++,
 		m_prefs,
 		s_machine_collection_view_desc,
@@ -408,9 +403,12 @@ MameFrame::MameFrame()
 	m_info_db.set_on_changed([this]() { m_machine_view->UpdateListView(); });
 	m_on_close_funcs.emplace_back([this]() { m_machine_view->UpdateColumnPrefs(); });
 
+	// create the machine list search box
+	wxTextCtrl &machine_search_box = CreateSearchBox(machine_panel, id, s_machine_collection_view_desc.m_name, *m_machine_view);
+
 	// specify the sizer on the machine panel
-	SpecifySizer(*machine_panel, { boxsizer_orientation::VERTICAL, 0, {
-		{ 0, wxEXPAND, *m_search_box },
+	SpecifySizer(machine_panel, { boxsizer_orientation::VERTICAL, 0, {
+		{ 0, wxEXPAND, machine_search_box },
 		{ 1, wxEXPAND, *m_machine_view }
 	}});
 
@@ -444,7 +442,7 @@ MameFrame::MameFrame()
 	UpdateProfileDirectories(true, true);
 
 	// add the notebook pages
-	m_note_book->AddPage(machine_panel, "Machines");
+	m_note_book->AddPage(&machine_panel, "Machines");
 #if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 	m_note_book->AddPage(m_software_list_view, "Software");
 #endif
@@ -471,7 +469,6 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnProfileListEndLabelEdit(event.GetIndex());												}, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
-	Bind(wxEVT_TEXT,					[this](auto &)		{ OnSearchBoxTextChanged();																	}, m_search_box->GetId());
 	Bind(wxEVT_FSWATCHER,				[this](auto &)		{ UpdateProfileDirectories(true, false);													});
 
 	// nothing is running yet...
@@ -1734,13 +1731,27 @@ void MameFrame::OnProfileListEndLabelEdit(long index)
 
 
 //-------------------------------------------------
-//  OnSearchBoxTextChanged
+//  CreateSearchBox
 //-------------------------------------------------
 
-void MameFrame::OnSearchBoxTextChanged()
+wxTextCtrl &MameFrame::CreateSearchBox(wxWindow &parent, int &id, const char *collection_view_desc_name, CollectionListView &view)
 {
-	m_prefs.SetSearchBoxText(s_machine_collection_view_desc.m_name, m_search_box->GetValue());
-	m_machine_view->UpdateListView();
+	// get the initial text
+	const wxString &text = m_prefs.GetSearchBoxText(collection_view_desc_name);
+
+	// create the search box
+	wxTextCtrl &search_box = *new wxTextCtrl(&parent, id++, text);
+
+	// bind the event
+	auto on_changed = [this, collection_view_desc_name, &view, &search_box](wxEvent &)
+	{
+		m_prefs.SetSearchBoxText(collection_view_desc_name, search_box.GetValue());
+		view.UpdateListView();
+	};
+	Bind(wxEVT_TEXT, on_changed, search_box.GetId());
+
+	// return the result
+	return search_box;
 }
 
 
@@ -2004,7 +2015,6 @@ void MameFrame::UpdateEmulationSession()
 	// if so, hide the machine list UX
 	m_note_book->Show(!is_active);
 	m_machine_view->Show(!is_active);
-	m_search_box->Show(!is_active);
 
 	// ...and enable pinging
 	if (is_active)
