@@ -226,7 +226,7 @@ namespace
 		void OnMenuInputs(status::input::input_class input_class);
 		void OnMenuSwitches(status::input::input_class input_class);
 		void OnMenuAbout();
-		void OnNotebookPageChanged(wxNotebookEvent &event);
+		void OnNotebookPageChanged();
 		void OnMachineListItemActivated(wxListEvent &event);
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
@@ -474,7 +474,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_KEY_DOWN,				[this](auto &event) { OnKeyDown(event);             															});
 	Bind(wxEVT_SIZE,					[this](auto &event) { OnSize(event);																			});
 	Bind(wxEVT_CLOSE_WINDOW,			[this](auto &event) { OnClose(event);																			});
-	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &event) { OnNotebookPageChanged(event);																}, m_note_book->GetId());
+	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &)		{ OnNotebookPageChanged();																	}, m_note_book->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
@@ -488,6 +488,10 @@ MameFrame::MameFrame()
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
+
+	// intial notebook page "change" (we need to do this here because of the software
+	// list view's dependency on the machine list)
+	OnNotebookPageChanged();
 }
 
 
@@ -1615,9 +1619,9 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 //  OnNotebookPageChanged
 //-------------------------------------------------
 
-void MameFrame::OnNotebookPageChanged(wxNotebookEvent &event)
+void MameFrame::OnNotebookPageChanged()
 {
-	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(event.GetSelection());
+	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(m_note_book->GetSelection());
 	m_prefs.SetSelectedTab(list_view_type);
 
 #if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
