@@ -70,8 +70,9 @@ wxString BuildCommand(const std::vector<wxString> &args)
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(info::machine machine, wxWindow &target_window)
+RunMachineTask::RunMachineTask(info::machine machine, wxString &&software, wxWindow &target_window)
     : m_machine(machine)
+	, m_software(software)
     , m_target_window((std::uintptr_t)target_window.GetHWND())
 	, m_chatter_enabled(false)
 {
@@ -84,9 +85,12 @@ RunMachineTask::RunMachineTask(info::machine machine, wxWindow &target_window)
 
 std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) const
 {
-	return
+	std::vector<wxString> results = { GetMachine().name() };
+	if (!m_software.empty())
+		results.push_back(m_software);
+
+	std::vector<wxString> args =
 	{
-		GetMachine().name(),
 		"-rompath",
 		prefs.GetPathWithSubstitutions(Preferences::path_type::roms),
 		"-samplepath",
@@ -115,6 +119,11 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"-plugin",
 		WORKER_UI_PLUGIN_NAME
 	};
+
+	results.reserve(results.size() + args.size());
+	for (wxString &arg : args)
+		results.push_back(std::move(arg));
+	return results;
 }
 
 

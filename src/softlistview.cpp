@@ -158,8 +158,8 @@ wxString SoftwareListView::GetSelectedItem() const
 	{
 		int actual_selected_item = GetActualIndex(selected_item);
 		result = m_parts[actual_selected_item].has_part()
-			? m_parts[actual_selected_item].software().m_name
-			: wxString::Format("%s:%s", m_parts[actual_selected_item].software().m_name, m_parts[actual_selected_item].part().m_name);
+			? wxString::Format("%s:%s", m_parts[actual_selected_item].software().m_name, m_parts[actual_selected_item].part().m_name)
+			: m_parts[actual_selected_item].software().m_name;
 	}
 	return result;
 }

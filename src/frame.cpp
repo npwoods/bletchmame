@@ -228,6 +228,9 @@ namespace
 		void OnMenuAbout();
 		void OnNotebookPageChanged();
 		void OnMachineListItemActivated(wxListEvent &event);
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+		void OnSoftwareListItemActivated();
+#endif
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
 		void OnProfileListItemContextMenu(wxListEvent &event);
@@ -259,7 +262,7 @@ namespace
 		bool PromptForMameExecutable();
 		bool RefreshMameInfoDatabase();
 		info::machine GetRunningMachine() const;
-		void Run(const info::machine &machine, const profiles::profile *profile = nullptr);
+		void Run(const info::machine &machine, wxString &&software = wxString(), const profiles::profile *profile = nullptr);
 		void Run(const profiles::profile &profile);
 		wxString PreflightCheck();
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
@@ -476,6 +479,9 @@ MameFrame::MameFrame()
 	Bind(wxEVT_CLOSE_WINDOW,			[this](auto &event) { OnClose(event);																			});
 	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &)		{ OnNotebookPageChanged();																	}, m_note_book->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &)		{ OnSoftwareListItemActivated();															}, m_software_list_view->GetId());
+#endif
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
@@ -807,7 +813,7 @@ info::machine MameFrame::GetRunningMachine() const
 //  Run
 //-------------------------------------------------
 
-void MameFrame::Run(const info::machine &machine, const profiles::profile *profile)
+void MameFrame::Run(const info::machine &machine, wxString &&software, const profiles::profile *profile)
 {
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
 	wxString preflight_errors = PreflightCheck();
@@ -824,6 +830,7 @@ void MameFrame::Run(const info::machine &machine, const profiles::profile *profi
 	// run the emulation
 	Task::ptr task = std::make_unique<RunMachineTask>(
 		machine,
+		std::move(software),
 		*this);
 	m_client.Launch(std::move(task));
 
@@ -911,7 +918,7 @@ void MameFrame::Run(const profiles::profile &profile)
 		return;
 	}
 
-	Run(machine.value(), &profile);
+	Run(machine.value(), wxString(), &profile);
 }
 
 
@@ -1649,6 +1656,26 @@ void MameFrame::OnMachineListItemActivated(wxListEvent &evt)
 	const info::machine machine = GetMachineFromIndex(index);
 	Run(machine);
 }
+
+
+//-------------------------------------------------
+//  OnSoftwareListItemActivated
+//-------------------------------------------------
+
+#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
+void MameFrame::OnSoftwareListItemActivated()
+{
+	// identify the machine
+	long machine_index = m_machine_view->GetFirstSelected();
+	const info::machine machine = GetMachineFromIndex(machine_index);
+
+	// identify the software
+	wxString software = m_software_list_view->GetSelectedItem();
+
+	// and run!
+	Run(machine, std::move(software));
+}
+#endif // HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 
 
 //-------------------------------------------------

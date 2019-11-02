@@ -79,7 +79,7 @@ struct Machine;
 class RunMachineTask : public Task
 {
 public:
-	RunMachineTask(info::machine machine, wxWindow &target_window);
+	RunMachineTask(info::machine machine, wxString &&software, wxWindow &target_window);
 
 	void Issue(const std::vector<wxString> &args);
 	void IssueFullCommandLine(const wxString &full_command);
@@ -123,6 +123,7 @@ private:
 	};
 
 	info::machine					m_machine;
+	wxString						m_software;
 	std::uintptr_t					m_target_window;
 	wxMessageQueue<Message>         m_message_queue;
 	volatile bool					m_chatter_enabled;
