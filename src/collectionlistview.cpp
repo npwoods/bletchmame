@@ -93,7 +93,7 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 
 
 //-------------------------------------------------
-//  UpdateMachineList
+//  UpdateListView
 //-------------------------------------------------
 
 void CollectionListView::UpdateListView()
