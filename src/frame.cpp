@@ -37,10 +37,7 @@
 #include "virtuallistview.h"
 #include "info.h"
 #include "status.h"
-
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 #include "softlistview.h"
-#endif
 
 
 //**************************************************************************
@@ -169,9 +166,7 @@ namespace
 		Preferences							    m_prefs;
 		wxNotebook *							m_note_book;
 		CollectionListView *				    m_machine_view;
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 		SoftwareListView *						m_software_list_view;
-#endif
 		CollectionListView *				    m_profile_view;
 		wxMenuBar *							    m_menu_bar;
 		wxAcceleratorTable						m_menu_bar_accelerators;
@@ -228,9 +223,7 @@ namespace
 		void OnMenuAbout();
 		void OnNotebookPageChanged();
 		void OnMachineListItemActivated(wxListEvent &event);
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 		void OnSoftwareListItemActivated();
-#endif
 		void OnProfileListItemActivated(wxListEvent &event);
 		void OnMachineListItemContextMenu(wxListEvent &event);
 		void OnProfileListItemContextMenu(wxListEvent &event);
@@ -282,9 +275,7 @@ namespace
 		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
 		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
 		void WatchForImageMount(const wxString &tag);
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 		void UpdateSoftwareList();
-#endif
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -360,9 +351,7 @@ MameFrame::MameFrame()
 	, m_client(*this, m_prefs)
 	, m_note_book(nullptr)
 	, m_machine_view(nullptr)
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 	, m_software_list_view(nullptr)
-#endif
 	, m_profile_view(nullptr)
 	, m_menu_bar(nullptr)
 	, m_menu_bar_shown(false)
@@ -415,7 +404,6 @@ MameFrame::MameFrame()
 		{ 1, wxEXPAND, *m_machine_view }
 	}});
 
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 	// create the software list panel
 	wxPanel &software_panel = *new wxPanel(m_note_book, id++);
 
@@ -430,7 +418,6 @@ MameFrame::MameFrame()
 		{ 0, wxEXPAND, software_search_box },
 		{ 1, wxEXPAND, *m_software_list_view }
 	} });
-#endif
 
 	// create the profile view
 	m_profile_view = new CollectionListView(
@@ -458,9 +445,7 @@ MameFrame::MameFrame()
 
 	// add the notebook pages
 	m_note_book->AddPage(&machine_panel, "Machines");
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 	m_note_book->AddPage(&software_panel, "Software");
-#endif
 	m_note_book->AddPage(m_profile_view, "Profiles");
 	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
 	assert(m_note_book->GetPageCount() == static_cast<size_t>(Preferences::list_view_type::count));
@@ -479,9 +464,7 @@ MameFrame::MameFrame()
 	Bind(wxEVT_CLOSE_WINDOW,			[this](auto &event) { OnClose(event);																			});
 	Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,	[this](auto &)		{ OnNotebookPageChanged();																	}, m_note_book->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &)		{ OnSoftwareListItemActivated();															}, m_software_list_view->GetId());
-#endif
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
@@ -1423,7 +1406,6 @@ void MameFrame::OnRunMachineCompleted(PayloadEvent<RunMachineResult> &event)
 //  UpdateSoftwareList
 //-------------------------------------------------
 
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 void MameFrame::UpdateSoftwareList()
 {
 	long selected = m_machine_view->GetFirstSelected();
@@ -1444,7 +1426,6 @@ void MameFrame::UpdateSoftwareList()
 	}
 	m_software_list_view->UpdateListView();
 }
-#endif
 
 
 //-------------------------------------------------
@@ -1631,7 +1612,6 @@ void MameFrame::OnNotebookPageChanged()
 	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(m_note_book->GetSelection());
 	m_prefs.SetSelectedTab(list_view_type);
 
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 	switch (list_view_type)
 	{
 	case Preferences::list_view_type::softwarelist:
@@ -1642,7 +1622,6 @@ void MameFrame::OnNotebookPageChanged()
 		}
 		break;
 	}
-#endif
 }
 
 
@@ -1662,7 +1641,6 @@ void MameFrame::OnMachineListItemActivated(wxListEvent &evt)
 //  OnSoftwareListItemActivated
 //-------------------------------------------------
 
-#if HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 void MameFrame::OnSoftwareListItemActivated()
 {
 	// identify the machine
@@ -1675,7 +1653,6 @@ void MameFrame::OnSoftwareListItemActivated()
 	// and run!
 	Run(machine, std::move(software));
 }
-#endif // HAS_SOFTWARE_LISTS_ON_MAIN_WINDOW
 
 
 //-------------------------------------------------
