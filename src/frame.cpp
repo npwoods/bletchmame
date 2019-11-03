@@ -1713,7 +1713,8 @@ void MameFrame::OnProfileListItemContextMenu(wxListEvent &event)
 {
 	// find the profile
 	long index = event.GetIndex();
-	const profiles::profile &profile = m_profiles.get()[index];
+	int actual_index = m_profile_view->GetActualIndex(index);
+	const profiles::profile &profile = m_profiles.get()[actual_index];
 
 	// build the popup menu
 	int id = ID_POPUP_MENU_BEGIN;
@@ -1746,17 +1747,14 @@ void MameFrame::OnProfileListEndLabelEdit(long index)
 	const wxString value = edit_control->GetValue();
 
 	// find the profile
-	const profiles::profile &profile = m_profiles.get()[index];
+	int actual_index = m_profile_view->GetActualIndex(index);
+	const profiles::profile &profile = m_profiles.get()[actual_index];
 
 	// come up with the new file name
 	wxFileName new_file_name(profile.directory_path() + "/");
 	new_file_name.SetName(value);
 	new_file_name.SetExt("bletchmameprofile");
 	wxString new_path = new_file_name.GetFullPath();
-
-	// are the paths the same?  if so, this has no meaning
-	if (profile.path() == new_path)
-		return;
 
 	// try to rename
 	if (profiles::profile::profile_file_rename(profile.path(), new_path))

@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 1.4 (TBD):
 	- Full software list support
+	- Fixed recently introduced bugs in the profiles view that could caused actions to be made against an incorrect profile
 
 - 1.3 (2019-Oct-9):
 	- Support for loading software list parts individually (but not yet full softlist software entries)

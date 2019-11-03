@@ -210,14 +210,24 @@ wxString profiles::profile::change_path_save_state(const wxString &path)
 
 bool profiles::profile::profile_file_rename(const wxString &old_path, const wxString &new_path)
 {
-	// this is a crude multi file renaming; unfortunately there is not a robust way to do this
-	bool success = wxRenameFile(old_path, new_path, false);
-	if (success)
+	bool success;
+
+	if (new_path == old_path)
 	{
-		wxString old_save_state_path = change_path_save_state(old_path);
-		wxString new_save_state_path = change_path_save_state(new_path);
-		if (wxFile::Exists(old_save_state_path))
-			wxRenameFile(old_save_state_path, new_save_state_path, true);
+		// if the new path is equal to the old path, renaming is easy - its a no-op
+		success = true;
+	}
+	else
+	{
+		// this is a crude multi file renaming; unfortunately there is not a robust way to do this
+		success = wxRenameFile(old_path, new_path, false);
+		if (success)
+		{
+			wxString old_save_state_path = change_path_save_state(old_path);
+			wxString new_save_state_path = change_path_save_state(new_path);
+			if (wxFile::Exists(old_save_state_path))
+				wxRenameFile(old_save_state_path, new_save_state_path, true);
+		}
 	}
 	return success;
 }
