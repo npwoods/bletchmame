@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 1.4 (TBD):
+- 1.4 (2019-Nov-3):
 	- Full software list support
 	- Fixed recently introduced bugs in the profiles view that could caused actions to be made against an incorrect profile
 
