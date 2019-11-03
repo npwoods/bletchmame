@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "info.h"
+#include "softwarelist.h"
 
 namespace profiles
 {
@@ -37,6 +38,7 @@ namespace profiles
 		const wxString &name() const				{ return m_name; }
 		const wxString &path() const				{ return m_path; }
 		const wxString &machine() const				{ return m_machine; }
+		const wxString &software() const			{ return m_software; }
 		const std::vector<image> &images() const	{ return m_images; }
 		std::vector<image> &images()				{ return m_images; }
 		bool auto_save_states() const				{ return true; }
@@ -55,7 +57,7 @@ namespace profiles
 
 		// statics
 		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);
-		static void create(wxTextOutputStream &stream, const info::machine &machine);
+		static void create(wxTextOutputStream &stream, const info::machine &machine, const software_list::software *software);
 		static std::optional<profile> load(wxString &&path);
 		static std::optional<profile> load(const wxString &path);
 
@@ -74,6 +76,7 @@ namespace profiles
 		wxString			m_name;
 		wxString			m_path;
 		wxString			m_machine;
+		wxString			m_software;
 		std::vector<image>	m_images;
 	};
 };

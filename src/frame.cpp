@@ -225,7 +225,6 @@ namespace
 		void OnMachineListItemActivated(wxListEvent &event);
 		void OnSoftwareListItemActivated();
 		void OnProfileListItemActivated(wxListEvent &event);
-		void OnMachineListItemContextMenu(wxListEvent &event);
 		void OnProfileListItemContextMenu(wxListEvent &event);
 		void OnProfileListEndLabelEdit(long index);
 
@@ -237,7 +236,7 @@ namespace
 		void OnChatter(PayloadEvent<Chatter> &event);
 
 		// profiles
-		void CreateProfile(const info::machine &machine);
+		void CreateProfile(const info::machine &machine, const software_list::software *software);
 		void DuplicateProfile(const profiles::profile &profile);
 		void RenameProfile(const profiles::profile &profile);
 		void DeleteProfile(const profiles::profile &profile);
@@ -255,7 +254,7 @@ namespace
 		bool PromptForMameExecutable();
 		bool RefreshMameInfoDatabase();
 		info::machine GetRunningMachine() const;
-		void Run(const info::machine &machine, wxString &&software = wxString(), const profiles::profile *profile = nullptr);
+		void Run(const info::machine &machine, const software_list::software *software = nullptr, const profiles::profile *profile = nullptr);
 		void Run(const profiles::profile &profile);
 		wxString PreflightCheck();
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
@@ -276,6 +275,7 @@ namespace
 		static const wxString &GetDeviceType(const info::machine &machine, const wxString &tag);
 		void WatchForImageMount(const wxString &tag);
 		void UpdateSoftwareList();
+		void LaunchingListContextMenu(const software_list::software *software = nullptr);
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -466,7 +466,8 @@ MameFrame::MameFrame()
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnMachineListItemActivated(event);														}, m_machine_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &)		{ OnSoftwareListItemActivated();															}, m_software_list_view->GetId());
 	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { OnProfileListItemActivated(event);														}, m_profile_view->GetId());
-	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnMachineListItemContextMenu(event);														}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &)		{ LaunchingListContextMenu();																}, m_machine_view->GetId());
+	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &)		{ LaunchingListContextMenu(m_software_list_view->GetSelectedSoftware());					}, m_software_list_view->GetId());
 	Bind(wxEVT_LIST_ITEM_RIGHT_CLICK,	[this](auto &event) { OnProfileListItemContextMenu(event);														}, m_profile_view->GetId());
 	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnProfileListEndLabelEdit(event.GetIndex());												}, m_profile_view->GetId());
 	Bind(wxEVT_TIMER,					[this](auto &)		{ InvokePing();																				});
@@ -796,7 +797,7 @@ info::machine MameFrame::GetRunningMachine() const
 //  Run
 //-------------------------------------------------
 
-void MameFrame::Run(const info::machine &machine, wxString &&software, const profiles::profile *profile)
+void MameFrame::Run(const info::machine &machine, const software_list::software *software, const profiles::profile *profile)
 {
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
 	wxString preflight_errors = PreflightCheck();
@@ -806,6 +807,14 @@ void MameFrame::Run(const info::machine &machine, wxString &&software, const pro
 		return;
 	}
 
+	// identify the software name; we either used what was passed in, or we use what is in a profile
+	// for which no images are mounted (suggesting a fresh launch)
+	wxString software_name;
+	if (software)
+		software_name = software->m_name;
+	else if (profile && profile->images().empty())
+		software_name = profile->software();
+
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
 	Pauser fake_pauser(*this, false);
@@ -813,7 +822,7 @@ void MameFrame::Run(const info::machine &machine, wxString &&software, const pro
 	// run the emulation
 	Task::ptr task = std::make_unique<RunMachineTask>(
 		machine,
-		std::move(software),
+		std::move(software_name),
 		*this);
 	m_client.Launch(std::move(task));
 
@@ -901,7 +910,7 @@ void MameFrame::Run(const profiles::profile &profile)
 		return;
 	}
 
-	Run(machine.value(), wxString(), &profile);
+	Run(machine.value(), nullptr, &profile);
 }
 
 
@@ -1648,10 +1657,10 @@ void MameFrame::OnSoftwareListItemActivated()
 	const info::machine machine = GetMachineFromIndex(machine_index);
 
 	// identify the software
-	wxString software = m_software_list_view->GetSelectedItem();
+	const software_list::software *software = m_software_list_view->GetSelectedSoftware();
 
 	// and run!
-	Run(machine, std::move(software));
+	Run(machine, software);
 }
 
 
@@ -1669,22 +1678,27 @@ void MameFrame::OnProfileListItemActivated(wxListEvent &evt)
 
 
 //-------------------------------------------------
-//  OnMachineListItemContextMenu
+//  LaunchingListContextMenu
 //-------------------------------------------------
 
-void MameFrame::OnMachineListItemContextMenu(wxListEvent &event)
+void MameFrame::LaunchingListContextMenu(const software_list::software *software)
 {
-	// find the machine
-	long index = event.GetIndex();
-	const info::machine machine = GetMachineFromIndex(index);
+	// identify the machine
+	long machine_index = m_machine_view->GetFirstSelected();
+	const info::machine machine = GetMachineFromIndex(machine_index);
+
+	// identify the description
+	const wxString &description = software
+		? software->m_description
+		: machine.description();
 
 	// build the popup menu
 	int id = ID_POPUP_MENU_BEGIN;
 	wxMenu popup_menu;
-	wxMenuItem &run_menu_item				= *popup_menu.Append(id++, "Run \"" + machine.description() + "\"");
+	wxMenuItem &run_menu_item				= *popup_menu.Append(id++, "Run \"" + description + "\"");
 	wxMenuItem &create_profile_menu_item	= *popup_menu.Append(id++, "Create profile");
-	Bind(wxEVT_MENU, [this, machine](auto &) { Run(machine);			}, run_menu_item.GetId());
-	Bind(wxEVT_MENU, [this, machine](auto &) { CreateProfile(machine);	}, create_profile_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, machine, &software](auto &) { Run(machine, std::move(software));	}, run_menu_item.GetId());
+	Bind(wxEVT_MENU, [this, machine, &software](auto &) { CreateProfile(machine, software);		}, create_profile_menu_item.GetId());
 
 	// and display it
 	PopupMenu(&popup_menu);
@@ -1835,7 +1849,7 @@ static wxString GetUniqueProfilePath(const wxString &dir_path, TFunc generate_na
 //  CreateProfile
 //-------------------------------------------------
 
-void MameFrame::CreateProfile(const info::machine &machine)
+void MameFrame::CreateProfile(const info::machine &machine, const software_list::software *software)
 {
 	// find a path to create the new profile in
 	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::profiles);
@@ -1852,12 +1866,17 @@ void MameFrame::CreateProfile(const info::machine &machine)
 	}
 	const wxString &path = *iter;
 
+	// identify the description, for use when we create the file name
+	const wxString &description = software
+		? software->m_description
+		: machine.name();
+
 	// get the full path for a new profile
-	wxString new_profile_path = GetUniqueProfilePath(path, [&machine](int attempt)
+	wxString new_profile_path = GetUniqueProfilePath(path, [&description](int attempt)
 	{
 		return attempt == 0
-			? machine.name() + wxT(" - New Profile")
-			: machine.name() + wxT(" - New Profile (") + std::to_string(attempt + 1) + wxT(")");
+			? description + wxT(" - New Profile")
+			: description + wxT(" - New Profile (") + std::to_string(attempt + 1) + wxT(")");
 	});
 
 	// create the file stream
@@ -1870,7 +1889,7 @@ void MameFrame::CreateProfile(const info::machine &machine)
 
 	// create the new profile and focus
 	wxTextOutputStream text_stream(stream);
-	profiles::profile::create(text_stream, machine);
+	profiles::profile::create(text_stream, machine, software);
 	FocusOnNewProfile(std::move(new_profile_path));
 }
 

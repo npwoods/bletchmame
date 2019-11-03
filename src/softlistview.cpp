@@ -146,20 +146,48 @@ void SoftwareListView::SetListViewSelection(const wxString &selection)
 
 
 //-------------------------------------------------
+//  GetSelectedSoftwareAndPart
+//-------------------------------------------------
+
+const SoftwareListView::SoftwareAndPart *SoftwareListView::GetSelectedSoftwareAndPart() const
+{
+	const SoftwareAndPart *result = nullptr;
+
+	long selected_item = GetFirstSelected();
+	if (selected_item >= 0)
+	{
+		int actual_selected_item = GetActualIndex(selected_item);
+		result = &m_parts[actual_selected_item];
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  GetSelectedItem
 //-------------------------------------------------
 
 wxString SoftwareListView::GetSelectedItem() const
 {
 	wxString result;
+	const SoftwareAndPart *sp = GetSelectedSoftwareAndPart();
 
-	long selected_item = GetFirstSelected();
-	if (selected_item >= 0)
+	if (sp)
 	{
-		int actual_selected_item = GetActualIndex(selected_item);
-		result = m_parts[actual_selected_item].has_part()
-			? wxString::Format("%s:%s", m_parts[actual_selected_item].software().m_name, m_parts[actual_selected_item].part().m_name)
-			: m_parts[actual_selected_item].software().m_name;
+		result = sp->has_part()
+			? wxString::Format("%s:%s", sp->software().m_name, sp->part().m_name)
+			: sp->software().m_name;
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  GetSelectedSoftware
+//-------------------------------------------------
+
+const software_list::software *SoftwareListView::GetSelectedSoftware() const
+{
+	const SoftwareAndPart *sp = GetSelectedSoftwareAndPart();
+	return sp ? &sp->software() : nullptr;
 }

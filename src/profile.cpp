@@ -57,6 +57,7 @@ profiles::profile::profile()
 bool profiles::profile::operator==(const profile &that) const
 {
 	return m_name == that.m_name
+		&& m_software == that.m_software
 		&& m_path == that.m_path
 		&& m_images == that.m_images;
 }
@@ -127,6 +128,7 @@ std::optional<profiles::profile> profiles::profile::load(wxString &&path)
 	xml.OnElementBegin({ "profile" }, [&](const XmlParser::Attributes &attributes)
 	{
 		attributes.Get("machine", result.m_machine);
+		attributes.Get("software", result.m_software);
 	});
 	xml.OnElementBegin({ "profile", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -160,7 +162,12 @@ void profiles::profile::save() const
 void profiles::profile::save_as(wxTextOutputStream &stream) const
 {
 	stream << "<!-- BletchMAME profile -->" << endl;
-	stream << "<profile machine=\"" << machine() << "\">" << endl;
+	stream << "<profile";
+	stream << " machine=\"" << machine() << "\"";
+	if (!software().empty())
+		stream << " software=\"" << software() << "\"";
+	stream << ">" << endl;
+
 	for (const image &image : images())
 		stream << "\t<image tag=\"" << image.m_tag << "\" path=\"" << image.m_path << "\"/>" << endl;
 	stream << "</profile>" << endl;
@@ -171,10 +178,12 @@ void profiles::profile::save_as(wxTextOutputStream &stream) const
 //  create
 //-------------------------------------------------
 
-void profiles::profile::create(wxTextOutputStream &stream, const info::machine &machine)
+void profiles::profile::create(wxTextOutputStream &stream, const info::machine &machine, const software_list::software *software)
 {
 	profile new_profile;
 	new_profile.m_machine = machine.name();
+	if (software)
+		new_profile.m_software = software->m_name;
 	new_profile.save_as(stream);
 }
 

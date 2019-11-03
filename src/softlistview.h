@@ -27,6 +27,7 @@ public:
 	void Load(const software_list_collection &software_col, bool load_parts, const wxString &dev_interface = util::g_empty_string);
 	void Clear();
 	wxString GetSelectedItem() const;
+	const software_list::software *GetSelectedSoftware() const;
 
 protected:
 	virtual const wxString &GetListViewSelection() const override;
@@ -59,6 +60,7 @@ private:
 	std::vector<wxString>			m_softlist_names;
 
 	const wxString &GetListItemText(const software_list::software &sw, long column);
+	const SoftwareAndPart *GetSelectedSoftwareAndPart() const;
 };
 
 
