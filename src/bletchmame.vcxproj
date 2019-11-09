@@ -240,6 +240,7 @@
     <ClCompile Include="dialogs/paths.cpp" />
     <ClCompile Include="dialogs/switches.cpp" />
     <ClCompile Include="frame.cpp" />
+    <ClCompile Include="iconloader.cpp" />
     <ClCompile Include="info.cpp" />
     <ClCompile Include="info_builder.cpp" />
     <ClCompile Include="job.cpp" />
@@ -273,6 +274,7 @@
     <ClInclude Include="dialogs/paths.h" />
     <ClInclude Include="dialogs/switches.h" />
     <ClInclude Include="frame.h" />
+    <ClInclude Include="iconloader.h" />
     <ClInclude Include="info.h" />
     <ClInclude Include="info_builder.h" />
     <ClInclude Include="job.h" />

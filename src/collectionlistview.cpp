@@ -6,6 +6,8 @@
 
 ***************************************************************************/
 
+#include <wx/imaglist.h>
+
 #include "collectionlistview.h"
 #include "utility.h"
 #include "prefs.h"
@@ -89,6 +91,17 @@ CollectionListView::CollectionListView(wxWindow &parent, wxWindowID winid, Prefe
 	Bind(wxEVT_LIST_COL_END_DRAG,	[this](auto &)		{ UpdateColumnPrefs();					});
 	Bind(wxEVT_LIST_COL_CLICK,		[this](auto &event)	{ ToggleColumnSort(event.GetColumn());	});
 	Bind(wxEVT_LIST_ITEM_SELECTED,	[this](auto &event) { OnListItemSelected(event.GetIndex());	});
+}
+
+
+//-------------------------------------------------
+//  SetIconLookup
+//-------------------------------------------------
+
+void CollectionListView::SetIconLookup(wxImageList &image_list, std::function<int(int)> &&get_icon_index_func)
+{
+	SetImageList(&image_list, wxIMAGE_LIST_SMALL);
+	m_get_icon_index_func = std::move(get_icon_index_func);
 }
 
 
@@ -182,6 +195,22 @@ wxString CollectionListView::OnGetItemText(long item, long column) const
 {
 	long actual_item = m_indirections[item];
 	return GetActualItemText(actual_item, column);
+}
+
+
+//-------------------------------------------------
+//  OnGetItemImage
+//-------------------------------------------------
+
+int CollectionListView::OnGetItemImage(long item) const
+{
+	int result = -1;
+	if (m_get_icon_index_func)
+	{
+		int actual_item = m_indirections[item];
+		result = m_get_icon_index_func(actual_item);
+	}
+	return result;
 }
 
 

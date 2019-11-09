@@ -41,12 +41,17 @@ struct CollectionViewDesc
 class CollectionListView : public wxListView
 {
 public:
+	// ctor
 	template<typename TFuncGetItemText, typename TFuncGetSize>
 	CollectionListView(wxWindow &parent, wxWindowID winid, Preferences &prefs, const CollectionViewDesc &desc, TFuncGetItemText &&func_get_item_text, TFuncGetSize &&func_get_size, bool support_label_edit)
 		: CollectionListView(parent, winid, prefs, desc, std::make_unique<CollectionImpl<TFuncGetItemText, TFuncGetSize>>(std::move(func_get_item_text), std::move(func_get_size)), support_label_edit)
 	{
 	}
 
+	// configuration
+	void SetIconLookup(wxImageList &image_list, std::function<int(int)> &&get_icon_index_func);
+
+	// methods
 	void UpdateListView();
 	void UpdateColumnPrefs();
 	int GetActualIndex(long indirect_index) const	{ return m_indirections[indirect_index]; }
@@ -56,6 +61,7 @@ protected:
 	const Preferences &Prefs() const { return m_prefs; }
 
 	virtual wxString OnGetItemText(long item, long column) const override;
+	virtual int OnGetItemImage(long item) const override;
 	virtual const wxString &GetListViewSelection() const;
 	virtual void SetListViewSelection(const wxString &selection);
 
@@ -106,6 +112,7 @@ private:
 	wxString							m_softlist;
 	int									m_sort_column;
 	ColumnPrefs::sort_type				m_sort_type;
+	std::function<int(int)>				m_get_icon_index_func;
 
 	CollectionListView(wxWindow &parent, wxWindowID winid, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
 

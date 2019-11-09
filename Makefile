@@ -46,6 +46,7 @@ OBJECTFILES=\
 	$(OBJ)/dialogs/paths.o		\
 	$(OBJ)/dialogs/switches.o	\
 	$(OBJ)/frame.o				\
+	$(OBJ)/iconloader.o			\
 	$(OBJ)/info.o				\
 	$(OBJ)/info_builder.o		\
 	$(OBJ)/job.o				\

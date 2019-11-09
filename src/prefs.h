@@ -47,6 +47,7 @@ public:
 		nvram,
 		hash,
 		artwork,
+		icons,
 		plugins,
 		profiles,
 
@@ -91,6 +92,7 @@ public:
 		case Preferences::path_type::artwork:
 		case Preferences::path_type::plugins:
 		case Preferences::path_type::profiles:
+		case Preferences::path_type::icons:
 			result = true;
 			break;
 

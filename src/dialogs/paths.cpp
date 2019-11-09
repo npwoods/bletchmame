@@ -398,7 +398,7 @@ void PathsDialog::RefreshListView()
 {
 	// basic info about the type of path we are
 	const bool is_emu_executable = GetCurrentPath() == Preferences::path_type::emu_exectuable;
-	const bool expect_dir = !is_emu_executable;
+	const bool expect_dir = !is_emu_executable && GetCurrentPath() != Preferences::path_type::icons;
 
 	// recalculate m_current_path_valid_list
 	m_current_path_valid_list.resize(m_current_path_list.size());
@@ -437,6 +437,7 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 	result[(size_t)Preferences::path_type::nvram]			= "NVRAM Files";
 	result[(size_t)Preferences::path_type::hash]			= "Hash Files";
 	result[(size_t)Preferences::path_type::artwork]			= "Artwork Files";
+	result[(size_t)Preferences::path_type::icons]			= "Icons";
 	result[(size_t)Preferences::path_type::plugins]			= "Plugins";
 	result[(size_t)Preferences::path_type::profiles]		= "Profiles";
 

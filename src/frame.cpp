@@ -35,6 +35,7 @@
 #include "utility.h"
 #include "collectionlistview.h"
 #include "virtuallistview.h"
+#include "iconloader.h"
 #include "info.h"
 #include "status.h"
 #include "softlistview.h"
@@ -181,6 +182,7 @@ namespace
 		wxFileSystemWatcher						m_fsw_profiles;
 		software_list_collection				m_software_list_collection;
 		wxString								m_software_list_collection_machine_name;
+		IconLoader								m_icon_loader;
 
 		// information retrieved by -version
 		wxString								m_mame_version;
@@ -263,6 +265,7 @@ namespace
 		info::machine GetMachineFromIndex(long item) const;
 		const wxString &GetMachineListItemText(info::machine machine, long column) const;
 		const wxString &GetProfileListItemText(const profiles::profile &p, long column) const;
+		int GetMachineIcon(int actual_item);
 		wxTextCtrl &CreateSearchBox(wxWindow &parent, int &id, const char *collection_view_desc_name, CollectionListView &view);
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
@@ -360,6 +363,7 @@ MameFrame::MameFrame()
 	, m_current_pauser(nullptr)
 	, m_current_profile_auto_save_state(false)
 	, m_current_profile_rename(false)
+	, m_icon_loader(m_prefs)
 {
 	int id = wxID_LAST + 1;
 
@@ -392,6 +396,7 @@ MameFrame::MameFrame()
 		[this](long item, long column) -> const wxString &	{ return GetMachineListItemText(m_info_db.machines()[item], column); },
 		[this]()											{ return m_info_db.machines().size(); },
 		false);
+	m_machine_view->SetIconLookup(m_icon_loader.ImageList(), [this](int item) { return GetMachineIcon(item); });
 	m_info_db.set_on_changed([this]() { m_machine_view->UpdateListView(); });
 	m_on_close_funcs.emplace_back([this]() { m_machine_view->UpdateColumnPrefs(); });
 
@@ -1191,6 +1196,14 @@ void MameFrame::OnMenuPaths()
 	// did the user change the profiles path?
 	if (is_changed(Preferences::path_type::profiles))
 		UpdateProfileDirectories(true, true);
+
+	// did the user change the icons path?
+	if (is_changed(Preferences::path_type::icons))
+	{
+		m_icon_loader.RefreshIcons();
+		if (m_machine_view->GetItemCount() > 0)
+			m_machine_view->RefreshItems(0, m_machine_view->GetItemCount() - 1);
+	}
 }
 
 
@@ -2039,6 +2052,27 @@ const wxString &MameFrame::GetProfileListItemText(const profiles::profile &p, lo
 	}
 	throw false;
 }
+
+
+//-------------------------------------------------
+//  GetMachineIcon
+//-------------------------------------------------
+
+int MameFrame::GetMachineIcon(int actual_item)
+{
+	// first get the icon for this machine
+	info::machine machine = m_info_db.machines()[actual_item];
+	int icon = m_icon_loader.GetIcon(machine.name());
+	if (icon < 0)
+	{
+		// if that didn't work out, maybe we're a clone?
+		const wxString &clone_of = machine.clone_of();
+		if (!clone_of.empty())
+			icon = m_icon_loader.GetIcon(clone_of);
+	}
+	return icon;
+}
+
 
 //-------------------------------------------------
 //  UpdateEmulationSession
