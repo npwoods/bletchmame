@@ -12,9 +12,11 @@
 ifdef DEBUG
 BUILD			= debug
 CFLAGS			= -O0 -g
+LDFLAGS			=
 else
 BUILD			= release
-CFLAGS			= -O4
+CFLAGS			= -O4 -flto
+LDFLAGS			= -O4 -flto
 endif
 
 BIN				= bin/mingw_win64/$(BUILD)
@@ -69,7 +71,7 @@ OBJECTFILES=\
 
 $(BIN)/BletchMAME.exe:	$(OBJECTFILES) Makefile
 	$(MKDIR_RULE)
-	g++ -static -static-libgcc -static-libstdc++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -mwindows -o $@
+	g++ $(LDFLAGS) -static -static-libgcc -static-libstdc++ -L$(WXWIDGETS_DIR)/lib/gcc_lib $(OBJECTFILES) $(LIBS) -mwindows -o $@
 ifndef DEBUG
 	strip $@
 endif
