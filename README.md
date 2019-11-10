@@ -8,8 +8,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 1.5 (TBD)
-	- Support for MAMEUI icon packs
+- 1.5 (2019-Nov-10)
+	- Support for MAMEUI-style icon packs
 
 - 1.4 (2019-Nov-3):
 	- Full software list support
