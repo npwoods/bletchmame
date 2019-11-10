@@ -265,7 +265,7 @@ namespace
 		info::machine GetMachineFromIndex(long item) const;
 		const wxString &GetMachineListItemText(info::machine machine, long column) const;
 		const wxString &GetProfileListItemText(const profiles::profile &p, long column) const;
-		int GetMachineIcon(int actual_item);
+		int GetMachineIcon(info::machine machine);
 		wxTextCtrl &CreateSearchBox(wxWindow &parent, int &id, const char *collection_view_desc_name, CollectionListView &view);
 		void UpdateEmulationSession();
 		void UpdateTitleBar();
@@ -396,7 +396,7 @@ MameFrame::MameFrame()
 		[this](long item, long column) -> const wxString &	{ return GetMachineListItemText(m_info_db.machines()[item], column); },
 		[this]()											{ return m_info_db.machines().size(); },
 		false);
-	m_machine_view->SetIconLookup(m_icon_loader.ImageList(), [this](int item) { return GetMachineIcon(item); });
+	m_machine_view->SetIconLookup(m_icon_loader.ImageList(), [this](int item) { return GetMachineIcon(m_info_db.machines()[item]); });
 	m_info_db.set_on_changed([this]() { m_machine_view->UpdateListView(); });
 	m_on_close_funcs.emplace_back([this]() { m_machine_view->UpdateColumnPrefs(); });
 
@@ -433,6 +433,14 @@ MameFrame::MameFrame()
 		[this](long item, long column) -> const wxString &	{ return GetProfileListItemText(m_profiles.get()[item], column); },
 		[this]()											{ return m_profiles.get().size(); },
 		true);
+	m_profile_view->SetIconLookup(m_icon_loader.ImageList(), [this](int item)
+	{
+		const wxString &machine_name = m_profiles.get()[item].machine();
+		std::optional<info::machine> machine = m_info_db.find_machine(machine_name);
+		return machine
+			? GetMachineIcon(*machine)
+			: -1;
+	});
 	m_on_close_funcs.emplace_back([this]() { m_profile_view->UpdateColumnPrefs(); });
 	m_profiles_subscription = m_profiles.subscribe([this]
 	{
@@ -2058,10 +2066,9 @@ const wxString &MameFrame::GetProfileListItemText(const profiles::profile &p, lo
 //  GetMachineIcon
 //-------------------------------------------------
 
-int MameFrame::GetMachineIcon(int actual_item)
+int MameFrame::GetMachineIcon(info::machine machine)
 {
 	// first get the icon for this machine
-	info::machine machine = m_info_db.machines()[actual_item];
 	int icon = m_icon_loader.GetIcon(machine.name());
 	if (icon < 0)
 	{
