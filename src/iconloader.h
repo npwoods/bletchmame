@@ -14,8 +14,6 @@
 #include <memory>
 #include <unordered_map>
 #include <wx/imaglist.h>
-#include <wx/zipstrm.h>
-#include <wx/wfstream.h>
 
 class Preferences;
 
@@ -33,32 +31,26 @@ public:
 	int GetIcon(const wxString &icon_name);
 
 private:
-	class ZipFile
+	class IconPathEntry
 	{
 	public:
-		typedef std::unique_ptr<ZipFile> ptr;
+		typedef std::unique_ptr<IconPathEntry> ptr;
 
-		// ctors
-		template<class TFilter> ZipFile(const wxString &zip_filename, TFilter filter);
-		ZipFile(const ZipFile &) = delete;
-		ZipFile(ZipFile &&) = delete;
-
-		// methods
-		size_t EntryCount() const;
-		wxInputStream *OpenFile(const wxString &filename);
-
-	private:
-		wxFileInputStream							m_file_stream;
-		wxZipInputStream							m_zip_stream;
-		std::unordered_map<wxString, wxZipEntry>	m_entries;
+		virtual ~IconPathEntry() { };
+		virtual std::unique_ptr<wxInputStream> OpenFile(const wxString &filename) = 0;
 	};
+
+	class DirIconPathEntry;
+	class ZipIconPathEntry;
 
 	Preferences &						m_prefs;
 	wxImageList							m_image_list;
 	std::unordered_map<wxString, int>	m_icon_map;
-	std::vector<ZipFile::ptr>			m_zip_files;
+	std::vector<IconPathEntry::ptr>		m_path_entries;
 
-	bool LoadIconsFromZipFile(const wxString &zip_file_name);
+	IconPathEntry::ptr CreateDirIconPathEntry(const wxString &directory_name);
+	IconPathEntry::ptr CreateZipIconPathEntry(const wxString &zip_file_name);
+
 	int LoadIcon(wxString &&icon_name, wxInputStream &stream);
 };
 

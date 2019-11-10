@@ -7,6 +7,9 @@
 ***************************************************************************/
 
 #include <wx/icon.h>
+#include <wx/zipstrm.h>
+#include <wx/wfstream.h>
+#include <wx/dir.h>
 
 #include "iconloader.h"
 #include "prefs.h"
@@ -18,6 +21,69 @@
 
 #define ICON_SIZE_X 16
 #define ICON_SIZE_Y 16
+
+
+//**************************************************************************
+//  LOCAL CLASSES
+//**************************************************************************
+
+namespace
+{
+	class NonOwningInputStream : public wxInputStream
+	{
+	public:
+		NonOwningInputStream(wxInputStream &inner)
+			: m_inner(inner)
+		{
+		}
+
+	protected:
+		virtual size_t OnSysRead(void *buffer, size_t size) override
+		{
+			m_inner.Read(buffer, size);
+			return m_inner.LastRead();
+		}
+
+	private:
+		wxInputStream &m_inner;
+	};
+};
+
+
+// ======================> IconLoader::DirIconPathEntry
+class IconLoader::DirIconPathEntry : public IconLoader::IconPathEntry
+{
+public:
+	DirIconPathEntry(const wxString &path);
+	DirIconPathEntry(const ZipIconPathEntry &) = delete;
+	DirIconPathEntry(ZipIconPathEntry &&) = delete;
+
+	virtual std::unique_ptr<wxInputStream> OpenFile(const wxString &filename) override;
+
+private:
+	wxString		m_path;
+};
+
+
+// ======================> IconLoader::ZipIconPathEntry
+class IconLoader::ZipIconPathEntry : public IconLoader::IconPathEntry
+{
+public:
+	typedef std::unique_ptr<ZipIconPathEntry> ptr;
+
+	// ctors
+	ZipIconPathEntry(const wxString &zip_filename);
+	ZipIconPathEntry(const ZipIconPathEntry &) = delete;
+	ZipIconPathEntry(ZipIconPathEntry &&) = delete;
+
+	size_t EntryCount() const;
+	virtual std::unique_ptr<wxInputStream> OpenFile(const wxString &filename) override;
+
+private:
+	wxFileInputStream							m_file_stream;
+	wxZipInputStream							m_zip_stream;
+	std::unordered_map<wxString, wxZipEntry>	m_entries;
+};
 
 
 //**************************************************************************
@@ -45,40 +111,49 @@ void IconLoader::RefreshIcons()
 	// clear ourselves out
 	m_image_list.RemoveAll();
 	m_icon_map.clear();
-	m_zip_files.clear();
+	m_path_entries.clear();
 
 	// loop through all icon paths
 	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::icons);
 	for (const wxString &path : paths)
 	{
-		if (wxFile::Exists(path))
-			LoadIconsFromZipFile(path);
+		// try to create an appropiate path entry
+		IconPathEntry::ptr path_entry;
+		if (wxDir::Exists(path))
+			path_entry = CreateDirIconPathEntry(path);
+		else if (wxFile::Exists(path))
+			path_entry = CreateZipIconPathEntry(path);
+
+		// if successful, add it
+		if (path_entry)
+			m_path_entries.push_back(std::move(path_entry));
 	}
 }
 
 
 //-------------------------------------------------
-//  LoadIconsFromZipFile
+//  CreateDirIconPathEntry
 //-------------------------------------------------
 
-bool IconLoader::LoadIconsFromZipFile(const wxString &zip_file_name)
+IconLoader::IconPathEntry::ptr IconLoader::CreateDirIconPathEntry(const wxString &directory_name)
 {
-	// filter to sanity check ZIP file entries
-	auto filter = [](const wxZipEntry &entry)
-	{
-		return entry.GetName().EndsWith(wxT(".ico"))
-			&& entry.GetSize() > 0
-			&& entry.GetSize() < 1000000;
-	};
+	return std::make_unique<DirIconPathEntry>(directory_name);
+}
 
+
+//-------------------------------------------------
+//  CreateZipIconPathEntry
+//-------------------------------------------------
+
+IconLoader::IconPathEntry::ptr IconLoader::CreateZipIconPathEntry(const wxString &zip_file_name)
+{
 	// open up the zip file
-	ZipFile::ptr zip = std::make_unique<ZipFile>(zip_file_name, filter);
-	if (zip->EntryCount() <= 0)
-		return false;
+	ZipIconPathEntry::ptr result = std::make_unique<ZipIconPathEntry>(zip_file_name);
+	if (result->EntryCount() <= 0)
+		result.reset();
 
-	// success - push this back
-	m_zip_files.push_back(std::move(zip));
-	return true;
+	// return it
+	return result;
 }
 
 
@@ -101,9 +176,9 @@ int IconLoader::GetIcon(const wxString &icon_name)
 		wxString icon_file_name = icon_name + wxT(".ico");
 
 		// and try to load it from each ZIP file
-		for (const auto &zip_file : m_zip_files)
+		for (const auto &path_entry : m_path_entries)
 		{
-			wxInputStream *stream = zip_file->OpenFile(icon_file_name);
+			std::unique_ptr<wxInputStream> stream = path_entry->OpenFile(icon_file_name);
 			if (stream)
 			{
 				// we've found an entry - try to load the icon; note that while this can
@@ -146,11 +221,43 @@ int IconLoader::LoadIcon(wxString &&icon_name, wxInputStream &stream)
 
 
 //-------------------------------------------------
-//  ZipFile ctor
+//  DirIconPathEntry ctor
 //-------------------------------------------------
 
-template<class TFilter>
-IconLoader::ZipFile::ZipFile(const wxString &zip_filename, TFilter filter)
+IconLoader::DirIconPathEntry::DirIconPathEntry(const wxString &path)
+	: m_path(path)
+{
+}
+
+
+//-------------------------------------------------
+//  DirIconPathEntry::OpenFile
+//-------------------------------------------------
+
+std::unique_ptr<wxInputStream> IconLoader::DirIconPathEntry::OpenFile(const wxString &filename)
+{
+	std::unique_ptr<wxInputStream> result;
+
+	// does the file exist?
+	wxString full_filename = m_path + wxT("\\") + filename;
+	if (wxFile::Exists(full_filename))
+	{
+		// if so, open it
+		result = std::make_unique<wxFileInputStream>(full_filename);
+
+		// but close it if it is bad
+		if (!result->IsOk())
+			result.reset();
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  ZipIconPathEntry ctor
+//-------------------------------------------------
+
+IconLoader::ZipIconPathEntry::ZipIconPathEntry(const wxString &zip_filename)
 	: m_file_stream(zip_filename)
 	, m_zip_stream(m_file_stream)
 {
@@ -159,34 +266,40 @@ IconLoader::ZipFile::ZipFile(const wxString &zip_filename, TFilter filter)
 		wxZipEntry *entry;
 		while ((entry = m_zip_stream.GetNextEntry()) != nullptr)
 		{
-			if (!entry->IsDir() && filter(*entry))
+			if (!entry->IsDir()
+				&& entry->GetName().EndsWith(wxT(".ico"))
+				&& entry->GetSize() > 0
+				&& entry->GetSize() < 1000000)
+			{
 				m_entries.emplace(entry->GetName(), *entry);
+			}
 		}
 	}
 }
 
 
 //-------------------------------------------------
-//  ZipFile::EntryCount
+//  ZipIconPathEntry::EntryCount
 //-------------------------------------------------
 
-size_t IconLoader::ZipFile::EntryCount() const
+size_t IconLoader::ZipIconPathEntry::EntryCount() const
 {
 	return m_entries.size();
 }
 
 
 //-------------------------------------------------
-//  ZipFile::OpenFile
+//  ZipIconPathEntry::OpenFile
 //-------------------------------------------------
 
-wxInputStream *IconLoader::ZipFile::OpenFile(const wxString &filename)
+std::unique_ptr<wxInputStream> IconLoader::ZipIconPathEntry::OpenFile(const wxString &filename)
 {
 	// find the entry
 	auto iter = m_entries.find(filename);
 
 	// if we found it, try to open it
-	return iter != m_entries.end() && m_zip_stream.OpenEntry(iter->second)
-		? &m_zip_stream
-		: nullptr;
+	std::unique_ptr<wxInputStream> result;
+	if (iter != m_entries.end() && m_zip_stream.OpenEntry(iter->second))
+		result = std::make_unique<NonOwningInputStream>(m_zip_stream);
+	return result;
 }

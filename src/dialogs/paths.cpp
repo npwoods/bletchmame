@@ -90,6 +90,35 @@ const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_str
 
 
 //-------------------------------------------------
+//  IsFilePathType
+//-------------------------------------------------
+
+static bool IsFilePathType(Preferences::path_type type)
+{
+	return type == Preferences::path_type::emu_exectuable
+		|| type == Preferences::path_type::icons;
+}
+
+
+//-------------------------------------------------
+//  IsDirPathType
+//-------------------------------------------------
+
+static bool IsDirPathType(Preferences::path_type type)
+{
+	return type == Preferences::path_type::roms
+		|| type == Preferences::path_type::samples
+		|| type == Preferences::path_type::config
+		|| type == Preferences::path_type::nvram
+		|| type == Preferences::path_type::hash
+		|| type == Preferences::path_type::artwork
+		|| type == Preferences::path_type::icons
+		|| type == Preferences::path_type::plugins
+		|| type == Preferences::path_type::profiles;
+}
+
+
+//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -397,8 +426,7 @@ void PathsDialog::UpdateCurrentPathList()
 void PathsDialog::RefreshListView()
 {
 	// basic info about the type of path we are
-	const bool is_emu_executable = GetCurrentPath() == Preferences::path_type::emu_exectuable;
-	const bool expect_dir = !is_emu_executable && GetCurrentPath() != Preferences::path_type::icons;
+	const Preferences::path_type current_path_type = GetCurrentPath();
 
 	// recalculate m_current_path_valid_list
 	m_current_path_valid_list.resize(m_current_path_list.size());
@@ -406,14 +434,13 @@ void PathsDialog::RefreshListView()
 	{
 		// apply substitutions (e.g. - $(MAMEPATH) with actual MAME path), unless this is the executable of course
 		wxString current_path_buffer;
-		const wxString &current_path = !is_emu_executable
+		const wxString &current_path = current_path_type != Preferences::path_type::emu_exectuable
 			? (current_path_buffer = m_prefs.ApplySubstitutions(m_current_path_list[i]), current_path_buffer)
 			: m_current_path_list[i];
 
 		// and perform the check
-		m_current_path_valid_list[i] = expect_dir
-			? wxDir::Exists(current_path)
-			: wxFile::Exists(current_path);
+		m_current_path_valid_list[i] = (IsDirPathType(current_path_type) && wxDir::Exists(current_path))
+			|| (IsFilePathType(current_path_type) && wxFile::Exists(current_path));
 	}
 
 	// update the item count and refresh all items
@@ -488,6 +515,17 @@ bool PathsDialog::IsSelectingPath() const
 void PathsDialog::ValidityChecks()
 {
 	BuildComboBoxStrings();
+
+	// ensure that all path types are either a file or dir
+	for (int i = 0; i < static_cast<int>(Preferences::path_type::count); i++)
+	{
+		Preferences::path_type path_type = static_cast<Preferences::path_type>(i);
+		bool is_file_path_type = IsFilePathType(path_type);
+		bool is_dir_path_type = IsDirPathType(path_type);
+		assert(is_file_path_type || is_dir_path_type);
+		(void)is_file_path_type;
+		(void)is_dir_path_type;
+	}
 }
 
 
