@@ -24,8 +24,8 @@
 class real_validity_check
 {
 public:
-	real_validity_check(void(*func)())
-		: m_func(func)
+	real_validity_check(std::function<void()> &&func)
+		: m_func(std::move(func))
 	{
 		setup();
 	}
@@ -44,7 +44,11 @@ private:
 class fake_validity_check
 {
 public:
-	fake_validity_check(void (*)()) { }
+	template<typename T>
+	fake_validity_check(T func)
+	{
+		(void)func;
+	}
 
 	static bool run_all() { return true; }
 };

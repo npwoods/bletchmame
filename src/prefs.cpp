@@ -505,12 +505,16 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 
 	for (typename TStr::const_iterator iter = src.cbegin(); iter < src.cend(); iter++)
 	{
+		bool handled = false;
 		wchar_t ch = *iter;
 		switch (ch)
 		{
 		case '$':
 			if (state == parse_state::NORMAL)
+			{
 				state = parse_state::AFTER_DOLLAR_SIGN;
+				handled = true;
+			}
 			break;
 
 		case '(':
@@ -518,22 +522,25 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 			{
 				state = parse_state::IN_VARIABLE_NAME;
 				var_begin_iter = iter + 1;
+				handled = true;
 			}
 			break;
 
 		case ')':
+			if (state == parse_state::IN_VARIABLE_NAME)
 			{
 				wxString var_name(var_begin_iter, iter);
 				TStr var_value = func(var_name);
 				result += var_value;
 				state = parse_state::NORMAL;
+				handled = true;
 			}
 			break;
-
-		default:
-			if (state == parse_state::NORMAL)
-				result += *iter;
 		}
+
+		// if it wasn't handled, append the character
+		if (!handled && state == parse_state::NORMAL)
+			result += *iter;
 	}
 	return result;
 }
@@ -692,10 +699,34 @@ static void path_names()
 }
 
 
+//-------------------------------------------------
+//  multi_path
+//-------------------------------------------------
+
 static void multi_path()
 {
 	for (Preferences::path_type type : util::all_enums<Preferences::path_type>())
 		Preferences::IsMultiPath(type);
+}
+
+
+//-------------------------------------------------
+//  substitutions
+//-------------------------------------------------
+
+static void substitutions(const wxChar *input, const wxChar *expected)
+{
+	auto func = [](const wxString &var_name)
+	{
+		return var_name == wxT("VARNAME")
+			? wxT("vardata")
+			: wxString();
+	};
+
+	wxString actual = InternalApplySubstitutions(wxString(input), func);
+	assert(actual == expected);
+	(void)actual;
+	(void)expected;
 }
 
 
@@ -707,5 +738,8 @@ static validity_check validity_checks[] =
 {
 	general,
 	path_names,
-	multi_path
+	multi_path,
+	[]() { substitutions(wxT("C:\\foo"),				wxT("C:\\foo")); },
+	[]() { substitutions(wxT("C:\\foo (with parens)"),	wxT("C:\\foo (with parens)")); },
+	[]() { substitutions(wxT("C:\\$(VARNAME)\\foo"),	wxT("C:\\vardata\\foo")); }
 };

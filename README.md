@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 1.next (TBD)
+	- Fixed a bug that could cause paths with parentheses to be incorrectly recognized (#1)
+
 - 1.5 (2019-Nov-10)
 	- Support for MAMEUI-style icon packs
 
