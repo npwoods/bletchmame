@@ -15,8 +15,8 @@ CFLAGS			= -O0 -g
 LDFLAGS			=
 else
 BUILD			= release
-CFLAGS			= -O4 -flto
-LDFLAGS			= -O4 -flto
+CFLAGS			= -O4
+LDFLAGS			= -O4
 endif
 
 BIN				= bin/mingw_win64/$(BUILD)
