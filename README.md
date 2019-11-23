@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 1.next (TBD)
+	- Upgraded to wxWidgets 3.1.3
 	- Fixed a bug that could cause paths with parentheses to be incorrectly recognized (#1)
 
 - 1.5 (2019-Nov-10)
