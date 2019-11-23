@@ -3,10 +3,11 @@ os: windows
 script:
   - choco install pandoc
   - choco install wixtoolset -y --version 3.10.3.300702 || true
-  - curl -L https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.3/wxWidgets-3.1.3.zip | 7z x -si -owxWidgets-3.1.3
-  - pushd wxWidgets-3.1.3/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
-  - pushd wxWidgets-3.1.3/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
-  - mingw32-make WXWIDGETS_DIR=wxWidgets-3.1.3 -j 8
+  - curl -L https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.3/wxWidgets-3.1.3.zip > wxWidgets-download.zip
+  - 7z x wxWidgets-download.zip -owxWidgets
+  - pushd wxWidgets/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
+  - pushd wxWidgets/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release -j 8; popd
+  - mingw32-make WXWIDGETS_DIR=wxWidgets -j 8
   - echo Version is `cat obj/mingw_win64/release/version.txt`
   - pandoc README.md -o readme.html
   - /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.10/bin/candle -v bletchmame.wxs -dVERSION=`cat obj/mingw_win64/release/version.txt` -out bletchmame.wixobj
@@ -20,7 +21,7 @@ script:
 
 cache:
   directories:
-  - wxWidgets-3.1.3/build/msw/gcc_mswu
+  - wxWidgets/build/msw/gcc_mswu
   
 deploy:
   provider: s3
