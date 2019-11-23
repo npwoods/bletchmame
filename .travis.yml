@@ -3,7 +3,7 @@ os: windows
 script:
   - mkdir
   - curl -L https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.3/wxWidgets-3.1.3.zip > wxWidgets-3.1.3.zip
-  - 7z e wxWidgets-3.1.3.zip -owxWidgets-3.1.3
+  - 7z x wxWidgets-3.1.3.zip -owxWidgets-3.1.3
   - choco install pandoc
   - choco install wixtoolset -y --version 3.10.3.300702 || true
   - pushd wxWidgets-3.1.3/build/msw ; mingw32-make -f makefile.gcc SHARED=0 UNICODE=1 BUILD=release setup_h; popd
