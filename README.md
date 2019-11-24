@@ -4,11 +4,11 @@ BletchMAME is a new experimental front end for MAME.  Unlike existing front ends
 
 ## Running BletchMAME
 
-To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME will install.  The first thing you must do is point BletchMAME at a locally installed version of MAME 0.213 or later.  BletchMAME will take some time to read info from MAME, and when this is complete you can run the emulation.
+To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME will install, or install manually from the ZIP file.  The first thing you must do is point BletchMAME at a locally installed version of MAME 0.213 or later.  BletchMAME will take some time to read info from MAME, and when this is complete you can run the emulation.
 
 ## Version History
 
-- 1.next (TBD)
+- 1.6 (2019-Nov-24)
 	- Upgraded to wxWidgets 3.1.3
 	- Fixed a bug that could cause paths with parentheses to be incorrectly recognized (#1)
 
