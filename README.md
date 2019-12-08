@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 1.7 (TBD)
+	- We have a real domain name (https://www.bletchmame.org/); added a menu item to go directly there
+
 - 1.6 (2019-Nov-24)
 	- Upgraded to wxWidgets 3.1.3
 	- Fixed a bug that could cause paths with parentheses to be incorrectly recognized (#1)

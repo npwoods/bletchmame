@@ -222,6 +222,7 @@ namespace
 		void OnMenuPaths();
 		void OnMenuInputs(status::input::input_class input_class);
 		void OnMenuSwitches(status::input::input_class input_class);
+		void OnMenuWebSite();
 		void OnMenuAbout();
 		void OnNotebookPageChanged();
 		void OnMachineListItemActivated(wxListEvent &event);
@@ -561,17 +562,18 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *show_paths_dialog_menu_item				= settings_menu->Append(id++, "Paths...");
 
 	// the "About" item should be in the help menu (it is important that this use wxID_ABOUT)
-	wxMenu *help_menu = new wxMenu();
-	wxMenuItem *refresh_mame_info_menu_item     = help_menu->Append(id++, "Refresh MAME machine info...");
-	help_menu->AppendSeparator();
-	wxMenuItem *about_menu_item			        = help_menu->Append(wxID_ABOUT, "&About\tF1");
+	wxMenu &help_menu = *new wxMenu();
+	wxMenuItem &refresh_mame_info_menu_item     = *help_menu.Append(id++, "Refresh MAME machine info...");
+	help_menu.AppendSeparator();
+	wxMenuItem &website_menu_item		        = *help_menu.Append(id++, "BletchMAME Web Site...");
+	wxMenuItem &about_menu_item			        = *help_menu.Append(wxID_ABOUT, "&About\tF1");
 
 	// now append the freshly created menu to the menu bar...
 	m_menu_bar = new wxMenuBar();
 	m_menu_bar->Append(file_menu, "&File");
 	m_menu_bar->Append(options_menu, "&Options");
 	m_menu_bar->Append(settings_menu, "&Settings");
-	m_menu_bar->Append(help_menu, "&Help");
+	m_menu_bar->Append(&help_menu, "&Help");
 
 	// ... and attach this menu bar to the frame
 	SetMenuBar(m_menu_bar);
@@ -605,8 +607,9 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(status::input::input_class::CONFIG);						}, show_input_config_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSwitches(status::input::input_class::DIPSWITCH);					}, show_input_dipswitch_dialog_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuPaths();															}, show_paths_dialog_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { RefreshMameInfoDatabase();												}, refresh_mame_info_menu_item->GetId());
-	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { RefreshMameInfoDatabase();												}, refresh_mame_info_menu_item.GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuWebSite();															}, website_menu_item.GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuAbout();															}, about_menu_item.GetId());
 
 	// Bind UI update events	
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, stop_menu_item->GetId());
@@ -630,7 +633,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::MISC));		}, show_input_misc_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::CONFIG));		}, show_input_config_dialog_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->has_input_class(status::input::input_class::DIPSWITCH));	}, show_input_dipswitch_dialog_menu_item->GetId());
-	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!m_state.has_value());																			}, refresh_mame_info_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { event.Enable(!m_state.has_value());																			}, refresh_mame_info_menu_item.GetId());
 
 	// special setup for throttle dynamic menu
 	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
@@ -1238,6 +1241,16 @@ void MameFrame::OnMenuSwitches(status::input::input_class input_class)
 	Pauser pauser(*this);
 	SwitchesHost host(*this);
 	show_switches_dialog(*this, title, host, input_class, GetRunningMachine());
+}
+
+
+//-------------------------------------------------
+//  OnMenuWebSite
+//-------------------------------------------------
+
+void MameFrame::OnMenuWebSite()
+{
+	wxLaunchDefaultBrowser(wxT("https://www.bletchmame.org/"));
 }
 
 
