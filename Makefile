@@ -1,13 +1,13 @@
-#################################################################
-# Crude BletchMAME Makefile for MinGW                           #
-#                                                               #
-# Only supporting MinGW x64 release builds for now              #
-#                                                               #
-# Prerequisite:  wxWidgets built for MinGW and dir specified in #
-# WXWIDGETS_DIR                                                 #
-#                                                               #
-# See https://wiki.wxwidgets.org/Compiling_wxWidgets_with_MinGW #
-#################################################################
+#############################################################################
+# Crude BletchMAME Makefile for MinGW                                       #
+#                                                                           #
+# Only supporting MinGW x64 release builds for now                          #
+#                                                                           #
+# Prerequisite:  wxWidgets built for MinGW and dir specified in             #
+# WXWIDGETS_DIR                                                             #
+#                                                                           #
+# See https://wiki.wxwidgets.org/Compiling_wxWidgets_with_MinGW             #
+#############################################################################
 
 ifdef DEBUG
 BUILD			= debug
@@ -19,9 +19,42 @@ CFLAGS			= -O4
 LDFLAGS			= -O4
 endif
 
+
+#############################################################################
+# WXWIDGETS CONFIGURATION                                                   #
+#############################################################################
+
+ifndef WXWIDGETS_DIR
+$(error Must define WXWIDGETS_DIR)
+endif
+
+ifndef WXWIDGETS_DEBUG
+WXWIDGETS_DEBUG	= 0
+endif
+
+ifneq ($(WXWIDGETS_DEBUG),0)
+WXWIDGETS_LIBS	= -lwxmsw31ud_core -lwxbase31ud -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexud -lwxexpat
+else
+WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
+endif
+
+
+#############################################################################
+# LINK TIME OPTIMIZATION                                                    #
+#############################################################################
+
+ifdef LTO
+CFLAGS			+= -flto
+LDFLAGS			+= -flto
+endif
+
+
+#############################################################################
+# THE REST                                                                  #
+#############################################################################
+
 BIN				= bin/mingw_win64/$(BUILD)
 OBJ				= obj/mingw_win64/$(BUILD)
-WXWIDGETS_LIBS	= -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat
 LIBS			= $(WXWIDGETS_LIBS) -lkernel32 -luser32 -lgdi32 -lcomdlg32 -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lversion -lwsock32 -lwininet -luxtheme -loleacc
 CFLAGS			+= -I$(WXWIDGETS_DIR)/include -I$(WXWIDGETS_DIR)/lib/gcc_lib/mswu -I$(WXWIDGETS_DIR)/src/expat/expat/lib -I./lib -I./src -std=c++17 -DWIN32 
 
