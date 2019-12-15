@@ -129,7 +129,7 @@ private:
 	volatile bool					m_chatter_enabled;
 
 	void InternalPost(Message::type type, wxString &&command, emu_error status = emu_error::INVALID);
-	Response ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input);
+	Response ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &emu_output_stream);
 	void PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text);
 };
 

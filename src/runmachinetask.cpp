@@ -62,6 +62,23 @@ wxString BuildCommand(const std::vector<wxString> &args)
 }
 
 
+//-------------------------------------------------
+//  ReadUntilEnd
+//-------------------------------------------------
+
+static wxString ReadUntilEnd(wxTextInputStream &stream)
+{
+	wxString s, result;
+
+	while ((s = stream.ReadLine()), !s.IsEmpty())
+	{
+		result += s;
+		result += "\r\n";
+	}
+	return result;
+}
+
+
 //**************************************************************************
 //  MAIN THREAD OPERATIONS
 //**************************************************************************
@@ -205,20 +222,34 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 	RunMachineResult result;
 	Response response;
 
-	// set up streams
-	wxTextInputStream input(*process.GetInputStream());
-	wxTextOutputStream output(*process.GetOutputStream());
-	wxTextInputStream error(*process.GetErrorStream());
+	// set up streams (note that from our perspective, MAME's output streams are input
+	// for us, and this we use wxTextInputStream)
+	wxTextOutputStream emu_input_stream(*process.GetOutputStream());
+	wxTextInputStream emu_output_stream(*process.GetInputStream());
+	wxTextInputStream emu_error_stream(*process.GetErrorStream());
 
 	// receive the inaugural response from MAME; we want to call it quicks if this doesn't work
-	response = ReceiveResponse(handler, input);
+	response = ReceiveResponse(handler, emu_output_stream);
 	if (response.m_type != Response::type::OK)
 	{
 		// alas, we have an error starting MAME
 		result.m_success = false;
-		result.m_error_message = !response.m_text.empty()
-			? std::move(response.m_text)
-			: wxT("Error starting MAME");
+
+		// try various strategies to get the best error message possible
+		if (!response.m_text.empty())
+		{
+			// we got an error message from the LUA worker_ui plug-in; display it
+			result.m_error_message = std::move(response.m_text);
+		}
+		else
+		{
+			// we did not get an error message from the LUA worker_ui plug-in; capture
+			// MAME's standard output and present it (not ideal, but better than nothing)
+			wxString error_output = ReadUntilEnd(emu_error_stream);
+			result.m_error_message = !error_output.empty()
+				? wxT("Error starting MAME:\r\n\r\n") + error_output
+				: wxT("Error starting MAME");	// when all else fails...
+		}
 		util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
 		return;
 	}
@@ -237,13 +268,13 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 		case Message::type::COMMAND:
 			// emit this command to MAME
 			wxLogDebug("MAME <== [%s]", message.m_command);
-			output.WriteString(message.m_command);
+			emu_input_stream.WriteString(message.m_command);
 
 			if (m_chatter_enabled)
 				PostChatter(handler, Chatter::chatter_type::COMMAND_LINE, std::move(message.m_command));
 
 			// and receive a response from MAME
-			response = ReceiveResponse(handler, input);
+			response = ReceiveResponse(handler, emu_output_stream);
 			break;
 
 		case Message::type::TERMINATED:
@@ -257,17 +288,12 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 		}
 	}
 
-	// was there an error?  if so capture it
+	// was there an error?
 	wxString error_message;
 	if (status != emu_error::NONE)
 	{
-		// read until the end of the stream
-		wxString s;
-		while ((s = error.ReadLine()), !s.IsEmpty())
-		{
-			error_message += s;
-			error_message += "\r\n";
-		}
+		// if so, capture what was emitted by MAME's standard output stream
+		error_message = ReadUntilEnd(emu_error_stream);
 
 		// if we were not able to collect any info, show something
 		if (error_message.IsEmpty())
@@ -283,7 +309,7 @@ void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
 //  ReceiveResponse
 //-------------------------------------------------
 
-RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &input)
+RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &emu_output_stream)
 {
 	static const util::enum_parser<Response::type> s_response_type_parser =
 	{
@@ -298,8 +324,8 @@ RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, 
 	wxString str;
 	do
 	{
-		str = input.ReadLine();
-	} while ((!str.empty() && str[0] != '@') || (str.empty() && !input.GetInputStream().Eof()));
+		str = emu_output_stream.ReadLine();
+	} while ((!str.empty() && str[0] != '@') || (str.empty() && !emu_output_stream.GetInputStream().Eof()));
 	wxLogDebug("MAME ==> %s", str);
 
 	// special case; check for EOF
@@ -339,7 +365,7 @@ RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, 
 	// did we get a status reponse
 	if (response.m_type == Response::type::OK && args.size() >= 2 && args[1] == "STATUS")
 	{
-		status::update status_update = status::update::read(input);
+		status::update status_update = status::update::read(emu_output_stream);
 		util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
 	}
 	return response;
