@@ -245,6 +245,7 @@
     <ClCompile Include="info_builder.cpp" />
     <ClCompile Include="job.cpp" />
     <ClCompile Include="listxmltask.cpp" />
+    <ClCompile Include="mameversion.cpp" />
     <ClCompile Include="prefs.cpp" />
     <ClCompile Include="profile.cpp" />
     <ClCompile Include="runmachinetask.cpp" />
@@ -279,6 +280,7 @@
     <ClInclude Include="info_builder.h" />
     <ClInclude Include="job.h" />
     <ClInclude Include="listxmltask.h" />
+    <ClInclude Include="mameversion.h" />
     <ClInclude Include="prefs.h" />
     <ClInclude Include="profile.h" />
     <ClInclude Include="runmachinetask.h" />

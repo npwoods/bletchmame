@@ -30,6 +30,7 @@
 #include "prefs.h"
 #include "profile.h"
 #include "listxmltask.h"
+#include "mameversion.h"
 #include "versiontask.h"
 #include "runmachinetask.h"
 #include "utility.h"
@@ -46,8 +47,7 @@
 //**************************************************************************
 
 // BletchMAME requires MAME 0.213 or later
-const int REQUIRED_MAJOR_MAME_VERSION = 0;
-const int REQUIRED_MINOR_MAME_VERSION = 213;
+const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
 
 // IDs for the controls and the menu commands
 enum
@@ -248,7 +248,6 @@ namespace
 
 		// miscellaneous
 		bool IsMameExecutablePresent() const;
-		static bool IsSupportedMameVersion(const wxString &version);
 		wxString GetPrettyMameVersion() const;
 		bool ShouldPromptOnStop() const;
 		wxString QuickSaveStateFilePath() const;
@@ -1289,13 +1288,12 @@ wxString MameFrame::GetPrettyMameVersion() const
 	wxString result;
 	if (!m_info_db.version().IsEmpty())
 	{
-		int major_version, minor_version;
-		if (sscanf(m_info_db.version().ToStdString().c_str(), "%d.%d", &major_version, &minor_version) == 2
-			&& m_info_db.version() == wxString::Format("%d.%d (mame%d%d)", major_version, minor_version, major_version, minor_version))
+		auto version = MameVersion(m_info_db.version());
+		if (!version.Dirty())
 		{
 			// simple MAME version (e.g. - "0.213 (mame0213)"); this should be the case when the user
 			// is using an off the shelf version of MAME and we want to present a simple version string
-			result = wxString::Format("MAME %d.%d", major_version, minor_version);
+			result = wxString::Format("MAME %d.%d", version.Major(), version.Minor());
 		}
 		else
 		{
@@ -1331,34 +1329,17 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 	m_mame_version = std::move(payload.m_version);
 
 	// warn the user if this is version of MAME is not supported
-	if (!IsSupportedMameVersion(m_mame_version))
+	bool is_minimum_version = MameVersion(m_mame_version).IsAtLeast(REQUIRED_MAME_VERSION);
+	if (!is_minimum_version)
 	{
 		wxString message = wxString::Format(
 			wxT("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %d.%d or newer to function correctly"),
-			REQUIRED_MAJOR_MAME_VERSION,
-			REQUIRED_MINOR_MAME_VERSION);
+			REQUIRED_MAME_VERSION.Major(),
+			REQUIRED_MAME_VERSION.Minor());
 		MessageBox(message);
 	}
 
 	m_client.Reset();
-}
-
-
-//-------------------------------------------------
-//  IsSupportedMameVersion
-//-------------------------------------------------
-
-bool MameFrame::IsSupportedMameVersion(const wxString &version)
-{
-	// first parse the version string; if we fail to parse it then there is a possibility
-	// that this version of MAME is very old (and doesn't have a -version options)
-	int major_version, minor_version;
-	if (sscanf(std::string(version).c_str(), "%d.%d", &major_version, &minor_version) != 2)
-		return false;
-
-	// we have a major/minor version; perform the calculus
-	return (major_version > REQUIRED_MAJOR_MAME_VERSION)
-		|| (major_version == REQUIRED_MAJOR_MAME_VERSION && minor_version >= REQUIRED_MINOR_MAME_VERSION);
 }
 
 

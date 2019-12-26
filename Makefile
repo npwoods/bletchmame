@@ -86,6 +86,7 @@ OBJECTFILES=\
 	$(OBJ)/info_builder.o		\
 	$(OBJ)/job.o				\
 	$(OBJ)/listxmltask.o		\
+	$(OBJ)/mameversion.o		\
 	$(OBJ)/prefs.o				\
 	$(OBJ)/profile.o			\
 	$(OBJ)/runmachinetask.o		\
