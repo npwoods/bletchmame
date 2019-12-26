@@ -11,6 +11,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 1.7 (TBD)
 	- We have a real domain name (https://www.bletchmame.org/); added a menu item to go directly there
 	- If we fail to start MAME, we will now crudely present MAME's error message to the user
+	- When supported by MAME (0.217 dirty or greater), we will attach to a child window rather than the BletchMAME root window.  This fixes a bug where the status bar could obscure part of the running emulation
 
 - 1.6 (2019-Nov-24)
 	- Upgraded to wxWidgets 3.1.3

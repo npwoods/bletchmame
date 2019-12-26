@@ -165,6 +165,7 @@ namespace
 
 		MameClient								m_client;
 		Preferences							    m_prefs;
+		wxPanel *								m_root_panel;
 		wxNotebook *							m_note_book;
 		CollectionListView *				    m_machine_view;
 		SoftwareListView *						m_software_list_view;
@@ -256,6 +257,8 @@ namespace
 		bool PromptForMameExecutable();
 		bool RefreshMameInfoDatabase();
 		info::machine GetRunningMachine() const;
+		bool AttachToRootPanel() const;
+		bool IsMameVersionAtLeast(const MameVersion &version) const;
 		void Run(const info::machine &machine, const software_list::software *software = nullptr, const profiles::profile *profile = nullptr);
 		void Run(const profiles::profile &profile);
 		wxString PreflightCheck();
@@ -352,6 +355,7 @@ static const CollectionViewDesc s_profile_collection_view_desc =
 MameFrame::MameFrame()
 	: wxFrame(nullptr, wxID_ANY, wxTheApp->GetAppName())
 	, m_client(*this, m_prefs)
+	, m_root_panel(nullptr)
 	, m_note_book(nullptr)
 	, m_machine_view(nullptr)
 	, m_software_list_view(nullptr)
@@ -380,9 +384,13 @@ MameFrame::MameFrame()
 	// create a status bar just for fun (by default with 1 pane only)
 	CreateStatusBar(2);
 	SetStatusText("Welcome to BletchMAME!");
-		
-	// create a notebook
-	m_note_book = new wxNotebook(this, id++);
+
+	// root panel for our hierarchy
+	m_root_panel = new wxPanel(this, id++);
+
+	// create a notebook under the root panel
+	m_note_book = new wxNotebook(m_root_panel, id++);
+	m_root_panel->Bind(wxEVT_SIZE, [this](auto &) { m_note_book->SetSize(m_root_panel->GetSize()); });
 
 	// create the machine list panel
 	wxPanel &machine_panel = *new wxPanel(m_note_book, id++);
@@ -809,6 +817,20 @@ info::machine MameFrame::GetRunningMachine() const
 
 
 //-------------------------------------------------
+//  AttachToRootPanel
+//-------------------------------------------------
+
+bool MameFrame::AttachToRootPanel() const
+{
+	// Targetting subwindows with -attach_window was introduced in between MAME 0.217 and MAME 0.218
+	const MameVersion REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW = MameVersion(0, 217, true);
+
+	// Are we the required version?
+	return IsMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
+}
+
+
+//-------------------------------------------------
 //  Run
 //-------------------------------------------------
 
@@ -838,7 +860,7 @@ void MameFrame::Run(const info::machine &machine, const software_list::software 
 	Task::ptr task = std::make_unique<RunMachineTask>(
 		machine,
 		std::move(software_name),
-		*this);
+		AttachToRootPanel() ? *m_root_panel : (wxWindow &)*this);
 	m_client.Launch(std::move(task));
 
 	// set up running state and subscribe to events
@@ -1320,6 +1342,16 @@ void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> ch
 
 
 //-------------------------------------------------
+//  IsMameVersionAtLeast
+//-------------------------------------------------
+
+bool MameFrame::IsMameVersionAtLeast(const MameVersion &version) const
+{
+	return MameVersion(m_mame_version).IsAtLeast(version);
+}
+
+
+//-------------------------------------------------
 //  OnVersionCompleted
 //-------------------------------------------------
 
@@ -1329,8 +1361,7 @@ void MameFrame::OnVersionCompleted(PayloadEvent<VersionResult> &event)
 	m_mame_version = std::move(payload.m_version);
 
 	// warn the user if this is version of MAME is not supported
-	bool is_minimum_version = MameVersion(m_mame_version).IsAtLeast(REQUIRED_MAME_VERSION);
-	if (!is_minimum_version)
+	if (!IsMameVersionAtLeast(REQUIRED_MAME_VERSION))
 	{
 		wxString message = wxString::Format(
 			wxT("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %d.%d or newer to function correctly"),
@@ -2086,7 +2117,7 @@ void MameFrame::UpdateEmulationSession()
 
 	// if so, hide the machine list UX
 	m_note_book->Show(!is_active);
-	m_machine_view->Show(!is_active);
+	m_root_panel->Show(!is_active || AttachToRootPanel());
 
 	// ...and enable pinging
 	if (is_active)
