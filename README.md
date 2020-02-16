@@ -8,8 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 1.8 (TBD)
+- 1.8 (2019-Feb-16)
 	- Added command to drop into debugger
+	- Fixed menu bar toggling bug
 
 - 1.7 (2019-Dec-28)
 	- We have a real domain name (https://www.bletchmame.org/); added a menu item to go directly there

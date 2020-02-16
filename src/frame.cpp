@@ -390,7 +390,8 @@ MameFrame::MameFrame()
 
 	// create a notebook under the root panel
 	m_note_book = new wxNotebook(m_root_panel, id++);
-	m_root_panel->Bind(wxEVT_SIZE, [this](auto &) { m_note_book->SetSize(m_root_panel->GetSize()); });
+	m_root_panel->Bind(wxEVT_SIZE,		[this](auto &)		{ m_note_book->SetSize(m_root_panel->GetSize());	});
+	m_root_panel->Bind(wxEVT_KEY_DOWN,	[this](auto &event) { OnKeyDown(event);									});
 
 	// create the machine list panel
 	wxPanel &machine_panel = *new wxPanel(m_note_book, id++);
