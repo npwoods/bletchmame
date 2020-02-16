@@ -241,6 +241,7 @@ function emit_status(light, out)
 	emit("\tnatural_keyboard_in_use=\"" .. tostring(manager:machine():ioport():natkeyboard().in_use) .. "\"");
 	emit("\tpaused=\"" .. tostring(manager:machine().paused) .. "\"");
 	emit("\tstartup_text=\"\"");
+	emit("\tdebugger_present=\"" .. string_from_bool(manager:machine():debugger()) .. "\"");
 	emit("\tshow_profiler=\"" .. tostring(manager:ui().show_profiler) .. "\"");
 	if (not light) then
 		emit("\thas_input_using_mouse=\"" .. tostring(has_input_using_mouse()) .. "\"");
@@ -420,6 +421,17 @@ function command_resume(args)
 	emu.unpause()
 	print("@OK STATUS ### Resumed")
 	emit_status()
+end
+
+-- DEBUGGER command
+function command_debugger(args)
+	if not manager:machine():debugger() then
+		print("@ERROR ### Debugger not present")
+		return
+	end
+
+	manager:machine():debugger().execution_state = 'stop'
+	print("@OK ### Dropping into debugger")
 end
 
 -- THROTTLED command
@@ -713,6 +725,7 @@ local commands =
 	["frameskip"]					= command_frameskip,
 	["pause"]						= command_pause,
 	["resume"]						= command_resume,
+	["debugger"]					= command_debugger,
 	["input"]						= command_input,
 	["paste"]						= command_paste,
 	["set_attenuation"]				= command_set_attenuation,
@@ -769,6 +782,9 @@ function startplugin()
 	emu.register_prestart(function()
 		-- prestart has been invoked; set up MAME for our control
 		manager:machine():uiinput().presses_enabled = false
+		if manager:machine():debugger() then
+			manager:machine():debugger().execution_state = 'run'
+		end
 		session_active = true
 		update_mouse_enabled()
 

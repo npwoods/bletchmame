@@ -8,7 +8,10 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 1.7 (TBD)
+- 1.8 (TBD)
+	- Added command to drop into debugger
+
+- 1.7 (2019-Dec-28)
 	- We have a real domain name (https://www.bletchmame.org/); added a menu item to go directly there
 	- If we fail to start MAME, we will now crudely present MAME's error message to the user
 	- When supported by MAME (0.217 dirty or greater), we will attach to a child window rather than the BletchMAME root window.  This fixes a bug where the status bar could obscure part of the running emulation

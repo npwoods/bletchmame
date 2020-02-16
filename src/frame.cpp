@@ -537,6 +537,7 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *save_state_menu_item			= file_menu->Append(id++, "Save State...");
 	wxMenuItem *save_screenshot_menu_item		= file_menu->Append(id++, "Save Screenshot...\tF12");
 	file_menu->AppendSeparator();
+	wxMenuItem *debugger_menu_item				= file_menu->Append(id++, "Debugger...");
 	wxMenu *reset_menu = new wxMenu();
 	wxMenuItem *soft_reset_menu_item			= reset_menu->Append(id++, "Soft Reset");
 	wxMenuItem *hard_reset_menu_item			= reset_menu->Append(id++, "Hard Reset");
@@ -598,6 +599,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();														}, save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();														}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { Issue("debugger");														}, debugger_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");														}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");														}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &)	{ Close(false);																}, exit_menu_item->GetId());
@@ -627,6 +629,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, load_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->debugger_present().get());								}, debugger_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, hard_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, increase_speed_menu_item->GetId());

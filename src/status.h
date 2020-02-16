@@ -183,6 +183,7 @@ namespace status
 		std::optional<bool>							m_polling_input_seq;
 		std::optional<bool>							m_has_input_using_mouse;
 		std::optional<wxString>						m_startup_text;
+		std::optional<bool>							m_debugger_present;
 		std::optional<float>						m_speed_percent;
 		std::optional<wxString>						m_frameskip;
 		std::optional<int>							m_effective_frameskip;
@@ -216,6 +217,7 @@ namespace status
 		observable::value<bool> &						polling_input_seq()			{ return m_polling_input_seq; }
 		observable::value<bool> &						has_input_using_mouse()		{ return m_has_input_using_mouse; }
 		observable::value<wxString> &					startup_text()				{ return m_startup_text; }
+		observable::value<bool>	&						debugger_present()			{ return m_debugger_present; }
 		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
 		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
 		observable::value<std::vector<image>> &			images()					{ return m_images; }
@@ -236,6 +238,7 @@ namespace status
 		observable::value<bool>							m_polling_input_seq;
 		observable::value<bool>							m_has_input_using_mouse;
 		observable::value<wxString>						m_startup_text;
+		observable::value<bool>							m_debugger_present;
 		observable::value<float>						m_speed_percent;
 		observable::value<int>							m_effective_frameskip;
 		observable::value<std::vector<image>>			m_images;

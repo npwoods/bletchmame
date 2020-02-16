@@ -133,6 +133,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		std::to_string(m_target_window),
 		"-skip_gameinfo",
 		"-nomouse",
+		"-debug",
 		"-plugin",
 		WORKER_UI_PLUGIN_NAME
 	};

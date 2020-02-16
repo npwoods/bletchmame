@@ -182,6 +182,7 @@ status::update status::update::read(wxTextInputStream &input_stream)
 		attributes.Get("polling_input_seq",		result.m_polling_input_seq);
 		attributes.Get("has_input_using_mouse",	result.m_has_input_using_mouse);
 		attributes.Get("startup_text",			result.m_startup_text);
+		attributes.Get("debugger_present",		result.m_debugger_present);
 	});
 	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -331,6 +332,7 @@ void status::state::update(status::update &&that)
 	take(m_polling_input_seq,		that.m_polling_input_seq);
 	take(m_has_input_using_mouse,	that.m_has_input_using_mouse);
 	take(m_startup_text,			that.m_startup_text);
+	take(m_debugger_present,		that.m_debugger_present);
 	take(m_speed_percent,			that.m_speed_percent);
 	take(m_frameskip,				that.m_frameskip);
 	take(m_effective_frameskip,		that.m_effective_frameskip);
