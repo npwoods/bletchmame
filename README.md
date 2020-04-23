@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 1.9 (TBD)
+	- Added the ability to record AVI/MNG movies (requires MAME 0.221)
+
 - 1.8 (2020-Feb-16)
 	- Added command to drop into debugger
 	- Fixed menu bar toggling bug

@@ -255,6 +255,7 @@ function emit_status(light, out)
 	emit("\t\teffective_frameskip=\"" .. tostring(manager:machine():video():effective_frameskip()) .. "\"");
 	emit("\t\tthrottled=\"" .. tostring(manager:machine():video().throttled) .. "\"");
 	emit("\t\tthrottle_rate=\"" .. tostring(manager:machine():video().throttle_rate) .. "\"");
+	emit("\t\tis_recording=\"" .. string_from_bool(manager:machine():video():is_recording()) .. "\"");
 	emit("\t/>");
 
 	-- <sound> (sound_manager)
@@ -522,6 +523,20 @@ function command_save_snapshot(args)
 	print("@OK ### Successfully saved screenshot '" .. args[3] .. "'")
 end
 
+-- BEGIN_RECORDING command
+function command_begin_recording(args)
+	manager:machine():video():begin_recording(args[2])
+	print("@OK STATUS ### Began recording")
+	emit_status()
+end
+
+-- END_RECORDING command
+function command_end_recording(args)
+	manager:machine():video():end_recording()
+	print("@OK STATUS ### Ended recording")
+	emit_status()
+end
+
 -- LOAD command
 function command_load(args)
 	local image = find_image_by_tag(args[2])
@@ -734,6 +749,8 @@ local commands =
 	["state_save"]					= command_state_save,
 	["state_save_and_exit"]			= command_state_save_and_exit,
 	["save_snapshot"]				= command_save_snapshot,
+	["begin_recording"]				= command_begin_recording,
+	["end_recording"]				= command_end_recording,
 	["load"]						= command_load,
 	["unload"]						= command_unload,
 	["create"]						= command_create,

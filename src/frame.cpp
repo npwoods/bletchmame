@@ -184,6 +184,7 @@ namespace
 		software_list_collection				m_software_list_collection;
 		wxString								m_software_list_collection_machine_name;
 		IconLoader								m_icon_loader;
+		wxString								m_current_recording_movie_filename;
 
 		// information retrieved by -version
 		wxString								m_mame_version;
@@ -204,6 +205,7 @@ namespace
 		static const float s_throttle_rates[];
 		static const wxString s_wc_saved_state;
 		static const wxString s_wc_save_snapshot;
+		static const wxString s_wc_record_movie;
 
 		const int SOUND_ATTENUATION_OFF = -32;
 		const int SOUND_ATTENUATION_ON = 0;
@@ -219,6 +221,7 @@ namespace
 		void OnMenuStateLoad();
 		void OnMenuStateSave();
 		void OnMenuSnapshotSave();
+		void OnMenuToggleMovie();
 		void OnMenuImages();
 		void OnMenuPaths();
 		void OnMenuInputs(status::input::input_class input_class);
@@ -263,7 +266,7 @@ namespace
 		void Run(const profiles::profile &profile);
 		wxString PreflightCheck();
 		int MessageBox(const wxString &message, long style = wxOK | wxCENTRE, const wxString &caption = wxTheApp->GetAppName());
-		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true);
+		void OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked = { }, bool enabled = true, std::optional<wxString> &&new_text = { });
 		void UpdateProfileDirectories(bool update_profile_list, bool update_file_system_watcher);
 		info::machine GetMachineFromIndex(long item) const;
 		const wxString &GetMachineListItemText(info::machine machine, long column) const;
@@ -275,6 +278,7 @@ namespace
 		void UpdateMenuBar();
 		void UpdateStatusBar();
 		void SetChatterListener(std::function<void(Chatter &&chatter)> &&func);
+		wxString GetFileDialogFilename(Preferences::machine_path_type path_type, const wxString &wildcard_string, file_dialog_type dlgtype);
 		void FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, file_dialog_type dlgtype);
 		static wxString InputClassText(status::input::input_class input_class, bool elipsis);
 		void PlaceInRecentFiles(const wxString &tag, const wxString &path);
@@ -282,6 +286,7 @@ namespace
 		void WatchForImageMount(const wxString &tag);
 		void UpdateSoftwareList();
 		void LaunchingListContextMenu(const software_list::software *software = nullptr);
+		wxString GetMenuToggleMovieText();
 
 		// runtime control
 		void Issue(const std::vector<wxString> &args);
@@ -323,6 +328,7 @@ const float MameFrame::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2
 
 const wxString MameFrame::s_wc_saved_state = wxT("MAME Saved State Files (*.sta)|*.sta|All Files (*.*)|*.*");
 const wxString MameFrame::s_wc_save_snapshot = wxT("PNG Files (*.png)|*.png|All Files (*.*)|*.*");
+const wxString MameFrame::s_wc_record_movie = wxT("AVI Files (*.avi)|*.avi|MNG Files (*.mng)|*.mng|All Files (*.*)|*.*");
 
 static const CollectionViewDesc s_machine_collection_view_desc =
 {
@@ -536,7 +542,9 @@ void MameFrame::CreateMenuBar()
 	wxMenuItem *quick_save_state_menu_item		= file_menu->Append(id++, "Quick Save State\tShift+F7");
 	wxMenuItem *load_state_menu_item			= file_menu->Append(id++, "Load State...");
 	wxMenuItem *save_state_menu_item			= file_menu->Append(id++, "Save State...");
+	file_menu->AppendSeparator();
 	wxMenuItem *save_screenshot_menu_item		= file_menu->Append(id++, "Save Screenshot...\tF12");
+	wxMenuItem *toggle_movie_menu_item			= file_menu->Append(id++, "Record Movie...\tShift+F12");
 	file_menu->AppendSeparator();
 	wxMenuItem *debugger_menu_item				= file_menu->Append(id++, "Debugger...");
 	wxMenu *reset_menu = new wxMenu();
@@ -600,6 +608,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateLoad();														}, load_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuStateSave();														}, save_state_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { OnMenuSnapshotSave();														}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_MENU, [this](auto &) { OnMenuToggleMovie();														}, toggle_movie_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("debugger");														}, debugger_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("soft_reset");														}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_MENU, [this](auto &) { Issue("hard_reset");														}, hard_reset_menu_item->GetId());
@@ -630,6 +639,7 @@ void MameFrame::CreateMenuBar()
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, load_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_state_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, save_screenshot_menu_item->GetId());
+	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, true, GetMenuToggleMovieText());												}, toggle_movie_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event, { }, m_state && m_state->debugger_present().get());								}, debugger_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, soft_reset_menu_item->GetId());
 	Bind(wxEVT_UPDATE_UI, [this](auto &event) { OnEmuMenuUpdateUI(event);																					}, hard_reset_menu_item->GetId());
@@ -1170,6 +1180,97 @@ void MameFrame::OnMenuSnapshotSave()
 
 
 //-------------------------------------------------
+//  OnMenuToggleMovie
+//-------------------------------------------------
+
+void MameFrame::OnMenuToggleMovie()
+{
+	// Targetting subwindows with -attach_window was introduced in between MAME 0.220 and MAME 0.221
+	const MameVersion REQUIRED_MAME_VERSION_TOGGLE_MOVIE = MameVersion(0, 220, true);
+
+	// Are we the required version?
+	if (!IsMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
+	{
+		wxString message = wxString::Format(
+			wxT("Recording movies requires MAME %d.%d or newer to function"),
+			REQUIRED_MAME_VERSION.Major(),
+			REQUIRED_MAME_VERSION.Minor());
+		MessageBox(message);
+		return;
+	}
+
+	// We're toggling the movie status... so are we recording?
+	if (m_state.value().is_recording())
+	{
+		// If so, stop the recording
+		Issue({ "end_recording" });
+	}
+	else
+	{
+		enum class recording_type
+		{
+			AVI,
+			MNG
+		};
+
+		// If not, show a file dialog and start recording
+		Pauser pauser(*this);
+		wxString path = GetFileDialogFilename(
+			Preferences::machine_path_type::working_directory,
+			s_wc_record_movie,
+			file_dialog_type::SAVE);
+		if (!path.empty())
+		{
+			// determine the recording file type
+			wxFileName filename(path);
+			recording_type recording_type = filename.GetExt().Upper() == "MNG"
+				? recording_type::MNG
+				: recording_type::AVI;
+
+			// convert to a string
+			wxString recording_type_string;
+			switch (recording_type)
+			{
+				case recording_type::AVI:
+					recording_type_string = "AVI";
+					break;
+				case recording_type::MNG:
+					recording_type_string = "MNG";
+					break;
+				default:
+					throw false;
+			}
+
+			// and issue the command
+			Issue({ "begin_recording", path, recording_type_string });
+			m_current_recording_movie_filename = filename.GetName() + "." + filename.GetExt();
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  GetMenuToggleMovieText
+//-------------------------------------------------
+
+wxString MameFrame::GetMenuToggleMovieText()
+{
+	wxString result;
+	if (m_state.has_value() && m_state.value().is_recording())
+	{
+		result = wxString::Format(
+			wxT("Stop Recording Movie \"%s\"\tShift+F12"),
+			m_current_recording_movie_filename);
+	}
+	else
+	{
+		result = wxT("Record Movie...\tShift+F12");
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  OnMenuImages
 //-------------------------------------------------
 
@@ -1335,13 +1436,16 @@ wxString MameFrame::GetPrettyMameVersion() const
 //  OnEmuMenuUpdateUI
 //-------------------------------------------------
 
-void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked, bool enabled)
+void MameFrame::OnEmuMenuUpdateUI(wxUpdateUIEvent &event, std::optional<bool> checked, bool enabled, std::optional<wxString> &&new_text)
 {
 	bool is_active = m_state.has_value();
 	event.Enable(is_active && enabled);
 
 	if (checked.has_value())
 		event.Check(is_active && checked.value());
+
+	if (new_text.has_value())
+		event.SetText(new_text.value());
 }
 
 
@@ -1589,7 +1693,7 @@ void MameFrame::SetChatterListener(std::function<void(Chatter &&chatter)> &&func
 
 
 //-------------------------------------------------
-//  FileDialogCommand
+//  OnChatter
 //-------------------------------------------------
 
 void MameFrame::OnChatter(PayloadEvent<Chatter> &event)
@@ -1600,10 +1704,10 @@ void MameFrame::OnChatter(PayloadEvent<Chatter> &event)
 
 
 //-------------------------------------------------
-//  FileDialogCommand
+//  GetFileDialogFilename
 //-------------------------------------------------
 
-void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, MameFrame::file_dialog_type dlgtype)
+wxString MameFrame::GetFileDialogFilename(Preferences::machine_path_type path_type, const wxString &wildcard_string, file_dialog_type dlgtype)
 {
 	// determine the style
 	long style;
@@ -1630,7 +1734,6 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 		default_file += "." + default_ext;
 
 	// show the dialog
-	Pauser pauser(*this);
 	wxFileDialog dialog(
 		this,
 		wxFileSelectorPromptStr,
@@ -1638,14 +1741,28 @@ void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences:
 		default_file,
 		wildcard_string,
 		style);
-	if (dialog.ShowModal() != wxID_OK)
+	return dialog.ShowModal() == wxID_OK
+		? dialog.GetPath()
+		: wxString();
+}
+
+
+//-------------------------------------------------
+//  FileDialogCommand
+//-------------------------------------------------
+
+void MameFrame::FileDialogCommand(std::vector<wxString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const wxString &wildcard_string, MameFrame::file_dialog_type dlgtype)
+{
+	Pauser pauser(*this);
+	wxString path = GetFileDialogFilename(path_type, wildcard_string, dlgtype);
+	if (path.empty())
 		return;
-	wxString path = dialog.GetPath();
 
 	// append the resulting path to the command list
-	commands.push_back(path);
+	commands.push_back(std::move(path));
 
 	// put back the default
+	const wxString &running_machine_name(GetRunningMachine().name());
 	if (path_is_file)
 	{
 		m_prefs.SetMachinePath(running_machine_name, path_type, std::move(path));

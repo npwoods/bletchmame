@@ -191,6 +191,7 @@ status::update status::update::read(wxTextInputStream &input_stream)
 		attributes.Get("effective_frameskip",	result.m_effective_frameskip);
 		attributes.Get("throttled",				result.m_throttled);
 		attributes.Get("throttle_rate",			result.m_throttle_rate);
+		attributes.Get("is_recording",			result.m_is_recording);
 	});
 	xml.OnElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -338,6 +339,7 @@ void status::state::update(status::update &&that)
 	take(m_effective_frameskip,		that.m_effective_frameskip);
 	take(m_throttled,				that.m_throttled);
 	take(m_throttle_rate,			that.m_throttle_rate);
+	take(m_is_recording,			that.m_is_recording);
 	take(m_sound_attenuation,		that.m_sound_attenuation);
 	take(m_images,					that.m_images);
 	take(m_inputs,					that.m_inputs);

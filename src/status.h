@@ -189,6 +189,7 @@ namespace status
 		std::optional<int>							m_effective_frameskip;
 		std::optional<bool>							m_throttled;
 		std::optional<float>						m_throttle_rate;
+		std::optional<bool>							m_is_recording;
 		std::optional<int>							m_sound_attenuation;
 		std::optional<std::vector<image>>			m_images;
 		std::optional<std::vector<input>>			m_inputs;
@@ -226,6 +227,7 @@ namespace status
 		wxString										frameskip() const			{ return m_frameskip; }
 		bool											throttled() const			{ return m_throttled; }
 		float											throttle_rate() const		{ return m_throttle_rate; }
+		bool											is_recording() const		{ return m_is_recording; }
 		int												sound_attenuation() const	{ return m_sound_attenuation; }
 
 		// higher level methods
@@ -247,6 +249,7 @@ namespace status
 		wxString										m_frameskip;
 		bool											m_throttled;
 		float											m_throttle_rate;
+		bool											m_is_recording;
 		int												m_sound_attenuation;
 
 		template<typename TStateField, typename TUpdateField>
