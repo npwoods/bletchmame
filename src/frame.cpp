@@ -1232,10 +1232,10 @@ void MameFrame::OnMenuToggleMovie()
 			switch (recording_type)
 			{
 				case recording_type::AVI:
-					recording_type_string = "AVI";
+					recording_type_string = "avi";
 					break;
 				case recording_type::MNG:
-					recording_type_string = "MNG";
+					recording_type_string = "mng";
 					break;
 				default:
 					throw false;

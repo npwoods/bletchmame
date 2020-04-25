@@ -525,8 +525,8 @@ end
 
 -- BEGIN_RECORDING command
 function command_begin_recording(args)
-	manager:machine():video():begin_recording(args[2])
-	print("@OK STATUS ### Began recording")
+	manager:machine():video():begin_recording(args[2], args[3])
+	print("@OK STATUS ### Began recording '" .. args[2] .. "'")
 	emit_status()
 end
 
