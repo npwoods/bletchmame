@@ -106,6 +106,7 @@ namespace
 		};
 
 		InputEntry(wxWindow &parent, InputsDialog &host, wxButton &main_button, wxButton &menu_button, wxStaticText &static_text);
+		virtual ~InputEntry() { }
 		void UpdateText();
 		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() = 0;
 
