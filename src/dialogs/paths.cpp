@@ -38,7 +38,7 @@ namespace
 	public:
 		PathsDialog(wxWindow &parent, Preferences &prefs);
 
-		std::vector<Preferences::path_type> Persist();
+		std::vector<Preferences::global_path_type> Persist();
 		static void ValidityChecks();
 
 	private:
@@ -49,7 +49,7 @@ namespace
 			ID_LAST
 		};
 
-		static const size_t PATH_COUNT = (size_t)Preferences::path_type::count;
+		static const size_t PATH_COUNT = (size_t)Preferences::global_path_type::COUNT;
 		static const std::array<wxString, PATH_COUNT> s_combo_box_strings;
 
 		Preferences &						m_prefs;
@@ -67,7 +67,7 @@ namespace
 		void CurrentPathListChanged();
 		bool IsMultiPath() const;
 		bool IsSelectingPath() const;
-		Preferences::path_type GetCurrentPath() const;
+		Preferences::global_path_type GetCurrentPath() const;
 		bool BrowseForPath();
 		bool BrowseForPath(long item);
 		bool BrowseForPath(size_t item);
@@ -93,10 +93,10 @@ const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_str
 //  IsFilePathType
 //-------------------------------------------------
 
-static bool IsFilePathType(Preferences::path_type type)
+static bool IsFilePathType(Preferences::global_path_type type)
 {
-	return type == Preferences::path_type::emu_exectuable
-		|| type == Preferences::path_type::icons;
+	return type == Preferences::global_path_type::EMU_EXECUTABLE
+		|| type == Preferences::global_path_type::ICONS;
 }
 
 
@@ -104,17 +104,17 @@ static bool IsFilePathType(Preferences::path_type type)
 //  IsDirPathType
 //-------------------------------------------------
 
-static bool IsDirPathType(Preferences::path_type type)
+static bool IsDirPathType(Preferences::global_path_type type)
 {
-	return type == Preferences::path_type::roms
-		|| type == Preferences::path_type::samples
-		|| type == Preferences::path_type::config
-		|| type == Preferences::path_type::nvram
-		|| type == Preferences::path_type::hash
-		|| type == Preferences::path_type::artwork
-		|| type == Preferences::path_type::icons
-		|| type == Preferences::path_type::plugins
-		|| type == Preferences::path_type::profiles;
+	return type == Preferences::global_path_type::ROMS
+		|| type == Preferences::global_path_type::SAMPLES
+		|| type == Preferences::global_path_type::CONFIG
+		|| type == Preferences::global_path_type::NVRAM
+		|| type == Preferences::global_path_type::HASH
+		|| type == Preferences::global_path_type::ARTWORK
+		|| type == Preferences::global_path_type::ICONS
+		|| type == Preferences::global_path_type::PLUGINS
+		|| type == Preferences::global_path_type::PROFILES;
 }
 
 
@@ -132,7 +132,7 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 
 	// path data
 	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_path_lists[i] = m_prefs.GetPath(static_cast<Preferences::path_type>(i));
+		m_path_lists[i] = m_prefs.GetPath(static_cast<Preferences::global_path_type>(i));
 
 	// Left column
 	wxStaticText *static_text_1 = new wxStaticText(this, id++, "Show Paths For:");
@@ -206,10 +206,10 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 //  Persist
 //-------------------------------------------------
 
-std::vector<Preferences::path_type> PathsDialog::Persist()
+std::vector<Preferences::global_path_type> PathsDialog::Persist()
 {
-	std::vector<Preferences::path_type> changed_paths;
-	for (Preferences::path_type type : util::all_enums<Preferences::path_type>())
+	std::vector<Preferences::global_path_type> changed_paths;
+	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
 	{
 		wxString &path = m_path_lists[static_cast<size_t>(type)];
 
@@ -426,7 +426,7 @@ void PathsDialog::UpdateCurrentPathList()
 void PathsDialog::RefreshListView()
 {
 	// basic info about the type of path we are
-	const Preferences::path_type current_path_type = GetCurrentPath();
+	const Preferences::global_path_type current_path_type = GetCurrentPath();
 
 	// recalculate m_current_path_valid_list
 	m_current_path_valid_list.resize(m_current_path_list.size());
@@ -434,7 +434,7 @@ void PathsDialog::RefreshListView()
 	{
 		// apply substitutions (e.g. - $(MAMEPATH) with actual MAME path), unless this is the executable of course
 		wxString current_path_buffer;
-		const wxString &current_path = current_path_type != Preferences::path_type::emu_exectuable
+		const wxString &current_path = current_path_type != Preferences::global_path_type::EMU_EXECUTABLE
 			? (current_path_buffer = m_prefs.ApplySubstitutions(m_current_path_list[i]), current_path_buffer)
 			: m_current_path_list[i];
 
@@ -457,16 +457,16 @@ void PathsDialog::RefreshListView()
 std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings()
 {
 	std::array<wxString, PATH_COUNT> result;
-	result[(size_t)Preferences::path_type::emu_exectuable]	= "MAME Executable";
-	result[(size_t)Preferences::path_type::roms]			= "ROMs";
-	result[(size_t)Preferences::path_type::samples]			= "Samples";
-	result[(size_t)Preferences::path_type::config]			= "Config Files";
-	result[(size_t)Preferences::path_type::nvram]			= "NVRAM Files";
-	result[(size_t)Preferences::path_type::hash]			= "Hash Files";
-	result[(size_t)Preferences::path_type::artwork]			= "Artwork Files";
-	result[(size_t)Preferences::path_type::icons]			= "Icons";
-	result[(size_t)Preferences::path_type::plugins]			= "Plugins";
-	result[(size_t)Preferences::path_type::profiles]		= "Profiles";
+	result[(size_t)Preferences::global_path_type::EMU_EXECUTABLE]	= "MAME Executable";
+	result[(size_t)Preferences::global_path_type::ROMS]			= "ROMs";
+	result[(size_t)Preferences::global_path_type::SAMPLES]			= "Samples";
+	result[(size_t)Preferences::global_path_type::CONFIG]			= "Config Files";
+	result[(size_t)Preferences::global_path_type::NVRAM]			= "NVRAM Files";
+	result[(size_t)Preferences::global_path_type::HASH]			= "Hash Files";
+	result[(size_t)Preferences::global_path_type::ARTWORK]			= "Artwork Files";
+	result[(size_t)Preferences::global_path_type::ICONS]			= "Icons";
+	result[(size_t)Preferences::global_path_type::PLUGINS]			= "Plugins";
+	result[(size_t)Preferences::global_path_type::PROFILES]		= "Profiles";
 
 	// check to make sure that all values are specified
 	for (const wxString &str : result)
@@ -490,10 +490,10 @@ bool PathsDialog::IsMultiPath() const
 //  GetCurrentPath
 //-------------------------------------------------
 
-Preferences::path_type PathsDialog::GetCurrentPath() const
+Preferences::global_path_type PathsDialog::GetCurrentPath() const
 {
 	int selection = m_combo_box->GetSelection();
-	return static_cast<Preferences::path_type>(selection);
+	return static_cast<Preferences::global_path_type>(selection);
 }
 
 
@@ -517,9 +517,9 @@ void PathsDialog::ValidityChecks()
 	BuildComboBoxStrings();
 
 	// ensure that all path types are either a file or dir
-	for (int i = 0; i < static_cast<int>(Preferences::path_type::count); i++)
+	for (int i = 0; i < static_cast<int>(Preferences::global_path_type::COUNT); i++)
 	{
-		Preferences::path_type path_type = static_cast<Preferences::path_type>(i);
+		Preferences::global_path_type path_type = static_cast<Preferences::global_path_type>(i);
 		bool is_file_path_type = IsFilePathType(path_type);
 		bool is_dir_path_type = IsDirPathType(path_type);
 		assert(is_file_path_type || is_dir_path_type);
@@ -533,10 +533,10 @@ void PathsDialog::ValidityChecks()
 //  show_specify_single_path_dialog
 //-------------------------------------------------
 
-wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_type type, const wxString &default_path)
+wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::global_path_type type, const wxString &default_path)
 {
 	wxString result;
-	if (type == Preferences::path_type::emu_exectuable)
+	if (type == Preferences::global_path_type::EMU_EXECUTABLE)
 	{
 		wxFileDialog dialog(&parent, "Specify MAME Path", "", default_path, "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 		if (dialog.ShowModal() == wxID_OK)
@@ -556,9 +556,9 @@ wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::path_typ
 //  show_paths_dialog
 //-------------------------------------------------
 
-std::vector<Preferences::path_type> show_paths_dialog(wxWindow &parent, Preferences &prefs)
+std::vector<Preferences::global_path_type> show_paths_dialog(wxWindow &parent, Preferences &prefs)
 {
-	std::vector<Preferences::path_type> changed_paths;
+	std::vector<Preferences::global_path_type> changed_paths;
 
 	// show the dialog
 	PathsDialog dialog(parent, prefs);

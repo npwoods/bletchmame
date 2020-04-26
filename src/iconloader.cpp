@@ -114,7 +114,7 @@ void IconLoader::RefreshIcons()
 	m_path_entries.clear();
 
 	// loop through all icon paths
-	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::icons);
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::ICONS);
 	for (const wxString &path : paths)
 	{
 		// try to create an appropiate path entry

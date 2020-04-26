@@ -104,7 +104,7 @@ void MameClient::Launch(Task::ptr &&task)
 
 	// build the command line
 	wxString launch_command = util::build_command_line(
-		m_prefs.GetPath(Preferences::path_type::emu_exectuable),
+		m_prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE),
 		task->GetArguments(m_prefs));
 
 	// slap on any extra arguments

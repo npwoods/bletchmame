@@ -147,7 +147,7 @@ void software_list::test()
 void software_list_collection::load(const Preferences &prefs, info::machine machine)
 {
 	m_software_lists.clear();
-	std::vector<wxString> hash_paths = prefs.GetSplitPaths(Preferences::path_type::hash);
+	std::vector<wxString> hash_paths = prefs.GetSplitPaths(Preferences::global_path_type::HASH);
 	for (const info::software_list softlist_info : machine.software_lists())
 	{
 		std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());

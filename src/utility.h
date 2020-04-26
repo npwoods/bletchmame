@@ -230,7 +230,7 @@ public:
 	typedef iterator const_iterator;
 
 	iterator begin()		const { return iterator((T)0); }
-	iterator end()			const { return iterator(T::count); }
+	iterator end()			const { return iterator(T::COUNT); }
 	const_iterator cbegin()	const { return begin(); }
 	const_iterator cend()	const { return end(); }
 };

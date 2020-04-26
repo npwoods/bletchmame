@@ -38,61 +38,64 @@ struct ColumnPrefs
 class Preferences
 {
 public:
-	enum class path_type
+	// paths that are "global"
+	enum class global_path_type
 	{
-		emu_exectuable,
-		roms,
-		samples,
-		config,
-		nvram,
-		hash,
-		artwork,
-		icons,
-		plugins,
-		profiles,
+		EMU_EXECUTABLE,
+		ROMS,
+		SAMPLES,
+		CONFIG,
+		NVRAM,
+		HASH,
+		ARTWORK,
+		ICONS,
+		PLUGINS,
+		PROFILES,
 
-		count
+		COUNT
 	};
 
+	// paths that are per-machine
 	enum class machine_path_type
 	{
-		working_directory,
-		last_save_state,
+		WORKING_DIRECTORY,
+		LAST_SAVE_STATE,
 
-		count
+		COUNT
 	};
 
+	// we have three different list views, each with a tab; this identifies them
 	enum class list_view_type
 	{
-		machine,
-		softwarelist,
-		profile,
+		MACHINE,
+		SOFTWARELIST,
+		PROFILE,
 
-		count
+		COUNT
 	};
 
 	Preferences();
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
-	static inline bool IsMultiPath(path_type path_type)
+	static inline bool IsMultiPath(global_path_type path_type)
 	{
 		bool result;
 		switch (path_type)
 		{
-		case Preferences::path_type::emu_exectuable:
-		case Preferences::path_type::config:
-		case Preferences::path_type::nvram:
+		case Preferences::global_path_type::EMU_EXECUTABLE:
+		case Preferences::global_path_type::CONFIG:
+		case Preferences::global_path_type::NVRAM:
 			result = false;
 			break;
 
-		case Preferences::path_type::roms:
-		case Preferences::path_type::samples:
-		case Preferences::path_type::hash:
-		case Preferences::path_type::artwork:
-		case Preferences::path_type::plugins:
-		case Preferences::path_type::profiles:
-		case Preferences::path_type::icons:
+		case Preferences::global_path_type::ROMS:
+		case Preferences::global_path_type::SAMPLES:
+		case Preferences::global_path_type::HASH:
+		case Preferences::global_path_type::ARTWORK:
+		case Preferences::global_path_type::PLUGINS:
+		case Preferences::global_path_type::PROFILES:
+		case Preferences::global_path_type::ICONS:
 			result = true;
 			break;
 
@@ -107,11 +110,11 @@ public:
 		bool result;
 		switch (path_type)
 		{
-		case Preferences::machine_path_type::last_save_state:
+		case Preferences::machine_path_type::LAST_SAVE_STATE:
 			result = false;
 			break;
 
-		case Preferences::machine_path_type::working_directory:
+		case Preferences::machine_path_type::WORKING_DIRECTORY:
 			result = true;
 			break;
 
@@ -121,12 +124,12 @@ public:
 		return result;
 	}
 
-	const wxString &GetPath(path_type type) const												{ return m_paths[static_cast<size_t>(type)]; }
-	void SetPath(path_type type, wxString &&path)												{ m_paths[static_cast<size_t>(type)] = std::move(path); }
+	const wxString &GetPath(global_path_type type) const												{ return m_paths[static_cast<size_t>(type)]; }
+	void SetPath(global_path_type type, wxString &&path)												{ m_paths[static_cast<size_t>(type)] = std::move(path); }
 	
-	std::vector<wxString> GetSplitPaths(path_type type) const;
+	std::vector<wxString> GetSplitPaths(global_path_type type) const;
 
-	wxString GetPathWithSubstitutions(path_type type) const										{ assert(type != path_type::emu_exectuable); return ApplySubstitutions(GetPath(type)); }
+	wxString GetPathWithSubstitutions(global_path_type type) const										{ assert(type != global_path_type::EMU_EXECUTABLE); return ApplySubstitutions(GetPath(type)); }
 
 	const wxString &GetMameExtraArguments() const												{ return m_mame_extra_arguments; }
 	void SetMameExtraArguments(wxString &&extra_arguments)										{ m_mame_extra_arguments = std::move(extra_arguments); }
@@ -173,7 +176,7 @@ private:
 		std::map<wxString, std::vector<wxString>>	m_recent_device_files;
 	};
 
-	std::array<wxString, static_cast<size_t>(path_type::count)>								m_paths;
+	std::array<wxString, static_cast<size_t>(global_path_type::COUNT)>						m_paths;
 	wxString																				m_mame_extra_arguments;
 	wxSize																					m_size;
 	mutable std::unordered_map<std::string, std::unordered_map<std::string, ColumnPrefs>>	m_column_prefs;

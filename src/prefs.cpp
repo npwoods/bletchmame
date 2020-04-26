@@ -26,7 +26,7 @@
 //  LOCAL VARIABLES
 //**************************************************************************
 
-static std::array<const char *, static_cast<size_t>(Preferences::path_type::count)>	s_path_names =
+static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names =
 {
 	"emu",
 	"roms",
@@ -50,9 +50,9 @@ static const util::enum_parser_bidirectional<ColumnPrefs::sort_type> s_column_so
 
 static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list_view_type_parser =
 {
-	{ "machine", Preferences::list_view_type::machine, },
-	{ "softwarelist", Preferences::list_view_type::softwarelist, },
-	{ "profile", Preferences::list_view_type::profile }
+	{ "machine", Preferences::list_view_type::MACHINE, },
+	{ "softwarelist", Preferences::list_view_type::SOFTWARELIST, },
+	{ "profile", Preferences::list_view_type::PROFILE }
 };
 
 
@@ -111,13 +111,13 @@ static std::tuple<const wxChar *, const wxChar *> SplitListViewSelectionKey(cons
 Preferences::Preferences()
 	: m_size(950, 600)
 	, m_menu_bar_shown(true)
-	, m_selected_tab(list_view_type::machine)
+	, m_selected_tab(list_view_type::MACHINE)
 {
 	// default paths
-	SetPath(path_type::config, GetConfigDirectory(true));
-	SetPath(path_type::nvram, GetConfigDirectory(true));
-	SetPath(path_type::plugins, GetDefaultPluginsDirectory());
-	SetPath(path_type::profiles, GetConfigDirectory(true) + "\\profiles");
+	SetPath(global_path_type::CONFIG, GetConfigDirectory(true));
+	SetPath(global_path_type::NVRAM, GetConfigDirectory(true));
+	SetPath(global_path_type::PLUGINS, GetDefaultPluginsDirectory());
+	SetPath(global_path_type::PROFILES, GetConfigDirectory(true) + "\\profiles");
 
     Load();
 }
@@ -140,7 +140,7 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &mach
 //  GetSplitPaths
 //-------------------------------------------------
 
-std::vector<wxString> Preferences::GetSplitPaths(path_type type) const
+std::vector<wxString> Preferences::GetSplitPaths(global_path_type type) const
 {
 	const wxString &paths_string = GetPath(type);
 	return util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
@@ -160,9 +160,9 @@ const wxString &Preferences::GetMachinePath(const wxString &machine_name, machin
 
 	switch (path_type)
 	{
-	case machine_path_type::working_directory:
+	case machine_path_type::WORKING_DIRECTORY:
 		return info->m_working_directory;
-	case machine_path_type::last_save_state:
+	case machine_path_type::LAST_SAVE_STATE:
 		return info->m_last_save_state;
 	default:
 		throw false;
@@ -209,10 +209,10 @@ void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type
 
 	switch (path_type)
 	{
-	case machine_path_type::working_directory:
+	case machine_path_type::WORKING_DIRECTORY:
 		m_machine_info[machine_name].m_working_directory = std::move(path);
 		break;
-	case machine_path_type::last_save_state:
+	case machine_path_type::LAST_SAVE_STATE:
 		m_machine_info[machine_name].m_last_save_state = std::move(path);
 		break;
 	default:
@@ -272,7 +272,7 @@ bool Preferences::Load()
 bool Preferences::Load(wxInputStream &input)
 {
 	XmlParser xml;
-	path_type type = path_type::count;
+	global_path_type type = global_path_type::COUNT;
 	wxString current_machine_name;
 	wxString current_device_type;
 	wxString *current_list_view_parameter = nullptr;
@@ -298,15 +298,15 @@ bool Preferences::Load(wxInputStream &input)
 		{
 			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), type_string);
 			type = iter != s_path_names.cend()
-				? static_cast<path_type>(iter - s_path_names.cbegin())
-				: path_type::count;
+				? static_cast<global_path_type>(iter - s_path_names.cbegin())
+				: global_path_type::COUNT;
 		}
 	});
 	xml.OnElementEnd({ "preferences", "path" }, [&](wxString &&content)
 	{
-		if (type < path_type::count)
+		if (type < global_path_type::COUNT)
 			SetPath(type, std::move(content));
-		type = path_type::count;
+		type = global_path_type::COUNT;
 	});
 	xml.OnElementEnd({ "preferences", "mameextraarguments" }, [&](wxString &&content)
 	{
@@ -366,9 +366,9 @@ bool Preferences::Load(wxInputStream &input)
 
 		wxString path;
 		if (attributes.Get("working_directory", path))
-			SetMachinePath(current_machine_name, machine_path_type::working_directory, std::move(path));
+			SetMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(path));
 		if (attributes.Get("last_save_state", path))
-			SetMachinePath(current_machine_name, machine_path_type::last_save_state, std::move(path));
+			SetMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(path));
 		return XmlParser::element_result::OK;
 	});
 	xml.OnElementBegin({ "preferences", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
@@ -411,7 +411,7 @@ void Preferences::Save(std::ostream &output)
 
 	output << "\t<!-- Paths -->" << std::endl;
 	for (size_t i = 0; i < m_paths.size(); i++)
-		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetPath(static_cast<path_type>(i)) << "</path>" << std::endl;
+		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetPath(static_cast<global_path_type>(i)) << "</path>" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Miscellaneous -->" << std::endl;
@@ -564,7 +564,7 @@ wxString Preferences::ApplySubstitutions(const wxString &path) const
 		wxString result;
 		if (var_name == wxT("MAMEPATH"))
 		{
-			const wxString &path = GetPath(Preferences::path_type::emu_exectuable);
+			const wxString &path = GetPath(Preferences::global_path_type::EMU_EXECUTABLE);
 			wxFileName::SplitPath(path, &result, nullptr, nullptr);
 		}
 		else if (var_name == wxT("BLETCHMAMEPATH"))
@@ -589,7 +589,7 @@ wxString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
 		return "";
 
 	// get the MAME path
-	const wxString &mame_path = GetPath(Preferences::path_type::emu_exectuable);
+	const wxString &mame_path = GetPath(Preferences::global_path_type::EMU_EXECUTABLE);
 	if (mame_path.IsEmpty())
 		return "";
 
@@ -680,16 +680,16 @@ static void general()
 	Preferences prefs;
 	prefs.Load(input);
 
-	assert(prefs.GetPath(Preferences::path_type::emu_exectuable)	== "C:\\mame64.exe");
-	assert(prefs.GetPath(Preferences::path_type::roms)				== "C:\\roms");
-	assert(prefs.GetPath(Preferences::path_type::samples)			== "C:\\samples");
-	assert(prefs.GetPath(Preferences::path_type::config)			== "C:\\cfg");
-	assert(prefs.GetPath(Preferences::path_type::nvram)				== "C:\\nvram");
+	assert(prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE)	== "C:\\mame64.exe");
+	assert(prefs.GetPath(Preferences::global_path_type::ROMS)				== "C:\\roms");
+	assert(prefs.GetPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples");
+	assert(prefs.GetPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg");
+	assert(prefs.GetPath(Preferences::global_path_type::NVRAM)				== "C:\\nvram");
 
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::working_directory)		== "C:\\MyEchoGames\\");
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::last_save_state)		== "C:\\MyLastState.sta");
-	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::working_directory)	== "");
-	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::last_save_state)		== "");
+	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== "C:\\MyEchoGames\\");
+	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== "C:\\MyLastState.sta");
+	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== "");
+	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)		== "");
 }
 
 
@@ -711,7 +711,7 @@ static void path_names()
 
 static void multi_path()
 {
-	for (Preferences::path_type type : util::all_enums<Preferences::path_type>())
+	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
 		Preferences::IsMultiPath(type);
 }
 

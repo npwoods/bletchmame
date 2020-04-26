@@ -476,7 +476,7 @@ MameFrame::MameFrame()
 	m_note_book->AddPage(&software_panel, "Software");
 	m_note_book->AddPage(m_profile_view, "Profiles");
 	m_note_book->SetSelection(static_cast<size_t>(m_prefs.GetSelectedTab()));
-	assert(m_note_book->GetPageCount() == static_cast<size_t>(Preferences::list_view_type::count));
+	assert(m_note_book->GetPageCount() == static_cast<size_t>(Preferences::list_view_type::COUNT));
 
 	// set up the file system watcher
 	m_fsw_profiles.SetOwner(this);
@@ -687,7 +687,7 @@ void MameFrame::CreateMenuBar()
 
 bool MameFrame::IsMameExecutablePresent() const
 {
-	const wxString &path = m_prefs.GetPath(Preferences::path_type::emu_exectuable);
+	const wxString &path = m_prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE);
 	return !path.empty() && wxFileExists(path);
 }
 
@@ -771,11 +771,11 @@ MameFrame::check_mame_info_status MameFrame::CheckMameInfoDatabase()
 
 bool MameFrame::PromptForMameExecutable()
 {
-	wxString path = show_specify_single_path_dialog(*this, Preferences::path_type::emu_exectuable, m_prefs.GetPath(Preferences::path_type::emu_exectuable));
+	wxString path = show_specify_single_path_dialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE));
 	if (path.empty())
 		return false;
 
-	m_prefs.SetPath(Preferences::path_type::emu_exectuable, std::move(path));
+	m_prefs.SetPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
 	return true;
 }
 
@@ -973,7 +973,7 @@ void MameFrame::Run(const profiles::profile &profile)
 wxString MameFrame::PreflightCheck()
 {
 	// get a list of the plugin paths, checking for the obvious problem where there are no paths
-	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::plugins);
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PLUGINS);
 	if (paths.empty())
 		return wxString::Format("No plug-in paths are specified.  Under these circumstances, the required \"%s\" plug-in cannot be loaded.", WORKER_UI_PLUGIN_NAME);
 
@@ -1142,7 +1142,7 @@ void MameFrame::OnMenuStateLoad()
 {
 	FileDialogCommand(
 		{ "state_load" },
-		Preferences::machine_path_type::last_save_state,
+		Preferences::machine_path_type::LAST_SAVE_STATE,
 		true,
 		s_wc_saved_state,
 		file_dialog_type::LOAD);
@@ -1157,7 +1157,7 @@ void MameFrame::OnMenuStateSave()
 {
 	FileDialogCommand(
 		{ "state_save" },
-		Preferences::machine_path_type::last_save_state,
+		Preferences::machine_path_type::LAST_SAVE_STATE,
 		true,
 		s_wc_saved_state,
 		file_dialog_type::SAVE);
@@ -1172,7 +1172,7 @@ void MameFrame::OnMenuSnapshotSave()
 {
 	FileDialogCommand(
 		{ "save_snapshot", "0" },
-		Preferences::machine_path_type::working_directory,
+		Preferences::machine_path_type::WORKING_DIRECTORY,
 		false,
 		s_wc_save_snapshot,
 		file_dialog_type::SAVE);
@@ -1216,7 +1216,7 @@ void MameFrame::OnMenuToggleMovie()
 		// If not, show a file dialog and start recording
 		Pauser pauser(*this);
 		wxString path = GetFileDialogFilename(
-			Preferences::machine_path_type::working_directory,
+			Preferences::machine_path_type::WORKING_DIRECTORY,
 			s_wc_record_movie,
 			file_dialog_type::SAVE);
 		if (!path.empty())
@@ -1288,7 +1288,7 @@ void MameFrame::OnMenuImages()
 
 void MameFrame::OnMenuPaths()
 {
-	std::vector<Preferences::path_type> changed_paths;
+	std::vector<Preferences::global_path_type> changed_paths;
 
 	// show the dialog
 	{
@@ -1298,14 +1298,14 @@ void MameFrame::OnMenuPaths()
 	}
 
 	// lambda to simplify "is this path changed?"
-	auto is_changed = [&changed_paths](Preferences::path_type type) -> bool
+	auto is_changed = [&changed_paths](Preferences::global_path_type type) -> bool
 	{
 		auto iter = std::find(changed_paths.begin(), changed_paths.end(), type);
 		return iter != changed_paths.end();
 	};
 
 	// did the user change the executable path?
-	if (is_changed(Preferences::path_type::emu_exectuable))
+	if (is_changed(Preferences::global_path_type::EMU_EXECUTABLE))
 	{
 		// they did; check the MAME info DB
 		check_mame_info_status status = CheckMameInfoDatabase();
@@ -1331,11 +1331,11 @@ void MameFrame::OnMenuPaths()
 	}
 
 	// did the user change the profiles path?
-	if (is_changed(Preferences::path_type::profiles))
+	if (is_changed(Preferences::global_path_type::PROFILES))
 		UpdateProfileDirectories(true, true);
 
 	// did the user change the icons path?
-	if (is_changed(Preferences::path_type::icons))
+	if (is_changed(Preferences::global_path_type::ICONS))
 	{
 		m_icon_loader.RefreshIcons();
 		if (m_machine_view->GetItemCount() > 0)
@@ -1790,7 +1790,7 @@ void MameFrame::OnNotebookPageChanged()
 
 	switch (list_view_type)
 	{
-	case Preferences::list_view_type::softwarelist:
+	case Preferences::list_view_type::SOFTWARELIST:
 		if (!m_state)
 		{
 			m_software_list_collection_machine_name.clear();
@@ -1964,7 +1964,7 @@ void MameFrame::UpdateProfileDirectories(bool update_profile_list, bool update_f
 	assert(update_profile_list || update_file_system_watcher);
 
 	// get the paths
-	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::profiles);
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
 
 	// now update the list if we are asked to
 	if (update_profile_list)
@@ -2017,7 +2017,7 @@ static wxString GetUniqueProfilePath(const wxString &dir_path, TFunc generate_na
 void MameFrame::CreateProfile(const info::machine &machine, const software_list::software *software)
 {
 	// find a path to create the new profile in
-	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::path_type::profiles);
+	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
 	auto iter = std::find_if(paths.begin(), paths.end(), wxDir::Exists);
 	if (iter == paths.end())
 	{
@@ -2151,7 +2151,7 @@ void MameFrame::DeleteProfile(const profiles::profile &profile)
 void MameFrame::FocusOnNewProfile(wxString &&new_profile_path)
 {
 	// set the profiles tab as selected
-	m_note_book->SetSelection(static_cast<long>(Preferences::list_view_type::profile));
+	m_note_book->SetSelection(static_cast<long>(Preferences::list_view_type::PROFILE));
 
 	// set the profile as selected, so we focus on it when we rebuild the list view
 	m_prefs.SetListViewSelection(s_profile_collection_view_desc.m_name, std::move(new_profile_path));
@@ -2583,7 +2583,7 @@ observable::value<std::vector<status::image>> &MameFrame::ImagesHost::GetImages(
 
 const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 {
-	return m_host.m_prefs.GetMachinePath(GetMachineName(), Preferences::machine_path_type::working_directory);
+	return m_host.m_prefs.GetMachinePath(GetMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
 }
 
 
@@ -2593,7 +2593,7 @@ const wxString &MameFrame::ImagesHost::GetWorkingDirectory() const
 
 void MameFrame::ImagesHost::SetWorkingDirectory(wxString &&dir)
 {
-	m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::working_directory, std::move(dir));
+	m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
 }
 
 
