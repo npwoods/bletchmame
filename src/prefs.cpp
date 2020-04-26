@@ -124,6 +124,65 @@ Preferences::Preferences()
 
 
 //-------------------------------------------------
+//  GetPathCategory
+//-------------------------------------------------
+
+Preferences::path_category Preferences::GetPathCategory(global_path_type path_type)
+{
+	path_category result;
+	switch (path_type)
+	{
+	case Preferences::global_path_type::EMU_EXECUTABLE:
+		result = path_category::FILE;
+		break;
+
+	case Preferences::global_path_type::CONFIG:
+	case Preferences::global_path_type::NVRAM:
+		result = path_category::SINGLE_DIRECTORY;
+		break;
+
+	case Preferences::global_path_type::ROMS:
+	case Preferences::global_path_type::SAMPLES:
+	case Preferences::global_path_type::HASH:
+	case Preferences::global_path_type::ARTWORK:
+	case Preferences::global_path_type::PLUGINS:
+	case Preferences::global_path_type::PROFILES:
+	case Preferences::global_path_type::ICONS:
+		result = path_category::MULTIPLE_DIRECTORIES;
+		break;
+
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  GetPathCategory
+//-------------------------------------------------
+
+Preferences::path_category Preferences::GetPathCategory(machine_path_type path_type)
+{
+	path_category result;
+	switch (path_type)
+	{
+	case Preferences::machine_path_type::LAST_SAVE_STATE:
+		result = path_category::FILE;
+		break;
+
+	case Preferences::machine_path_type::WORKING_DIRECTORY:
+		result = path_category::SINGLE_DIRECTORY;
+		break;
+
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  GetMachineInfo
 //-------------------------------------------------
 
@@ -163,7 +222,7 @@ std::vector<wxString> Preferences::GetSplitPaths(global_path_type type) const
 
 wxString Preferences::GetGlobalPathWithSubstitutions(global_path_type type) const
 {
-	assert(type != global_path_type::EMU_EXECUTABLE);
+	assert(GetPathCategory(type) != path_category::FILE);
 	return ApplySubstitutions(GetGlobalPath(type));
 }
 
@@ -223,7 +282,7 @@ void Preferences::SetListViewSelection(const char *view_type, const wxString &ma
 void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path)
 {
 	// ensure that if we have a path, it has a path separator at the end
-	if (IsDirPath(path_type) && !path.empty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
+	if (GetPathCategory(path_type) != path_category::FILE && !path.empty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
 	{
 		path += wxFileName::GetPathSeparator();
 	}
@@ -727,13 +786,24 @@ static void path_names()
 
 
 //-------------------------------------------------
-//  multi_path
+//  global_get_path_category
 //-------------------------------------------------
 
-static void multi_path()
+static void global_get_path_category()
 {
 	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
-		Preferences::IsMultiPath(type);
+		Preferences::GetPathCategory(type);
+}
+
+
+//-------------------------------------------------
+//  machine_get_path_category
+//-------------------------------------------------
+
+static void machine_get_path_category()
+{
+	for (Preferences::machine_path_type type : util::all_enums<Preferences::machine_path_type>())
+		Preferences::GetPathCategory(type);
 }
 
 
@@ -765,7 +835,8 @@ static validity_check validity_checks[] =
 {
 	general,
 	path_names,
-	multi_path,
+	global_get_path_category,
+	machine_get_path_category,
 	[]() { substitutions(wxT("C:\\foo"),				wxT("C:\\foo")); },
 	[]() { substitutions(wxT("C:\\foo (with parens)"),	wxT("C:\\foo (with parens)")); },
 	[]() { substitutions(wxT("C:\\$(VARNAME)\\foo"),	wxT("C:\\vardata\\foo")); }

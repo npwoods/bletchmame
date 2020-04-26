@@ -482,7 +482,7 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 
 bool PathsDialog::IsMultiPath() const
 {
-	return Preferences::IsMultiPath(GetCurrentPath());
+	return Preferences::GetPathCategory(GetCurrentPath()) == Preferences::path_category::MULTIPLE_DIRECTORIES;
 }
 
 

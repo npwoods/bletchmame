@@ -64,6 +64,14 @@ public:
 		COUNT
 	};
 
+	// is this path type for a file, a directory, or multiple directories?
+	enum class path_category
+	{
+		FILE,
+		SINGLE_DIRECTORY,
+		MULTIPLE_DIRECTORIES
+	};
+
 	// we have three different list views, each with a tab; this identifies them
 	enum class list_view_type
 	{
@@ -78,51 +86,8 @@ public:
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
-	static inline bool IsMultiPath(global_path_type path_type)
-	{
-		bool result;
-		switch (path_type)
-		{
-		case Preferences::global_path_type::EMU_EXECUTABLE:
-		case Preferences::global_path_type::CONFIG:
-		case Preferences::global_path_type::NVRAM:
-			result = false;
-			break;
-
-		case Preferences::global_path_type::ROMS:
-		case Preferences::global_path_type::SAMPLES:
-		case Preferences::global_path_type::HASH:
-		case Preferences::global_path_type::ARTWORK:
-		case Preferences::global_path_type::PLUGINS:
-		case Preferences::global_path_type::PROFILES:
-		case Preferences::global_path_type::ICONS:
-			result = true;
-			break;
-
-		default:
-			throw false;
-		}
-		return result;
-	}
-
-	static bool IsDirPath(machine_path_type path_type)
-	{
-		bool result;
-		switch (path_type)
-		{
-		case Preferences::machine_path_type::LAST_SAVE_STATE:
-			result = false;
-			break;
-
-		case Preferences::machine_path_type::WORKING_DIRECTORY:
-			result = true;
-			break;
-
-		default:
-			throw false;
-		}
-		return result;
-	}
+	static path_category GetPathCategory(global_path_type path_type);
+	static path_category GetPathCategory(machine_path_type path_type);
 
 	const wxString &GetGlobalPath(global_path_type type) const									{ return m_paths[static_cast<size_t>(type)]; }
 	void SetGlobalPath(global_path_type type, wxString &&path);
