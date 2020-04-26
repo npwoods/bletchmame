@@ -687,7 +687,7 @@ void MameFrame::CreateMenuBar()
 
 bool MameFrame::IsMameExecutablePresent() const
 {
-	const wxString &path = m_prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	const wxString &path = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 	return !path.empty() && wxFileExists(path);
 }
 
@@ -771,11 +771,11 @@ MameFrame::check_mame_info_status MameFrame::CheckMameInfoDatabase()
 
 bool MameFrame::PromptForMameExecutable()
 {
-	wxString path = show_specify_single_path_dialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE));
+	wxString path = show_specify_single_path_dialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
 	if (path.empty())
 		return false;
 
-	m_prefs.SetPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
+	m_prefs.SetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
 	return true;
 }
 

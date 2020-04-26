@@ -114,10 +114,10 @@ Preferences::Preferences()
 	, m_selected_tab(list_view_type::MACHINE)
 {
 	// default paths
-	SetPath(global_path_type::CONFIG, GetConfigDirectory(true));
-	SetPath(global_path_type::NVRAM, GetConfigDirectory(true));
-	SetPath(global_path_type::PLUGINS, GetDefaultPluginsDirectory());
-	SetPath(global_path_type::PROFILES, GetConfigDirectory(true) + "\\profiles");
+	SetGlobalPath(global_path_type::CONFIG, GetConfigDirectory(true));
+	SetGlobalPath(global_path_type::NVRAM, GetConfigDirectory(true));
+	SetGlobalPath(global_path_type::PLUGINS, GetDefaultPluginsDirectory());
+	SetGlobalPath(global_path_type::PROFILES, GetConfigDirectory(true) + "\\profiles");
 
     Load();
 }
@@ -137,13 +137,34 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &mach
 
 
 //-------------------------------------------------
+//  SetGlobalPath
+//-------------------------------------------------
+
+void Preferences::SetGlobalPath(global_path_type type, wxString &&path)
+{
+	m_paths[static_cast<size_t>(type)] = std::move(path);
+}
+
+
+//-------------------------------------------------
 //  GetSplitPaths
 //-------------------------------------------------
 
 std::vector<wxString> Preferences::GetSplitPaths(global_path_type type) const
 {
-	const wxString &paths_string = GetPath(type);
+	const wxString &paths_string = GetGlobalPath(type);
 	return util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
+}
+
+
+//-------------------------------------------------
+//  GetGlobalPathWithSubstitutions
+//-------------------------------------------------
+
+wxString Preferences::GetGlobalPathWithSubstitutions(global_path_type type) const
+{
+	assert(type != global_path_type::EMU_EXECUTABLE);
+	return ApplySubstitutions(GetGlobalPath(type));
 }
 
 
@@ -305,7 +326,7 @@ bool Preferences::Load(wxInputStream &input)
 	xml.OnElementEnd({ "preferences", "path" }, [&](wxString &&content)
 	{
 		if (type < global_path_type::COUNT)
-			SetPath(type, std::move(content));
+			SetGlobalPath(type, std::move(content));
 		type = global_path_type::COUNT;
 	});
 	xml.OnElementEnd({ "preferences", "mameextraarguments" }, [&](wxString &&content)
@@ -411,7 +432,7 @@ void Preferences::Save(std::ostream &output)
 
 	output << "\t<!-- Paths -->" << std::endl;
 	for (size_t i = 0; i < m_paths.size(); i++)
-		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetPath(static_cast<global_path_type>(i)) << "</path>" << std::endl;
+		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetGlobalPath(static_cast<global_path_type>(i)) << "</path>" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Miscellaneous -->" << std::endl;
@@ -564,7 +585,7 @@ wxString Preferences::ApplySubstitutions(const wxString &path) const
 		wxString result;
 		if (var_name == wxT("MAMEPATH"))
 		{
-			const wxString &path = GetPath(Preferences::global_path_type::EMU_EXECUTABLE);
+			const wxString &path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 			wxFileName::SplitPath(path, &result, nullptr, nullptr);
 		}
 		else if (var_name == wxT("BLETCHMAMEPATH"))
@@ -589,7 +610,7 @@ wxString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
 		return "";
 
 	// get the MAME path
-	const wxString &mame_path = GetPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	const wxString &mame_path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 	if (mame_path.IsEmpty())
 		return "";
 
@@ -680,11 +701,11 @@ static void general()
 	Preferences prefs;
 	prefs.Load(input);
 
-	assert(prefs.GetPath(Preferences::global_path_type::EMU_EXECUTABLE)	== "C:\\mame64.exe");
-	assert(prefs.GetPath(Preferences::global_path_type::ROMS)				== "C:\\roms");
-	assert(prefs.GetPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples");
-	assert(prefs.GetPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg");
-	assert(prefs.GetPath(Preferences::global_path_type::NVRAM)				== "C:\\nvram");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)	== "C:\\mame64.exe");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)				== "C:\\roms");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)				== "C:\\nvram");
 
 	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== "C:\\MyEchoGames\\");
 	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== "C:\\MyLastState.sta");

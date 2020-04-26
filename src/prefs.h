@@ -124,12 +124,12 @@ public:
 		return result;
 	}
 
-	const wxString &GetPath(global_path_type type) const												{ return m_paths[static_cast<size_t>(type)]; }
-	void SetPath(global_path_type type, wxString &&path)												{ m_paths[static_cast<size_t>(type)] = std::move(path); }
+	const wxString &GetGlobalPath(global_path_type type) const									{ return m_paths[static_cast<size_t>(type)]; }
+	void SetGlobalPath(global_path_type type, wxString &&path);
 	
 	std::vector<wxString> GetSplitPaths(global_path_type type) const;
 
-	wxString GetPathWithSubstitutions(global_path_type type) const										{ assert(type != global_path_type::EMU_EXECUTABLE); return ApplySubstitutions(GetPath(type)); }
+	wxString GetGlobalPathWithSubstitutions(global_path_type type) const;
 
 	const wxString &GetMameExtraArguments() const												{ return m_mame_extra_arguments; }
 	void SetMameExtraArguments(wxString &&extra_arguments)										{ m_mame_extra_arguments = std::move(extra_arguments); }

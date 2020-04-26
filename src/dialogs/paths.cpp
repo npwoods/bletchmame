@@ -132,7 +132,7 @@ PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
 
 	// path data
 	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_path_lists[i] = m_prefs.GetPath(static_cast<Preferences::global_path_type>(i));
+		m_path_lists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
 
 	// Left column
 	wxStaticText *static_text_1 = new wxStaticText(this, id++, "Show Paths For:");
@@ -214,10 +214,10 @@ std::vector<Preferences::global_path_type> PathsDialog::Persist()
 		wxString &path = m_path_lists[static_cast<size_t>(type)];
 
 		// has this path changed?
-		if (path != m_prefs.GetPath(type))
+		if (path != m_prefs.GetGlobalPath(type))
 		{
 			// if so, record that it changed
-			m_prefs.SetPath(type, std::move(path));
+			m_prefs.SetGlobalPath(type, std::move(path));
 			changed_paths.push_back(type);
 		}
 	}
