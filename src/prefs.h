@@ -102,6 +102,25 @@ public:
 		return result;
 	}
 
+	static bool IsDirPath(machine_path_type path_type)
+	{
+		bool result;
+		switch (path_type)
+		{
+		case Preferences::machine_path_type::last_save_state:
+			result = false;
+			break;
+
+		case Preferences::machine_path_type::working_directory:
+			result = true;
+			break;
+
+		default:
+			throw false;
+		}
+		return result;
+	}
+
 	const wxString &GetPath(path_type type) const												{ return m_paths[static_cast<size_t>(type)]; }
 	void SetPath(path_type type, wxString &&path)												{ m_paths[static_cast<size_t>(type)] = std::move(path); }
 	

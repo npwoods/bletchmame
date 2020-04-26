@@ -201,6 +201,12 @@ void Preferences::SetListViewSelection(const char *view_type, const wxString &ma
 
 void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path)
 {
+	// ensure that if we have a path, it has a path separator at the end
+	if (IsDirPath(path_type) && !path.empty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
+	{
+		path += wxFileName::GetPathSeparator();
+	}
+
 	switch (path_type)
 	{
 	case machine_path_type::working_directory:
@@ -680,7 +686,7 @@ static void general()
 	assert(prefs.GetPath(Preferences::path_type::config)			== "C:\\cfg");
 	assert(prefs.GetPath(Preferences::path_type::nvram)				== "C:\\nvram");
 
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::working_directory)		== "C:\\MyEchoGames");
+	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::working_directory)		== "C:\\MyEchoGames\\");
 	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::last_save_state)		== "C:\\MyLastState.sta");
 	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::working_directory)	== "");
 	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::last_save_state)		== "");
