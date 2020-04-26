@@ -88,6 +88,7 @@ public:
 
 	static path_category GetPathCategory(global_path_type path_type);
 	static path_category GetPathCategory(machine_path_type path_type);
+	static void EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, wxString &path);
 
 	const wxString &GetGlobalPath(global_path_type type) const									{ return m_paths[static_cast<size_t>(type)]; }
 	void SetGlobalPath(global_path_type type, wxString &&path);

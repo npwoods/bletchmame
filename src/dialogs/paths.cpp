@@ -66,6 +66,8 @@ namespace
 		void RefreshListView();
 		void CurrentPathListChanged();
 		bool IsMultiPath() const;
+		void EnsureDirectoryPathsHaveFinalPathSeparator(wxString &path) const;
+
 		bool IsSelectingPath() const;
 		Preferences::global_path_type GetCurrentPath() const;
 		bool BrowseForPath();
@@ -257,6 +259,7 @@ bool PathsDialog::BrowseForPath(size_t item)
 		return false;
 
 	// specify it
+	EnsureDirectoryPathsHaveFinalPathSeparator(path);
 	SetPathValue(item, std::move(path));
 	return true;
 }
@@ -295,6 +298,9 @@ void PathsDialog::OnListEndLabelEdit(long item)
 		// leaf filename, so more to do)
 		wxFileName file_name(value);
 		canonicalized_value = file_name.GetLongPath();
+
+		// Directories should have a final path separator
+		EnsureDirectoryPathsHaveFinalPathSeparator(canonicalized_value);
 	}
 
 	// and specify it
@@ -483,6 +489,18 @@ std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings(
 bool PathsDialog::IsMultiPath() const
 {
 	return Preferences::GetPathCategory(GetCurrentPath()) == Preferences::path_category::MULTIPLE_DIRECTORIES;
+}
+
+
+//-------------------------------------------------
+//  EnsureDirectoryPathsHaveFinalPathSeparator
+//-------------------------------------------------
+
+void PathsDialog::EnsureDirectoryPathsHaveFinalPathSeparator(wxString &path) const
+{
+	Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(
+		Preferences::GetPathCategory(GetCurrentPath()),
+		path);
 }
 
 

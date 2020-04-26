@@ -183,6 +183,19 @@ Preferences::path_category Preferences::GetPathCategory(machine_path_type path_t
 
 
 //-------------------------------------------------
+//  EnsureDirectoryPathsHaveFinalPathSeparator
+//-------------------------------------------------
+
+void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, wxString &path)
+{
+	if (category != path_category::FILE && !path.empty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
+	{
+		path += wxFileName::GetPathSeparator();
+	}
+}
+
+
+//-------------------------------------------------
 //  GetMachineInfo
 //-------------------------------------------------
 
@@ -201,6 +214,7 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &mach
 
 void Preferences::SetGlobalPath(global_path_type type, wxString &&path)
 {
+	EnsureDirectoryPathsHaveFinalPathSeparator(GetPathCategory(type), path);
 	m_paths[static_cast<size_t>(type)] = std::move(path);
 }
 
@@ -282,10 +296,7 @@ void Preferences::SetListViewSelection(const char *view_type, const wxString &ma
 void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path)
 {
 	// ensure that if we have a path, it has a path separator at the end
-	if (GetPathCategory(path_type) != path_category::FILE && !path.empty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
-	{
-		path += wxFileName::GetPathSeparator();
-	}
+	EnsureDirectoryPathsHaveFinalPathSeparator(GetPathCategory(path_type), path);
 
 	switch (path_type)
 	{
@@ -761,10 +772,10 @@ static void general()
 	prefs.Load(input);
 
 	assert(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)	== "C:\\mame64.exe");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)				== "C:\\roms");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)				== "C:\\nvram");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)				== "C:\\roms\\");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples\\");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg\\");
+	assert(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)			== "C:\\nvram\\");
 
 	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== "C:\\MyEchoGames\\");
 	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== "C:\\MyLastState.sta");
