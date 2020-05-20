@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 1.9 (TBD)
+- 1.9 (2020-May-20)
 	- Added the ability to record AVI/MNG movies (requires MAME 0.221)
 	- Fixed a bug that would choose odd default file name when saving screenshots
 	- Ensuring that directory paths always have trailing path separators
