@@ -1192,9 +1192,8 @@ void MameFrame::OnMenuToggleMovie()
 	if (!IsMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
 	{
 		wxString message = wxString::Format(
-			wxT("Recording movies requires MAME %d.%d or newer to function"),
-			REQUIRED_MAME_VERSION_TOGGLE_MOVIE.Major(),
-			REQUIRED_MAME_VERSION_TOGGLE_MOVIE.Minor());
+			wxT("Recording movies requires MAME %s or newer to function"),
+			REQUIRED_MAME_VERSION_TOGGLE_MOVIE.NextCleanVersion().ToString());
 		MessageBox(message);
 		return;
 	}

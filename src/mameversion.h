@@ -50,6 +50,19 @@ public:
 		return result;		
 	}
 
+	MameVersion NextCleanVersion() const
+	{
+		return MameVersion(Major(), Minor() + (Dirty() ? 1 : 0), false);
+	}
+
+	wxString ToString() const
+	{
+		return wxString::Format(\
+			Dirty() ? wxT("%d.%d (dirty)") : wxT("%d.%d"),
+			Major(),
+			Minor());
+	}
+
 private:
 	int	m_major;
 	int m_minor;
