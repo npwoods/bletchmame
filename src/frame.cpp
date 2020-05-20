@@ -1188,7 +1188,7 @@ void MameFrame::OnMenuToggleMovie()
 	// Targetting subwindows with -attach_window was introduced in between MAME 0.220 and MAME 0.221
 	const MameVersion REQUIRED_MAME_VERSION_TOGGLE_MOVIE = MameVersion(0, 220, true);
 
-	// Are we the required version?
+	// Are we the required version? 
 	if (!IsMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
 	{
 		wxString message = wxString::Format(
