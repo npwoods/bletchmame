@@ -11,19 +11,9 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-// For compilers that support precompilation, includes "wx/wx.h".
-#include "wx/wxprec.h"
-#include <wx/process.h>
-#include <wx/txtstrm.h>
-#include <wx/msgqueue.h>
 #include <iostream>
 #include <thread>
-
-// for all others, include the necessary headers (this file is usually all you
-// need because it includes almost all "standard" wxWidgets headers)
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
-#endif
+#include <QProcess>
 
 #include "task.h"
 #include "job.h"
@@ -33,10 +23,10 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
-class MameClient
+class MameClient : QObject
 {
 public:
-	MameClient(wxEvtHandler &event_handler, const Preferences &prefs);
+	MameClient(QObject &event_handler, const Preferences &prefs);
 	~MameClient();
 
 	// launches a task
@@ -64,10 +54,10 @@ public:
 	template<class T> bool IsTaskActive() const { return dynamic_cast<T *>(m_task.get()) != nullptr; }
 
 private:
-	wxEvtHandler &					m_event_handler;
+	QObject &						m_event_handler;
 	const Preferences &				m_prefs;
 	Task::ptr						m_task;
-	std::shared_ptr<wxProcess>		m_process;
+	std::shared_ptr<QProcess>		m_process;
 	std::thread						m_thread;
 
 	static Job						s_job;

@@ -6,7 +6,9 @@
 
 ***************************************************************************/
 
-#include <wx/txtstrm.h>
+#include <stdexcept>
+#include <QCoreApplication>
+#include <QThread>
 
 #include "versiontask.h"
 #include "task.h"
@@ -23,8 +25,8 @@ namespace
 	class VersionTask : public Task
 	{
 	protected:
-		virtual std::vector<wxString> GetArguments(const Preferences &) const;
-		virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
+		virtual std::vector<QString> GetArguments(const Preferences &) const;
+		virtual void Process(QProcess &process, QObject &handler) override;
 		virtual void Abort() override;
 	};
 };
@@ -34,14 +36,24 @@ namespace
 //  IMPLEMENTATION
 //**************************************************************************
 
-wxDEFINE_EVENT(EVT_VERSION_RESULT, PayloadEvent<VersionResult>);
+//-------------------------------------------------
+//  VersionResultEvent ctor
+//-------------------------------------------------
+
+QEvent::Type VersionResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+
+VersionResultEvent::VersionResultEvent(QString &&version)
+	: QEvent(eventId())
+	, m_version(std::move(version))
+{	
+}
 
 
 //-------------------------------------------------
 //  GetArguments
 //-------------------------------------------------
 
-std::vector<wxString> VersionTask::GetArguments(const Preferences &) const
+std::vector<QString> VersionTask::GetArguments(const Preferences &) const
 {
 	return { "-version" };
 }
@@ -61,17 +73,12 @@ void VersionTask::Abort()
 //  Process
 //-------------------------------------------------
 
-void VersionTask::Process(wxProcess &process, wxEvtHandler &handler)
+void VersionTask::Process(QProcess &process, QObject &handler)
 {
-	// read text
-	wxTextInputStream input(*process.GetInputStream());
-
 	// get the version
-	VersionResult result;
-	result.m_version = input.ReadLine();
-
-	// and send the results back
-	util::QueueEvent(handler, EVT_VERSION_RESULT, wxID_ANY, std::move(result));
+	auto version = QString::fromLocal8Bit(process.readLine());
+	auto evt = std::make_unique<VersionResultEvent>(std::move(version));
+	QCoreApplication::postEvent(&handler, evt.release());
 }
 
 

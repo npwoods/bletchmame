@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>793</width>
+    <height>593</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>BletchMAME</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Machines</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QTableView" name="tableView">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>1</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QAbstractScrollArea::AdjustIgnored</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Software</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QTableWidget" name="tableWidget"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Profiles</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QTableView" name="tableView_2"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>793</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <widget class="QMenu" name="menuReset">
+     <property name="title">
+      <string>Reset</string>
+     </property>
+     <addaction name="actionSoft_Reset"/>
+     <addaction name="actionHard_Reset"/>
+    </widget>
+    <addaction name="actionStop"/>
+    <addaction name="actionPause"/>
+    <addaction name="separator"/>
+    <addaction name="actionImages"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuick_Load_State"/>
+    <addaction name="actionQuick_Save_State"/>
+    <addaction name="actionLoad_State"/>
+    <addaction name="actionSave_State"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_Screenshot"/>
+    <addaction name="actionRecord_Movie"/>
+    <addaction name="separator"/>
+    <addaction name="actionDebugger"/>
+    <addaction name="menuReset"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="title">
+     <string>&amp;Options</string>
+    </property>
+    <addaction name="actionThrottle"/>
+    <addaction name="actionFrame_Skip"/>
+    <addaction name="actionFull_Screen"/>
+    <addaction name="actionSound"/>
+    <addaction name="separator"/>
+    <addaction name="actionConsole"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>&amp;Settings</string>
+    </property>
+    <addaction name="actionJoysticks_and_Controllers"/>
+    <addaction name="actionKeyboard"/>
+    <addaction name="actionMiscellaneous_Input"/>
+    <addaction name="actionConfiguration"/>
+    <addaction name="actionDIP_Switches"/>
+    <addaction name="separator"/>
+    <addaction name="actionPaths"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionRefresh_Machine_Info"/>
+    <addaction name="actionBletchMAME_web_site"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuOptions"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionStop">
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="text">
+    <string>Pause</string>
+   </property>
+  </action>
+  <action name="actionImages">
+   <property name="text">
+    <string>Images...</string>
+   </property>
+  </action>
+  <action name="actionQuick_Load_State">
+   <property name="text">
+    <string>Quick Load State</string>
+   </property>
+  </action>
+  <action name="actionQuick_Save_State">
+   <property name="text">
+    <string>Quick Save State</string>
+   </property>
+  </action>
+  <action name="actionLoad_State">
+   <property name="text">
+    <string>Load State...</string>
+   </property>
+  </action>
+  <action name="actionSave_State">
+   <property name="text">
+    <string>Save State...</string>
+   </property>
+  </action>
+  <action name="actionSave_Screenshot">
+   <property name="text">
+    <string>Save Screenshot...</string>
+   </property>
+  </action>
+  <action name="actionRecord_Movie">
+   <property name="text">
+    <string>Record Movie...</string>
+   </property>
+  </action>
+  <action name="actionDebugger">
+   <property name="text">
+    <string>Debugger...</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSoft_Reset">
+   <property name="text">
+    <string>Soft Reset</string>
+   </property>
+  </action>
+  <action name="actionHard_Reset">
+   <property name="text">
+    <string>Hard Reset</string>
+   </property>
+  </action>
+  <action name="actionThrottle">
+   <property name="text">
+    <string>Throttle</string>
+   </property>
+  </action>
+  <action name="actionFrame_Skip">
+   <property name="text">
+    <string>Frame Skip</string>
+   </property>
+  </action>
+  <action name="actionFull_Screen">
+   <property name="text">
+    <string>Full Screen</string>
+   </property>
+  </action>
+  <action name="actionConsole">
+   <property name="text">
+    <string>Console</string>
+   </property>
+  </action>
+  <action name="actionSound">
+   <property name="text">
+    <string>Sound</string>
+   </property>
+  </action>
+  <action name="actionJoysticks_and_Controllers">
+   <property name="text">
+    <string>Joysticks and Controllers...</string>
+   </property>
+  </action>
+  <action name="actionKeyboard">
+   <property name="text">
+    <string>Keyboard...</string>
+   </property>
+  </action>
+  <action name="actionMiscellaneous_Input">
+   <property name="text">
+    <string>Miscellaneous Input...</string>
+   </property>
+  </action>
+  <action name="actionConfiguration">
+   <property name="text">
+    <string>Configuration...</string>
+   </property>
+  </action>
+  <action name="actionDIP_Switches">
+   <property name="text">
+    <string>DIP Switches...</string>
+   </property>
+  </action>
+  <action name="actionPaths">
+   <property name="text">
+    <string>Paths...</string>
+   </property>
+  </action>
+  <action name="actionRefresh_Machine_Info">
+   <property name="text">
+    <string>Refresh MAME machine info...</string>
+   </property>
+  </action>
+  <action name="actionBletchMAME_web_site">
+   <property name="text">
+    <string>BletchMAME Web Site...</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

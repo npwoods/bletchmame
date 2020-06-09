@@ -2,15 +2,11 @@
 
     xmlparser.h
 
-    Simple XML parser class wrapping expat (wxXmlDocument is too heavyweight)
+    Simple XML parser class wrapping expat
 
 ***************************************************************************/
 
 #include <expat.h>
-#include <wx/stream.h>
-#include <wx/sstream.h>
-#include <wx/txtstrm.h>
-#include <wx/wfstream.h>
 
 #include "xmlparser.h"
 #include "validity.h"
@@ -98,7 +94,7 @@ XmlParser::~XmlParser()
 //  Parse
 //-------------------------------------------------
 
-bool XmlParser::Parse(wxInputStream &input)
+bool XmlParser::Parse(QDataStream &input)
 {
 	m_current_node = m_root;
 	m_skipping_depth = 0;
@@ -115,21 +111,24 @@ bool XmlParser::Parse(wxInputStream &input)
 //  Parse
 //-------------------------------------------------
 
-bool XmlParser::Parse(const wxString &file_name)
+bool XmlParser::Parse(const QString &file_name)
 {
-	wxFileInputStream input(file_name);
-	return Parse(input);
+	QFile file(file_name);
+	file.open(QFile::ReadOnly);
+	QDataStream file_stream(&file);
+	return Parse(file_stream);
 }
 
 
 //-------------------------------------------------
-//  ParseXml
+//  ParseBytes
 //-------------------------------------------------
 
-bool XmlParser::ParseXml(const wxString &xml_text)
+bool XmlParser::ParseBytes(const void *ptr, size_t sz)
 {
-	wxStringInputStream string_stream(xml_text);
-	return Parse(string_stream);
+	QByteArray byte_array((const char *) ptr, (int)sz);
+	QDataStream input(byte_array);
+	return Parse(input);
 }
 
 
@@ -137,7 +136,7 @@ bool XmlParser::ParseXml(const wxString &xml_text)
 //  InternalParse
 //-------------------------------------------------
 
-bool XmlParser::InternalParse(wxInputStream &input)
+bool XmlParser::InternalParse(QDataStream &input)
 {
 	bool done = false;
 	char buffer[8192];
@@ -145,10 +144,9 @@ bool XmlParser::InternalParse(wxInputStream &input)
 	while (!done)
 	{
 		// read data
-		input.Read(buffer, sizeof(buffer));
+		int last_read = input.readRawData(buffer, sizeof(buffer));
 
 		// figure out how much we actually read, and if we're done
-		int last_read = static_cast<int>(input.LastRead());
 		done = last_read == 0;
 
 		// and feed this into expat
@@ -167,7 +165,7 @@ bool XmlParser::InternalParse(wxInputStream &input)
 //  ErrorMessage
 //-------------------------------------------------
 
-wxString XmlParser::ErrorMessage() const
+QString XmlParser::ErrorMessage() const
 {
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *message = XML_ErrorString(code);
@@ -291,8 +289,8 @@ void XmlParser::EndElement(const char *)
 
 void XmlParser::CharacterData(const char *s, int len)
 {
-	wxString text = wxString::FromUTF8(s, len);
-	m_current_content.Append(std::move(text));
+	QString text = QString::fromUtf8(s, len);
+	m_current_content.append(std::move(text));
 }
 
 
@@ -300,13 +298,12 @@ void XmlParser::CharacterData(const char *s, int len)
 //  Escape
 //-------------------------------------------------
 
-std::string XmlParser::Escape(const wxString &str)
+std::string XmlParser::Escape(const QString &str)
 {
-	std::wstring wstr = str.ToStdWstring();
-
 	std::string result;
-	for (wchar_t ch : wstr)
+	for (QChar qch : str)
 	{
+		char16_t ch = qch.unicode();
 		switch (ch)
 		{
 		case '<':
@@ -415,11 +412,11 @@ bool XmlParser::Attributes::Get(const char *attribute, float &value) const
 //  Attributes::Get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
+bool XmlParser::Attributes::Get(const char *attribute, QString &value) const
 {
 	const char *s = InternalGet(attribute, true);
 	if (s)
-		value = wxString::FromUTF8(s);
+		value = QString::fromUtf8(s);
 	else
 		value.clear();
 	return s != nullptr;
@@ -472,7 +469,7 @@ static void test()
 	const bool INVALID_BOOL_VALUE = (bool)42;
 
 	XmlParser xml;
-	wxString charlie_value;
+	QString charlie_value;
 	bool charlie_value_parsed	= INVALID_BOOL_VALUE;
 	int foxtrot_value			= 0;
 	bool foxtrot_value_parsed	= INVALID_BOOL_VALUE;
@@ -500,11 +497,13 @@ static void test()
 		kilo_value_parsed		= attributes.Get("kilo", kilo_value);
 	});
 
-	bool result = xml.ParseXml(
+	const char *xml_text =
 		"<alpha>"
 		"<bravo charlie=\"delta\"/>"
 		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\"/>/>"
-		"</alpha>");
+		"</alpha>";
+	bool result = xml.ParseBytes(xml_text, strlen(xml_text));
+
 	assert(result);
 	assert(charlie_value == "delta");
 	assert(charlie_value_parsed);
@@ -531,23 +530,24 @@ static void test()
 static void unicode()
 {
 	XmlParser xml;
-	wxString bravo_value;
-	wxString charlie_value;
+	QString bravo_value;
+	QString charlie_value;
 	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		bool result = attributes.Get("charlie", charlie_value);
 		assert(result);
 		(void)result;
 	});
-	xml.OnElementEnd({ "alpha", "bravo" }, [&](wxString &&value)
+	xml.OnElementEnd({ "alpha", "bravo" }, [&](QString &&value)
 	{
 		bravo_value = std::move(value);
 	});
 
-	bool result = xml.ParseXml("<alpha><bravo charlie=\"&#x6B7B;\">&#x60AA;</bravo></alpha>");
+	const char *xml_text = "<alpha><bravo charlie=\"&#x6B7B;\">&#x60AA;</bravo></alpha>";
+	bool result = xml.ParseBytes(xml_text, strlen(xml_text));
 	assert(result);
-	assert(bravo_value.ToStdWstring() == L"\u60AA");
-	assert(charlie_value.ToStdWstring() == L"\u6B7B");
+	assert(bravo_value.toStdWString() == L"\u60AA");
+	assert(charlie_value.toStdWString() == L"\u6B7B");
 
 	(void)result;
 	(void)bravo_value;
@@ -579,11 +579,12 @@ static void skipping()
 		unexpected_invocations++;
 	});
 
-	bool result = xml.ParseXml(
+	const char *xml_text =
 		"<alpha>"
 		"<bravo skip=\"no\"><expected/></bravo>"
 		"<bravo skip=\"yes\"><unexpected/></bravo>"
-		"</alpha>");
+		"</alpha>";
+	bool result = xml.ParseBytes(xml_text, strlen(xml_text));
 	assert(result);
 	assert(expected_invocations == 1);
 	assert(unexpected_invocations == 0);
@@ -608,13 +609,14 @@ static void multiple()
 		total += value;
 	});
 
-	bool result = xml.ParseXml(
+	const char *xml_text =
 		"<alpha>"
 		"<bravo value=\"2\" />"
 		"<charlie value=\"3\" />"
 		"<delta value=\"5\" />"
 		"<echo value=\"-666\" />"
-		"</alpha>");
+		"</alpha>";
+	bool result = xml.ParseBytes(xml_text, strlen(xml_text));
 	assert(result);
 	assert(total == 10);
 	(void)result;

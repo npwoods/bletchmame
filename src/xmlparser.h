@@ -16,6 +16,8 @@
 #include <type_traits>
 #include <optional>
 
+#include <QDataStream>
+
 #include "utility.h"
 
 struct XML_ParserStruct;
@@ -40,7 +42,7 @@ public:
 		bool Get(const char *attribute, std::uint32_t &value) const;
 		bool Get(const char *attribute, bool &value) const;
 		bool Get(const char *attribute, float &value) const;
-		bool Get(const char *attribute, wxString &value) const;
+		bool Get(const char *attribute, QString &value) const;
 		bool Get(const char *attribute, std::string &value) const;
 
 		template<typename T>
@@ -110,7 +112,7 @@ public:
 		}
 	}
 
-	typedef std::function<void(wxString &&content)> OnEndElementCallback;
+	typedef std::function<void(QString &&content)> OnEndElementCallback;
 	void OnElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
 		GetNode(elements)->m_end_func = std::move(func);
@@ -124,12 +126,12 @@ public:
 		}
 	}
 
-	bool Parse(wxInputStream &input);
-	bool Parse(const wxString &file_name);
-	bool ParseXml(const wxString &xml_text);
-	wxString ErrorMessage() const;
+	bool Parse(QDataStream &input);
+	bool Parse(const QString &file_name);
+	bool ParseBytes(const void *ptr, size_t sz);
+	QString ErrorMessage() const;
 
-	static std::string Escape(const wxString &str);
+	static std::string Escape(const QString &str);
 
 private:
 	struct Node
@@ -148,9 +150,9 @@ private:
 	Node::ptr					m_root;
 	Node::ptr					m_current_node;
 	int							m_skipping_depth;
-	wxString					m_current_content;
+	QString						m_current_content;
 
-	bool InternalParse(wxInputStream &input);
+	bool InternalParse(QDataStream &input);
 	void StartElement(const char *name, const char **attributes);
 	void EndElement(const char *name);
 	void CharacterData(const char *s, int len);

@@ -18,9 +18,9 @@
 //  Parse
 //-------------------------------------------------
 
-void MameVersion::Parse(const wxString &version_string, int &major, int &minor, bool &dirty)
+void MameVersion::Parse(const QString &version_string, int &major, int &minor, bool &dirty)
 {
-	if (sscanf(std::string(version_string).c_str(), "%d.%d", &major, &minor) != 2)
+	if (sscanf(version_string.toStdString().c_str(), "%d.%d", &major, &minor) != 2)
 	{
 		// can't parse the string
 		major = 0;
@@ -30,7 +30,7 @@ void MameVersion::Parse(const wxString &version_string, int &major, int &minor, 
 	else
 	{
 		// we parsed the string; now check if we are dirty
-		wxString non_dirty_version_string = wxString::Format("%d.%d (mame%d%d)", major, minor, major, minor);
+		QString non_dirty_version_string = QString::asprintf("%d.%d (mame%d%d)", major, minor, major, minor);
 		dirty = version_string != non_dirty_version_string;
 	}
 }

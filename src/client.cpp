@@ -8,20 +8,10 @@
 
 #include "client.h"
 
+#include <QThread>
 
-// For compilers that support precompilation, includes "wx/wx.h".
-#include "wx/wxprec.h"
-#include <wx/process.h>
-#include <wx/txtstrm.h>
-#include <wx/sstream.h>
 #include <iostream>
 #include <thread>
-
-// for all others, include the necessary headers (this file is usually all you
-// need because it includes almost all "standard" wxWidgets headers)
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
-#endif
 
 #include "client.h"
 #include "prefs.h"
@@ -32,6 +22,7 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
+#if 0
 namespace
 {
 	class ClientProcess : public wxProcess
@@ -58,6 +49,7 @@ namespace
 		std::shared_ptr<wxProcess>					m_process;
 	};
 }
+#endif
 
 
 //**************************************************************************
@@ -71,7 +63,7 @@ Job MameClient::s_job;
 //  ctor
 //-------------------------------------------------
 
-MameClient::MameClient(wxEvtHandler &event_handler, const Preferences &prefs)
+MameClient::MameClient(QObject &event_handler, const Preferences &prefs)
     : m_event_handler(event_handler)
 	, m_prefs(prefs)
 {
@@ -102,39 +94,44 @@ void MameClient::Launch(Task::ptr &&task)
 		throw false;
 	}
 
+	// identify the program
+	const QString &program = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+
+	// get the arguments
+	std::vector<QString> arguments = task->GetArguments(m_prefs);
+
 	// build the command line
-	wxString launch_command = util::build_command_line(
-		m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE),
-		task->GetArguments(m_prefs));
+	QString launch_command = util::build_command_line(program, arguments);
 
 	// slap on any extra arguments
-	const wxString &extra_arguments(m_prefs.GetMameExtraArguments());
-	if (!extra_arguments.IsEmpty())
+	const QString &extra_arguments(m_prefs.GetMameExtraArguments());
+	if (!extra_arguments.isEmpty())
 		launch_command += " " + extra_arguments;
 
-	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
-	auto process = std::make_shared<ClientProcess>([task](Task::emu_error status) { task->OnChildProcessCompleted(status); });
+	// set up the QProcess
+	auto process = std::make_shared<QProcess>();
 	m_process = process;
-	process->Redirect();
-	process->SetProcess(process);
+
+	// set the callback
+	auto finished_callback = [task](int exitCode, QProcess::ExitStatus exitStatus)
+	{
+		task->OnChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
+	};
+	connect(process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finished_callback);
 
 	// launch the process
-	long process_id = ::wxExecute(launch_command, wxEXEC_ASYNC, m_process.get());
-	if (process_id == 0)
+	process->start(launch_command);
+	if (!process->pid() || !process->waitForStarted() || !process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
 		throw false;
 	}
 
-	s_job.AddProcess(process_id);
+	s_job.AddProcess(process->pid());
 
 	m_task = std::move(task);
 	m_thread = std::thread([process, this]()
 	{
-		// we should really have logging, but wxWidgets handles logging oddly from child threads.  I want
-		// that to all go to error logging, not message boxes
-		wxLog::EnableLogging(false);
-
 		// invoke the task's process method
 		m_task->Process(*process, m_event_handler);
 	});
@@ -168,7 +165,7 @@ void MameClient::Abort()
 	}
 	if (m_process)
 	{
-		wxKill(m_process->GetPid(), wxSIGKILL);
+		m_process->kill();
 		m_task->OnChildProcessKilled();
 	}
 }

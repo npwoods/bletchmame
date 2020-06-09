@@ -71,7 +71,7 @@ std::optional<std::string_view> load_test_asset(const char *asset_name)
 #ifdef __WINDOWS__
 	const void *buffer;
 	size_t buffer_length;
-	bool success = wxLoadUserResource(&buffer, &buffer_length, wxString::Format("testasset_%s", asset_name));
+	bool success = wxLoadUserResource(&buffer, &buffer_length, QString::Format("testasset_%s", asset_name));
 	if (!success || !buffer || buffer_length < 0)
 		throw false;
 	result.emplace((const char *) buffer, buffer_length);

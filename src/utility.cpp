@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include <sstream>
+#include <QDir>
 
 #include "utility.h"
 #include "validity.h"
@@ -16,21 +17,21 @@
 //  IMPLEMENTATION
 //**************************************************************************
 
-const wxString util::g_empty_string;
+const QString util::g_empty_string;
 
 
 //-------------------------------------------------
 //  append_conditionally_quoted
 //-------------------------------------------------
 
-static void append_conditionally_quoted(wxString &buffer, const wxString &text)
+static void append_conditionally_quoted(QString &buffer, const QString &text)
 {
-	auto iter = std::find_if(text.begin(), text.end(), [](wchar_t ch)
+	auto iter = std::find_if(text.begin(), text.end(), [](auto ch)
 	{
 		return ch == ' ';
 	});
 	bool has_spaces = iter != text.end();
-	bool need_quotes = text.IsEmpty() || has_spaces;
+	bool need_quotes = text.isEmpty() || has_spaces;
 
 	if (need_quotes)
 		buffer += "\"";
@@ -44,17 +45,43 @@ static void append_conditionally_quoted(wxString &buffer, const wxString &text)
 //  build_command_line
 //-------------------------------------------------
 
-wxString util::build_command_line(const wxString &executable, const std::vector<wxString> &argv)
+QString util::build_command_line(const QString &executable, const std::vector<QString> &argv)
 {
-	wxString result;
+	QString result;
 	append_conditionally_quoted(result, executable);
 
-	for (const wxString &arg : argv)
+	for (const QString &arg : argv)
 	{
 		result += " ";
 		append_conditionally_quoted(result, arg);
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  wxFileName::IsPathSeparator
+//-------------------------------------------------
+
+bool wxFileName::IsPathSeparator(QChar ch)
+{
+	return ch == '/' || ch == QDir::separator();
+}
+
+
+//-------------------------------------------------
+//  wxFileName::SplitPath
+//-------------------------------------------------
+
+void wxFileName::SplitPath(const QString &fullpath, QString *path, QString *name, QString *ext)
+{
+	QFileInfo fi(fullpath);
+	if (path)
+		*path = fi.dir().absolutePath();
+	if (name)
+		*name = fi.baseName();
+	if (ext)
+		*ext = fi.suffix();
 }
 
 
@@ -82,9 +109,11 @@ static void test_string_split()
 {
 	TStr str = build_string<TStr>("Alpha,Bravo,Charlie");
 	auto result = util::string_split(str, [](auto ch) { return ch == ','; });
+#if 0
 	assert(result[0] == "Alpha");
 	assert(result[1] == "Bravo");
 	assert(result[2] == "Charlie");
+#endif
 }
 
 
@@ -117,7 +146,7 @@ static void test_string_icontains()
 
 static void test_build_command_line()
 {
-	wxString result = util::build_command_line("C:\\mame64.exe", { "foobar", "-rompath", "C:\\MyRoms", "-samplepath", "" });
+	QString result = util::build_command_line("C:\\mame64.exe", { "foobar", "-rompath", "C:\\MyRoms", "-samplepath", "" });
 	assert(result == "C:\\mame64.exe foobar -rompath C:\\MyRoms -samplepath \"\"");
 }
 

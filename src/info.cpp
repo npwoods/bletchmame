@@ -7,7 +7,7 @@
 ***************************************************************************/
 
 #include <assert.h>
-#include <wx/wfstream.h>
+#include <QDataStream>
 
 #include "info.h"
 #include "utility.h"
@@ -34,19 +34,18 @@ static bool unaligned_check(const void *ptr, T value)
 //  load_data
 //-------------------------------------------------
 
-static std::vector<std::uint8_t> load_data(wxInputStream &input, info::binaries::header &header)
+static std::vector<std::uint8_t> load_data(QDataStream &input, size_t size, info::binaries::header &header)
 {
 	// get the file size and read the header
-	size_t size = input.GetSize();
 	if (size <= sizeof(header))
 		return {};
-	if (!input.ReadAll(&header, sizeof(header)))
+	if (input.readRawData((char *) &header, sizeof(header)) != sizeof(header))
 		return {};
 
 	// read the data
 	std::vector<std::uint8_t> data;
 	data.resize(size - sizeof(header));
-	if (!input.ReadAll(data.data(), data.size()))
+	if (input.readRawData((char *) data.data(), (int)data.size()) != data.size())
 		return {};
 
 	// success! return it
@@ -74,26 +73,24 @@ static const char *get_string_from_data(const std::vector<std::uint8_t> &data, s
 //  database::load
 //-------------------------------------------------
 
-bool info::database::load(const wxString &file_name, const wxString &expected_version)
+bool info::database::load(const QString &file_name, const QString &expected_version)
 {
 	// check for file existance
-	if (!wxFileExists(file_name))
+	QFile file(file_name);
+	if (!file.open(QIODevice::ReadOnly))
 		return false;
 
 	// open up the file
-	wxFileInputStream input(file_name);
-	if (!input.IsOk())
-		return false;
-
-	return load(input, expected_version);
+	QDataStream input(&file);
+	return load(input, file.bytesAvailable(), expected_version);
 }
 
 
-bool info::database::load(wxInputStream &input, const wxString &expected_version)
+bool info::database::load(QDataStream &input, size_t size, const QString &expected_version)
 {
 	// try to load the data
 	binaries::header salted_hdr;
-	std::vector<std::uint8_t> data = load_data(input, salted_hdr);
+	std::vector<std::uint8_t> data = load_data(input, size, salted_hdr);
 	if (data.empty())
 		return false;
 
@@ -135,7 +132,7 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 		return false;
 
 	// version check if appropriate
-	if (!expected_version.empty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
+	if (!expected_version.isEmpty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
 		return false;
 
 	// finally things look good - first shrink the data array to drop the ending magic bytes
@@ -214,7 +211,7 @@ void info::database::on_changed()
 //  database::get_string
 //-------------------------------------------------
 
-const wxString &info::database::get_string(std::uint32_t offset) const
+const QString &info::database::get_string(std::uint32_t offset) const
 {
 	if (m_string_table_offset + offset >= m_data.size())
 		throw false;
@@ -224,7 +221,7 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 		return iter->second;
 
 	const char *string = get_string_from_data(m_data, m_string_table_offset, offset);
-	m_loaded_strings.emplace(offset, wxString::FromUTF8(string));
+	m_loaded_strings.emplace(offset, QString::fromUtf8(string));
 	return m_loaded_strings.find(offset)->second;
 }
 
@@ -233,7 +230,7 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 //  database::find_machine
 //-------------------------------------------------
 
-std::optional<info::machine> info::database::find_machine(const wxString &machine_name) const
+std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
 {
 	auto iter = std::find_if(
 		machines().begin(),

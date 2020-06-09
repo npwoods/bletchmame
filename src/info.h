@@ -150,11 +150,11 @@ namespace info
 		{
 		}
 
-		const wxString &type() const { return get_string(inner().m_type_strindex); }
-		const wxString &tag() const { return get_string(inner().m_tag_strindex); }
-		const wxString &devinterface() const { return get_string(inner().m_interface_strindex); }
-		const wxString &instance_name() const { return get_string(inner().m_instance_name_strindex); }
-		const wxString &extensions() const { return get_string(inner().m_extensions_strindex); }
+		const QString &type() const { return get_string(inner().m_type_strindex); }
+		const QString &tag() const { return get_string(inner().m_tag_strindex); }
+		const QString &devinterface() const { return get_string(inner().m_interface_strindex); }
+		const QString &instance_name() const { return get_string(inner().m_instance_name_strindex); }
+		const QString &extensions() const { return get_string(inner().m_extensions_strindex); }
 		bool mandatory() const { return inner().m_mandatory != 0; }
 	};
 
@@ -168,7 +168,7 @@ namespace info
 		{
 		}
 
-		const wxString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &name() const { return get_string(inner().m_name_strindex); }
 		std::uint32_t value() const { return inner().m_value; }
 	};
 
@@ -193,7 +193,7 @@ namespace info
 		{
 		}
 
-		const wxString &tag() const { return get_string(inner().m_tag_strindex); }
+		const QString &tag() const { return get_string(inner().m_tag_strindex); }
 		std::uint32_t mask() const { return inner().m_mask; }
 		std::uint32_t value() const { return inner().m_value; }
 		relation_t relation() const { return static_cast<relation_t>(inner().m_relation); }
@@ -209,8 +209,8 @@ namespace info
 		{
 		}
 
-		const wxString &name() const { return get_string(inner().m_name_strindex); }
-		const wxString &tag() const { return get_string(inner().m_tag_strindex); }
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &tag() const { return get_string(inner().m_tag_strindex); }
 		std::uint32_t mask() const { return inner().m_mask; }
 		configuration_setting::view settings() const;
 	};
@@ -231,8 +231,8 @@ namespace info
 		{
 		}
 
-		const wxString &name() const { return get_string(inner().m_name_strindex); }
-		const wxString &filter() const { return get_string(inner().m_filter_strindex); }
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &filter() const { return get_string(inner().m_filter_strindex); }
 		status_type status() const { return static_cast<status_type>(inner().m_status); }
 	};
 
@@ -252,7 +252,7 @@ namespace info
 		{
 		}
 
-		const wxString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &name() const { return get_string(inner().m_name_strindex); }
 		std::uint32_t value() const { return inner().m_value; }
 		bool is_default() const { return inner().m_is_default; }
 	};
@@ -268,13 +268,13 @@ namespace info
 		}
 
 		// properties
-		const wxString &name() const			{ return get_string(inner().m_name_strindex); }
-		const wxString &sourcefile() const		{ return get_string(inner().m_sourcefile_strindex); }
-		const wxString &clone_of() const		{ return get_string(inner().m_clone_of_strindex); }
-		const wxString &rom_of() const			{ return get_string(inner().m_rom_of_strindex); }
-		const wxString &description() const		{ return get_string(inner().m_description_strindex); }
-		const wxString &year() const			{ return get_string(inner().m_year_strindex); }
-		const wxString &manufacturer() const	{ return get_string(inner().m_manufacturer_strindex); }
+		const QString &name() const			{ return get_string(inner().m_name_strindex); }
+		const QString &sourcefile() const		{ return get_string(inner().m_sourcefile_strindex); }
+		const QString &clone_of() const		{ return get_string(inner().m_clone_of_strindex); }
+		const QString &rom_of() const			{ return get_string(inner().m_rom_of_strindex); }
+		const QString &description() const		{ return get_string(inner().m_description_strindex); }
+		const QString &year() const			{ return get_string(inner().m_year_strindex); }
+		const QString &manufacturer() const	{ return get_string(inner().m_manufacturer_strindex); }
 
 		// views
 		device::view 				devices() const;
@@ -308,11 +308,11 @@ namespace info
 		}
 
 		// publically usable functions
-		bool load(const wxString &file_name, const wxString &expected_version = wxT(""));
-		bool load(wxInputStream &input, const wxString &expected_version = wxT(""));
+		bool load(const QString &file_name, const QString &expected_version = "");
+		bool load(QDataStream &input, size_t size, const QString &expected_version = "");
 		void reset();
-		std::optional<machine> find_machine(const wxString &machine_name) const;
-		const wxString &version() const			{ return *m_version; }
+		std::optional<machine> find_machine(const QString &machine_name) const;
+		const QString &version() const			{ return *m_version; }
 		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
 
 		// views
@@ -325,7 +325,7 @@ namespace info
 		auto ram_options() const				{ return ram_option::view(*this, m_ram_options_offset, m_ram_options_count); }
 
 		// should only be called by info classes
-		const wxString &get_string(std::uint32_t offset) const;
+		const QString &get_string(std::uint32_t offset) const;
 
 	private:
 		// member variables
@@ -344,8 +344,8 @@ namespace info
 		std::uint32_t										m_ram_options_offset;
 		std::uint32_t										m_ram_options_count;
 		size_t												m_string_table_offset;
-		mutable std::unordered_map<std::uint32_t, wxString>	m_loaded_strings;
-		const wxString *									m_version;
+		mutable std::unordered_map<std::uint32_t, QString>	m_loaded_strings;
+		const QString *									m_version;
 		std::function<void()>								m_on_changed;
 
 		// private functions
