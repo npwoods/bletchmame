@@ -37,4 +37,7 @@ obj
 
 # MSVC
 .vs
+*.vcxproj
+*.vcxproj.filters
+*.sln
 *.user
