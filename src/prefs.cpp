@@ -777,7 +777,7 @@ static void general()
 			"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" last_save_state=\"C:\\MyLastState.sta\" />"
 		"</preferences>";
 
-	QByteArray byte_array(xml, strlen(xml));
+	QByteArray byte_array(xml, util::safe_static_cast<int>(strlen(xml)));
 	QDataStream input(byte_array);
 	Preferences prefs;
 	prefs.Load(input);

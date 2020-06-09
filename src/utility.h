@@ -375,6 +375,19 @@ inline std::string to_utf8_string(const QString &str)
 }
 
 
+//-------------------------------------------------
+//  safe_static_cast
+//-------------------------------------------------
+
+template<class T> T safe_static_cast(size_t sz)
+{
+	auto result = static_cast<T>(sz);
+	if (sz != result)
+		throw std::overflow_error("Overflow");
+	return result;
+}
+
+
 //**************************************************************************
 //  COMMAND LINE
 //**************************************************************************

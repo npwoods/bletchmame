@@ -7,6 +7,8 @@
 ***************************************************************************/
 
 #include <assert.h>
+#include <stdexcept>
+
 #include <QDataStream>
 
 #include "info.h"
@@ -58,7 +60,7 @@ static std::vector<std::uint8_t> load_data(QDataStream &input, size_t size, info
 //	we can do version check on "uncommitted" data
 //-------------------------------------------------
 
-static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset)
+static const char *get_string_from_data(const std::vector<std::uint8_t> &data, size_t string_table_offset, std::uint32_t offset)
 {
 	// sanity check
 	if (offset >= data.size() || (string_table_offset + offset) >= data.size())
@@ -143,17 +145,17 @@ bool info::database::load(QDataStream &input, size_t size, const QString &expect
 
 	// ...and the tables
 	m_machines_count = hdr.m_machines_count;
-	m_devices_offset = devices_offset;
+	m_devices_offset = util::safe_static_cast<std::uint32_t>(devices_offset);
 	m_devices_count = hdr.m_devices_count;
-	m_configurations_offset = configurations_offset;
+	m_configurations_offset = util::safe_static_cast<std::uint32_t>(configurations_offset);
 	m_configurations_count = hdr.m_configurations_count;
-	m_configuration_settings_offset = configuration_settings_offset;
+	m_configuration_settings_offset = util::safe_static_cast<std::uint32_t>(configuration_settings_offset);
 	m_configuration_settings_count = hdr.m_configuration_settings_count;
-	m_configuration_conditions_offset = configuration_conditions_offset;
+	m_configuration_conditions_offset = util::safe_static_cast<std::uint32_t>(configuration_conditions_offset);
 	m_configuration_conditions_count = hdr.m_configuration_conditions_count;
-	m_software_lists_offset = software_lists_offset;
+	m_software_lists_offset = util::safe_static_cast<std::uint32_t>(software_lists_offset);
 	m_software_lists_count = hdr.m_software_lists_count;
-	m_ram_options_offset = ram_options_offset;
+	m_ram_options_offset = util::safe_static_cast<std::uint32_t>(ram_options_offset);
 	m_ram_options_count = hdr.m_ram_options_count;
 
 	// ...and set up string table info
@@ -220,7 +222,7 @@ const QString &info::database::get_string(std::uint32_t offset) const
 	if (iter != m_loaded_strings.end())
 		return iter->second;
 
-	const char *string = get_string_from_data(m_data, m_string_table_offset, offset);
+	const char *string = get_string_from_data(m_data, m_string_table_offset, util::safe_static_cast<std::uint32_t>(offset));
 	m_loaded_strings.emplace(offset, QString::fromUtf8(string));
 	return m_loaded_strings.find(offset)->second;
 }
