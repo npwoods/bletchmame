@@ -78,6 +78,7 @@ private:
 	bool RefreshMameInfoDatabase();
 	int messageBox(const QString &message, long style = 0, const QString &caption = "");
 	bool isMameVersionAtLeast(const MameVersion &version) const;
+	const QString &GetMachineListItemText(info::machine machine, long column) const;
 };
 
 #endif // MAINWINDOW_H

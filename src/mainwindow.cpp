@@ -8,10 +8,12 @@
 
 #include <QThread>
 #include <QMessageBox>
+#include <QStringListModel>
 
 #include "mainwindow.h"
 #include "mameversion.h"
 #include "ui_mainwindow.h"
+#include "collectionviewmodel.h"
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
@@ -44,6 +46,20 @@ extern const char build_date_time[];
 //**************************************************************************
 //  MAIN IMPLEMENTATION
 //**************************************************************************
+
+static const CollectionViewDesc s_machine_collection_view_desc =
+{
+	"machine",
+	"name",
+	{
+		{ "name",			"Name",			85 },
+		{ "description",	"Description",		370 },
+		{ "year",			"Year",			50 },
+		{ "manufacturer",	"Manufacturer",	320 }
+	}
+};
+
+
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
@@ -59,9 +75,21 @@ MainWindow::MainWindow(QWidget *parent)
 	// initial preferences read
 	m_prefs.Load();
 
+	// set up machines view
+	auto machinesViewModel = std::make_unique<CollectionViewModel>(
+		this,
+		m_prefs,
+		s_machine_collection_view_desc,
+		[this](long item, long column) -> const QString &{ return GetMachineListItemText(m_info_db.machines()[item], column); },
+		[this]() { return m_info_db.machines().size(); },
+		false);
+	m_info_db.set_on_changed([&vm = *machinesViewModel.get()]{ vm.updateListView(); });
+	m_ui->machinesTableView->setModel(machinesViewModel.release());
+
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
 }
+
 
 //-------------------------------------------------
 //  dtor
@@ -301,5 +329,24 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	m_client.Reset();
 	return true;
 }
+
+
+//-------------------------------------------------
+//  GetMachineListItemText
+//-------------------------------------------------
+
+const QString &MainWindow::GetMachineListItemText(info::machine machine, long column) const
+{
+	switch (column)
+	{
+	case 0:	return machine.name();
+	case 1:	return machine.description();
+	case 2:	return machine.year();
+	case 3:	return machine.manufacturer();
+	}
+	throw false;
+}
+
+
 
 

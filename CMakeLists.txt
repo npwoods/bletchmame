@@ -20,6 +20,8 @@ find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 add_executable(BletchMAME
 	src/client.cpp
 	src/client.h
+	src/collectionviewmodel.cpp
+	src/collectionviewmodel.h
 	src/info.cpp
 	src/info.h
 	src/job.cpp
