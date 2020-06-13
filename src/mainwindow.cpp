@@ -100,6 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+	m_prefs.Save();
 }
 
 
