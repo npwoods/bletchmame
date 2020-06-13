@@ -76,15 +76,18 @@ MainWindow::MainWindow(QWidget *parent)
 	m_prefs.Load();
 
 	// set up machines view
-	auto machinesViewModel = std::make_unique<CollectionViewModel>(
+	CollectionViewModel &machinesViewModel = *new CollectionViewModel(
 		this,
 		m_prefs,
 		s_machine_collection_view_desc,
 		[this](long item, long column) -> const QString &{ return GetMachineListItemText(m_info_db.machines()[item], column); },
 		[this]() { return m_info_db.machines().size(); },
 		false);
-	m_info_db.set_on_changed([&vm = *machinesViewModel.get()]{ vm.updateListView(); });
-	m_ui->machinesTableView->setModel(machinesViewModel.release());
+	m_info_db.set_on_changed([&machinesViewModel]{ machinesViewModel.updateListView(); });
+	m_ui->machinesTableView->setModel(&machinesViewModel);
+
+	// set up machines search box
+	setupSearchBox(*m_ui->machinesSearchBox, "machine", machinesViewModel);
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -328,6 +331,25 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 
 	m_client.Reset();
 	return true;
+}
+
+
+//-------------------------------------------------
+//  setupSearchBox
+//-------------------------------------------------
+
+void MainWindow::setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel)
+{
+	const QString &text = m_prefs.GetSearchBoxText(collection_view_desc_name);
+	lineEdit.setText(text);
+
+	auto callback = [&collectionViewModel, collection_view_desc_name, this]()
+	{
+		QString text = m_ui->machinesSearchBox->text();
+		m_prefs.SetSearchBoxText(collection_view_desc_name, std::move(text));
+		collectionViewModel.updateListView();
+	};
+	connect(&lineEdit, &QLineEdit::textEdited, this, callback);
 }
 
 

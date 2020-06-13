@@ -18,13 +18,16 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
-      <widget class="QWidget" name="tab">
+      <widget class="QWidget" name="machinesTab">
        <attribute name="title">
         <string>Machines</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLineEdit" name="machinesSearchBox"/>
+        </item>
         <item>
          <widget class="QTableView" name="machinesTableView">
           <property name="selectionMode">
@@ -43,17 +46,20 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_2">
+      <widget class="QWidget" name="softwareTab">
        <attribute name="title">
         <string>Software</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
+         <widget class="QLineEdit" name="softwareSearchBox"/>
+        </item>
+        <item>
          <widget class="QTableView" name="softwareTableView"/>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="profilesTab">
        <attribute name="title">
         <string>Profiles</string>
        </attribute>

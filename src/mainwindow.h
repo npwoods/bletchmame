@@ -18,10 +18,12 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
+class QLineEdit;
 QT_END_NAMESPACE
 
-class VersionResultEvent;
+class CollectionViewModel;
 class MameVersion;
+class VersionResultEvent;
 
 // ======================> MainWindow
 
@@ -78,6 +80,7 @@ private:
 	bool RefreshMameInfoDatabase();
 	int messageBox(const QString &message, long style = 0, const QString &caption = "");
 	bool isMameVersionAtLeast(const MameVersion &version) const;
+	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
 };
 
