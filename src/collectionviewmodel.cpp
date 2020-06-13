@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include <QItemSelectionModel>
+#include <QAbstractItemView>
 
 #include "collectionviewmodel.h"
 #include "utility.h"
@@ -19,8 +20,8 @@
 //  ctor
 //-------------------------------------------------
 
-CollectionViewModel::CollectionViewModel(QObject *parent, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit)
-    : QAbstractItemModel(parent)
+CollectionViewModel::CollectionViewModel(QAbstractItemView &itemView, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit)
+    : QAbstractItemModel(&itemView)
     , m_desc(desc)
     , m_prefs(prefs)
     , m_coll_impl(std::move(coll_impl))
@@ -28,11 +29,27 @@ CollectionViewModel::CollectionViewModel(QObject *parent, Preferences &prefs, co
 	, m_sort_column(0)
     , m_sort_type(ColumnPrefs::sort_type::ASCENDING)
 {
+	// figure out the key column index
 	for (int i = 0; i < desc.m_columns.size(); i++)
 	{
 		if (!strcmp(desc.m_columns[i].m_id, desc.m_key_column))
 			m_key_column_index = i;
 	}
+
+	// set the model on the actual tab view
+	itemView.setModel(this);
+
+	// handle selection
+	connect(itemView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	{
+		QModelIndexList selectedIndexes = newSelection.indexes();
+		if (!selectedIndexes.empty())
+		{
+			long actual_item = m_indirections[selectedIndexes[0].row()];
+			const QString &val = getActualItemText(actual_item, m_key_column_index);
+			setListViewSelection(val);
+		}
+	});
 }
 
 
@@ -86,8 +103,11 @@ void CollectionViewModel::updateListView()
 		return rc < 0;
 	});
 
+	// we're done resetting the model
+	endResetModel();
 
-	// restore the selection
+	// after resetting the model, restore the selection (this is probably not the Qt way to do things,
+	// but so be it, at least for now)
 	const QString &selected_item = getListViewSelection();
 	const int *selected_actual_index = nullptr;
 	if (!selected_item.isEmpty())
@@ -97,10 +117,28 @@ void CollectionViewModel::updateListView()
 			return selected_item == getActualItemText(actual_index, m_key_column_index);
 		});
 	}
-	(void)selected_actual_index;	// TODO - actually restore selection
+	selectByIndex(selected_actual_index ? selected_actual_index - &m_indirections[0] : -1);
+}
 
-	// we're done!
-	endResetModel();
+
+//-------------------------------------------------
+//  selectByIndex
+//-------------------------------------------------
+
+void CollectionViewModel::selectByIndex(long item_index)
+{
+	// get the item view
+	QAbstractItemView &itemView = *dynamic_cast<QAbstractItemView *>(QObject::parent());
+
+	if (item_index < 0)
+	{
+		itemView.clearSelection();
+	}
+	else
+	{
+		QModelIndex modelIndex = index(item_index, 0, QModelIndex());
+		itemView.selectionModel()->select(modelIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+	}
 }
 
 

@@ -16,6 +16,7 @@
 #include "prefs.h"
 
 class QItemSelectionModel;
+class QAbstractItemView;
 
 // ======================> ColumnDesc
 
@@ -43,8 +44,8 @@ class CollectionViewModel : public QAbstractItemModel
 public:
 	// ctor
 	template<typename TFuncGetItemText, typename TFuncGetSize>
-	CollectionViewModel(QObject *parent, Preferences &prefs, const CollectionViewDesc &desc, TFuncGetItemText &&func_get_item_text, TFuncGetSize &&func_get_size, bool support_label_edit)
-        : CollectionViewModel(parent, prefs, desc, std::make_unique<CollectionImpl<TFuncGetItemText, TFuncGetSize>>(std::move(func_get_item_text), std::move(func_get_size)), support_label_edit)
+	CollectionViewModel(QAbstractItemView &itemView, Preferences &prefs, const CollectionViewDesc &desc, TFuncGetItemText &&func_get_item_text, TFuncGetSize &&func_get_size, bool support_label_edit)
+        : CollectionViewModel(itemView, prefs, desc, std::make_unique<CollectionImpl<TFuncGetItemText, TFuncGetSize>>(std::move(func_get_item_text), std::move(func_get_size)), support_label_edit)
     {
     }
 
@@ -106,11 +107,12 @@ private:
 	ColumnPrefs::sort_type				m_sort_type;
 
 	// ctor
-	CollectionViewModel(QObject *parent, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
+	CollectionViewModel(QAbstractItemView &itemView, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
 
 	// methods
 	int rowCount() const;
 	int columnCount() const;
+	void selectByIndex(long item_index);
 	int compareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const;
 	const QString &getActualItemText(long item, long column) const;
 	const QString &getListViewSelection() const;

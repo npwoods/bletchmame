@@ -77,14 +77,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// set up machines view
 	CollectionViewModel &machinesViewModel = *new CollectionViewModel(
-		this,
+		*m_ui->machinesTableView,
 		m_prefs,
 		s_machine_collection_view_desc,
 		[this](long item, long column) -> const QString &{ return GetMachineListItemText(m_info_db.machines()[item], column); },
 		[this]() { return m_info_db.machines().size(); },
 		false);
 	m_info_db.set_on_changed([&machinesViewModel]{ machinesViewModel.updateListView(); });
-	m_ui->machinesTableView->setModel(&machinesViewModel);
 
 	// set up machines search box
 	setupSearchBox(*m_ui->machinesSearchBox, "machine", machinesViewModel);
