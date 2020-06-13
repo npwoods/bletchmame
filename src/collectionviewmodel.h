@@ -13,7 +13,9 @@
 
 #include <QAbstractItemModel>
 
-class Preferences;
+#include "prefs.h"
+
+class QItemSelectionModel;
 
 // ======================> ColumnDesc
 
@@ -56,6 +58,7 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const override;
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	virtual void sort(int column, Qt::SortOrder order) override;
 
 private:
 	// ======================> ICollectionImpl
@@ -97,9 +100,21 @@ private:
 	const CollectionViewDesc &			m_desc;
 	Preferences &						m_prefs;
 	std::unique_ptr<ICollectionImpl>	m_coll_impl;
+	std::vector<int>					m_indirections;
+	int									m_key_column_index;
+	int									m_sort_column;
+	ColumnPrefs::sort_type				m_sort_type;
 
 	// ctor
 	CollectionViewModel(QObject *parent, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
+
+	// methods
+	int rowCount() const;
+	int columnCount() const;
+	int compareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const;
+	const QString &getActualItemText(long item, long column) const;
+	const QString &getListViewSelection() const;
+	void setListViewSelection(const QString &selection);
 };
 
 #endif // COLLECTIONVIEWMODEL_H

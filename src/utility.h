@@ -302,7 +302,7 @@ inline bool string_icontains(const TStr &str, const TStr &target)
 	auto iter = std::search(str.begin(), str.end(), target.begin(), target.end(), [](auto ch1, auto ch2)
 	{
 		// TODO - this does not handle UTF-8
-		return sizeof(ch1) > 0
+		return sizeof(ch1) > 1
 			? towlower(static_cast<wchar_t>(ch1)) == towlower(static_cast<wchar_t>(ch2))
 			: tolower(static_cast<char>(ch1)) == tolower(static_cast<char>(ch2));
 	});
