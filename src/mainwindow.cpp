@@ -89,6 +89,13 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up machines search box
 	setupSearchBox(*m_ui->machinesSearchBox, "machine", machinesViewModel);
 
+	// set up the tab widget
+	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
+	connect(m_ui->tabWidget, &QTabWidget::currentChanged, this, [this](int index)
+	{
+		m_prefs.SetSelectedTab(static_cast<Preferences::list_view_type>(index));
+	});
+
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
 }
