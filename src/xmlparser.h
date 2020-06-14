@@ -21,7 +21,10 @@
 #include "utility.h"
 
 struct XML_ParserStruct;
-class wxInputStream;
+
+QT_BEGIN_NAMESPACE
+class QDataStream;
+QT_END_NAMESPACE
 
 class XmlParser
 {

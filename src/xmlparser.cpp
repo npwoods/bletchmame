@@ -147,7 +147,7 @@ bool XmlParser::InternalParse(QDataStream &input)
 		int last_read = input.readRawData(buffer, sizeof(buffer));
 
 		// figure out how much we actually read, and if we're done
-		done = last_read == 0;
+		done = last_read <= 0;
 
 		// and feed this into expat
 		if (!XML_Parse(m_parser, buffer, last_read, done))

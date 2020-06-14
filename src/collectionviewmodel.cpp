@@ -122,22 +122,35 @@ void CollectionViewModel::updateListView()
 
 
 //-------------------------------------------------
+//  parentAsItemView
+//-------------------------------------------------
+
+QAbstractItemView &CollectionViewModel::parentAsItemView()
+{
+	return *dynamic_cast<QAbstractItemView *>(QObject::parent());
+}
+
+
+const QAbstractItemView &CollectionViewModel::parentAsItemView() const
+{
+	return *dynamic_cast<const QAbstractItemView *>(QObject::parent());
+}
+
+
+//-------------------------------------------------
 //  selectByIndex
 //-------------------------------------------------
 
 void CollectionViewModel::selectByIndex(long item_index)
 {
-	// get the item view
-	QAbstractItemView &itemView = *dynamic_cast<QAbstractItemView *>(QObject::parent());
-
 	if (item_index < 0)
 	{
-		itemView.clearSelection();
+		parentAsItemView().clearSelection();
 	}
 	else
 	{
 		QModelIndex modelIndex = index(item_index, 0, QModelIndex());
-		itemView.selectionModel()->select(modelIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+		parentAsItemView().selectionModel()->select(modelIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 	}
 }
 
@@ -184,6 +197,17 @@ const QString &CollectionViewModel::getListViewSelection() const
 void CollectionViewModel::setListViewSelection(const QString &selection)
 {
 	m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, QString(selection));
+}
+
+
+//-------------------------------------------------
+//  index
+//-------------------------------------------------
+
+long CollectionViewModel::getFirstSelected() const
+{
+	// modelled after wxListView::GetFirstSelected() from wxWidgets
+	return parentAsItemView().currentIndex().row();
 }
 
 

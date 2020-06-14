@@ -16,6 +16,7 @@
 #include "mameversion.h"
 #include "ui_mainwindow.h"
 #include "collectionviewmodel.h"
+#include "softlistviewmodel.h"
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
@@ -69,6 +70,8 @@ static const CollectionViewDesc s_machine_collection_view_desc =
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_client(*this, m_prefs)
+	, m_machinesViewModel(nullptr)
+	, m_softwareListViewModel(nullptr)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -78,24 +81,28 @@ MainWindow::MainWindow(QWidget *parent)
 	m_prefs.Load();
 
 	// set up machines view
-	CollectionViewModel &machinesViewModel = *new CollectionViewModel(
+	m_machinesViewModel = new CollectionViewModel(
 		*m_ui->machinesTableView,
 		m_prefs,
 		s_machine_collection_view_desc,
 		[this](long item, long column) -> const QString &{ return GetMachineListItemText(m_info_db.machines()[item], column); },
 		[this]() { return m_info_db.machines().size(); },
 		false);
-	m_info_db.set_on_changed([&machinesViewModel]{ machinesViewModel.updateListView(); });
+	m_info_db.set_on_changed([this]{ m_machinesViewModel->updateListView(); });
 
 	// set up machines search box
-	setupSearchBox(*m_ui->machinesSearchBox, "machine", machinesViewModel);
+	setupSearchBox(*m_ui->machinesSearchBox, "machine", *m_machinesViewModel);
+
+	// set up software list view
+	m_softwareListViewModel = new SoftwareListViewModel(
+		*m_ui->softwareTableView,
+		m_prefs);
+
+	// set up software list search box
+	setupSearchBox(*m_ui->softwareSearchBox, SOFTLIST_VIEW_DESC_NAME, *m_softwareListViewModel);
 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
-	connect(m_ui->tabWidget, &QTabWidget::currentChanged, this, [this](int index)
-	{
-		m_prefs.SetSelectedTab(static_cast<Preferences::list_view_type>(index));
-	});
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -140,6 +147,25 @@ void MainWindow::on_actionAbout_triggered()
 void MainWindow::on_actionBletchMAME_web_site_triggered()
 {
 	QDesktopServices::openUrl(QUrl("https://www.bletchmame.org/"));
+}
+
+
+//-------------------------------------------------
+//  on_tabWidget_currentChanged
+//-------------------------------------------------
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(index);
+	m_prefs.SetSelectedTab(list_view_type);
+
+	switch (list_view_type)
+	{
+	case Preferences::list_view_type::SOFTWARELIST:
+		m_software_list_collection_machine_name.clear();
+		updateSoftwareList();
+		break;
+	}
 }
 
 
@@ -369,6 +395,32 @@ void MainWindow::setupSearchBox(QLineEdit &lineEdit, const char *collection_view
 		collectionViewModel.updateListView();
 	};
 	connect(&lineEdit, &QLineEdit::textEdited, this, callback);
+}
+
+
+//-------------------------------------------------
+//  updateSoftwareList
+//-------------------------------------------------
+
+void MainWindow::updateSoftwareList()
+{
+	long selected = m_machinesViewModel->getFirstSelected();
+	if (selected >= 0)
+	{
+		int actual_selected = m_machinesViewModel->getActualIndex(selected);
+		info::machine machine = m_info_db.machines()[actual_selected];
+		if (machine.name() != m_software_list_collection_machine_name)
+		{
+			m_software_list_collection.load(m_prefs, machine);
+			m_software_list_collection_machine_name = machine.name();
+		}
+		m_softwareListViewModel->Load(m_software_list_collection, false);
+	}
+	else
+	{
+		m_softwareListViewModel->Clear();
+	}
+	m_softwareListViewModel->updateListView();
 }
 
 

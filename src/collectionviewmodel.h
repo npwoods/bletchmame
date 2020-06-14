@@ -51,6 +51,8 @@ public:
 
 	// methods
 	void updateListView();
+	long getFirstSelected() const;
+	int getActualIndex(long indirect_index) const	{ return m_indirections[indirect_index]; }
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -60,6 +62,13 @@ public:
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 	virtual void sort(int column, Qt::SortOrder order) override;
+
+protected:
+	Preferences &Prefs() { return m_prefs; }
+	const Preferences &Prefs() const { return m_prefs; }
+
+	virtual const QString &getListViewSelection() const;
+	virtual void setListViewSelection(const QString &selection);
 
 private:
 	// ======================> ICollectionImpl
@@ -112,11 +121,11 @@ private:
 	// methods
 	int rowCount() const;
 	int columnCount() const;
+	QAbstractItemView &parentAsItemView();
+	const QAbstractItemView &parentAsItemView() const;
 	void selectByIndex(long item_index);
 	int compareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const;
 	const QString &getActualItemText(long item, long column) const;
-	const QString &getListViewSelection() const;
-	void setListViewSelection(const QString &selection);
 };
 
 #endif // COLLECTIONVIEWMODEL_H

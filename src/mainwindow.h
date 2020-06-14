@@ -15,6 +15,7 @@
 #include "prefs.h"
 #include "client.h"
 #include "info.h"
+#include "softwarelist.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,6 +24,7 @@ QT_END_NAMESPACE
 
 class CollectionViewModel;
 class MameVersion;
+class SoftwareListViewModel;
 class VersionResultEvent;
 
 // ======================> MainWindow
@@ -41,6 +43,7 @@ private slots:
 	void on_actionAbout_triggered();
 	void on_actionExit_triggered();
 	void on_actionBletchMAME_web_site_triggered();
+	void on_tabWidget_currentChanged(int index);
 
 private:
 	// status of MAME version checks
@@ -59,16 +62,22 @@ private:
 		}
 	};
 
-	// variables
+	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>			m_ui;
 	Preferences								m_prefs;
 	MameClient								m_client;
+	CollectionViewModel *					m_machinesViewModel;
+	SoftwareListViewModel *					m_softwareListViewModel;
 
 	// information retrieved by -version
 	QString									m_mame_version;
 
 	// information retrieved by -listxml
 	info::database							m_info_db;
+
+	// other
+	software_list_collection				m_software_list_collection;
+	QString									m_software_list_collection_machine_name;
 
 	// methods
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -82,6 +91,7 @@ private:
 	int messageBox(const QString &message, long style = 0, const QString &caption = "");
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);
+	void updateSoftwareList();
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
 };
 

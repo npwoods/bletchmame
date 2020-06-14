@@ -34,6 +34,10 @@ add_executable(BletchMAME
 	src/mameversion.h
 	src/prefs.cpp
 	src/prefs.h
+	src/softlistviewmodel.cpp
+	src/softlistviewmodel.h
+	src/softwarelist.cpp
+	src/softwarelist.h
 	src/utility.cpp
 	src/utility.h
 	src/task.cpp
