@@ -148,8 +148,19 @@ void MameClient::Reset()
         m_thread.join();
     if (m_task)
         m_task.reset();
+
 	if (m_process)
+	{
+		// unlike wxWidgets, Qt whines with warnings if you destroy a QProcess before waiting
+		// for it to exit
+		const int delayMilliseconds = 1000;
+		if (!m_process->waitForFinished(delayMilliseconds))
+		{
+			m_process->kill();
+			m_process->waitForFinished(delayMilliseconds);
+		}
 		m_process.reset();
+	}
 }
 
 
