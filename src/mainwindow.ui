@@ -60,6 +60,9 @@
        </layout>
       </widget>
       <widget class="QWidget" name="profilesTab">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <attribute name="title">
         <string>Profiles</string>
        </attribute>
@@ -148,131 +151,230 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionStop">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Stop</string>
    </property>
   </action>
   <action name="actionPause">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Pause</string>
    </property>
+   <property name="shortcut">
+    <string/>
+   </property>
   </action>
   <action name="actionImages">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Images...</string>
    </property>
   </action>
   <action name="actionQuick_Load_State">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Quick Load State</string>
    </property>
+   <property name="shortcut">
+    <string>F7</string>
+   </property>
   </action>
   <action name="actionQuick_Save_State">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Quick Save State</string>
    </property>
+   <property name="shortcut">
+    <string/>
+   </property>
   </action>
   <action name="actionLoad_State">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Load State...</string>
    </property>
   </action>
   <action name="actionSave_State">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Save State...</string>
    </property>
   </action>
   <action name="actionSave_Screenshot">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Save Screenshot...</string>
    </property>
+   <property name="shortcut">
+    <string>F12</string>
+   </property>
   </action>
   <action name="actionRecord_Movie">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Record Movie...</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+F12</string>
+   </property>
   </action>
   <action name="actionDebugger">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Debugger...</string>
    </property>
   </action>
   <action name="actionExit">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+X</string>
+   </property>
   </action>
   <action name="actionSoft_Reset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Soft Reset</string>
    </property>
   </action>
   <action name="actionHard_Reset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Hard Reset</string>
    </property>
   </action>
   <action name="actionThrottle">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Throttle</string>
    </property>
   </action>
   <action name="actionFrame_Skip">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Frame Skip</string>
    </property>
   </action>
   <action name="actionFull_Screen">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Full Screen</string>
    </property>
+   <property name="shortcut">
+    <string/>
+   </property>
   </action>
   <action name="actionConsole">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Console</string>
    </property>
   </action>
   <action name="actionSound">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Sound</string>
    </property>
   </action>
   <action name="actionJoysticks_and_Controllers">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Joysticks and Controllers...</string>
    </property>
   </action>
   <action name="actionKeyboard">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Keyboard...</string>
    </property>
   </action>
   <action name="actionMiscellaneous_Input">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Miscellaneous Input...</string>
    </property>
   </action>
   <action name="actionConfiguration">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Configuration...</string>
    </property>
   </action>
   <action name="actionDIP_Switches">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>DIP Switches...</string>
    </property>
   </action>
   <action name="actionPaths">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Paths...</string>
    </property>
   </action>
   <action name="actionRefresh_Machine_Info">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Refresh MAME machine info...</string>
    </property>
   </action>
   <action name="actionBletchMAME_web_site">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>BletchMAME Web Site...</string>
    </property>
@@ -280,6 +382,9 @@
   <action name="actionAbout">
    <property name="text">
     <string>About...</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
    </property>
   </action>
  </widget>
