@@ -28,7 +28,7 @@ namespace bindata
 	class entry
 	{
 	public:
-		using view = view<TDatabase, TPublic, TBinary>;
+		using view = bindata::view<TDatabase, TPublic, TBinary>;
 
 	protected:
 		entry(const TDatabase &db, const TBinary &inner)
