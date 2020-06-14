@@ -303,7 +303,10 @@ QVariant CollectionViewModel::headerData(int section, Qt::Orientation orientatio
     case Qt::SizeHintRole:
         {
             const std::unordered_map<std::string, ColumnPrefs> &col_prefs = m_prefs.GetColumnPrefs(m_desc.m_name);
-            int width = col_prefs.find(m_desc.m_columns[section].m_id)->second.m_width;
+			auto iter = col_prefs.find(m_desc.m_columns[section].m_id);
+			int width = iter != col_prefs.end()
+				? iter->second.m_width
+				: column_desc.m_default_width;
             result = QSize(width, 20);
         }
         break;
