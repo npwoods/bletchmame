@@ -9,6 +9,8 @@
 #include <QThread>
 #include <QMessageBox>
 #include <QStringListModel>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "mainwindow.h"
 #include "mameversion.h"
@@ -111,6 +113,16 @@ MainWindow::~MainWindow()
 
 
 //-------------------------------------------------
+//  on_actionExit_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionExit_triggered()
+{
+	close();
+}
+
+
+//-------------------------------------------------
 //  on_actionAbout_triggered
 //-------------------------------------------------
 
@@ -122,12 +134,12 @@ void MainWindow::on_actionAbout_triggered()
 
 
 //-------------------------------------------------
-//  on_actionExit_triggered
+//  on_actionBletchMAME_web_site_triggered
 //-------------------------------------------------
 
-void MainWindow::on_actionExit_triggered()
+void MainWindow::on_actionBletchMAME_web_site_triggered()
 {
-	close();
+	QDesktopServices::openUrl(QUrl("https://www.bletchmame.org/"));
 }
 
 

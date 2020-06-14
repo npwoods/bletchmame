@@ -40,6 +40,7 @@ public:
 private slots:
 	void on_actionAbout_triggered();
 	void on_actionExit_triggered();
+	void on_actionBletchMAME_web_site_triggered();
 
 private:
 	// status of MAME version checks
