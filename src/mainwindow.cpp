@@ -388,9 +388,9 @@ void MainWindow::setupSearchBox(QLineEdit &lineEdit, const char *collection_view
 	const QString &text = m_prefs.GetSearchBoxText(collection_view_desc_name);
 	lineEdit.setText(text);
 
-	auto callback = [&collectionViewModel, collection_view_desc_name, this]()
+	auto callback = [&collectionViewModel, &lineEdit, collection_view_desc_name, this]()
 	{
-		QString text = m_ui->machinesSearchBox->text();
+		QString text = lineEdit.text();
 		m_prefs.SetSearchBoxText(collection_view_desc_name, std::move(text));
 		collectionViewModel.updateListView();
 	};
