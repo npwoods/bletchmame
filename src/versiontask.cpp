@@ -25,7 +25,7 @@ namespace
 	class VersionTask : public Task
 	{
 	protected:
-		virtual std::vector<QString> GetArguments(const Preferences &) const;
+		virtual QStringList GetArguments(const Preferences &) const;
 		virtual void Process(QProcess &process, QObject &handler) override;
 		virtual void Abort() override;
 	};
@@ -53,7 +53,7 @@ VersionResultEvent::VersionResultEvent(QString &&version)
 //  GetArguments
 //-------------------------------------------------
 
-std::vector<QString> VersionTask::GetArguments(const Preferences &) const
+QStringList VersionTask::GetArguments(const Preferences &) const
 {
 	return { "-version" };
 }

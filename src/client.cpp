@@ -98,15 +98,11 @@ void MameClient::Launch(Task::ptr &&task)
 	const QString &program = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
 	// get the arguments
-	std::vector<QString> arguments = task->GetArguments(m_prefs);
-
-	// build the command line
-	QString launch_command = util::build_command_line(program, arguments);
+	QStringList arguments = task->GetArguments(m_prefs);
 
 	// slap on any extra arguments
-	const QString &extra_arguments(m_prefs.GetMameExtraArguments());
-	if (!extra_arguments.isEmpty())
-		launch_command += " " + extra_arguments;
+	const QString &extra_arguments = m_prefs.GetMameExtraArguments();
+	appendExtraArguments(arguments, extra_arguments);
 
 	// set up the QProcess
 	auto process = std::make_shared<QProcess>();
@@ -120,7 +116,7 @@ void MameClient::Launch(Task::ptr &&task)
 	connect(process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finished_callback);
 
 	// launch the process
-	process->start(launch_command);
+	process->start(program, arguments);
 	if (!process->pid() || !process->waitForStarted() || !process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
@@ -135,6 +131,41 @@ void MameClient::Launch(Task::ptr &&task)
 		// invoke the task's process method
 		m_task->Process(*process, m_event_handler);
 	});
+}
+
+
+//-------------------------------------------------
+//  appendExtraArguments
+//-------------------------------------------------
+
+void MameClient::appendExtraArguments(QStringList &argv, const QString &extraArguments)
+{
+	std::optional<int> wordStartPos = { };
+	bool inQuotes = false;
+	for (int i = 0; i <= extraArguments.size(); i++)
+	{
+		if (i == extraArguments.size()
+			|| (inQuotes && extraArguments[i] == '\"')
+			|| (!inQuotes && extraArguments[i].isSpace()))
+		{
+			if (wordStartPos.has_value())
+			{
+				QString word = extraArguments.mid(wordStartPos.value(), i - wordStartPos.value());
+				argv.append(std::move(word));
+				wordStartPos = { };
+			}
+			inQuotes = false;
+  		}
+		else if (!inQuotes && extraArguments[i] == '\"')
+		{
+			inQuotes = true;
+			wordStartPos = i + 1;
+		}
+		else if (!inQuotes && !wordStartPos.has_value())
+		{
+			wordStartPos = i;
+		}
+	}
 }
 
 

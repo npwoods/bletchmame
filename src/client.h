@@ -61,6 +61,8 @@ private:
 	std::thread						m_thread;
 
 	static Job						s_job;
+
+	void appendExtraArguments(QStringList &argv, const QString &extraArguments);
 };
 
 #endif // CLIENT_H

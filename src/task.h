@@ -58,7 +58,7 @@ protected:
 	virtual void Abort() = 0;
 
 	// retrieves the arguments to be used at the command line
-	virtual std::vector<QString> GetArguments(const Preferences &prefs) const = 0;
+	virtual QStringList GetArguments(const Preferences &prefs) const = 0;
 
 	// called on a child thread tasked with ownership of a MAME child process
 	virtual void Process(QProcess &process, QObject &handler) = 0;
