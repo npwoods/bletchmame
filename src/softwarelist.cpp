@@ -9,7 +9,6 @@
 #include "softwarelist.h"
 #include "prefs.h"
 #include "xmlparser.h"
-#include "validity.h"
 
 
 //**************************************************************************
@@ -101,39 +100,6 @@ std::optional<software_list> software_list::try_load(const std::vector<QString> 
 }
 
 
-//-------------------------------------------------
-//  test
-//-------------------------------------------------
-
-void software_list::test()
-{
-	// get the test asset
-	std::optional<std::string_view> asset = load_test_asset("softlist");
-	if (!asset.has_value())
-		return;
-
-	// try to load it
-	QByteArray byte_array(asset.value().data(), util::safe_static_cast<int>(asset.value().size()));
-	QDataStream stream(byte_array);
-	software_list softlist;
-	QString error_message;
-	bool success = softlist.load(stream, error_message);
-
-	// did we succeed?
-	if (!success || !error_message.isEmpty())
-		throw false;
-
-	for (const software_list::software &sw : softlist.get_software())
-	{
-		for (const software_list::part &part : sw.m_parts)
-		{
-			if (part.m_interface.isEmpty() || part.m_name.isEmpty())
-				throw false;
-		}
-	}
-}
-
-
 //**************************************************************************
 //  SOFTWARE LIST COLLECTION
 //**************************************************************************
@@ -188,17 +154,3 @@ const software_list::software *software_list_collection::find_software_by_name(c
 	}
 	return nullptr;
 }
-
-
-//**************************************************************************
-//  VALIDITY CHECKS
-//**************************************************************************
-
-//-------------------------------------------------
-//  validity_checks
-//-------------------------------------------------
-
-static validity_check validity_checks[] =
-{
-	software_list::test
-};

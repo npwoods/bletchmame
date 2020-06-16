@@ -29,6 +29,8 @@ QT_END_NAMESPACE
 class XmlParser
 {
 public:
+	class Test;
+
 	enum class element_result
 	{
 		OK,

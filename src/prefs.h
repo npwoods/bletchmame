@@ -38,6 +38,8 @@ struct ColumnPrefs
 class Preferences
 {
 public:
+	class Test;
+
 	// paths that are "global"
 	enum class global_path_type
 	{
@@ -128,6 +130,7 @@ public:
 
     QString GetMameXmlDatabasePath(bool ensure_directory_exists = true) const;
     QString ApplySubstitutions(const QString &path) const;
+	static QString InternalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
     static QString GetConfigDirectory(bool ensure_directory_exists = false);
 
@@ -142,6 +145,8 @@ private:
 		QString									m_last_save_state;
         std::map<QString, std::vector<QString>>     m_recent_device_files;
 	};
+
+	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	Preferences::s_path_names;
 
     std::array<QString, static_cast<size_t>(global_path_type::COUNT)>						m_paths;
     QString                                                                 				m_mame_extra_arguments;

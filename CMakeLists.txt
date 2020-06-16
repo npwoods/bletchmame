@@ -15,9 +15,17 @@ include(FindEXPAT)
 find_package(EXPAT REQUIRED)
 include_directories(${EXPAT_INCLUDE_DIRS})
 
-find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
+enable_testing(true)
 
-add_executable(BletchMAME
+find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
+find_package(Qt5Test REQUIRED)
+
+
+#############################################################################
+# BletchMAME executable                                                     #
+#############################################################################
+
+add_library(BletchMAME_core
 	src/client.cpp
 	src/client.h
 	src/collectionviewmodel.cpp
@@ -26,7 +34,6 @@ add_executable(BletchMAME
 	src/info.h
 	src/job.cpp
 	src/job.h
-	src/main.cpp
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui
@@ -44,8 +51,6 @@ add_executable(BletchMAME
 	src/task.h
 	src/versiontask.cpp
 	src/versiontask.h
-	src/validity.cpp
-	src/validity.h
 	src/xmlparser.cpp
 	src/xmlparser.h
 	src/dialogs/about.cpp
@@ -53,7 +58,32 @@ add_executable(BletchMAME
 	src/dialogs/about.ui
 	${TS_FILES}
 )
+target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets)
 
-target_link_libraries(BletchMAME PRIVATE Qt5::Widgets ${EXPAT_LIBRARIES})
+add_executable(BletchMAME src/main.cpp)
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES})
+
+
+#############################################################################
+# BletchMAME unit tests                                                     #
+#############################################################################
+
+add_executable(BletchMAME_tests	
+	src/tests/test.cpp
+	src/tests/client_test.cpp
+	src/tests/mameversion_test.cpp
+	src/tests/prefs_test.cpp
+	src/tests/softwarelist_test.cpp
+	src/tests/utility_test.cpp
+	src/tests/xmlparser_test.cpp
+)
+add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
+target_include_directories(BletchMAME_tests PRIVATE src src/test)
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Test ${EXPAT_LIBRARIES})
+
+
+#############################################################################
+# Translations                                                              #
+#############################################################################
 
 qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})

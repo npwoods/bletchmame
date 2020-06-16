@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <optional>
 #include <functional>
+#include <stdexcept>
 
 #include <QFileInfo>
 

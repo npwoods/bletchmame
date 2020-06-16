@@ -17,14 +17,13 @@
 #include "prefs.h"
 #include "utility.h"
 #include "xmlparser.h"
-#include "validity.h"
 
 
 //**************************************************************************
 //  LOCAL VARIABLES
 //**************************************************************************
 
-static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names =
+std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	Preferences::s_path_names =
 {
 	"emu",
 	"roms",
@@ -595,8 +594,7 @@ void Preferences::Save(std::ostream &output)
 //  InternalApplySubstitutions
 //-------------------------------------------------
 
-template<typename TStr, typename TFunc>
-static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
+QString Preferences::InternalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func)
 {
 	QString result;
 	result.reserve(src.size() + 100);
@@ -608,9 +606,9 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 		IN_VARIABLE_NAME
 	};
 	parse_state state = parse_state::NORMAL;
-	typename TStr::const_iterator var_begin_iter = src.cbegin();
+	QString::const_iterator var_begin_iter = src.cbegin();
 
-	for (typename TStr::const_iterator iter = src.cbegin(); iter < src.cend(); iter++)
+	for (QString::const_iterator iter = src.cbegin(); iter < src.cend(); iter++)
 	{
 		bool handled = false;
 		ushort ch = iter->unicode();
@@ -637,7 +635,7 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 			if (state == parse_state::IN_VARIABLE_NAME)
 			{
 				QString var_name(&*var_begin_iter, iter - var_begin_iter);
-				TStr var_value = func(var_name);
+				QString var_value = func(var_name);
 				result += var_value;
 				state = parse_state::NORMAL;
 				handled = true;
@@ -747,119 +745,3 @@ static QString GetDefaultPluginsDirectory()
 	return QString("$(BLETCHMAMEPATH)") + path_separator + plugins
 		+ QString(";") + QString("$(MAMEPATH)") + path_separator + plugins;
 }
-
-
-//**************************************************************************
-//  VALIDITY CHECKS
-//**************************************************************************
-
-//-------------------------------------------------
-//  general
-//-------------------------------------------------
-
-static void general()
-{
-	const char *xml =
-		"<preferences menu_bar_shown=\"1\">"
-			"<path type=\"emu\">C:\\mame64.exe</path>"
-			"<path type=\"roms\">C:\\roms</path>"
-			"<path type=\"samples\">C:\\samples</path>"
-			"<path type=\"config\">C:\\cfg</path>"
-			"<path type=\"nvram\">C:\\nvram</path>"
-
-			"<size width=\"1230\" height=\"765\"/>"
-			"<selectedmachine>nes</selectedmachine>"
-			"<column id=\"name\" width=\"84\" order=\"0\" />"
-			"<column id=\"description\" width=\"165\" order=\"1\" />"
-			"<column id=\"year\" width=\"50\" order=\"2\" />"
-			"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
-
-			"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" last_save_state=\"C:\\MyLastState.sta\" />"
-		"</preferences>";
-
-	QByteArray byte_array(xml, util::safe_static_cast<int>(strlen(xml)));
-	QDataStream input(byte_array);
-	Preferences prefs;
-	prefs.Load(input);
-
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)	== "C:\\mame64.exe");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)				== "C:\\roms\\");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples\\");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg\\");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)			== "C:\\nvram\\");
-
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== "C:\\MyEchoGames\\");
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== "C:\\MyLastState.sta");
-	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== "");
-	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)		== "");
-}
-
-
-//-------------------------------------------------
-//  path_names
-//-------------------------------------------------
-
-static void path_names()
-{
-	auto iter = std::find(s_path_names.begin(), s_path_names.end(), nullptr);
-	assert(iter == s_path_names.end());
-	(void)iter;
-}
-
-
-//-------------------------------------------------
-//  global_get_path_category
-//-------------------------------------------------
-
-static void global_get_path_category()
-{
-	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
-		Preferences::GetPathCategory(type);
-}
-
-
-//-------------------------------------------------
-//  machine_get_path_category
-//-------------------------------------------------
-
-static void machine_get_path_category()
-{
-	for (Preferences::machine_path_type type : util::all_enums<Preferences::machine_path_type>())
-		Preferences::GetPathCategory(type);
-}
-
-
-//-------------------------------------------------
-//  substitutions
-//-------------------------------------------------
-
-static void substitutions(const char *input, const char *expected)
-{
-	auto func = [](const QString &var_name)
-	{
-		return var_name == "VARNAME"
-			? "vardata"
-			: QString();
-	};
-
-	QString actual = InternalApplySubstitutions(QString(input), func);
-	assert(actual == expected);
-	(void)actual;
-	(void)expected;
-}
-
-
-//-------------------------------------------------
-//  validity_checks
-//-------------------------------------------------
-
-static validity_check validity_checks[] =
-{
-	general,
-	path_names,
-	global_get_path_category,
-	machine_get_path_category,
-	[]() { substitutions("C:\\foo",					"C:\\foo"); },
-	[]() { substitutions("C:\\foo (with parens)",	"C:\\foo (with parens)"); },
-	[]() { substitutions("C:\\$(VARNAME)\\foo",		"C:\\vardata\\foo"); }
-};

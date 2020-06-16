@@ -16,6 +16,8 @@
 class MameVersion
 {
 public:
+	class Test;
+
 	// ctor
 	MameVersion(const QString &version)
 	{

@@ -29,6 +29,7 @@ QT_END_NAMESPACE
 class software_list
 {
 public:
+	class test;
 	struct software;
 
 	struct part
@@ -55,9 +56,6 @@ public:
 	// accessors
 	const QString &name() const							{ return m_name; }
 	const std::vector<software> &get_software() const	{ return m_software; }
-
-	// validity checks
-	static void test();
 
 private:
 	QString				m_name;

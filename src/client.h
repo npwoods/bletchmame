@@ -26,6 +26,8 @@
 class MameClient : QObject
 {
 public:
+	class Test;
+
 	MameClient(QObject &event_handler, const Preferences &prefs);
 	~MameClient();
 
@@ -62,7 +64,7 @@ private:
 
 	static Job						s_job;
 
-	void appendExtraArguments(QStringList &argv, const QString &extraArguments);
+	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
 };
 
 #endif // CLIENT_H
