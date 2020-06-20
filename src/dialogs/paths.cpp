@@ -29,6 +29,9 @@ private:
 public:
 	PathListModel(QObject &parent, std::function<QString(const QString &)> &&applySubstitutionsFunc);
 
+	// accessors
+	bool expandable() const { return m_expandable; }
+
 	// setting/getting full paths
 	void setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool isDir);
 	QString paths() const;
@@ -82,22 +85,26 @@ PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 	: QDialog(&parent)
 	, m_prefs(prefs)
 	, m_listViewModel(nullptr)
+	, m_listViewModelCurrentPath({ })
 {
 	m_ui = std::make_unique<Ui::PathsDialog>();
 	m_ui->setupUi(this);
 
 	// path data
 	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_path_lists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
+		m_pathLists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
+
+	// list view
+	m_listViewModel = new PathListModel(*this, [this](const QString &path) { return m_prefs.ApplySubstitutions(path); });
+	m_ui->listView->setModel(m_listViewModel);
 
 	// combo box
 	QStringListModel &comboBoxModel = *new QStringListModel(s_combo_box_strings, this);
 	m_ui->comboBox->setModel(&comboBoxModel);
 
-	// list view
-	m_listViewModel = new PathListModel(*this, [this](const QString &path) { return m_prefs.ApplySubstitutions(path); });
-	m_ui->listView->setModel(m_listViewModel);
-	updateCurrentPathList();
+	// listen to selection changes
+	connect(m_ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &, const QItemSelection &) { updateButtonsEnabled(); });
+	updateButtonsEnabled();
 }
 
 
@@ -111,25 +118,29 @@ PathsDialog::~PathsDialog()
 
 
 //-------------------------------------------------
-//  Persist
+//  persist
 //-------------------------------------------------
 
 std::vector<Preferences::global_path_type> PathsDialog::persist()
 {
-	std::vector<Preferences::global_path_type> changed_paths;
+	// first we want to make sure that m_pathLists is up to data
+	extractPathsFromListView();
+
+	// we want to return a vector identifying the paths that got changed
+	std::vector<Preferences::global_path_type> changedPaths;
 	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
 	{
-		QString &path = m_path_lists[static_cast<size_t>(type)];
+		QString &path = m_pathLists[static_cast<size_t>(type)];
 
 		// has this path changed?
 		if (path != m_prefs.GetGlobalPath(type))
 		{
 			// if so, record that it changed
 			m_prefs.SetGlobalPath(type, std::move(path));
-			changed_paths.push_back(type);
+			changedPaths.push_back(type);
 		}
 	}
-	return changed_paths;
+	return changedPaths;
 }
 
 
@@ -139,10 +150,6 @@ std::vector<Preferences::global_path_type> PathsDialog::persist()
 
 void PathsDialog::on_comboBox_currentIndexChanged(int index)
 {
-	// HACK - get around startup problems
-	if (!m_listViewModel)
-		return;
-
 	updateCurrentPathList();
 }
 
@@ -184,7 +191,32 @@ void PathsDialog::on_insertButton_clicked()
 void PathsDialog::on_deleteButton_clicked()
 {
 	m_listViewModel->erase(m_ui->listView->currentIndex().row());
-	currentPathListChanged();
+}
+
+
+//-------------------------------------------------
+//  on_listView_activated
+//-------------------------------------------------
+
+void PathsDialog::on_listView_activated(const QModelIndex &index)
+{
+	browseForPath(index.row());
+}
+
+
+//-------------------------------------------------
+//  updateButtonsEnabled
+//-------------------------------------------------
+
+void PathsDialog::updateButtonsEnabled()
+{	
+	std::optional<int> selectedItem = m_ui->listView->selectionModel()->hasSelection()
+		? m_ui->listView->selectionModel()->selectedRows()[0].row()
+		: std::optional<int>();
+	bool isSelectingPath = selectedItem.has_value() && selectedItem.value() < m_listViewModel->pathCount();
+
+	m_ui->insertButton->setEnabled(m_listViewModel->expandable());
+	m_ui->deleteButton->setEnabled(m_listViewModel->expandable() && isSelectingPath);
 }
 
 
@@ -209,14 +241,17 @@ bool PathsDialog::browseForPath(int index)
 
 
 //-------------------------------------------------
-//  currentPathListChanged
+//  extractPathsFromListView
 //-------------------------------------------------
 
-void PathsDialog::currentPathListChanged()
+void PathsDialog::extractPathsFromListView()
 {
-	// reflect changes on the m_current_path_list back into m_path_lists 
-	QString path_list = m_listViewModel->paths();
-	m_path_lists[m_ui->comboBox->currentIndex()] = std::move(path_list);
+	if (m_listViewModelCurrentPath.has_value())
+	{
+		// reflect changes on the m_current_path_list back into m_pathLists 
+		QString paths = m_listViewModel->paths();
+		m_pathLists[(int)m_listViewModelCurrentPath.value()] = std::move(paths);
+	}
 }
 
 
@@ -232,10 +267,12 @@ void PathsDialog::updateCurrentPathList()
 	bool isDir = isDirPathType(currentPathType);
 	
 	m_listViewModel->setPaths(
-		m_path_lists[(int)currentPathType],
+		m_pathLists[(int)currentPathType],
 		applySubstitutions,
 		isMultiple,
 		isDir);
+
+	m_listViewModelCurrentPath = currentPathType;
 }
 
 
@@ -516,6 +553,11 @@ QVariant PathsDialog::PathListModel::data(const QModelIndex &index, int role) co
 		result = !entry || entry->m_isValid
 			? QColorConstants::Black
 			: QColorConstants::Red;
+		break;
+
+	case Qt::EditRole:
+		if (entry)
+			result = QDir::toNativeSeparators(entry->m_path);
 		break;
 	}
 	return result;

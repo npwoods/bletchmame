@@ -42,6 +42,7 @@ private slots:
 	void on_browseButton_clicked();
 	void on_insertButton_clicked();
 	void on_deleteButton_clicked();
+	void on_listView_activated(const QModelIndex &index);
 
 private:
 	class PathListModel;
@@ -49,15 +50,17 @@ private:
 	static const size_t PATH_COUNT = (size_t)Preferences::global_path_type::COUNT;
 	static const QStringList s_combo_box_strings;
 
-	std::unique_ptr<Ui::PathsDialog>	m_ui;
-	Preferences &						m_prefs;
+	std::unique_ptr<Ui::PathsDialog>				m_ui;
+	Preferences &									m_prefs;
 
-	std::array<QString, PATH_COUNT>		m_path_lists;
-	PathListModel *						m_listViewModel;
+	std::array<QString, PATH_COUNT>					m_pathLists;
+	PathListModel *									m_listViewModel;
+	std::optional<Preferences::global_path_type>	m_listViewModelCurrentPath;
 
 	// methods
 	void updateCurrentPathList();
-	void currentPathListChanged();
+	void extractPathsFromListView();
+	void updateButtonsEnabled();
 	Preferences::global_path_type getCurrentPath() const;
 	bool browseForPath(int item);
 
