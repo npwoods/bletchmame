@@ -33,7 +33,11 @@ void MameVersion::Parse(const QString &version_string, int &major, int &minor, b
 	else
 	{
 		// we parsed the string; now check if we are dirty
-		QString non_dirty_version_string = QString::asprintf("%d.%d (mame%d%d)", major, minor, major, minor);
+		QString non_dirty_version_string = QString("%1.%2 (mame%3%4)").arg(
+			QString::number(major),
+			QString::number(minor),
+			QString::number(major),
+			QString::number(minor));
 		dirty = version_string != non_dirty_version_string;
 	}
 }

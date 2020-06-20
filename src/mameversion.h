@@ -59,10 +59,9 @@ public:
 
 	QString ToString() const
 	{
-		return QString::asprintf(
-			Dirty() ? "%d.%d (dirty)" : "%d.%d",
-			Major(),
-			Minor());
+		return QString(Dirty() ? "%1.%2 (dirty)" : "%1.%2").arg(
+			QString::number(Major()),
+			QString::number(Minor()));
 	}
 
 private:

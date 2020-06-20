@@ -146,7 +146,7 @@ private:
         std::map<QString, std::vector<QString>>     m_recent_device_files;
 	};
 
-	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	Preferences::s_path_names;
+	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names;
 
     std::array<QString, static_cast<size_t>(global_path_type::COUNT)>						m_paths;
     QString                                                                 				m_mame_extra_arguments;

@@ -367,10 +367,9 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	// warn the user if this is version of MAME is not supported
 	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION))
 	{
-		QString message = QString::asprintf(
-			"This version of MAME doesn't seem to be supported; BletchMAME requires MAME %d.%d or newer to function correctly",
-			REQUIRED_MAME_VERSION.Major(),
-			REQUIRED_MAME_VERSION.Minor());
+		QString message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
+			QString::number(REQUIRED_MAME_VERSION.Major()),
+			QString::number(REQUIRED_MAME_VERSION.Minor()));
 		messageBox(message);
 	}
 

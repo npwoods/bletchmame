@@ -174,7 +174,7 @@ QString SoftwareListViewModel::GetSelectedItem() const
 	if (sp)
 	{
 		result = sp->has_part()
-			? QString::asprintf("%s:%s", sp->software().m_name, sp->part().m_name)
+			? QString("%1:%2").arg(sp->software().m_name, sp->part().m_name)
 			: sp->software().m_name;
 	}
 	return result;
