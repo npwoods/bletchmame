@@ -20,6 +20,7 @@
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
+#include "dialogs/paths.h"
 
 
 //**************************************************************************
@@ -126,6 +127,75 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionExit_triggered()
 {
 	close();
+}
+
+
+//-------------------------------------------------
+//  on_actionPaths_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionPaths_triggered()
+{
+	std::vector<Preferences::global_path_type> changed_paths;
+
+	// show the dialog
+	{
+		Pauser pauser(*this);
+		PathsDialog dialog(*this, m_prefs);
+		dialog.exec();
+		if (dialog.result() == QDialog::DialogCode::Accepted)
+		{
+			changed_paths = dialog.persist();
+			m_prefs.Save();
+		}
+	}
+
+	// lambda to simplify "is this path changed?"
+	auto is_changed = [&changed_paths](Preferences::global_path_type type) -> bool
+	{
+		auto iter = std::find(changed_paths.begin(), changed_paths.end(), type);
+		return iter != changed_paths.end();
+	};
+
+	// did the user change the executable path?
+	if (is_changed(Preferences::global_path_type::EMU_EXECUTABLE))
+	{
+		// they did; check the MAME info DB
+		check_mame_info_status status = CheckMameInfoDatabase();
+		switch (status)
+		{
+		case check_mame_info_status::SUCCESS:
+			// we're good!
+			break;
+
+		case check_mame_info_status::MAME_NOT_FOUND:
+		case check_mame_info_status::DB_NEEDS_REBUILD:
+			// in both of these scenarios, we need to clear out the list
+			m_info_db.reset();
+
+			// start a rebuild if that is the only problem
+			if (status == check_mame_info_status::DB_NEEDS_REBUILD)
+				RefreshMameInfoDatabase();
+			break;
+
+		default:
+			throw false;
+		}
+	}
+
+#if 0
+	// did the user change the profiles path?
+	if (is_changed(Preferences::global_path_type::PROFILES))
+		UpdateProfileDirectories(true, true);
+
+	// did the user change the icons path?
+	if (is_changed(Preferences::global_path_type::ICONS))
+	{
+		m_icon_loader.RefreshIcons();
+		if (m_machine_view->GetItemCount() > 0)
+			m_machine_view->RefreshItems(0, m_machine_view->GetItemCount() - 1);
+	}
+#endif
 }
 
 
@@ -281,16 +351,12 @@ MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
 
 bool MainWindow::PromptForMameExecutable()
 {
-#if 1
-	throw std::logic_error("NYI");
-#else
-	QString path = show_specify_single_path_dialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
-	if (path.empty())
+	QString path = PathsDialog::browseForPathDialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
+	if (path.isEmpty())
 		return false;
 
 	m_prefs.SetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
 	return true;
-#endif
 }
 
 

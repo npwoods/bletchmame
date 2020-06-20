@@ -22,7 +22,7 @@ find_package(Qt5Test REQUIRED)
 
 
 #############################################################################
-# BletchMAME executable                                                     #
+# BletchMAME core (library shared by executable and tests)                  #
 #############################################################################
 
 add_library(BletchMAME_core
@@ -56,9 +56,18 @@ add_library(BletchMAME_core
 	src/dialogs/about.cpp
 	src/dialogs/about.h
 	src/dialogs/about.ui
+	src/dialogs/paths.cpp
+	src/dialogs/paths.h
+	src/dialogs/paths.ui
 	${TS_FILES}
 )
+target_include_directories(BletchMAME_core PRIVATE src)
 target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets)
+
+
+#############################################################################
+# BletchMAME executable                                                     #
+#############################################################################
 
 add_executable(BletchMAME src/main.cpp)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES})
@@ -76,10 +85,11 @@ add_executable(BletchMAME_tests
 	src/tests/softwarelist_test.cpp
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
+	src/tests/dialogs/paths_test.cpp
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Test ${EXPAT_LIBRARIES})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES})
 
 
 #############################################################################
