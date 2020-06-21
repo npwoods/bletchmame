@@ -74,12 +74,13 @@ static const util::enum_parser<bool> s_bool_parser =
 
 XmlParser::XmlParser()
 	: m_root(std::make_unique<Node>())
+	, m_skipping_depth(0)
 {
 	m_parser = XML_ParserCreate(nullptr);
 
 	XML_SetUserData(m_parser, (void *) this);
-	XML_SetElementHandler(m_parser, StartElementHandler, EndElementHandler);
-	XML_SetCharacterDataHandler(m_parser, CharacterDataHandler);
+	XML_SetElementHandler(m_parser, startElementHandler, endElementHandler);
+	XML_SetCharacterDataHandler(m_parser, characterDataHandler);
 }
 
 
@@ -102,7 +103,7 @@ bool XmlParser::Parse(QDataStream &input)
 	m_current_node = m_root;
 	m_skipping_depth = 0;
 
-	bool success = InternalParse(input);
+	bool success = internalParse(input);
 
 	m_current_node = nullptr;
 	m_skipping_depth = 0;
@@ -136,16 +137,19 @@ bool XmlParser::ParseBytes(const void *ptr, size_t sz)
 
 
 //-------------------------------------------------
-//  InternalParse
+//  internalParse
 //-------------------------------------------------
 
-bool XmlParser::InternalParse(QDataStream &input)
+bool XmlParser::internalParse(QDataStream &input)
 {
 	bool done = false;
 	char buffer[8192];
 
-	while (!done && input.device()->waitForReadyRead(-1))
+	while (!done)
 	{
+		// this seems to be necssary when reading from a QProcess
+		input.device()->waitForReadyRead(-1);
+
 		// read data
 		int last_read = input.readRawData(buffer, sizeof(buffer));
 
@@ -177,10 +181,10 @@ QString XmlParser::ErrorMessage() const
 
 
 //-------------------------------------------------
-//  GetNode
+//  getNode
 //-------------------------------------------------
 
-XmlParser::Node::ptr XmlParser::GetNode(const std::initializer_list<const char *> &elements)
+XmlParser::Node::ptr XmlParser::getNode(const std::initializer_list<const char *> &elements)
 {
 	Node::ptr node = m_root;
 
@@ -201,10 +205,10 @@ XmlParser::Node::ptr XmlParser::GetNode(const std::initializer_list<const char *
 
 
 //-------------------------------------------------
-//  StartElement
+//  startElement
 //-------------------------------------------------
 
-void XmlParser::StartElement(const char *element, const char **attributes)
+void XmlParser::startElement(const char *element, const char **attributes)
 {
 	// only try to find this node in our tables if we are not skipping
 	Node::ptr child;
@@ -264,10 +268,10 @@ void XmlParser::StartElement(const char *element, const char **attributes)
 
 
 //-------------------------------------------------
-//  EndElement
+//  endElement
 //-------------------------------------------------
 
-void XmlParser::EndElement(const char *)
+void XmlParser::endElement(const char *)
 {
 	if (m_skipping_depth)
 	{
@@ -287,10 +291,10 @@ void XmlParser::EndElement(const char *)
 
 
 //-------------------------------------------------
-//  CharacterData
+//  characterData
 //-------------------------------------------------
 
-void XmlParser::CharacterData(const char *s, int len)
+void XmlParser::characterData(const char *s, int len)
 {
 	QString text = QString::fromUtf8(s, len);
 	m_current_content.append(std::move(text));
@@ -335,35 +339,35 @@ std::string XmlParser::Escape(const QString &str)
 //**************************************************************************
 
 //-------------------------------------------------
-//  StartElementHandler
+//  startElementHandler
 //-------------------------------------------------
 
-void XmlParser::StartElementHandler(void *user_data, const char *name, const char **attributes)
+void XmlParser::startElementHandler(void *user_data, const char *name, const char **attributes)
 {
 	XmlParser *parser = (XmlParser *)user_data;
-	parser->StartElement(name, attributes);
+	parser->startElement(name, attributes);
 }
 
 
 //-------------------------------------------------
-//  EndElementHandler
+//  endElementHandler
 //-------------------------------------------------
 
-void XmlParser::EndElementHandler(void *user_data, const char *name)
+void XmlParser::endElementHandler(void *user_data, const char *name)
 {
 	XmlParser *parser = (XmlParser *)user_data;
-	parser->EndElement(name);
+	parser->endElement(name);
 }
 
 
 //-------------------------------------------------
-//  CharacterDataHandler
+//  characterDataHandler
 //-------------------------------------------------
 
-void XmlParser::CharacterDataHandler(void *user_data, const char *s, int len)
+void XmlParser::characterDataHandler(void *user_data, const char *s, int len)
 {
 	XmlParser *parser = (XmlParser *)user_data;
-	parser->CharacterData(s, len);
+	parser->characterData(s, len);
 }
 
 
