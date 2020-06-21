@@ -144,7 +144,7 @@ bool XmlParser::InternalParse(QDataStream &input)
 	bool done = false;
 	char buffer[8192];
 
-	while (!done)
+	while (!done && input.device()->waitForReadyRead(-1))
 	{
 		// read data
 		int last_read = input.readRawData(buffer, sizeof(buffer));

@@ -19,40 +19,6 @@
 
 
 //**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
-
-#if 0
-namespace
-{
-	class ClientProcess : public wxProcess
-	{
-	public:
-		ClientProcess(std::function<void(Task::emu_error status)> func)
-			: m_on_child_process_completed_func(std::move(func))
-		{
-		}
-
-		void SetProcess(std::shared_ptr<wxProcess> &&process)
-		{
-			m_process = std::move(process);
-		}
-
-		virtual void OnTerminate(int pid, int status) override
-		{
-			wxLogStatus("Worker process terminated; pid=%d status=%d", pid, status);
-			m_on_child_process_completed_func(static_cast<Task::emu_error>(status));
-		}
-
-	private:
-		std::function<void(Task::emu_error status)>	m_on_child_process_completed_func;
-		std::shared_ptr<wxProcess>					m_process;
-	};
-}
-#endif
-
-
-//**************************************************************************
 //  CORE IMPLEMENTATION
 //**************************************************************************
 
@@ -76,17 +42,16 @@ MameClient::MameClient(QObject &event_handler, const Preferences &prefs)
 
 MameClient::~MameClient()
 {
-	Abort();
-    Reset();
+	abort();
+    reset();
 }
 
 
-
 //-------------------------------------------------
-//  Launch
+//  launch (main thread)
 //-------------------------------------------------
 
-void MameClient::Launch(Task::ptr &&task)
+void MameClient::launch(Task::ptr &&task)
 {
 	// Sanity check; don't do anything if we already have a task
 	if (m_task)
@@ -94,43 +59,60 @@ void MameClient::Launch(Task::ptr &&task)
 		throw false;
 	}
 
+	// set things up
+	m_task = std::move(task);
+	m_thread = std::thread([this]() { taskThreadProc(); });
+}
+
+
+//-------------------------------------------------
+//  taskThreadProc - worker thread
+//-------------------------------------------------
+
+void MameClient::taskThreadProc()
+{
 	// identify the program
 	const QString &program = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
 	// get the arguments
-	QStringList arguments = task->GetArguments(m_prefs);
+	QStringList arguments = m_task->GetArguments(m_prefs);
 
 	// slap on any extra arguments
 	const QString &extra_arguments = m_prefs.GetMameExtraArguments();
 	appendExtraArguments(arguments, extra_arguments);
 
 	// set up the QProcess
-	auto process = std::make_shared<QProcess>();
-	m_process = process;
+	QProcess process;
 
 	// set the callback
-	auto finished_callback = [task](int exitCode, QProcess::ExitStatus exitStatus)
+	auto finished_callback = [this](int exitCode, QProcess::ExitStatus exitStatus)
 	{
-		task->OnChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
+		m_task->OnChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
 	};
-	connect(process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finished_callback);
+	connect(&process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finished_callback);
 
 	// launch the process
-	process->start(program, arguments);
-	if (!process->pid() || !process->waitForStarted() || !process->waitForReadyRead())
+	process.start(program, arguments);
+	if (!process.pid() || !process.waitForStarted() || !process.waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
 		throw false;
 	}
 
-	s_job.AddProcess(process->pid());
+	// add the process to the job
+	s_job.AddProcess(process.pid());
 
-	m_task = std::move(task);
-	m_thread = std::thread([process, this]()
+	// invoke the task's process method
+	m_task->Process(process, m_event_handler);
+
+	// unlike wxWidgets, Qt whines with warnings if you destroy a QProcess before waiting
+	// for it to exit, so we need to go through these steps here
+	const int delayMilliseconds = 1000;
+	if (!process.waitForFinished(delayMilliseconds))
 	{
-		// invoke the task's process method
-		m_task->Process(*process, m_event_handler);
-	});
+		process.kill();
+		process.waitForFinished(delayMilliseconds);
+	}
 }
 
 
@@ -170,44 +152,24 @@ void MameClient::appendExtraArguments(QStringList &argv, const QString &extraArg
 
 
 //-------------------------------------------------
-//  Reset
+//  reset
 //-------------------------------------------------
 
-void MameClient::Reset()
+void MameClient::reset()
 {
     if (m_thread.joinable())
         m_thread.join();
     if (m_task)
         m_task.reset();
-
-	if (m_process)
-	{
-		// unlike wxWidgets, Qt whines with warnings if you destroy a QProcess before waiting
-		// for it to exit
-		const int delayMilliseconds = 1000;
-		if (!m_process->waitForFinished(delayMilliseconds))
-		{
-			m_process->kill();
-			m_process->waitForFinished(delayMilliseconds);
-		}
-		m_process.reset();
-	}
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void MameClient::Abort()
+void MameClient::abort()
 {
 	if (m_task)
-	{
 		m_task->Abort();
-	}
-	if (m_process)
-	{
-		m_process->kill();
-		m_task->OnChildProcessKilled();
-	}
 }

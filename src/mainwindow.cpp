@@ -17,6 +17,7 @@
 #include "ui_mainwindow.h"
 #include "collectionviewmodel.h"
 #include "softlistviewmodel.h"
+#include "listxmltask.h"
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
@@ -250,6 +251,10 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onVersionCompleted(static_cast<VersionResultEvent &>(*event));
 	}
+	else if (event->type() == ListXmlResultEvent::eventId())
+	{
+		result = onListXmlCompleted(static_cast<ListXmlResultEvent &>(*event));
+	}
 	else
 	{
 		result = QMainWindow::event(event);
@@ -323,7 +328,7 @@ MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
 		return check_mame_info_status::MAME_NOT_FOUND;
 
 	// get the version - this should be blazingly fast
-	m_client.Launch(create_version_task());
+	m_client.launch(create_version_task());
 	while (m_client.IsTaskActive())
 	{
 		QCoreApplication::processEvents();
@@ -370,13 +375,14 @@ bool MainWindow::RefreshMameInfoDatabase()
 	if (!IsMameExecutablePresent())
 		return false;
 
-#if 1
-	throw std::logic_error("NYI");
-#else
 	// list XML
 	QString db_path = m_prefs.GetMameXmlDatabasePath();
-	m_client.Launch(create_list_xml_task(QString(db_path)));
+	m_client.launch(create_list_xml_task(std::move(db_path)));
 
+#if 1
+	//throw std::logic_error("NYI");
+	return true;
+#else
 	// and show the dialog
 	if (!show_loading_mame_info_dialog(*this, [this]() { return !m_client.IsTaskActive(); }))
 	{
@@ -426,7 +432,7 @@ bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 //  onVersionCompleted
 //-------------------------------------------------
 
-bool MainWindow::onVersionCompleted(VersionResultEvent &event)
+bool MainWindow::onVersionCompleted(const VersionResultEvent &event)
 {
 	m_mame_version = std::move(event.m_version);
 
@@ -439,7 +445,44 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 		messageBox(message);
 	}
 
-	m_client.Reset();
+	m_client.reset();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  onListXmlCompleted
+//-------------------------------------------------
+
+bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
+{
+	// check the status
+	switch (event.status())
+	{
+	case ListXmlResultEvent::Status::SUCCESS:
+		// if it succeeded, try to load the DB
+		{
+			QString db_path = m_prefs.GetMameXmlDatabasePath();
+			m_info_db.load(db_path);
+		}
+		break;
+
+	case ListXmlResultEvent::Status::ABORTED:
+		// if we aborted, do nothing
+		break;
+
+	case ListXmlResultEvent::Status::ERROR:
+		// present an error message
+		messageBox(!event.errorMessage().isEmpty()
+			? event.errorMessage()
+			: "Error building MAME info database");
+		break;
+
+	default:
+		throw false;
+	}
+
+	m_client.reset();
 	return true;
 }
 

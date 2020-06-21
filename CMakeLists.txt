@@ -32,8 +32,12 @@ add_library(BletchMAME_core
 	src/collectionviewmodel.h
 	src/info.cpp
 	src/info.h
+	src/info_builder.cpp
+	src/info_builder.h
 	src/job.cpp
 	src/job.h
+	src/listxmltask.cpp
+	src/listxmltask.h
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui
@@ -80,6 +84,7 @@ target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LI
 add_executable(BletchMAME_tests	
 	src/tests/test.cpp
 	src/tests/client_test.cpp
+	src/tests/info_builder_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
 	src/tests/softwarelist_test.cpp

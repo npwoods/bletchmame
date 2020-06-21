@@ -309,7 +309,7 @@ namespace info
 
 		// publically usable functions
 		bool load(const QString &file_name, const QString &expected_version = "");
-		bool load(QDataStream &input, size_t size, const QString &expected_version = "");
+		bool load(QDataStream &input, const QString &expected_version = "");
 		void reset();
 		std::optional<machine> find_machine(const QString &machine_name) const;
 		const QString &version() const			{ return *m_version; }

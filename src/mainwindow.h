@@ -26,6 +26,7 @@ class CollectionViewModel;
 class MameVersion;
 class SoftwareListViewModel;
 class VersionResultEvent;
+class ListXmlResultEvent;
 
 // ======================> MainWindow
 
@@ -80,8 +81,9 @@ private:
 	software_list_collection				m_software_list_collection;
 	QString									m_software_list_collection_machine_name;
 
-	// methods
-	bool onVersionCompleted(VersionResultEvent &event);
+	// task notifications
+	bool onVersionCompleted(const VersionResultEvent &event);
+	bool onListXmlCompleted(const ListXmlResultEvent &event);
 
 	// methods
 	bool IsMameExecutablePresent() const;

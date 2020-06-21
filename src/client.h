@@ -31,16 +31,16 @@ public:
 	MameClient(QObject &event_handler, const Preferences &prefs);
 	~MameClient();
 
-	// launches a task
-	void Launch(Task::ptr &&task);
+	// launches a task - only safe to run when there is no active task
+	void launch(Task::ptr &&task);
 
 	// instructs the currently running task to stop, and ensures that
 	// the task's premature termination will not cause problems
-	void Abort();
+	void abort();
 
 	// called when a task's final event is received, and waits for the task
 	// to complete
-	void Reset();
+	void reset();
 
 	template<class T> std::shared_ptr<T> GetCurrentTask()
 	{
@@ -56,14 +56,15 @@ public:
 	template<class T> bool IsTaskActive() const { return dynamic_cast<T *>(m_task.get()) != nullptr; }
 
 private:
+	static Job						s_job;
+
 	QObject &						m_event_handler;
 	const Preferences &				m_prefs;
 	Task::ptr						m_task;
-	std::shared_ptr<QProcess>		m_process;
 	std::thread						m_thread;
 
-	static Job						s_job;
-
+	// private methods
+	void taskThreadProc();
 	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
 };
 

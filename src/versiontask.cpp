@@ -36,11 +36,11 @@ namespace
 //  IMPLEMENTATION
 //**************************************************************************
 
+QEvent::Type VersionResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+
 //-------------------------------------------------
 //  VersionResultEvent ctor
 //-------------------------------------------------
-
-QEvent::Type VersionResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 
 VersionResultEvent::VersionResultEvent(QString &&version)
 	: QEvent(eventId())

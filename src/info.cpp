@@ -36,9 +36,10 @@ static bool unaligned_check(const void *ptr, T value)
 //  load_data
 //-------------------------------------------------
 
-static std::vector<std::uint8_t> load_data(QDataStream &input, size_t size, info::binaries::header &header)
+static std::vector<std::uint8_t> load_data(QDataStream &input, info::binaries::header &header)
 {
 	// get the file size and read the header
+	size_t size = util::safe_static_cast<size_t>(input.device()->bytesAvailable());
 	if (size <= sizeof(header))
 		return {};
 	if (input.readRawData((char *) &header, sizeof(header)) != sizeof(header))
@@ -84,15 +85,15 @@ bool info::database::load(const QString &file_name, const QString &expected_vers
 
 	// open up the file
 	QDataStream input(&file);
-	return load(input, file.bytesAvailable(), expected_version);
+	return load(input, expected_version);
 }
 
 
-bool info::database::load(QDataStream &input, size_t size, const QString &expected_version)
+bool info::database::load(QDataStream &input, const QString &expected_version)
 {
 	// try to load the data
 	binaries::header salted_hdr;
-	std::vector<std::uint8_t> data = load_data(input, size, salted_hdr);
+	std::vector<std::uint8_t> data = load_data(input, salted_hdr);
 	if (data.empty())
 		return false;
 

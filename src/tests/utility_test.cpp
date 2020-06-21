@@ -2,7 +2,7 @@
 
     utility_test.cpp
 
-    Unit tests for utility_test.cpp
+    Unit tests for utility.cpp
 
 ***************************************************************************/
 
