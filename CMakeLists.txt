@@ -91,6 +91,7 @@ add_executable(BletchMAME_tests
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
 	src/tests/dialogs/paths_test.cpp
+	src/tests/resources.qrc
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src src/test)

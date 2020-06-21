@@ -31,13 +31,11 @@ private slots:
 void software_list::test::general()
 {
 	// get the test asset
-	std::optional<std::string_view> asset = load_test_asset("softlist");
-	if (!asset.has_value())
-		return;
+	QFile testAsset(":/resources/softlist.xml");
+	QVERIFY(testAsset.open(QFile::ReadOnly));
 
-	// try to load it
-	QByteArray byte_array(asset.value().data(), util::safe_static_cast<int>(asset.value().size()));
-	QDataStream stream(byte_array);
+	// and read it
+	QDataStream stream(&testAsset);
 	software_list softlist;
 	QString error_message;
 	bool success = softlist.load(stream, error_message);

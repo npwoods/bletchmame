@@ -14,9 +14,6 @@
 #include <QTest>
 
 #include <functional>
-#include <optional>
-
-std::optional<std::string_view> load_test_asset(const char *asset_name);
 
 class TestFixtureBase
 {

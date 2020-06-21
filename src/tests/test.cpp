@@ -11,17 +11,23 @@
 static std::list<std::function<std::unique_ptr<QObject>()>> s_testFuncs;
 
 
-std::optional<std::string_view> load_test_asset(const char *asset_name)
-{
-    return { };
-}
+//**************************************************************************
+//  IMPLEMENTATION
+//**************************************************************************
 
+//-------------------------------------------------
+//  accumulateTest
+//-------------------------------------------------
 
 void TestFixtureBase::accumulateTest(std::function<std::unique_ptr<QObject>()> &&func)
 {
     s_testFuncs.push_back(std::move(func));
 }
 
+
+//-------------------------------------------------
+//  main
+//-------------------------------------------------
 
 int main(int argc, char *argv[])
 {

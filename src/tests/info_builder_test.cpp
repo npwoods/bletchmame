@@ -6,6 +6,8 @@
 
 ***************************************************************************/
 
+#include <QBuffer>
+
 #include "info_builder.h"
 #include "test.h"
 
@@ -19,7 +21,7 @@ namespace
         void general();
 
 	private:
-		bool readSampleListXml(QDataStream &output);
+		void readSampleListXml(QDataStream &output);
     };
 }
 
@@ -32,25 +34,21 @@ namespace
 //  readSampleListXml
 //-------------------------------------------------
 
-bool Test::readSampleListXml(QDataStream &output)
+void Test::readSampleListXml(QDataStream &output)
 {
-	std::optional<std::string_view> asset = load_test_asset("listxml");
-	if (asset.has_value())
-	{
-		QByteArray byte_array(asset.value().data(), util::safe_static_cast<int>(asset.value().size()));
-		QDataStream input(byte_array);
+	// get the test asset
+	QFile testAsset(":/resources/listxml.xml");
+	QVERIFY(testAsset.open(QFile::ReadOnly));
+	QDataStream input(&testAsset);
 
-		// process the sample -listxml output
-		info::database_builder builder;
-		QString error_message;
-		bool success = builder.process_xml(input, error_message);
-		if (!success || !error_message.isEmpty())
-			throw false;
+	// process the sample -listxml output
+	info::database_builder builder;
+	QString error_message;
+	bool success = builder.process_xml(input, error_message);
+	QVERIFY(success && error_message.isEmpty());
 
-		// and emit the results into the memory stream
-		builder.emit_info(output);
-	}
-	return asset.has_value();
+	// and emit the results into the memory stream
+	builder.emit_info(output);
 }
 
 
@@ -63,10 +61,12 @@ void Test::general()
 	// build the sample database
 	QByteArray byteArray;
 	{
-		QDataStream byteArrayStream;
-		if (!readSampleListXml(byteArrayStream))
-			return;
+		QBuffer buffer(&byteArray);
+		buffer.open(QIODevice::WriteOnly);
+		QDataStream bufferStream(&buffer);
+		readSampleListXml(bufferStream);
 	}
+	QVERIFY(byteArray.size() > 0);
 
 	// and process it, validating we've done so successfully
 	QDataStream input(byteArray);
