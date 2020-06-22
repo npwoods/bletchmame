@@ -177,7 +177,7 @@ void MainWindow::on_actionPaths_triggered()
 
 			// start a rebuild if that is the only problem
 			if (status == check_mame_info_status::DB_NEEDS_REBUILD)
-				RefreshMameInfoDatabase();
+				refreshMameInfoDatabase();
 			break;
 
 		default:
@@ -209,6 +209,16 @@ void MainWindow::on_actionAbout_triggered()
 {
 	AboutDialog dlg;
 	dlg.exec();
+}
+
+
+//-------------------------------------------------
+//  on_actionRefresh_Machine_Info_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionRefresh_Machine_Info_triggered()
+{
+	refreshMameInfoDatabase();
 }
 
 
@@ -303,7 +313,7 @@ void MainWindow::InitialCheckMameInfoDatabase()
 
 		case check_mame_info_status::DB_NEEDS_REBUILD:
 			// start a rebuild; whether the process succeeds or fails, we're done
-			RefreshMameInfoDatabase();
+			refreshMameInfoDatabase();
 			done = true;
 			break;
 
@@ -367,10 +377,10 @@ bool MainWindow::PromptForMameExecutable()
 
 
 //-------------------------------------------------
-//  RefreshMameInfoDatabase
+//  refreshMameInfoDatabase
 //-------------------------------------------------
 
-bool MainWindow::RefreshMameInfoDatabase()
+bool MainWindow::refreshMameInfoDatabase()
 {
 	// sanity check; bail if we can't find the executable
 	if (!IsMameExecutablePresent())
