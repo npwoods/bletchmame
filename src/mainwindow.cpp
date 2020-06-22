@@ -21,6 +21,7 @@
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
+#include "dialogs/loading.h"
 #include "dialogs/paths.h"
 
 
@@ -379,15 +380,15 @@ bool MainWindow::RefreshMameInfoDatabase()
 	QString db_path = m_prefs.GetMameXmlDatabasePath();
 	m_client.launch(create_list_xml_task(std::move(db_path)));
 
-#if 1
-	//throw std::logic_error("NYI");
-	return true;
-#else
 	// and show the dialog
-	if (!show_loading_mame_info_dialog(*this, [this]() { return !m_client.IsTaskActive(); }))
 	{
-		m_client.Abort();
-		return false;
+		LoadingDialog dlg(*this, [this]() { return !m_client.IsTaskActive(); });
+		dlg.exec();
+		if (dlg.result() != QDialog::DialogCode::Accepted)
+		{
+			m_client.abort();
+			return false;
+		}
 	}
 
 	// we've succeeded; load the DB
@@ -399,7 +400,6 @@ bool MainWindow::RefreshMameInfoDatabase()
 	}
 
 	return true;
-#endif
 }
 
 
