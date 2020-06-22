@@ -11,7 +11,7 @@
 #ifndef MAMEVERSION_H
 #define MAMEVERSION_H
 
-#include <QString.h>
+#include <QString>
 
 class MameVersion
 {

@@ -15,6 +15,7 @@
 #include <optional>
 #include <functional>
 #include <stdexcept>
+#include <wctype.h>
 
 #include <QFileInfo>
 

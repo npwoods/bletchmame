@@ -12,6 +12,7 @@
 #define COLLECTIONVIEWMODEL_H
 
 #include <QAbstractItemModel>
+#include <memory>
 
 #include "prefs.h"
 
