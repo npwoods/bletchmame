@@ -13,10 +13,15 @@
 
 #include <iostream>
 #include <thread>
-#include <QProcess>
+#include <QSemaphore>
+#include <QMutex>
 
 #include "task.h"
 #include "job.h"
+
+QT_BEGIN_NAMESPACE
+class QProcess;
+QT_END_NAMESPACE
 
 
 //**************************************************************************
@@ -28,7 +33,7 @@ class MameClient : QObject
 public:
 	class Test;
 
-	MameClient(QObject &event_handler, const Preferences &prefs);
+	MameClient(QObject &eventHandler, const Preferences &prefs);
 	~MameClient();
 
 	// launches a task - only safe to run when there is no active task
@@ -40,7 +45,7 @@ public:
 
 	// called when a task's final event is received, and waits for the task
 	// to complete
-	void reset();
+	void waitForCompletion();
 
 	template<class T> std::shared_ptr<T> GetCurrentTask()
 	{
@@ -58,10 +63,18 @@ public:
 private:
 	static Job						s_job;
 
-	QObject &						m_event_handler;
+	// variables configured at ctor
+	QObject &						m_eventHandler;
 	const Preferences &				m_prefs;
+	QSemaphore						m_taskStartSemaphore;
+	QMutex							m_processMutex;
+
+	// runtime variables administered from the main thread
 	Task::ptr						m_task;
-	std::thread						m_thread;
+	std::thread						m_workerThread;
+
+	// runtime variables administered from the worker thread
+	std::unique_ptr<QProcess>		m_process;
 
 	// private methods
 	void taskThreadProc();

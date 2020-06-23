@@ -50,24 +50,24 @@ public:
 		KILLED,					// the process was killed
 	};
 
-	typedef std::shared_ptr<Task> ptr;
+	typedef std::unique_ptr<Task> ptr;
 	virtual ~Task();
 
 protected:
 	// called on the main thread to trigger a shutdown (e.g. - BletchMAME is closed)
-	virtual void Abort() = 0;
+	virtual void abort() = 0;
 
 	// retrieves the arguments to be used at the command line
-	virtual QStringList GetArguments(const Preferences &prefs) const = 0;
+	virtual QStringList getArguments(const Preferences &prefs) const = 0;
 
 	// called on a child thread tasked with ownership of a MAME child process
-	virtual void Process(QProcess &process, QObject &handler) = 0;
+	virtual void process(QProcess &process, QObject &handler) = 0;
 
 	// called on the main thread when the child process has been completed
-	virtual void OnChildProcessCompleted(emu_error status);
+	virtual void onChildProcessCompleted(emu_error status);
 
 	// called on the main thread when the child process has been killed
-	virtual void OnChildProcessKilled();
+	virtual void onChildProcessKilled();
 };
 
 

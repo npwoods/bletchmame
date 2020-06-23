@@ -442,7 +442,7 @@ bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 //  onVersionCompleted
 //-------------------------------------------------
 
-bool MainWindow::onVersionCompleted(const VersionResultEvent &event)
+bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 {
 	m_mame_version = std::move(event.m_version);
 
@@ -455,7 +455,7 @@ bool MainWindow::onVersionCompleted(const VersionResultEvent &event)
 		messageBox(message);
 	}
 
-	m_client.reset();
+	m_client.waitForCompletion();
 	return true;
 }
 
@@ -492,7 +492,7 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 		throw false;
 	}
 
-	m_client.reset();
+	m_client.waitForCompletion();
 	return true;
 }
 

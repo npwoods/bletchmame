@@ -25,9 +25,9 @@ namespace
 	class VersionTask : public Task
 	{
 	protected:
-		virtual QStringList GetArguments(const Preferences &) const;
-		virtual void Process(QProcess &process, QObject &handler) override;
-		virtual void Abort() override;
+		virtual QStringList getArguments(const Preferences &) const;
+		virtual void process(QProcess &process, QObject &handler) override;
+		virtual void abort() override;
 	};
 };
 
@@ -50,30 +50,30 @@ VersionResultEvent::VersionResultEvent(QString &&version)
 
 
 //-------------------------------------------------
-//  GetArguments
+//  getArguments
 //-------------------------------------------------
 
-QStringList VersionTask::GetArguments(const Preferences &) const
+QStringList VersionTask::getArguments(const Preferences &) const
 {
 	return { "-version" };
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void VersionTask::Abort()
+void VersionTask::abort()
 {
 	// do nothing
 }
 
 
 //-------------------------------------------------
-//  Process
+//  process
 //-------------------------------------------------
 
-void VersionTask::Process(QProcess &process, QObject &handler)
+void VersionTask::process(QProcess &process, QObject &handler)
 {
 	// get the version
 	auto version = QString::fromLocal8Bit(process.readLine());

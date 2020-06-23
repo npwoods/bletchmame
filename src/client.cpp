@@ -30,7 +30,7 @@ Job MameClient::s_job;
 //-------------------------------------------------
 
 MameClient::MameClient(QObject &event_handler, const Preferences &prefs)
-    : m_event_handler(event_handler)
+    : m_eventHandler(event_handler)
 	, m_prefs(prefs)
 {
 }
@@ -43,7 +43,6 @@ MameClient::MameClient(QObject &event_handler, const Preferences &prefs)
 MameClient::~MameClient()
 {
 	abort();
-    reset();
 }
 
 
@@ -54,14 +53,15 @@ MameClient::~MameClient()
 void MameClient::launch(Task::ptr &&task)
 {
 	// Sanity check; don't do anything if we already have a task
-	if (m_task)
-	{
+	if (m_task || m_workerThread.joinable() || m_process)
 		throw false;
-	}
 
 	// set things up
 	m_task = std::move(task);
-	m_thread = std::thread([this]() { taskThreadProc(); });
+	m_workerThread = std::thread([this]() { taskThreadProc(); });
+
+	// wait for the worker thread to start up and be ready
+	m_taskStartSemaphore.acquire();
 }
 
 
@@ -75,43 +75,55 @@ void MameClient::taskThreadProc()
 	const QString &program = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
 	// get the arguments
-	QStringList arguments = m_task->GetArguments(m_prefs);
+	QStringList arguments = m_task->getArguments(m_prefs);
 
 	// slap on any extra arguments
 	const QString &extra_arguments = m_prefs.GetMameExtraArguments();
 	appendExtraArguments(arguments, extra_arguments);
 
 	// set up the QProcess
-	QProcess process;
+	{
+		QMutexLocker locker(&m_processMutex);
+		m_process = std::make_unique<QProcess>();
+	}
 
 	// set the callback
-	auto finished_callback = [this](int exitCode, QProcess::ExitStatus exitStatus)
+	auto finishedCallback = [this](int exitCode, QProcess::ExitStatus exitStatus)
 	{
-		m_task->OnChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
+		m_task->onChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
 	};
-	connect(&process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finished_callback);
+	connect(m_process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
 
 	// launch the process
-	process.start(program, arguments);
-	if (!process.pid() || !process.waitForStarted() || !process.waitForReadyRead())
+	m_process->start(program, arguments);
+	if (!m_process->pid() || !m_process->waitForStarted() || !m_process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
 		throw false;
 	}
 
 	// add the process to the job
-	s_job.AddProcess(process.pid());
+	s_job.AddProcess(m_process->pid());
+
+	// we're done setting up; signal to the main thread
+	m_taskStartSemaphore.release();
 
 	// invoke the task's process method
-	m_task->Process(process, m_event_handler);
+	m_task->process(*m_process, m_eventHandler);
 
 	// unlike wxWidgets, Qt whines with warnings if you destroy a QProcess before waiting
 	// for it to exit, so we need to go through these steps here
 	const int delayMilliseconds = 1000;
-	if (!process.waitForFinished(delayMilliseconds))
+	if (!m_process->waitForFinished(delayMilliseconds))
 	{
-		process.kill();
-		process.waitForFinished(delayMilliseconds);
+		m_process->kill();
+		m_process->waitForFinished(delayMilliseconds);
+	}
+
+	// delete the process object
+	{
+		QMutexLocker locker(&m_processMutex);
+		m_process.reset();
 	}
 }
 
@@ -152,13 +164,13 @@ void MameClient::appendExtraArguments(QStringList &argv, const QString &extraArg
 
 
 //-------------------------------------------------
-//  reset
+//  waitForCompletion
 //-------------------------------------------------
 
-void MameClient::reset()
+void MameClient::waitForCompletion()
 {
-    if (m_thread.joinable())
-        m_thread.join();
+    if (m_workerThread.joinable())
+		m_workerThread.join();
     if (m_task)
         m_task.reset();
 }
@@ -170,6 +182,20 @@ void MameClient::reset()
 
 void MameClient::abort()
 {
+	// tell the task itself to abort
 	if (m_task)
-		m_task->Abort();
+		m_task->abort();
+
+	// kill the process
+	{
+		QMutexLocker locker(&m_processMutex);
+		if (m_process)
+		{
+			m_process->kill();
+			m_task->onChildProcessKilled();
+		}
+	}
+
+	// finally just wait for completion
+	waitForCompletion();
 }

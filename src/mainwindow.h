@@ -83,7 +83,7 @@ private:
 	QString									m_software_list_collection_machine_name;
 
 	// task notifications
-	bool onVersionCompleted(const VersionResultEvent &event);
+	bool onVersionCompleted(VersionResultEvent &event);
 	bool onListXmlCompleted(const ListXmlResultEvent &event);
 
 	// methods

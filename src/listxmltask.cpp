@@ -30,15 +30,15 @@ namespace
 		ListXmlTask(QString &&output_filename);
 
 	protected:
-		virtual QStringList GetArguments(const Preferences &) const;
-		virtual void Process(QProcess &process, QObject &handler) override;
-		virtual void Abort() override;
+		virtual QStringList getArguments(const Preferences &) const;
+		virtual void process(QProcess &process, QObject &handler) override;
+		virtual void abort() override;
 
 	private:
-		QString		m_output_filename;
+		QString			m_output_filename;
 		volatile bool	m_aborted;
 
-		void InternalProcess(QProcess &process);
+		void internalProcess(QProcess &process);
 	};
 
 	// ======================> list_xml_exception
@@ -76,37 +76,37 @@ ListXmlTask::ListXmlTask(QString &&output_filename)
 
 
 //-------------------------------------------------
-//  GetArguments
+//  getArguments
 //-------------------------------------------------
 
-QStringList ListXmlTask::GetArguments(const Preferences &) const
+QStringList ListXmlTask::getArguments(const Preferences &) const
 {
 	return { "-listxml", "-nodtd" };
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void ListXmlTask::Abort()
+void ListXmlTask::abort()
 {
 	m_aborted = true;
 }
 
 
 //-------------------------------------------------
-//  Process
+//  process
 //-------------------------------------------------
 
-void ListXmlTask::Process(QProcess &process, QObject &handler)
+void ListXmlTask::process(QProcess &process, QObject &handler)
 {
 	ListXmlResultEvent::Status status;
 	QString errorMessage;
 	try
 	{
 		// process
-		InternalProcess(process);
+		internalProcess(process);
 
 		// we've succeeded!
 		status = ListXmlResultEvent::Status::SUCCESS;
@@ -128,7 +128,7 @@ void ListXmlTask::Process(QProcess &process, QObject &handler)
 //  InternalProcess
 //-------------------------------------------------
 
-void ListXmlTask::InternalProcess(QProcess &process)
+void ListXmlTask::internalProcess(QProcess &process)
 {
 	info::database_builder builder;
 
