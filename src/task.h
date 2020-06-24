@@ -50,7 +50,7 @@ public:
 		KILLED,					// the process was killed
 	};
 
-	typedef std::unique_ptr<Task> ptr;
+	typedef std::shared_ptr<Task> ptr;
 	virtual ~Task();
 
 protected:

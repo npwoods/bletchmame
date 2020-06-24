@@ -43,12 +43,17 @@ add_library(BletchMAME_core
 	src/mainwindow.ui
 	src/mameversion.cpp
 	src/mameversion.h
+	src/messagequeue.h
 	src/prefs.cpp
 	src/prefs.h
+	src/runmachinetask.cpp
+	src/runmachinetask.h
 	src/softlistviewmodel.cpp
 	src/softlistviewmodel.h
 	src/softwarelist.cpp
 	src/softwarelist.h
+	src/status.cpp
+	src/status.h
 	src/utility.cpp
 	src/utility.h
 	src/task.cpp
@@ -68,7 +73,7 @@ add_library(BletchMAME_core
 	src/dialogs/paths.ui
 	${TS_FILES}
 )
-target_include_directories(BletchMAME_core PRIVATE src)
+target_include_directories(BletchMAME_core PRIVATE src lib)
 target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets)
 
 
@@ -77,6 +82,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets)
 #############################################################################
 
 add_executable(BletchMAME src/main.cpp)
+target_include_directories(BletchMAME PRIVATE src lib)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES})
 
 
@@ -90,6 +96,7 @@ add_executable(BletchMAME_tests
 	src/tests/info_builder_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
+	src/tests/runmachinetask_test.cpp
 	src/tests/softwarelist_test.cpp
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
@@ -97,7 +104,7 @@ add_executable(BletchMAME_tests
 	src/tests/resources.qrc
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
-target_include_directories(BletchMAME_tests PRIVATE src src/test)
+target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
 target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES})
 
 

@@ -16,10 +16,13 @@
 #include "client.h"
 #include "info.h"
 #include "softwarelist.h"
+#include "status.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 class QLineEdit;
+class QTableWidgetItem;
 QT_END_NAMESPACE
 
 class CollectionViewModel;
@@ -46,6 +49,7 @@ private slots:
 	void on_actionPaths_triggered();
 	void on_actionRefresh_Machine_Info_triggered();
 	void on_actionBletchMAME_web_site_triggered();
+	void on_machinesTableView_activated(const QModelIndex &index);
 	void on_tabWidget_currentChanged(int index);
 
 private:
@@ -60,7 +64,7 @@ private:
 	class Pauser
 	{
 	public:
-		Pauser(MainWindow &host)
+		Pauser(MainWindow &host, bool actually_pause = true)
 		{
 		}
 	};
@@ -71,6 +75,7 @@ private:
 	MameClient								m_client;
 	CollectionViewModel *					m_machinesViewModel;
 	SoftwareListViewModel *					m_softwareListViewModel;
+	QTimer *								m_pingTimer;
 
 	// information retrieved by -version
 	QString									m_mame_version;
@@ -81,6 +86,9 @@ private:
 	// other
 	software_list_collection				m_software_list_collection;
 	QString									m_software_list_collection_machine_name;
+	std::optional<status::state>			m_state;
+	bool									m_pinging;
+	const Pauser *							m_current_pauser;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -96,7 +104,20 @@ private:
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);
 	void updateSoftwareList();
+	bool AttachToRootPanel() const;
+	void Run(const info::machine &machine, const software_list::software *software = nullptr, void *profile = nullptr);
+	QString PreflightCheck();
+	info::machine GetMachineFromIndex(long item) const;
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
+	void UpdateEmulationSession();
+	void UpdateTitleBar();
+	void UpdateMenuBar();
+	void Issue(const std::vector<QString> &args);
+	void Issue(const std::initializer_list<QString> &args);
+	void Issue(const char *command);
+	void InvokePing();
+	void InvokeExit();
+	void ChangePaused(bool paused);
 };
 
 #endif // MAINWINDOW_H

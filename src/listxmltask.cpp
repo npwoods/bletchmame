@@ -176,5 +176,5 @@ ListXmlResultEvent::ListXmlResultEvent(Status status, QString &&errorMessage)
 
 Task::ptr create_list_xml_task(QString &&dest)
 {
-	return std::make_unique<ListXmlTask>(std::move(dest));
+	return std::make_shared<ListXmlTask>(std::move(dest));
 }

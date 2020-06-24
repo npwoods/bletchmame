@@ -8,6 +8,7 @@
 
 #include <QThread>
 #include <QMessageBox>
+#include <QTimer>
 #include <QStringListModel>
 #include <QDesktopServices>
 #include <QUrl>
@@ -18,6 +19,7 @@
 #include "collectionviewmodel.h"
 #include "softlistviewmodel.h"
 #include "listxmltask.h"
+#include "runmachinetask.h"
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
@@ -75,6 +77,9 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_client(*this, m_prefs)
 	, m_machinesViewModel(nullptr)
 	, m_softwareListViewModel(nullptr)
+	, m_pingTimer(nullptr)
+	, m_pinging(false)
+	, m_current_pauser(nullptr)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -106,6 +111,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
+
+	// set up the ping timer
+	m_pingTimer = new QTimer(this);
+	connect(m_pingTimer, &QTimer::timeout, this, &MainWindow::InvokePing);
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -229,6 +238,17 @@ void MainWindow::on_actionRefresh_Machine_Info_triggered()
 void MainWindow::on_actionBletchMAME_web_site_triggered()
 {
 	QDesktopServices::openUrl(QUrl("https://www.bletchmame.org/"));
+}
+
+
+//-------------------------------------------------
+//  on_machinesTableView_activated
+//-------------------------------------------------
+
+void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
+{
+	const info::machine machine = GetMachineFromIndex(index.row());
+	Run(machine);
 }
 
 
@@ -414,6 +434,187 @@ bool MainWindow::refreshMameInfoDatabase()
 
 
 //-------------------------------------------------
+//  AttachToRootPanel
+//-------------------------------------------------
+
+bool MainWindow::AttachToRootPanel() const
+{
+	// Targetting subwindows with -attach_window was introduced in between MAME 0.217 and MAME 0.218
+	const MameVersion REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW = MameVersion(0, 217, true);
+
+	// Are we the required version?
+	return isMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
+}
+
+
+//-------------------------------------------------
+//  Run
+//-------------------------------------------------
+
+void MainWindow::Run(const info::machine &machine, const software_list::software *software, void *profile)
+{
+	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
+	QString preflight_errors = PreflightCheck();
+	if (!preflight_errors.isEmpty())
+	{
+		messageBox(preflight_errors);
+		return;
+	}
+
+	// identify the software name; we either used what was passed in, or we use what is in a profile
+	// for which no images are mounted (suggesting a fresh launch)
+	QString software_name;
+	if (software)
+		software_name = software->m_name;
+#if 0
+	else if (profile && profile->images().empty())
+		software_name = profile->software();
+#endif
+
+	// we need to have full information to support the emulation session; retrieve
+	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
+	Pauser fake_pauser(*this, false);
+
+	// run the emulation
+	Task::ptr task = std::make_shared<RunMachineTask>(
+		machine,
+		std::move(software_name),
+		AttachToRootPanel() ? *m_ui->centralwidget : *this);
+	m_client.launch(std::move(task));
+
+	// set up running state and subscribe to events
+	m_state.emplace();
+#if 0
+	m_state->paused().subscribe([this]() { UpdateTitleBar(); });
+	m_state->phase().subscribe([this]() { UpdateStatusBar(); });
+	m_state->speed_percent().subscribe([this]() { UpdateStatusBar(); });
+	m_state->effective_frameskip().subscribe([this]() { UpdateStatusBar(); });
+	m_state->startup_text().subscribe([this]() { UpdateStatusBar(); });
+	m_state->images().subscribe([this]() { UpdateStatusBar(); });
+#endif
+
+	// mouse capturing is a bit more involved
+#if 0
+	m_capture_mouse = observable::observe(m_state->has_input_using_mouse() && !m_menu_bar_shown);
+	m_capture_mouse.subscribe([this]()
+		{
+			Issue({ "SET_MOUSE_ENABLED", m_capture_mouse ? "true" : "false" });
+			if (m_capture_mouse)
+				SetCursor(wxCursor(wxCURSOR_BLANK));
+			else
+				SetCursor(wxNullCursor);
+		});
+#endif
+
+	// we have a session running; hide/show things respectively
+	UpdateEmulationSession();
+
+	// set the focus to the main window
+	setFocus();
+
+	// wait for first ping
+	m_pinging = true;
+	while (m_pinging)
+	{
+		if (!m_state.has_value())
+			return;
+		QCoreApplication::processEvents();
+		QThread::yieldCurrentThread();
+	}
+
+	// set up profile (if we have one)
+#if 0
+	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
+	m_current_profile_auto_save_state = profile ? profile->auto_save_states() : false;
+	if (profile)
+	{
+		// load all images
+		for (const auto &image : profile->images())
+			Issue({ "load", image.m_tag, image.m_path });
+
+		// if we have a save state, start it
+		if (profile->auto_save_states())
+		{
+			QString save_state_path = profiles::profile::change_path_save_state(profile->path());
+			if (wxFile::Exists(save_state_path))
+				Issue({ "state_load", save_state_path });
+		}
+	}
+#endif
+
+	// do we have any images that require images?
+	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [](const status::image &image)
+	{
+		return image.m_must_be_loaded && image.m_file_name.isEmpty();
+	});
+	if (iter != m_state->images().get().cend())
+	{
+		throw std::logic_error("NYI");
+#if 0
+		// if so, show the dialog
+		ImagesHost images_host(*this);
+		if (!show_images_dialog_cancellable(images_host))
+		{
+			Issue("exit");
+			return;
+		}
+#endif
+	}
+
+	// unpause
+	ChangePaused(false);
+}
+
+
+//-------------------------------------------------
+//  PreflightCheck - run checks on MAME to catch
+//	obvious problems
+//-------------------------------------------------
+
+QString MainWindow::PreflightCheck()
+{
+#if 0
+	// get a list of the plugin paths, checking for the obvious problem where there are no paths
+	std::vector<QString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PLUGINS);
+	if (paths.empty())
+		return QString::Format("No plug-in paths are specified.  Under these circumstances, the required \"%s\" plug-in cannot be loaded.", WORKER_UI_PLUGIN_NAME);
+
+	// apply substitutions and normalize the paths
+	QString path_separator = wxFileName::GetPathSeparator();
+	for (QString &path : paths)
+	{
+		path = m_prefs.ApplySubstitutions(path);
+		if (!path.EndsWith(path_separator))
+			path += path_separator;
+	}
+
+	// check to see if worker_ui exists
+	QString worker_ui_subpath = QString(WORKER_UI_PLUGIN_NAME) + path_separator;
+	bool worker_ui_exists = util::find_if_ptr(paths, [&worker_ui_subpath](const QString &path)
+		{
+			return wxFile::Exists(path + worker_ui_subpath + wxT("init.lua"))
+				&& wxFile::Exists(path + worker_ui_subpath + wxT("plugin.json"));
+		});
+
+	// if worker_ui doesn't exist, report an error message
+	if (!worker_ui_exists)
+	{
+		QString message = QString::Format("Could not find the %s plug in in the following directories:\n\n", WORKER_UI_PLUGIN_NAME);
+		for (const QString &path : paths)
+		{
+			message += path;
+			message += wxT("\n");
+		}
+		return message;
+	}
+#endif
+
+	// success!
+	return QString();
+}
+
+
+//-------------------------------------------------
 //  messageBox
 //-------------------------------------------------
 
@@ -543,6 +744,20 @@ void MainWindow::updateSoftwareList()
 
 
 //-------------------------------------------------
+//  GetMachineFromIndex
+//-------------------------------------------------
+
+info::machine MainWindow::GetMachineFromIndex(long item) const
+{
+	// look up the indirection
+	int machine_index = m_machinesViewModel->getActualIndex(item);
+
+	// and look up in the info DB
+	return m_info_db.machines()[machine_index];
+}
+
+
+//-------------------------------------------------
 //  GetMachineListItemText
 //-------------------------------------------------
 
@@ -559,5 +774,152 @@ const QString &MainWindow::GetMachineListItemText(info::machine machine, long co
 }
 
 
+//-------------------------------------------------
+//  UpdateEmulationSession
+//-------------------------------------------------
+
+void MainWindow::UpdateEmulationSession()
+{
+	// is the emulation session active?
+	bool is_active = m_state.has_value();
+
+	// if so, hide the machine list UX
+	m_ui->tabWidget->setVisible(!is_active);
+	m_ui->centralwidget->setVisible(!is_active || AttachToRootPanel());
+
+	// ...and enable pinging
+	if (is_active)
+		m_pingTimer->start(500);
+	else
+		m_pingTimer->stop();
+
+	// ...and cascade other updates
+	UpdateTitleBar();
+	UpdateMenuBar();
+}
 
 
+//-------------------------------------------------
+//  UpdateTitleBar
+//-------------------------------------------------
+
+void MainWindow::UpdateTitleBar()
+{
+	QString title_text = QCoreApplication::applicationName();
+	if (m_state.has_value())
+	{
+		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->getMachine().description();
+
+		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
+		if (m_state->paused().get() && !m_current_pauser)
+			title_text += " PAUSED";
+	}
+	setWindowTitle(title_text);
+}
+
+
+//-------------------------------------------------
+//  UpdateMenuBar
+//-------------------------------------------------
+
+void MainWindow::UpdateMenuBar()
+{
+#if 0
+	// are we supposed to show the menu bar?
+	m_menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
+
+	// is this different than the current state?
+	if (m_menu_bar_shown.get() != WindowHasMenuBar(*this))
+	{
+		// when we hide the menu bar, we disable the accelerators
+		m_menu_bar->SetAcceleratorTable(m_menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
+
+#ifdef WIN32
+		// Win32 specific code
+		SetMenu(GetHWND(), m_menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
+#else
+		throw false;
+#endif
+	}
+#endif
+}
+
+
+//**************************************************************************
+//  RUNTIME CONTROL
+//
+//	Actions that affect MAME at runtime go here.  The naming convention is
+//	that "invocation actions" take the form InvokeXyz(), whereas methods
+//	that change something take the form ChangeXyz()
+//**************************************************************************
+
+//-------------------------------------------------
+//  Issue
+//-------------------------------------------------
+
+void MainWindow::Issue(const std::vector<QString> &args)
+{
+	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
+	if (!task)
+		return;
+
+	task->issue(args);
+}
+
+
+void MainWindow::Issue(const std::initializer_list<QString> &args)
+{
+	Issue(std::vector<QString>(args));
+}
+
+
+void MainWindow::Issue(const char *command)
+{
+	QString command_string = command;
+	Issue({ command_string });
+}
+
+
+//-------------------------------------------------
+//  InvokePing
+//-------------------------------------------------
+
+void MainWindow::InvokePing()
+{
+	// only issue a ping if there is an active session, and there is no ping in flight
+	if (!m_pinging && m_state.has_value())
+	{
+		m_pinging = true;
+		Issue("ping");
+	}
+}
+
+
+//-------------------------------------------------
+//  InvokeExit
+//-------------------------------------------------
+
+void MainWindow::InvokeExit()
+{
+#if 0
+	if (m_current_profile_auto_save_state)
+	{
+		QString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);
+		Issue({ "state_save_and_exit", save_state_path });
+	}
+	else
+#endif
+	{
+		Issue({ "exit" });
+	}
+}
+
+
+//-------------------------------------------------
+//  ChangePaused
+//-------------------------------------------------
+
+void MainWindow::ChangePaused(bool paused)
+{
+	Issue(paused ? "pause" : "resume");
+}

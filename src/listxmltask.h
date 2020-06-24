@@ -11,6 +11,8 @@
 #ifndef LISTXMLTASK_H
 #define LISTXMLTASK_H
 
+#include <QEvent>
+
 #include "task.h"
 
 

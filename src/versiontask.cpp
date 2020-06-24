@@ -88,6 +88,6 @@ void VersionTask::process(QProcess &process, QObject &handler)
 
 Task::ptr create_version_task()
 {
-	return std::make_unique<VersionTask>();
+	return std::make_shared<VersionTask>();
 }
 
