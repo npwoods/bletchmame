@@ -923,3 +923,37 @@ void MainWindow::ChangePaused(bool paused)
 {
 	Issue(paused ? "pause" : "resume");
 }
+
+
+//**************************************************************************
+//  PAUSER
+//**************************************************************************
+
+//-------------------------------------------------
+//  Pauser ctor
+//-------------------------------------------------
+
+MainWindow::Pauser::Pauser(MainWindow &host, bool actually_pause)
+	: m_host(host)
+	, m_last_pauser(host.m_current_pauser)
+{
+	// if we're running and not pause, pause while the message box is up
+	m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
+	if (m_is_running)
+		m_host.ChangePaused(true);
+
+	// track the chain of pausers
+	m_host.m_current_pauser = this;
+}
+
+
+//-------------------------------------------------
+//  Pauser dtor
+//-------------------------------------------------
+
+MainWindow::Pauser::~Pauser()
+{
+	if (m_is_running)
+		m_host.ChangePaused(false);
+	m_host.m_current_pauser = m_last_pauser;
+}

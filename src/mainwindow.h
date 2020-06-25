@@ -64,10 +64,15 @@ private:
 	class Pauser
 	{
 	public:
-		Pauser(MainWindow &host, bool actually_pause = true)
-		{
-		}
+		Pauser(MainWindow &host, bool actually_pause = true);
+		~Pauser();
+
+	private:
+		MainWindow &	m_host;
+		const Pauser *	m_last_pauser;
+		bool			m_is_running;
 	};
+
 
 	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>			m_ui;
