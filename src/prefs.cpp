@@ -657,7 +657,6 @@ QString Preferences::InternalApplySubstitutions(const QString &src, std::functio
 
 QString Preferences::ApplySubstitutions(const QString &path) const
 {
-
 	return InternalApplySubstitutions(path, [this](const QString &var_name)
 	{
 		QString result;
@@ -670,7 +669,7 @@ QString Preferences::ApplySubstitutions(const QString &path) const
 		{
 			result = QCoreApplication::applicationDirPath();
 		}
-		return result;
+		return QDir::toNativeSeparators(result);
 	});
 }
 
@@ -729,7 +728,7 @@ QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 		if (!dir.exists())
 			dir.makeAbsolute();
 	}
-	return directory;
+	return QDir::toNativeSeparators(directory);
 }
 
 
@@ -739,9 +738,5 @@ QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 
 static QString GetDefaultPluginsDirectory()
 {
-	QString path_separator(QDir::separator());
-	QString plugins("plugins");
-
-	return QString("$(BLETCHMAMEPATH)") + path_separator + plugins
-		+ QString(";") + QString("$(MAMEPATH)") + path_separator + plugins;
+	return QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
 }
