@@ -149,6 +149,9 @@ void ListXmlTask::internalProcess(QProcess &process)
 	// we finally have all of the info accumulated; now we can get to business with writing
 	// to the actual file
 	QFile file(m_output_filename);
+	if (!file.open(QIODevice::WriteOnly))
+		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
+
 	QDataStream output(&file);
 	if (output.status() != QDataStream::Status::Ok)
 		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
