@@ -30,6 +30,10 @@ class MameVersion;
 class SoftwareListViewModel;
 class VersionResultEvent;
 class ListXmlResultEvent;
+class RunMachineCompletedEvent;
+class StatusUpdateEvent;
+class ChatterEvent;
+
 
 // ======================> MainWindow
 
@@ -98,6 +102,9 @@ private:
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
 	bool onListXmlCompleted(const ListXmlResultEvent &event);
+	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);
+	bool onStatusUpdate(StatusUpdateEvent &event);
+	bool onChatter(const ChatterEvent &event);
 
 	// methods
 	bool IsMameExecutablePresent() const;

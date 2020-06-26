@@ -21,40 +21,9 @@
 //  VARIABLES
 //**************************************************************************
 
-QEvent::Type RunMachineResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+QEvent::Type RunMachineCompletedEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 QEvent::Type StatusUpdateEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 QEvent::Type ChatterEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
-
-
-//**************************************************************************
-//  UTILITY
-//**************************************************************************
-
-//-------------------------------------------------
-//  buildCommand
-//-------------------------------------------------
-
-QString RunMachineTask::buildCommand(const std::vector<QString> &args)
-{
-	QString command;
-	for (const QString &arg : args)
-	{
-		if (!command.isEmpty())
-			command += " ";
-
-		// do we need quotes?
-		bool needs_quotes = arg.isEmpty() || arg.indexOf(' ') >= 0;
-
-		// append the argument, with quotes if necessary
-		if (needs_quotes)
-			command += "\"";
-		command += arg;
-		if (needs_quotes)
-			command += "\"";
-	}
-	command += "\r\n";
-	return command;
-}
 
 
 //**************************************************************************
@@ -68,7 +37,7 @@ QString RunMachineTask::buildCommand(const std::vector<QString> &args)
 RunMachineTask::RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow)
     : m_machine(machine)
 	, m_software(software)
-    , m_targetWindow(targetWindow)
+    , m_attachWindowParameter(getAttachWindowParameter(targetWindow))
 	, m_chatterEnabled(false)
 {
 }
@@ -84,7 +53,7 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 	if (!m_software.isEmpty())
 		results.push_back(m_software);
 
-	std::vector<QString> args =
+	QStringList args =
 	{
 		"-rompath",
 		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS),
@@ -108,7 +77,7 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		"-lightgunprovider",
 		"dinput",
 		"-attach_window",
-		QString::number((long) m_targetWindow.winId()),
+		m_attachWindowParameter,
 		"-skip_gameinfo",
 		"-nomouse",
 		"-debug",
@@ -116,9 +85,7 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		WORKER_UI_PLUGIN_NAME
 	};
 
-	results.reserve(util::safe_static_cast<int>(results.size() + args.size()));
-	for (QString &arg : args)
-		results.push_back(std::move(arg));
+	results.append(args);
 	return results;
 }
 
@@ -189,6 +156,46 @@ void RunMachineTask::internalPost(Message::type type, QString &&command, emu_err
 }
 
 
+//-------------------------------------------------
+//  buildCommand
+//-------------------------------------------------
+
+QString RunMachineTask::buildCommand(const std::vector<QString> &args)
+{
+	QString command;
+	for (const QString &arg : args)
+	{
+		if (!command.isEmpty())
+			command += " ";
+
+		// do we need quotes?
+		bool needs_quotes = arg.isEmpty() || arg.indexOf(' ') >= 0;
+
+		// append the argument, with quotes if necessary
+		if (needs_quotes)
+			command += "\"";
+		command += arg;
+		if (needs_quotes)
+			command += "\"";
+	}
+	command += "\r\n";
+	return command;
+}
+
+
+//-------------------------------------------------
+//  getAttachWindowParameter - determine the
+//	parameter to pass to '-attach_window'
+//-------------------------------------------------
+
+QString RunMachineTask::getAttachWindowParameter(const QWidget &targetWindow)
+{
+	// the documentation for QWidget::WId() says that this value can change any
+	// time; this is probably not true on Windows (where this returns the HWND)
+	return QString::number(targetWindow.winId());
+}
+
+
 //**************************************************************************
 //  CLIENT THREAD OPERATIONS
 //**************************************************************************
@@ -203,12 +210,8 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 	QString errorMessage;
 	Response response;
 
-	// set up streams (note that from our perspective, MAME's output streams are input
-	// for us, and this we use QTextStream)
-	QTextStream processStream(&process);
-
 	// receive the inaugural response from MAME; we want to call it quits if this doesn't work
-	response = receiveResponse(handler, processStream);
+	response = receiveResponse(handler, process);
 	if (response.m_type != Response::type::OK)
 	{
 		// alas, we have an error starting MAME
@@ -250,7 +253,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 					postChatter(handler, ChatterEvent::ChatterType::COMMAND_LINE, std::move(message.m_command));
 
 				// and receive a response from MAME
-				response = receiveResponse(handler, processStream);
+				response = receiveResponse(handler, process);
 				break;
 
 			case Message::type::TERMINATED:
@@ -273,7 +276,8 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 				: QString("Error %1 running MAME").arg(QString::number((int)status));
 		}
 	}
-	auto evt = std::make_unique<RunMachineResultEvent>(success, std::move(errorMessage));
+	auto errorMessageStr = errorMessage.toStdString();
+	auto evt = std::make_unique<RunMachineCompletedEvent>(success, std::move(errorMessage));
 	QCoreApplication::postEvent(&handler, evt.release());
 }
 
@@ -282,7 +286,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 //  receiveResponse
 //-------------------------------------------------
 
-RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QTextStream &processStream)
+RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProcess &process)
 {
 	static const util::enum_parser<Response::type> s_response_type_parser =
 	{
@@ -291,14 +295,24 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QText
 	};
 	Response response;
 
-	// MAME has a pesky habit of emitting human readable messages to standard output, therefore
-	// we have a convention with the worker_ui plugin by which actual messages are preceeded with
-	// an at-sign
+	// This logic is complicated for two reasons:
+	//
+	//	1.  MAME has a pesky habit of emitting human readable messages to standard output, therefore
+	//		we have a convention with the worker_ui plugin by which actual messages are preceeded with
+	//		an at-sign
+	//
+	//	2.  Qt's stream classes are weird.  They are designed to really avoid blocking behavior and to
+	//		force the caller to opt into them.  Therefore, there are odd behaviors like readLine()
+	//		returning empty strings if it gets input, but not enough to complete a line
 	QString str;
 	do
 	{
-		str = processStream.readLine();
-	} while ((!str.isEmpty() && str[0] != '@') || (str.isEmpty() && !processStream.atEnd()));
+		// yes Qt, we _really_ want to block!  whole heartedly!
+		process.waitForReadyRead(-1);
+
+		// now read the line!
+		str = process.readLine();
+	} while ((!str.isEmpty() && str[0] != '@') || (str.isEmpty() && !process.atEnd()));
 
 	// special case; check for EOF
 	if (str.isEmpty())
@@ -337,6 +351,7 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QText
 	// did we get a status reponse
 	if (response.m_type == Response::type::OK && args.size() >= 2 && args[1] == "STATUS")
 	{
+		QTextStream processStream(&process);
 		status::update statusUpdate = status::update::read(processStream);
 		auto evt = std::make_unique<StatusUpdateEvent>(std::move(statusUpdate));
 		QCoreApplication::postEvent(&handler, evt.release());
@@ -357,10 +372,10 @@ void RunMachineTask::postChatter(QObject &handler, ChatterEvent::ChatterType typ
 
 
 //-------------------------------------------------
-//  RunMachineResultEvent ctor
+//  RunMachineCompletedEvent ctor
 //-------------------------------------------------
 
-RunMachineResultEvent::RunMachineResultEvent(bool success, QString &&errorMessage)
+RunMachineCompletedEvent::RunMachineCompletedEvent(bool success, QString &&errorMessage)
 	: QEvent(s_eventId)
 	, m_success(success)
 	, m_errorMessage(errorMessage)

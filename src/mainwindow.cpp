@@ -286,6 +286,18 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onListXmlCompleted(static_cast<ListXmlResultEvent &>(*event));
 	}
+	else if (event->type() == RunMachineCompletedEvent::eventId())
+	{
+		result = onRunMachineCompleted(static_cast<RunMachineCompletedEvent &>(*event));
+	}
+	else if (event->type() == StatusUpdateEvent::eventId())
+	{
+		result = onStatusUpdate(static_cast<StatusUpdateEvent &>(*event));
+	}
+	else if (event->type() == ChatterEvent::eventId())
+	{
+		result = onChatter(static_cast<ChatterEvent &>(*event));
+	}
 	else
 	{
 		result = QMainWindow::event(event);
@@ -718,6 +730,53 @@ void MainWindow::setupSearchBox(QLineEdit &lineEdit, const char *collection_view
 
 
 //-------------------------------------------------
+//  onRunMachineCompleted
+//-------------------------------------------------
+
+bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
+{
+	// update the profile, if present
+#if 0
+	if (!m_current_profile_path.empty())
+	{
+		std::optional<profiles::profile> profile = profiles::profile::load(m_current_profile_path);
+		if (profile)
+		{
+			profile->images().clear();
+			for (const status::image &status_image : m_state->images().get())
+			{
+				if (!status_image.m_file_name.empty())
+				{
+					profiles::image &profile_image = profile->images().emplace_back();
+					profile_image.m_tag = status_image.m_tag;
+					profile_image.m_path = status_image.m_file_name;
+				}
+			}
+			profile->save();
+		}
+	}
+#endif
+
+	// clear out all of the state
+	m_client.waitForCompletion();
+	m_state.reset();
+#if 0
+	m_current_profile_path = util::g_empty_string;
+	m_current_profile_auto_save_state = false;
+#endif
+	UpdateEmulationSession();
+	//UpdateStatusBar();
+
+	// report any errors
+	if (!event.errorMessage().isEmpty())
+	{
+		messageBox(event.errorMessage(), 0, "error");
+	}
+	return true;
+}
+
+
+//-------------------------------------------------
 //  updateSoftwareList
 //-------------------------------------------------
 
@@ -740,6 +799,28 @@ void MainWindow::updateSoftwareList()
 		m_softwareListViewModel->Clear();
 	}
 	m_softwareListViewModel->updateListView();
+}
+
+
+//-------------------------------------------------
+//  onStatusUpdate
+//-------------------------------------------------
+
+bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
+{
+	m_state->update(event.detachStatus());
+	m_pinging = false;
+	return true;
+}
+
+
+//-------------------------------------------------
+//  onChatter
+//-------------------------------------------------
+
+bool MainWindow::onChatter(const ChatterEvent &event)
+{
+	return true;
 }
 
 

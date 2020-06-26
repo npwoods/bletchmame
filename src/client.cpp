@@ -93,6 +93,7 @@ void MameClient::taskThreadProc()
 		m_task->onChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
 	};
 	connect(m_process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
+	m_process->setReadChannel(QProcess::StandardOutput);
 
 	// launch the process
 	m_process->start(program, arguments);

@@ -43,14 +43,16 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
-// ======================> RunMachineResultEvent
+// ======================> RunMachineCompletedEvent
 
-class RunMachineResultEvent : public QEvent
+class RunMachineCompletedEvent : public QEvent
 {
 public:
-	RunMachineResultEvent(bool success, QString &&errorMessage);
+	RunMachineCompletedEvent(bool success, QString &&errorMessage);
 
-	static QEvent::Type eventId() { return s_eventId; }
+	static QEvent::Type eventId()		{ return s_eventId; }
+	bool success() const				{ return m_success; }
+	const QString &errorMessage() const { return m_errorMessage; }
 
 private:
 	static QEvent::Type		s_eventId;
@@ -67,6 +69,7 @@ public:
 	StatusUpdateEvent(status::update &&update);
 
 	static QEvent::Type eventId() { return s_eventId; }
+	status::update detachStatus() { return std::move(m_update); }
 
 private:
 	static QEvent::Type		s_eventId;
@@ -94,6 +97,7 @@ private:
 	ChatterType				m_type;
 	QString					m_text;
 };
+
 
 // ======================> RunMachineTask
 
@@ -147,14 +151,15 @@ private:
 
 	info::machine					m_machine;
 	QString							m_software;
-	QWidget &						m_targetWindow;
+	QString							m_attachWindowParameter;
 	MessageQueue<Message>		    m_messageQueue;
 	volatile bool					m_chatterEnabled;
 
 	static QString buildCommand(const std::vector<QString> &args);
+	static QString getAttachWindowParameter(const QWidget &targetWindow);
 
 	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
-	Response receiveResponse(QObject &handler, QTextStream &processStream);
+	Response receiveResponse(QObject &handler, QProcess &processStream);
 	void postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text);
 };
 
