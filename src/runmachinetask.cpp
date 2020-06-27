@@ -18,6 +18,14 @@
 
 
 //**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+#define LOG_COMMANDS		0
+#define LOG_RESPONSES		0
+
+
+//**************************************************************************
 //  VARIABLES
 //**************************************************************************
 
@@ -247,6 +255,8 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 			{
 			case Message::type::COMMAND:
 				// emit this command to MAME
+				if (LOG_COMMANDS)
+					qDebug("RunMachineTask::process(): command='%s'", message.m_command.trimmed().toStdString().c_str());
 				process.write(message.m_command.toUtf8());
 
 				if (m_chatterEnabled)
@@ -320,6 +330,10 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProc
 		response.m_type = Response::type::END_OF_FILE;
 		return response;
 	}
+
+	// log if debugging
+	if (LOG_RESPONSES)
+		qDebug("RunMachineTask::receiveResponse(): received '%s'", str.trimmed().toStdString().c_str());
 
 	// chatter
 	if (m_chatterEnabled)

@@ -35,6 +35,9 @@
 // BletchMAME requires MAME 0.213 or later
 const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
 
+// profiles are not yet implemented
+#define HAVE_PROFILES		0
+
 
 //**************************************************************************
 //  VERSION INFO
@@ -135,6 +138,36 @@ MainWindow::~MainWindow()
 
 
 //-------------------------------------------------
+//  on_actionStop_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionStop_triggered()
+{
+	if (shouldPromptOnStop())
+	{
+		QString message = "Do you really want to stop?\n"
+			"\n"
+			"All data in emulated RAM will be lost";
+
+		if (QMessageBox::question(this, "", "message", QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
+			return;
+	}
+
+	InvokeExit();
+}
+
+
+//-------------------------------------------------
+//  on_actionPause_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionPause_triggered()
+{
+	ChangePaused(!m_state->paused().get());
+}
+
+
+//-------------------------------------------------
 //  on_actionExit_triggered
 //-------------------------------------------------
 
@@ -197,11 +230,13 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-#if 0
+#if HAVE_PROFILES
 	// did the user change the profiles path?
 	if (is_changed(Preferences::global_path_type::PROFILES))
 		UpdateProfileDirectories(true, true);
+#endif
 
+#if 0
 	// did the user change the icons path?
 	if (is_changed(Preferences::global_path_type::ICONS))
 	{
@@ -481,7 +516,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	QString software_name;
 	if (software)
 		software_name = software->m_name;
-#if 0
+#if HAVE_PROFILES
 	else if (profile && profile->images().empty())
 		software_name = profile->software();
 #endif
@@ -531,7 +566,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	}
 
 	// set up profile (if we have one)
-#if 0
+#if HAVE_PROFILES
 	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
 	m_current_profile_auto_save_state = profile ? profile->auto_save_states() : false;
 	if (profile)
@@ -665,6 +700,20 @@ int MainWindow::messageBox(const QString &message, long style, const QString &ca
 
 
 //-------------------------------------------------
+//  shouldPromptOnStop
+//-------------------------------------------------
+
+bool MainWindow::shouldPromptOnStop() const
+{
+#if HAVE_PROFILE
+	return m_current_profile_path.empty() || !m_current_profile_auto_save_state;
+#else
+	return true;
+#endif
+}
+
+
+//-------------------------------------------------
 //  isMameVersionAtLeast
 //-------------------------------------------------
 
@@ -759,7 +808,7 @@ void MainWindow::setupSearchBox(QLineEdit &lineEdit, const char *collection_view
 bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 {
 	// update the profile, if present
-#if 0
+#if HAVE_PROFILES
 	if (!m_current_profile_path.empty())
 	{
 		std::optional<profiles::profile> profile = profiles::profile::load(m_current_profile_path);
@@ -783,7 +832,7 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	// clear out all of the state
 	m_client.waitForCompletion();
 	m_state.reset();
-#if 0
+#if HAVE_PROFILES
 	m_current_profile_path = util::g_empty_string;
 	m_current_profile_auto_save_state = false;
 #endif
@@ -940,6 +989,16 @@ void MainWindow::UpdateMenuBar()
 		// show/hide the menu bar
 		m_ui->menubar->setVisible(m_menu_bar_shown.get());
 	}
+
+	// update actions
+	auto updateEmulationAction = [this](QAction &action, std::optional<bool> checked = { }, bool enabled = true)
+	{
+		action.setEnabled(m_state.has_value() && enabled);
+		if (checked)
+			action.setChecked(checked.value());
+	};
+	updateEmulationAction(*m_ui->actionStop);
+	updateEmulationAction(*m_ui->actionPause, m_state && m_state->paused().get());
 }
 
 
@@ -1050,7 +1109,7 @@ void MainWindow::InvokePing()
 
 void MainWindow::InvokeExit()
 {
-#if 0
+#if HAVE_PROFILES
 	if (m_current_profile_auto_save_state)
 	{
 		QString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);

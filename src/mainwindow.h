@@ -48,8 +48,10 @@ public:
 	virtual bool event(QEvent *event);
 
 private slots:
-	void on_actionAbout_triggered();
+	void on_actionStop_triggered();
+	void on_actionPause_triggered();
 	void on_actionExit_triggered();
+	void on_actionAbout_triggered();
 	void on_actionPaths_triggered();
 	void on_actionRefresh_Machine_Info_triggered();
 	void on_actionBletchMAME_web_site_triggered();
@@ -115,6 +117,7 @@ private:
 	bool PromptForMameExecutable();
 	bool refreshMameInfoDatabase();
 	int messageBox(const QString &message, long style = 0, const QString &caption = "");
+	bool shouldPromptOnStop() const;
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);
 	void updateSoftwareList();
