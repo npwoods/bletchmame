@@ -607,26 +607,46 @@ QString MainWindow::preflightCheck() const
 			path += '/';
 	}
 
-	// check to see if worker_ui exists
-	QString workerUiSubpath = QString(WORKER_UI_PLUGIN_NAME) + '/';
-	bool workerUiExists = util::find_if_ptr(paths, [&workerUiSubpath](const QString &path)
+	// local function to check for plug in files
+	auto checkForPluginFiles = [&paths](const std::initializer_list<QString> &files)
 	{
-		QFileInfo initLua(path + workerUiSubpath + "init.lua");
-		QFileInfo pluginJson(path + workerUiSubpath + "plugin.json");
-		return initLua.exists() && initLua.isFile()
-			&& pluginJson.exists() && pluginJson.isFile();
-	});
+		bool success = util::find_if_ptr(paths, [&paths, &files](const QString &path)
+		{
+			for (const QString &file : files)
+			{		
+				QFileInfo fi(path + file);
+				if (fi.exists() && fi.isFile())
+					return true;
+			}
+			return false;
+		});
+		return success;
+	};
 
-	// if worker_ui doesn't exist, report an error message
-	if (!workerUiExists)
+	// local function to get all paths as a string (for error reporting)
+	auto getAllPaths = [&paths]()
 	{
-		QString message = QString("Could not find the %1 plug-in in the following directories:\n\n").arg(WORKER_UI_PLUGIN_NAME);
+		QString result;
 		for (const QString &path : paths)
 		{
-			message += QDir::toNativeSeparators(path);
-			message += "\n";
+			result += QDir::toNativeSeparators(path);
+			result += "\n";
 		}
-		return message;
+		return result;
+	};
+
+	// check to see if worker_ui exists
+	if (!checkForPluginFiles({ QString(WORKER_UI_PLUGIN_NAME "/init.lua"), QString(WORKER_UI_PLUGIN_NAME "/plugin.json") }))
+	{
+		auto message = QString("Could not find the %1 plug-in in the following directories:\n\n%2");
+		return message.arg(WORKER_UI_PLUGIN_NAME, getAllPaths());
+	}
+
+	// check to see if boot.lua exists
+	if (!checkForPluginFiles({ QString("boot.lua") }))
+	{
+		auto message = QString("Could not find boot.lua in the following directories:\n\n%1");
+		return message.arg(getAllPaths());
 	}
 
 	// success!
