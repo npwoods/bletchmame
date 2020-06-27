@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QStringListModel>
 #include <QDesktopServices>
+#include <QDir>
 #include <QUrl>
 
 #include "mainwindow.h"
@@ -466,7 +467,7 @@ bool MainWindow::AttachToRootPanel() const
 void MainWindow::Run(const info::machine &machine, const software_list::software *software, void *profile)
 {
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
-	QString preflight_errors = PreflightCheck();
+	QString preflight_errors = preflightCheck();
 	if (!preflight_errors.isEmpty())
 	{
 		messageBox(preflight_errors);
@@ -579,47 +580,54 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 
 
 //-------------------------------------------------
-//  PreflightCheck - run checks on MAME to catch
-//	obvious problems
+//  preflightCheck - run checks on MAME to catch
+//	obvious problems when they are easier to
+//	diagnose (MAME's error reporting is hard for
+//	BletchMAME to decipher)
 //-------------------------------------------------
 
-QString MainWindow::PreflightCheck()
+QString MainWindow::preflightCheck() const
 {
-#if 0
 	// get a list of the plugin paths, checking for the obvious problem where there are no paths
 	std::vector<QString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PLUGINS);
 	if (paths.empty())
-		return QString::Format("No plug-in paths are specified.  Under these circumstances, the required \"%s\" plug-in cannot be loaded.", WORKER_UI_PLUGIN_NAME);
+		return QString("No plug-in paths are specified.  Under these circumstances, the required \"%1\" plug-in cannot be loaded.").arg(WORKER_UI_PLUGIN_NAME);
 
 	// apply substitutions and normalize the paths
-	QString path_separator = wxFileName::GetPathSeparator();
 	for (QString &path : paths)
 	{
+		// apply variable substituions
 		path = m_prefs.ApplySubstitutions(path);
-		if (!path.EndsWith(path_separator))
-			path += path_separator;
+
+		// normalize path separators
+		path = QDir::fromNativeSeparators(path);
+
+		// if there is no trailing '/', append one
+		if (!path.endsWith('/'))
+			path += '/';
 	}
 
 	// check to see if worker_ui exists
-	QString worker_ui_subpath = QString(WORKER_UI_PLUGIN_NAME) + path_separator;
-	bool worker_ui_exists = util::find_if_ptr(paths, [&worker_ui_subpath](const QString &path)
-		{
-			return wxFile::Exists(path + worker_ui_subpath + wxT("init.lua"))
-				&& wxFile::Exists(path + worker_ui_subpath + wxT("plugin.json"));
-		});
+	QString workerUiSubpath = QString(WORKER_UI_PLUGIN_NAME) + '/';
+	bool workerUiExists = util::find_if_ptr(paths, [&workerUiSubpath](const QString &path)
+	{
+		QFileInfo initLua(path + workerUiSubpath + "init.lua");
+		QFileInfo pluginJson(path + workerUiSubpath + "plugin.json");
+		return initLua.exists() && initLua.isFile()
+			&& pluginJson.exists() && pluginJson.isFile();
+	});
 
 	// if worker_ui doesn't exist, report an error message
-	if (!worker_ui_exists)
+	if (!workerUiExists)
 	{
-		QString message = QString::Format("Could not find the %s plug in in the following directories:\n\n", WORKER_UI_PLUGIN_NAME);
+		QString message = QString("Could not find the %1 plug-in in the following directories:\n\n").arg(WORKER_UI_PLUGIN_NAME);
 		for (const QString &path : paths)
 		{
-			message += path;
-			message += wxT("\n");
+			message += QDir::toNativeSeparators(path);
+			message += "\n";
 		}
 		return message;
 	}
-#endif
 
 	// success!
 	return QString();

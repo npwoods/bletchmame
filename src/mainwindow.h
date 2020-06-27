@@ -118,7 +118,7 @@ private:
 	void updateSoftwareList();
 	bool AttachToRootPanel() const;
 	void Run(const info::machine &machine, const software_list::software *software = nullptr, void *profile = nullptr);
-	QString PreflightCheck();
+	QString preflightCheck() const;
 	info::machine GetMachineFromIndex(long item) const;
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
 	void UpdateEmulationSession();
