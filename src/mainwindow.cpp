@@ -79,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_machinesViewModel(nullptr)
 	, m_softwareListViewModel(nullptr)
 	, m_pingTimer(nullptr)
+	, m_menu_bar_shown(false)
+	, m_capture_mouse(false)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -497,27 +499,20 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 
 	// set up running state and subscribe to events
 	m_state.emplace();
-#if 0
 	m_state->paused().subscribe([this]() { UpdateTitleBar(); });
 	m_state->phase().subscribe([this]() { UpdateStatusBar(); });
 	m_state->speed_percent().subscribe([this]() { UpdateStatusBar(); });
 	m_state->effective_frameskip().subscribe([this]() { UpdateStatusBar(); });
 	m_state->startup_text().subscribe([this]() { UpdateStatusBar(); });
 	m_state->images().subscribe([this]() { UpdateStatusBar(); });
-#endif
 
 	// mouse capturing is a bit more involved
-#if 0
 	m_capture_mouse = observable::observe(m_state->has_input_using_mouse() && !m_menu_bar_shown);
 	m_capture_mouse.subscribe([this]()
-		{
-			Issue({ "SET_MOUSE_ENABLED", m_capture_mouse ? "true" : "false" });
-			if (m_capture_mouse)
-				SetCursor(wxCursor(wxCURSOR_BLANK));
-			else
-				SetCursor(wxNullCursor);
-		});
-#endif
+	{
+		Issue({ "SET_MOUSE_ENABLED", m_capture_mouse ? "true" : "false" });
+		// TODO - change cursor
+	});
 
 	// we have a session running; hide/show things respectively
 	UpdateEmulationSession();
@@ -793,7 +788,7 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	m_current_profile_auto_save_state = false;
 #endif
 	UpdateEmulationSession();
-	//UpdateStatusBar();
+	UpdateStatusBar();
 
 	// report any errors
 	if (!event.errorMessage().isEmpty())
@@ -933,24 +928,69 @@ void MainWindow::UpdateTitleBar()
 
 void MainWindow::UpdateMenuBar()
 {
-#if 0
 	// are we supposed to show the menu bar?
 	m_menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
 
 	// is this different than the current state?
-	if (m_menu_bar_shown.get() != WindowHasMenuBar(*this))
+	if (m_menu_bar_shown.get() != m_ui->menubar->isVisible())
 	{
 		// when we hide the menu bar, we disable the accelerators
-		m_menu_bar->SetAcceleratorTable(m_menu_bar_shown ? m_menu_bar_accelerators : wxAcceleratorTable());
+		// TODO?
 
-#ifdef WIN32
-		// Win32 specific code
-		SetMenu(GetHWND(), m_menu_bar_shown ? m_menu_bar->GetHMenu() : nullptr);
-#else
-		throw false;
-#endif
+		// show/hide the menu bar
+		m_ui->menubar->setVisible(m_menu_bar_shown.get());
 	}
-#endif
+}
+
+
+//-------------------------------------------------
+//  UpdateStatusBar
+//-------------------------------------------------
+
+void MainWindow::UpdateStatusBar()
+{
+	// prepare a vector with the status text
+	QStringList statusText;
+	
+	// is there a running emulation?
+	if (m_state.has_value())
+	{
+		// first entry depends on whether we are running
+		if (m_state->phase().get() == status::machine_phase::RUNNING)
+		{
+			QString speedText;
+			int speedPercent = (int)(m_state->speed_percent().get() * 100.0 + 0.5);
+			if (m_state->effective_frameskip().get() == 0)
+			{
+				speedText = QString("%2%1").arg(
+					"%",
+					QString::number(speedPercent));
+			}
+			else
+			{
+				speedText = QString("%2%1 (frameskip %3/10)").arg(
+					"%",
+					QString::number(speedPercent),
+					QString::number((int)m_state->effective_frameskip().get()));
+			}
+			statusText.push_back(std::move(speedText));
+		}
+		else
+		{
+			statusText.push_back(m_state->startup_text().get());
+		}
+
+		// next entries come from device displays
+		for (auto iter = m_state->images().get().cbegin(); iter < m_state->images().get().cend(); iter++)
+		{
+			if (!iter->m_display.isEmpty())
+				statusText.push_back(iter->m_display);
+		}
+	}
+
+	// and specify it
+	QString statusTextString = statusText.join(' ');
+	m_ui->statusBar->showMessage(statusTextString);
 }
 
 

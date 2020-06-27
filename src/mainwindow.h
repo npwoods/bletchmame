@@ -96,6 +96,8 @@ private:
 	software_list_collection				m_software_list_collection;
 	QString									m_software_list_collection_machine_name;
 	std::optional<status::state>			m_state;
+	observable::value<bool>					m_menu_bar_shown;
+	observable::value<bool>					m_capture_mouse;
 	bool									m_pinging;
 	const Pauser *							m_current_pauser;
 
@@ -124,6 +126,7 @@ private:
 	void UpdateEmulationSession();
 	void UpdateTitleBar();
 	void UpdateMenuBar();
+	void UpdateStatusBar();
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<QString> &args);
 	void Issue(const char *command);
