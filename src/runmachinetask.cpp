@@ -21,6 +21,8 @@
 //  CONSTANTS
 //**************************************************************************
 
+#define LOG_RECEIVE			0
+#define LOG_POST			0
 #define LOG_COMMANDS		0
 #define LOG_RESPONSES		0
 
@@ -156,6 +158,9 @@ void RunMachineTask::issueFullCommandLine(QString &&fullCommand)
 
 void RunMachineTask::internalPost(Message::type type, QString &&command, emu_error status)
 {
+	if (LOG_POST)
+		qDebug("RunMachineTask::internalPost(): command='%s'", command.trimmed().toStdString().c_str());
+
 	Message message;
 	message.m_type = type;
 	message.m_command = std::move(command);
@@ -249,6 +254,8 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 		while (!done)
 		{
 			// await a message from the queue
+			if (LOG_RECEIVE)
+				qDebug("RunMachineTask::process(): invoking MessageQueue::receive()");
 			Message message = m_messageQueue.receive();
 
 			switch (message.m_type)
@@ -286,8 +293,18 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 				: QString("Error %1 running MAME").arg(QString::number((int)status));
 		}
 	}
-	auto errorMessageStr = errorMessage.toStdString();
 	auto evt = std::make_unique<RunMachineCompletedEvent>(success, std::move(errorMessage));
+	QCoreApplication::postEvent(&handler, evt.release());
+}
+
+
+//-------------------------------------------------
+//  postChatter
+//-------------------------------------------------
+
+void RunMachineTask::postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text)
+{
+	auto evt = std::make_unique<ChatterEvent>(type, std::move(text));
 	QCoreApplication::postEvent(&handler, evt.release());
 }
 
@@ -311,18 +328,12 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProc
 	//		we have a convention with the worker_ui plugin by which actual messages are preceeded with
 	//		an at-sign
 	//
-	//	2.  Qt's stream classes are weird.  They are designed to really avoid blocking behavior and to
-	//		force the caller to opt into them.  Therefore, there are odd behaviors like readLine()
-	//		returning empty strings if it gets input, but not enough to complete a line
+	//	2.  Qt's stream classes are weird, hence the existance of reallyReadLineFromProcess()
 	QString str;
 	do
 	{
-		// yes Qt, we _really_ want to block!  whole heartedly!
-		process.waitForReadyRead(-1);
-
-		// now read the line!
-		str = process.readLine();
-	} while ((!str.isEmpty() && str[0] != '@') || (str.isEmpty() && process.state() == QProcess::ProcessState::Running));
+		str = reallyReadLineFromProcess(process);
+	} while (!str.isEmpty() && str[0] != '@');
 
 	// special case; check for EOF
 	if (str.isEmpty())
@@ -365,8 +376,7 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProc
 	// did we get a status reponse
 	if (response.m_type == Response::type::OK && args.size() >= 2 && args[1] == "STATUS")
 	{
-		QTextStream processStream(&process);
-		status::update statusUpdate = status::update::read(processStream);
+		status::update statusUpdate = readStatus(process);
 		auto evt = std::make_unique<StatusUpdateEvent>(std::move(statusUpdate));
 		QCoreApplication::postEvent(&handler, evt.release());
 	}
@@ -375,13 +385,69 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProc
 
 
 //-------------------------------------------------
-//  postChatter
+//  readStatus - read status XML from a process
 //-------------------------------------------------
 
-void RunMachineTask::postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text)
+status::update RunMachineTask::readStatus(QProcess &process)
 {
-	auto evt = std::make_unique<ChatterEvent>(type, std::move(text));
-	QCoreApplication::postEvent(&handler, evt.release());
+	bool done = false;
+	QByteArray buffer;
+
+	// because XmlParser::parse() is not smart enough to read until XML ends, we are using this
+	// crude mechanism to read the XML while leaving everything else intact
+	while (!done)
+	{
+		QString line = reallyReadLineFromProcess(process);
+		buffer.append(line.toUtf8());
+
+		{
+			auto x = QString::fromUtf8(buffer).toStdString();
+			auto y = x;
+		}
+
+		if (line.isEmpty() || line.startsWith("</"))
+			done = true;
+	}
+
+	// now that we have our own private buffer, read it
+	QDataStream stream(buffer);
+	return status::update::read(stream);
+}
+
+
+//-------------------------------------------------
+//  reallyReadLineFromProcess - read a line from
+//	a QProcess, all the while attempting to accomodate
+//	the behavior of QProcess
+//-------------------------------------------------
+
+QString RunMachineTask::reallyReadLineFromProcess(QProcess &process)
+{
+	// Qt's stream classes are very clunky.  There seems to be an assumption that the caller
+	// wants something very simple (e.g. - read all input from a process), or wants something
+	// very asynchronous event driven
+	//
+	// The consequence is that there are a bunch of unwanted behaviors from our perspective (as
+	// a thread synchronously interacting with MAME) and this method is an attempt to isolate
+	// these behaviors to provide an illusion of a simple, blocking text reader
+
+	// loop while the process is running - because readLine() can return an empty string we
+	// need to keep on tryin'
+	QString result;
+	while(result.isEmpty() && process.state() == QProcess::ProcessState::Running)
+	{
+		if (!process.canReadLine())
+		{
+			// yes Qt, we _really_ want to block!  whole heartedly!  but at the same time we
+			// don't want to block forever without any escape
+			process.waitForReadyRead(50);
+		}
+
+		// read a line if we can
+		if (process.canReadLine())
+			result = process.readLine();
+	}
+	return result;
 }
 
 

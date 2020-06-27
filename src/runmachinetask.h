@@ -159,8 +159,10 @@ private:
 	static QString getAttachWindowParameter(const QWidget &targetWindow);
 
 	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
-	Response receiveResponse(QObject &handler, QProcess &processStream);
 	void postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text);
+	Response receiveResponse(QObject &handler, QProcess &process);
+	static status::update readStatus(QProcess &process);
+	static QString reallyReadLineFromProcess(QProcess &process);
 };
 
 

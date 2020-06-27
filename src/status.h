@@ -32,7 +32,7 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
-class QTextStream;
+class QDataStream;
 
 typedef std::uint32_t ioport_value;
 
@@ -205,7 +205,7 @@ namespace status
 		std::optional<std::vector<input>>			m_inputs;
 		std::optional<std::vector<input_class>>		m_input_classes;
 
-		static update read(QTextStream &input);
+		static update read(QDataStream &input);
 	};
 
 

@@ -169,7 +169,7 @@ status::update::~update()
 //  update::read()
 //-------------------------------------------------
 
-status::update status::update::read(QTextStream &input_stream)
+status::update status::update::read(QDataStream &input_stream)
 {
 	status::update result;
 
@@ -264,22 +264,8 @@ status::update status::update::read(QTextStream &input_stream)
 		attributes.Get("code",				item.m_code);
 	});
 
-	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
-	// crude mechanism to read the XML
-	QByteArray buffer;
-	bool done = false;
-	while (!done)
-	{
-		QString line = input_stream.readLine();
-		buffer.append(line.toUtf8());
-
-		if (input_stream.atEnd() || line.startsWith("</"))
-			done = true;
-	}
-
 	// parse the XML
-	QDataStream input_buffer(buffer);
-	result.m_success = xml.Parse(input_buffer);
+	result.m_success = xml.Parse(input_stream);
 
 	// this should not happen unless there is a bug
 	if (!result.m_success)
