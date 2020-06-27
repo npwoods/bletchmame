@@ -10,6 +10,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMessageBox>
 #include <memory.h>
 
 #include "prefs.h"
@@ -57,6 +58,9 @@ private slots:
 	void on_actionBletchMAME_web_site_triggered();
 	void on_machinesTableView_activated(const QModelIndex &index);
 	void on_tabWidget_currentChanged(int index);
+
+protected:
+	virtual void closeEvent(QCloseEvent *event) override;
 
 private:
 	// status of MAME version checks
@@ -116,7 +120,7 @@ private:
 	check_mame_info_status CheckMameInfoDatabase();
 	bool PromptForMameExecutable();
 	bool refreshMameInfoDatabase();
-	int messageBox(const QString &message, long style = 0, const QString &caption = "");
+	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	bool shouldPromptOnStop() const;
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);

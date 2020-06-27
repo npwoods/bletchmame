@@ -13,6 +13,7 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QUrl>
+#include <QCloseEvent>
 
 #include "mainwindow.h"
 #include "mameversion.h"
@@ -149,7 +150,7 @@ void MainWindow::on_actionStop_triggered()
 			"\n"
 			"All data in emulated RAM will be lost";
 
-		if (QMessageBox::question(this, "", "message", QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
+		if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
 			return;
 	}
 
@@ -688,14 +689,50 @@ QString MainWindow::preflightCheck() const
 //  messageBox
 //-------------------------------------------------
 
-int MainWindow::messageBox(const QString &message, long style, const QString &caption)
+QMessageBox::StandardButton MainWindow::messageBox(const QString &message, QMessageBox::StandardButtons buttons)
 {
 	Pauser pauser(*this);
 
-	QMessageBox msgBox;
+	QMessageBox msgBox(this);
 	msgBox.setText(message);
-	msgBox.exec();
-	return 0;
+	msgBox.setWindowTitle("BletchMAME");
+	msgBox.setStandardButtons(buttons);
+	return (QMessageBox::StandardButton) msgBox.exec();
+}
+
+
+//-------------------------------------------------
+//  closeEvent
+//-------------------------------------------------
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+	if (m_state.has_value())
+	{
+		// prompt the user, if appropriate
+		if (shouldPromptOnStop())
+		{
+			QString message = "Do you really want to exit?\n"
+				"\n"
+				"All data in emulated RAM will be lost";
+			if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
+			{
+				event->ignore();
+				return;
+			}
+		}
+
+		// issue exit command so we can shut down the emulation session gracefully
+		InvokeExit();
+		while (m_state.has_value())
+		{
+			QCoreApplication::processEvents();
+			QThread::yieldCurrentThread();
+		}
+	}
+
+	// yup, we're closing
+	event->accept();
 }
 
 
@@ -842,7 +879,7 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	// report any errors
 	if (!event.errorMessage().isEmpty())
 	{
-		messageBox(event.errorMessage(), 0, "error");
+		messageBox(event.errorMessage());
 	}
 	return true;
 }
