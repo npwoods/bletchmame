@@ -312,7 +312,7 @@ RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProc
 
 		// now read the line!
 		str = process.readLine();
-	} while ((!str.isEmpty() && str[0] != '@') || (str.isEmpty() && !process.atEnd()));
+	} while ((!str.isEmpty() && str[0] != '@') || (str.isEmpty() && process.state() == QProcess::ProcessState::Running));
 
 	// special case; check for EOF
 	if (str.isEmpty())
