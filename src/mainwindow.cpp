@@ -169,6 +169,36 @@ void MainWindow::on_actionPause_triggered()
 
 
 //-------------------------------------------------
+//  on_actionDebugger_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionDebugger_triggered()
+{
+	Issue("debugger");
+}
+
+
+//-------------------------------------------------
+//  on_actionSoft_Reset_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionSoft_Reset_triggered()
+{
+	Issue("soft_reset");
+}
+
+
+//-------------------------------------------------
+//  on_actionHard_Reset_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionHard_Reset_triggered()
+{
+	Issue("hard_reset");
+}
+
+
+//-------------------------------------------------
 //  on_actionExit_triggered
 //-------------------------------------------------
 
@@ -1036,6 +1066,9 @@ void MainWindow::UpdateMenuBar()
 	};
 	updateEmulationAction(*m_ui->actionStop);
 	updateEmulationAction(*m_ui->actionPause, m_state && m_state->paused().get());
+	updateEmulationAction(*m_ui->actionDebugger);
+	updateEmulationAction(*m_ui->actionSoft_Reset);
+	updateEmulationAction(*m_ui->actionHard_Reset);
 }
 
 

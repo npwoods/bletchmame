@@ -51,6 +51,9 @@ public:
 private slots:
 	void on_actionStop_triggered();
 	void on_actionPause_triggered();
+	void on_actionDebugger_triggered();
+	void on_actionSoft_Reset_triggered();
+	void on_actionHard_Reset_triggered();
 	void on_actionExit_triggered();
 	void on_actionAbout_triggered();
 	void on_actionPaths_triggered();
