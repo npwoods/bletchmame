@@ -134,7 +134,7 @@
     <addaction name="menuThrottle"/>
     <addaction name="menuFrameSkip"/>
     <addaction name="actionFull_Screen"/>
-    <addaction name="actionSound"/>
+    <addaction name="actionToggleSound"/>
     <addaction name="separator"/>
     <addaction name="actionConsole"/>
    </widget>
@@ -324,9 +324,12 @@
     <string>Console</string>
    </property>
   </action>
-  <action name="actionSound">
+  <action name="actionToggleSound">
    <property name="enabled">
     <bool>false</bool>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Sound</string>

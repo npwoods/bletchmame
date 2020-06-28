@@ -58,6 +58,7 @@ private slots:
 	void on_actionIncreaseSpeed_triggered();
 	void on_actionDecreaseSpeed_triggered();
 	void on_actionWarpMode_triggered();
+	void on_actionToggleSound_triggered();
 	void on_actionPaths_triggered();
 	void on_actionAbout_triggered();
 	void on_actionRefresh_Machine_Info_triggered();
@@ -154,6 +155,8 @@ private:
 	void ChangeThrottled(bool throttled);
 	void ChangeThrottleRate(float throttle_rate);
 	void ChangeThrottleRate(int adjustment);
+	void ChangeSound(bool sound_enabled);
+	bool IsSoundEnabled() const;
 };
 
 #endif // MAINWINDOW_H

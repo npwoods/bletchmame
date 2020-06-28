@@ -75,6 +75,10 @@ static const CollectionViewDesc s_machine_collection_view_desc =
 };
 
 
+static const int SOUND_ATTENUATION_OFF = -32;
+static const int SOUND_ATTENUATION_ON = 0;
+
+
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
@@ -124,6 +128,10 @@ MainWindow::MainWindow(QWidget *parent)
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDebugger); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionSoft_Reset); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionHard_Reset); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionIncreaseSpeed); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDecreaseSpeed); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionWarpMode); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionToggleSound, IsSoundEnabled()); });
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
@@ -268,6 +276,16 @@ void MainWindow::on_actionDecreaseSpeed_triggered()
 void MainWindow::on_actionWarpMode_triggered()
 {
 	ChangeThrottled(!m_state->throttled());
+}
+
+
+//-------------------------------------------------
+//  on_actionToggleSound_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionToggleSound_triggered()
+{
+	ChangeSound(!IsSoundEnabled());
 }
 
 
@@ -1144,7 +1162,10 @@ void MainWindow::updateEmulationMenuItemAction(QAction &action, std::optional<bo
 {
 	action.setEnabled(m_state.has_value() && enabled);
 	if (checked.has_value())
+	{
+		assert(action.isCheckable());
 		action.setChecked(checked.value());
+	}
 }
 
 
@@ -1329,6 +1350,26 @@ void MainWindow::ChangeThrottleRate(int adjustment)
 
 	// and change the throttle rate
 	ChangeThrottleRate(s_throttle_rates[index]);
+}
+
+
+//-------------------------------------------------
+//  ChangeSound
+//-------------------------------------------------
+
+void MainWindow::ChangeSound(bool sound_enabled)
+{
+	Issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
+}
+
+
+//-------------------------------------------------
+//  IsSoundEnabled
+//-------------------------------------------------
+
+bool MainWindow::IsSoundEnabled() const
+{
+	return m_state && m_state->sound_attenuation() != SOUND_ATTENUATION_OFF;
 }
 
 
