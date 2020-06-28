@@ -117,8 +117,22 @@
     <property name="title">
      <string>&amp;Options</string>
     </property>
-    <addaction name="actionThrottle"/>
-    <addaction name="actionFrame_Skip"/>
+    <widget class="QMenu" name="menuThrottle">
+     <property name="title">
+      <string>Throttle</string>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="actionIncreaseSpeed"/>
+     <addaction name="actionDecreaseSpeed"/>
+     <addaction name="actionWarpMode"/>
+    </widget>
+    <widget class="QMenu" name="menuFrameSkip">
+     <property name="title">
+      <string>Frame Skip</string>
+     </property>
+    </widget>
+    <addaction name="menuThrottle"/>
+    <addaction name="menuFrameSkip"/>
     <addaction name="actionFull_Screen"/>
     <addaction name="actionSound"/>
     <addaction name="separator"/>
@@ -388,6 +402,33 @@
    </property>
    <property name="shortcut">
     <string>F1</string>
+   </property>
+  </action>
+  <action name="actionIncreaseSpeed">
+   <property name="text">
+    <string>Increase Speed</string>
+   </property>
+   <property name="shortcut">
+    <string>F9</string>
+   </property>
+  </action>
+  <action name="actionDecreaseSpeed">
+   <property name="text">
+    <string>Decrease Speed</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
+   </property>
+  </action>
+  <action name="actionWarpMode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Warp Mode</string>
+   </property>
+   <property name="shortcut">
+    <string>F10</string>
    </property>
   </action>
  </widget>

@@ -60,6 +60,8 @@ extern const char build_date_time[];
 //  MAIN IMPLEMENTATION
 //**************************************************************************
 
+const float MainWindow::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1f };
+
 static const CollectionViewDesc s_machine_collection_view_desc =
 {
 	"machine",
@@ -122,6 +124,30 @@ MainWindow::MainWindow(QWidget *parent)
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDebugger); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionSoft_Reset); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionHard_Reset); });
+
+	// special setup for throttle dynamic menu
+	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
+	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
+	{
+		float throttle_rate = s_throttle_rates[i];
+		QString text = QString::number((int)(throttle_rate * 100)) + "%";
+		QAction &action = *new QAction(text, m_ui->menuThrottle);
+		m_ui->menuThrottle->insertAction(&throttleSeparator, &action);
+		action.setCheckable(true);
+		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { ChangeThrottleRate(throttle_rate); });
+		m_updateMenuBarItemActions.emplace_back([this, &action, throttle_rate] { updateEmulationMenuItemAction(action, m_state && m_state->throttle_rate() == throttle_rate); });
+	}
+
+	// special setup for frameskip dynamic menu
+	for (int i = -1; i <= 10; i++)
+	{
+		QString text = i == -1 ? "Auto" : QString::number(i);
+		QAction &action = *m_ui->menuFrameSkip->addAction(text);
+		action.setCheckable(true);
+		std::string value = i == -1 ? "auto" : std::to_string(i);
+		m_updateMenuBarItemActions.emplace_back([this, &action, value{ QString::fromStdString(value) }]{ updateEmulationMenuItemAction(action, m_state && m_state->frameskip() == value); });
+		connect(&action, &QAction::triggered, this, [this, value{std::move(value)}]() { Issue({ "frameskip", value }); });
+	}
 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
@@ -212,6 +238,36 @@ void MainWindow::on_actionHard_Reset_triggered()
 void MainWindow::on_actionExit_triggered()
 {
 	close();
+}
+
+
+//-------------------------------------------------
+//  on_actionIncreaseSpeed_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionIncreaseSpeed_triggered()
+{
+	ChangeThrottleRate(-1);
+}
+
+
+//-------------------------------------------------
+//  on_actionDecreaseSpeed_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionDecreaseSpeed_triggered()
+{
+	ChangeThrottleRate(+1);
+}
+
+
+//-------------------------------------------------
+//  on_actionWarpMode_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionWarpMode_triggered()
+{
+	ChangeThrottled(!m_state->throttled());
 }
 
 
@@ -1087,7 +1143,7 @@ void MainWindow::updateMenuBarItems()
 void MainWindow::updateEmulationMenuItemAction(QAction &action, std::optional<bool> checked, bool enabled)
 {
 	action.setEnabled(m_state.has_value() && enabled);
-	if (checked)
+	if (checked.has_value())
 		action.setChecked(checked.value());
 }
 
@@ -1165,9 +1221,18 @@ void MainWindow::Issue(const std::vector<QString> &args)
 }
 
 
-void MainWindow::Issue(const std::initializer_list<QString> &args)
+void MainWindow::Issue(const std::initializer_list<std::string> &args)
 {
-	Issue(std::vector<QString>(args));
+	std::vector<QString> qargs;
+	qargs.reserve(args.size());
+
+	for (const auto &arg : args)
+	{
+		QString qarg = QString::fromStdString(arg);
+		qargs.push_back(std::move(qarg));
+	}
+
+	Issue(qargs);
 }
 
 
@@ -1220,6 +1285,50 @@ void MainWindow::InvokeExit()
 void MainWindow::ChangePaused(bool paused)
 {
 	Issue(paused ? "pause" : "resume");
+}
+
+
+//-------------------------------------------------
+//  ChangeThrottled
+//-------------------------------------------------
+
+void MainWindow::ChangeThrottled(bool throttled)
+{
+	Issue({ "throttled", std::to_string(throttled ? 1 : 0) });
+}
+
+
+//-------------------------------------------------
+//  ChangeThrottleRate
+//-------------------------------------------------
+
+void MainWindow::ChangeThrottleRate(float throttle_rate)
+{
+	Issue({ "throttle_rate", std::to_string(throttle_rate) });
+}
+
+
+//-------------------------------------------------
+//  ChangeThrottleRate
+//-------------------------------------------------
+
+void MainWindow::ChangeThrottleRate(int adjustment)
+{
+	// find where we are in the array
+	int index;
+	for (index = 0; index < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); index++)
+	{
+		if (m_state->throttle_rate() >= s_throttle_rates[index])
+			break;
+	}
+
+	// apply the adjustment
+	index += adjustment;
+	index = std::max(index, 0);
+	index = std::min(index, (int)(sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]) - 1));
+
+	// and change the throttle rate
+	ChangeThrottleRate(s_throttle_rates[index]);
 }
 
 

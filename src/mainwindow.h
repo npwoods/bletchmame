@@ -55,8 +55,11 @@ private slots:
 	void on_actionSoft_Reset_triggered();
 	void on_actionHard_Reset_triggered();
 	void on_actionExit_triggered();
-	void on_actionAbout_triggered();
+	void on_actionIncreaseSpeed_triggered();
+	void on_actionDecreaseSpeed_triggered();
+	void on_actionWarpMode_triggered();
 	void on_actionPaths_triggered();
+	void on_actionAbout_triggered();
 	void on_actionRefresh_Machine_Info_triggered();
 	void on_actionBletchMAME_web_site_triggered();
 	void on_machinesTableView_activated(const QModelIndex &index);
@@ -86,6 +89,8 @@ private:
 		bool			m_is_running;
 	};
 
+	// statics
+	static const float						s_throttle_rates[];
 
 	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>			m_ui;
@@ -141,11 +146,14 @@ private:
 	void updateEmulationMenuItemAction(QAction &action, std::optional<bool> checked = { }, bool enabled = true);
 	void updateStatusBar();
 	void Issue(const std::vector<QString> &args);
-	void Issue(const std::initializer_list<QString> &args);
+	void Issue(const std::initializer_list<std::string> &args);
 	void Issue(const char *command);
 	void InvokePing();
 	void InvokeExit();
 	void ChangePaused(bool paused);
+	void ChangeThrottled(bool throttled);
+	void ChangeThrottleRate(float throttle_rate);
+	void ChangeThrottleRate(int adjustment);
 };
 
 #endif // MAINWINDOW_H
