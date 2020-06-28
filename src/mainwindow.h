@@ -52,8 +52,8 @@ private slots:
 	void on_actionStop_triggered();
 	void on_actionPause_triggered();
 	void on_actionDebugger_triggered();
-	void on_actionSoft_Reset_triggered();
-	void on_actionHard_Reset_triggered();
+	void on_actionSoftReset_triggered();
+	void on_actionHardReset_triggered();
 	void on_actionExit_triggered();
 	void on_actionIncreaseSpeed_triggered();
 	void on_actionDecreaseSpeed_triggered();
@@ -61,8 +61,8 @@ private slots:
 	void on_actionToggleSound_triggered();
 	void on_actionPaths_triggered();
 	void on_actionAbout_triggered();
-	void on_actionRefresh_Machine_Info_triggered();
-	void on_actionBletchMAME_web_site_triggered();
+	void on_actionRefreshMachineInfo_triggered();
+	void on_actionBletchMameWebSite_triggered();
 	void on_machinesTableView_activated(const QModelIndex &index);
 	void on_tabWidget_currentChanged(int index);
 

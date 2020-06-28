@@ -126,8 +126,8 @@ MainWindow::MainWindow(QWidget *parent)
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionStop); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionPause, m_state && m_state->paused().get()); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDebugger); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionSoft_Reset); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionHard_Reset); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionSoftReset); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionHardReset); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionIncreaseSpeed); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDecreaseSpeed); });
 	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionWarpMode); });
@@ -220,10 +220,10 @@ void MainWindow::on_actionDebugger_triggered()
 
 
 //-------------------------------------------------
-//  on_actionSoft_Reset_triggered
+//  on_actionSoftReset_triggered
 //-------------------------------------------------
 
-void MainWindow::on_actionSoft_Reset_triggered()
+void MainWindow::on_actionSoftReset_triggered()
 {
 	Issue("soft_reset");
 }
@@ -233,7 +233,7 @@ void MainWindow::on_actionSoft_Reset_triggered()
 //  on_actionHard_Reset_triggered
 //-------------------------------------------------
 
-void MainWindow::on_actionHard_Reset_triggered()
+void MainWindow::on_actionHardReset_triggered()
 {
 	Issue("hard_reset");
 }
@@ -372,20 +372,20 @@ void MainWindow::on_actionAbout_triggered()
 
 
 //-------------------------------------------------
-//  on_actionRefresh_Machine_Info_triggered
+//  on_actionRefreshMachineInfo_triggered
 //-------------------------------------------------
 
-void MainWindow::on_actionRefresh_Machine_Info_triggered()
+void MainWindow::on_actionRefreshMachineInfo_triggered()
 {
 	refreshMameInfoDatabase();
 }
 
 
 //-------------------------------------------------
-//  on_actionBletchMAME_web_site_triggered
+//  on_actionBletchMameWebSite_triggered
 //-------------------------------------------------
 
-void MainWindow::on_actionBletchMAME_web_site_triggered()
+void MainWindow::on_actionBletchMameWebSite_triggered()
 {
 	QDesktopServices::openUrl(QUrl("https://www.bletchmame.org/"));
 }

@@ -93,21 +93,21 @@
      <property name="title">
       <string>Reset</string>
      </property>
-     <addaction name="actionSoft_Reset"/>
-     <addaction name="actionHard_Reset"/>
+     <addaction name="actionSoftReset"/>
+     <addaction name="actionHardReset"/>
     </widget>
     <addaction name="actionStop"/>
     <addaction name="actionPause"/>
     <addaction name="separator"/>
     <addaction name="actionImages"/>
     <addaction name="separator"/>
-    <addaction name="actionQuick_Load_State"/>
-    <addaction name="actionQuick_Save_State"/>
-    <addaction name="actionLoad_State"/>
-    <addaction name="actionSave_State"/>
+    <addaction name="actionQuickLoadState"/>
+    <addaction name="actionQuickSaveState"/>
+    <addaction name="actionLoadState"/>
+    <addaction name="actionSaveState"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_Screenshot"/>
-    <addaction name="actionRecord_Movie"/>
+    <addaction name="actionSaveScreenshot"/>
+    <addaction name="actionRecordMovie"/>
     <addaction name="separator"/>
     <addaction name="actionDebugger"/>
     <addaction name="menuReset"/>
@@ -133,7 +133,7 @@
     </widget>
     <addaction name="menuThrottle"/>
     <addaction name="menuFrameSkip"/>
-    <addaction name="actionFull_Screen"/>
+    <addaction name="actionFullScreen"/>
     <addaction name="actionToggleSound"/>
     <addaction name="separator"/>
     <addaction name="actionConsole"/>
@@ -142,11 +142,11 @@
     <property name="title">
      <string>&amp;Settings</string>
     </property>
-    <addaction name="actionJoysticks_and_Controllers"/>
+    <addaction name="actionJoysticksAndControllers"/>
     <addaction name="actionKeyboard"/>
-    <addaction name="actionMiscellaneous_Input"/>
+    <addaction name="actionMiscellaneousInput"/>
     <addaction name="actionConfiguration"/>
-    <addaction name="actionDIP_Switches"/>
+    <addaction name="actionDipSwitches"/>
     <addaction name="separator"/>
     <addaction name="actionPaths"/>
    </widget>
@@ -154,8 +154,8 @@
     <property name="title">
      <string>&amp;Help</string>
     </property>
-    <addaction name="actionRefresh_Machine_Info"/>
-    <addaction name="actionBletchMAME_web_site"/>
+    <addaction name="actionRefreshMachineInfo"/>
+    <addaction name="actionBletchMameWebSite"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -194,7 +194,7 @@
     <string>Images...</string>
    </property>
   </action>
-  <action name="actionQuick_Load_State">
+  <action name="actionQuickLoadState">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -205,7 +205,7 @@
     <string>F7</string>
    </property>
   </action>
-  <action name="actionQuick_Save_State">
+  <action name="actionQuickSaveState">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -216,7 +216,7 @@
     <string/>
    </property>
   </action>
-  <action name="actionLoad_State">
+  <action name="actionLoadState">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -224,7 +224,7 @@
     <string>Load State...</string>
    </property>
   </action>
-  <action name="actionSave_State">
+  <action name="actionSaveState">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -232,7 +232,7 @@
     <string>Save State...</string>
    </property>
   </action>
-  <action name="actionSave_Screenshot">
+  <action name="actionSaveScreenshot">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -243,7 +243,7 @@
     <string>F12</string>
    </property>
   </action>
-  <action name="actionRecord_Movie">
+  <action name="actionRecordMovie">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -273,7 +273,7 @@
     <string>Ctrl+Alt+X</string>
    </property>
   </action>
-  <action name="actionSoft_Reset">
+  <action name="actionSoftReset">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -281,7 +281,7 @@
     <string>Soft Reset</string>
    </property>
   </action>
-  <action name="actionHard_Reset">
+  <action name="actionHardReset">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -297,15 +297,7 @@
     <string>Throttle</string>
    </property>
   </action>
-  <action name="actionFrame_Skip">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Frame Skip</string>
-   </property>
-  </action>
-  <action name="actionFull_Screen">
+  <action name="actionFullScreen">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -335,7 +327,7 @@
     <string>Sound</string>
    </property>
   </action>
-  <action name="actionJoysticks_and_Controllers">
+  <action name="actionJoysticksAndControllers">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -351,7 +343,7 @@
     <string>Keyboard...</string>
    </property>
   </action>
-  <action name="actionMiscellaneous_Input">
+  <action name="actionMiscellaneousInput">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -367,7 +359,7 @@
     <string>Configuration...</string>
    </property>
   </action>
-  <action name="actionDIP_Switches">
+  <action name="actionDipSwitches">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -383,7 +375,7 @@
     <string>Paths...</string>
    </property>
   </action>
-  <action name="actionRefresh_Machine_Info">
+  <action name="actionRefreshMachineInfo">
    <property name="enabled">
     <bool>true</bool>
    </property>
@@ -391,7 +383,7 @@
     <string>Refresh MAME machine info...</string>
    </property>
   </action>
-  <action name="actionBletchMAME_web_site">
+  <action name="actionBletchMameWebSite">
    <property name="enabled">
     <bool>true</bool>
    </property>
