@@ -116,6 +116,13 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up software list search box
 	setupSearchBox(*m_ui->softwareSearchBox, SOFTLIST_VIEW_DESC_NAME, *m_softwareListViewModel);
 
+	// set up menu bar actions
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionStop); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionPause, m_state && m_state->paused().get()); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDebugger); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionSoft_Reset); });
+	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionHard_Reset); });
+
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
 
@@ -565,12 +572,12 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 
 	// set up running state and subscribe to events
 	m_state.emplace();
-	m_state->paused().subscribe([this]() { UpdateTitleBar(); });
-	m_state->phase().subscribe([this]() { UpdateStatusBar(); });
-	m_state->speed_percent().subscribe([this]() { UpdateStatusBar(); });
-	m_state->effective_frameskip().subscribe([this]() { UpdateStatusBar(); });
-	m_state->startup_text().subscribe([this]() { UpdateStatusBar(); });
-	m_state->images().subscribe([this]() { UpdateStatusBar(); });
+	m_state->paused().subscribe([this]() { updateTitleBar(); });
+	m_state->phase().subscribe([this]() { updateStatusBar(); });
+	m_state->speed_percent().subscribe([this]() { updateStatusBar(); });
+	m_state->effective_frameskip().subscribe([this]() { updateStatusBar(); });
+	m_state->startup_text().subscribe([this]() { updateStatusBar(); });
+	m_state->images().subscribe([this]() { updateStatusBar(); });
 
 	// mouse capturing is a bit more involved
 	m_capture_mouse = observable::observe(m_state->has_input_using_mouse() && !m_menu_bar_shown);
@@ -581,7 +588,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	});
 
 	// we have a session running; hide/show things respectively
-	UpdateEmulationSession();
+	updateEmulationSession();
 
 	// set the focus to the main window
 	setFocus();
@@ -903,8 +910,8 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	m_current_profile_path = util::g_empty_string;
 	m_current_profile_auto_save_state = false;
 #endif
-	UpdateEmulationSession();
-	UpdateStatusBar();
+	updateEmulationSession();
+	updateStatusBar();
 
 	// report any errors
 	if (!event.errorMessage().isEmpty())
@@ -949,6 +956,7 @@ bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
 {
 	m_state->update(event.detachStatus());
 	m_pinging = false;
+	updateMenuBarItems();
 	return true;
 }
 
@@ -995,10 +1003,10 @@ const QString &MainWindow::GetMachineListItemText(info::machine machine, long co
 
 
 //-------------------------------------------------
-//  UpdateEmulationSession
+//  updateEmulationSession
 //-------------------------------------------------
 
-void MainWindow::UpdateEmulationSession()
+void MainWindow::updateEmulationSession()
 {
 	// is the emulation session active?
 	bool is_active = m_state.has_value();
@@ -1014,16 +1022,16 @@ void MainWindow::UpdateEmulationSession()
 		m_pingTimer->stop();
 
 	// ...and cascade other updates
-	UpdateTitleBar();
-	UpdateMenuBar();
+	updateTitleBar();
+	updateMenuBar();
 }
 
 
 //-------------------------------------------------
-//  UpdateTitleBar
+//  updateTitleBar
 //-------------------------------------------------
 
-void MainWindow::UpdateTitleBar()
+void MainWindow::updateTitleBar()
 {
 	QString title_text = QCoreApplication::applicationName();
 	if (m_state.has_value())
@@ -1039,10 +1047,10 @@ void MainWindow::UpdateTitleBar()
 
 
 //-------------------------------------------------
-//  UpdateMenuBar
+//  updateMenuBar
 //-------------------------------------------------
 
-void MainWindow::UpdateMenuBar()
+void MainWindow::updateMenuBar()
 {
 	// are we supposed to show the menu bar?
 	m_menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
@@ -1057,26 +1065,38 @@ void MainWindow::UpdateMenuBar()
 		m_ui->menubar->setVisible(m_menu_bar_shown.get());
 	}
 
-	// update actions
-	auto updateEmulationAction = [this](QAction &action, std::optional<bool> checked = { }, bool enabled = true)
-	{
-		action.setEnabled(m_state.has_value() && enabled);
-		if (checked)
-			action.setChecked(checked.value());
-	};
-	updateEmulationAction(*m_ui->actionStop);
-	updateEmulationAction(*m_ui->actionPause, m_state && m_state->paused().get());
-	updateEmulationAction(*m_ui->actionDebugger);
-	updateEmulationAction(*m_ui->actionSoft_Reset);
-	updateEmulationAction(*m_ui->actionHard_Reset);
+	updateMenuBarItems();
 }
 
 
 //-------------------------------------------------
-//  UpdateStatusBar
+//  updateMenuBarItems
 //-------------------------------------------------
 
-void MainWindow::UpdateStatusBar()
+void MainWindow::updateMenuBarItems()
+{
+	for (const auto &action : m_updateMenuBarItemActions)
+		action();
+}
+
+
+//-------------------------------------------------
+//  updateEmulationMenuItemAction
+//-------------------------------------------------
+
+void MainWindow::updateEmulationMenuItemAction(QAction &action, std::optional<bool> checked, bool enabled)
+{
+	action.setEnabled(m_state.has_value() && enabled);
+	if (checked)
+		action.setChecked(checked.value());
+}
+
+
+//-------------------------------------------------
+//  updateStatusBar
+//-------------------------------------------------
+
+void MainWindow::updateStatusBar()
 {
 	// prepare a vector with the status text
 	QStringList statusText;

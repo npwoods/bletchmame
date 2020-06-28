@@ -94,6 +94,7 @@ private:
 	CollectionViewModel *					m_machinesViewModel;
 	SoftwareListViewModel *					m_softwareListViewModel;
 	QTimer *								m_pingTimer;
+	std::vector<std::function<void()>>		m_updateMenuBarItemActions;
 
 	// information retrieved by -version
 	QString									m_mame_version;
@@ -133,10 +134,12 @@ private:
 	QString preflightCheck() const;
 	info::machine GetMachineFromIndex(long item) const;
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
-	void UpdateEmulationSession();
-	void UpdateTitleBar();
-	void UpdateMenuBar();
-	void UpdateStatusBar();
+	void updateEmulationSession();
+	void updateTitleBar();
+	void updateMenuBar();
+	void updateMenuBarItems();
+	void updateEmulationMenuItemAction(QAction &action, std::optional<bool> checked = { }, bool enabled = true);
+	void updateStatusBar();
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<QString> &args);
 	void Issue(const char *command);
