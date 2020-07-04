@@ -362,8 +362,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isEnabled,	&QWidget::setEnabled,		false);
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isVisible,	&QWidget::setVisible,		false);
-	setupPropSyncAspect(*m_ui->rootWidget,				&QWidget::isVisible,	&QWidget::setVisible,		[this]() { return AttachToRootPanel(); });
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isHidden,		&QWidget::setHidden,		true);
+	setupPropSyncAspect(*m_ui->rootWidget,				&QWidget::isHidden,		&QWidget::setHidden,		[this]() { return !AttachToRootPanel(); });
 	setupPropSyncAspect((QWidget &) *this,				&QWidget::windowTitle,	&QWidget::setWindowTitle,	[this]() { return observeTitleBarText(); });
 
 	// actions
@@ -468,7 +468,7 @@ void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() con
 
 	// create the action
 	Aspect::ptr action = std::make_unique<PropertySyncAspect<TValueType, TObserve>>(
-		[&obj, setFunc](const TValueType &value) { ((obj).*(setFunc))(value); },
+		[&obj, setFunc](TValueType value) { ((obj).*(setFunc))(value); },
 		std::move(originalValue),
 		std::move(func));
 
@@ -1300,6 +1300,9 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	// execute the stop handler for all aspects
 	for (const auto &aspect : m_aspects)
 		aspect->stop();
+
+	// update the window - the emulation may have trashed it
+	update();
 
 	// report any errors
 	if (!event.errorMessage().isEmpty())
