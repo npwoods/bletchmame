@@ -362,6 +362,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isEnabled,	&QWidget::setEnabled,		false);
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isVisible,	&QWidget::setVisible,		false);
 	setupPropSyncAspect(*m_ui->rootWidget,				&QWidget::isVisible,	&QWidget::setVisible,		[this]() { return AttachToRootPanel(); });
 	setupPropSyncAspect((QWidget &) *this,				&QWidget::windowTitle,	&QWidget::setWindowTitle,	[this]() { return observeTitleBarText(); });
 
