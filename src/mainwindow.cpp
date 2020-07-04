@@ -57,6 +57,42 @@ extern const char build_date_time[];
 
 
 //**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
+// ======================> Pauser
+
+class MainWindow::Pauser
+{
+public:
+	Pauser(MainWindow &host, bool actually_pause = true)
+		: m_host(host)
+		, m_last_pauser(host.m_current_pauser)
+	{
+		// if we're running and not pause, pause while the message box is up
+		m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
+		if (m_is_running)
+			m_host.ChangePaused(true);
+
+		// track the chain of pausers
+		m_host.m_current_pauser = this;
+	}
+
+	~Pauser()
+	{
+		if (m_is_running)
+			m_host.ChangePaused(false);
+		m_host.m_current_pauser = m_last_pauser;
+	}
+
+private:
+	MainWindow &m_host;
+	const Pauser *m_last_pauser;
+	bool			m_is_running;
+};
+
+
+//**************************************************************************
 //  MAIN IMPLEMENTATION
 //**************************************************************************
 
@@ -1370,38 +1406,4 @@ void MainWindow::ChangeSound(bool sound_enabled)
 bool MainWindow::IsSoundEnabled() const
 {
 	return m_state && m_state->sound_attenuation() != SOUND_ATTENUATION_OFF;
-}
-
-
-//**************************************************************************
-//  PAUSER
-//**************************************************************************
-
-//-------------------------------------------------
-//  Pauser ctor
-//-------------------------------------------------
-
-MainWindow::Pauser::Pauser(MainWindow &host, bool actually_pause)
-	: m_host(host)
-	, m_last_pauser(host.m_current_pauser)
-{
-	// if we're running and not pause, pause while the message box is up
-	m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
-	if (m_is_running)
-		m_host.ChangePaused(true);
-
-	// track the chain of pausers
-	m_host.m_current_pauser = this;
-}
-
-
-//-------------------------------------------------
-//  Pauser dtor
-//-------------------------------------------------
-
-MainWindow::Pauser::~Pauser()
-{
-	if (m_is_running)
-		m_host.ChangePaused(false);
-	m_host.m_current_pauser = m_last_pauser;
 }
