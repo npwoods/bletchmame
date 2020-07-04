@@ -183,7 +183,7 @@
     <string>Pause</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Pause</string>
    </property>
   </action>
   <action name="actionImages">
