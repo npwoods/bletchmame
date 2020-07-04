@@ -51,6 +51,9 @@ public:
 private slots:
 	void on_actionStop_triggered();
 	void on_actionPause_triggered();
+	void on_actionLoadState_triggered();
+	void on_actionSaveState_triggered();
+	void on_actionSaveScreenshot_triggered();
 	void on_actionDebugger_triggered();
 	void on_actionSoftReset_triggered();
 	void on_actionHardReset_triggered();
@@ -78,6 +81,12 @@ private:
 		DB_NEEDS_REBUILD	// we've found MAME, but we must rebuild the database
 	};
 
+	enum class file_dialog_type
+	{
+		LOAD,
+		SAVE
+	};
+
 	class Pauser;
 
 	class Aspect
@@ -96,7 +105,9 @@ private:
 	class MenuBarAspect;
 
 	// statics
-	static const float							s_throttle_rates[];
+	static const float					s_throttle_rates[];
+	static const QString				s_wc_saved_state;
+	static const QString				s_wc_save_snapshot;
 
 	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>		m_ui;
@@ -146,9 +157,12 @@ private:
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);
 	void updateSoftwareList();
+	info::machine GetRunningMachine() const;
 	bool AttachToRootPanel() const;
 	void Run(const info::machine &machine, const software_list::software *software = nullptr, void *profile = nullptr);
 	QString preflightCheck() const;
+	QString GetFileDialogFilename(Preferences::machine_path_type path_type, const QString &wildcard_string, file_dialog_type dlgtype);
+	void FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, file_dialog_type dlgtype);
 	info::machine GetMachineFromIndex(long item) const;
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
 	observable::value<QString> observeTitleBarText();

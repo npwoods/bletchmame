@@ -14,6 +14,7 @@
 #include <QDir>
 #include <QUrl>
 #include <QCloseEvent>
+#include <QFileDialog>
 
 #include "mainwindow.h"
 #include "mameversion.h"
@@ -296,6 +297,9 @@ private:
 
 const float MainWindow::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.2f, 0.1f };
 
+const QString MainWindow::s_wc_saved_state = "MAME Saved State Files (*.sta);;All Files (*.*)";
+const QString MainWindow::s_wc_save_snapshot = "PNG Files (*.png);;All Files (*.*)";
+
 static const CollectionViewDesc s_machine_collection_view_desc =
 {
 	"machine",
@@ -370,6 +374,9 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionStop,				&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->paused()); });
+	setupPropSyncAspect(*m_ui->actionLoadState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionSaveState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionSaveScreenshot,	&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionDebugger,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionSoftReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionHardReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
@@ -527,6 +534,51 @@ void MainWindow::on_actionStop_triggered()
 void MainWindow::on_actionPause_triggered()
 {
 	ChangePaused(!m_state->paused().get());
+}
+
+
+//-------------------------------------------------
+//  on_actionLoadState_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionLoadState_triggered()
+{
+	FileDialogCommand(
+		{ "state_load" },
+		Preferences::machine_path_type::LAST_SAVE_STATE,
+		true,
+		s_wc_saved_state,
+		file_dialog_type::LOAD);
+}
+
+
+//-------------------------------------------------
+//  on_actionSaveState_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionSaveState_triggered()
+{
+	FileDialogCommand(
+		{ "state_save" },
+		Preferences::machine_path_type::LAST_SAVE_STATE,
+		true,
+		s_wc_saved_state,
+		file_dialog_type::SAVE);
+}
+
+
+//-------------------------------------------------
+//  on_actionSaveScreenshot_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionSaveScreenshot_triggered()
+{
+	FileDialogCommand(
+		{ "save_snapshot", "0" },
+		Preferences::machine_path_type::WORKING_DIRECTORY,
+		false,
+		s_wc_save_snapshot,
+		file_dialog_type::SAVE);
 }
 
 
@@ -914,6 +966,23 @@ bool MainWindow::refreshMameInfoDatabase()
 	}
 
 	return true;
+}
+
+
+//-------------------------------------------------
+//  GetRunningMachine
+//-------------------------------------------------
+
+info::machine MainWindow::GetRunningMachine() const
+{
+	// get the currently running machine
+	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
+
+	// this call is only valid if we have a running machine
+	assert(task);
+
+	// return the machine
+	return task->getMachine();
 }
 
 
@@ -1358,6 +1427,78 @@ bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
 bool MainWindow::onChatter(const ChatterEvent &event)
 {
 	return true;
+}
+
+
+//-------------------------------------------------
+//  GetFileDialogFilename
+//-------------------------------------------------
+
+QString MainWindow::GetFileDialogFilename(Preferences::machine_path_type path_type, const QString &wildcard_string, MainWindow::file_dialog_type dlgtype)
+{
+	// determine the file mode
+	QFileDialog::FileMode fileMode;
+	switch (dlgtype)
+	{
+	case file_dialog_type::LOAD:
+		fileMode = QFileDialog::FileMode::ExistingFile;
+		break;
+	case file_dialog_type::SAVE:
+		fileMode = QFileDialog::FileMode::AnyFile;
+		break;
+	default:
+		throw false;
+	}
+
+	// prepare the default dir/file
+	const QString &running_machine_name(GetRunningMachine().name());
+	const QString &default_path(m_prefs.GetMachinePath(running_machine_name, path_type));
+	QString default_dir;
+	QString default_file;
+	QString default_ext;
+	wxFileName::SplitPath(default_path, &default_dir, &default_file, &default_ext);
+	if (!default_ext.isEmpty())
+		default_file += "." + default_ext;
+
+	// show the dialog
+	QFileDialog dialog(this, QString(), default_dir, wildcard_string);
+	dialog.setFileMode(fileMode);
+	dialog.exec();
+	return dialog.result() == QDialog::DialogCode::Accepted
+		? dialog.selectedFiles().first()
+		: QString();
+}
+
+
+//-------------------------------------------------
+//  FileDialogCommand
+//-------------------------------------------------
+
+void MainWindow::FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, MainWindow::file_dialog_type dlgtype)
+{
+	Pauser pauser(*this);
+	QString path = GetFileDialogFilename(path_type, wildcard_string, dlgtype);
+	if (path.isEmpty())
+		return;
+
+	// append the resulting path to the command list
+	commands.push_back(std::move(path));
+
+	// put back the default
+	const QString &running_machine_name(GetRunningMachine().name());
+	if (path_is_file)
+	{
+		m_prefs.SetMachinePath(running_machine_name, path_type, std::move(path));
+	}
+	else
+	{
+		QString new_dir;
+		wxFileName::SplitPath(path, &new_dir, nullptr, nullptr);
+		m_prefs.SetMachinePath(running_machine_name, path_type, std::move(new_dir));
+	}
+
+	// finally issue the actual commands
+	Issue(commands);
 }
 
 
