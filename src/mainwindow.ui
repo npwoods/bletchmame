@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>BletchMAME</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="rootWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <widget class="QTabWidget" name="tabWidget">
@@ -400,6 +400,9 @@
    </property>
   </action>
   <action name="actionIncreaseSpeed">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Increase Speed</string>
    </property>
@@ -408,6 +411,9 @@
    </property>
   </action>
   <action name="actionDecreaseSpeed">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Decrease Speed</string>
    </property>
@@ -416,6 +422,9 @@
    </property>
   </action>
   <action name="actionWarpMode">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="checkable">
     <bool>true</bool>
    </property>

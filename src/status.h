@@ -234,11 +234,11 @@ namespace status
 		observable::value<std::vector<image>> &			images()					{ return m_images; }
 		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
 		observable::value<std::vector<input_class>> &	input_classes()				{ return m_input_classes; }
-		QString											frameskip() const			{ return m_frameskip; }
+		observable::value<QString> &					frameskip()					{ return m_frameskip; }
 		bool											throttled() const			{ return m_throttled; }
-		float											throttle_rate() const		{ return m_throttle_rate; }
+		observable::value<float> &						throttle_rate()				{ return m_throttle_rate; }
 		bool											is_recording() const		{ return m_is_recording; }
-		int												sound_attenuation() const	{ return m_sound_attenuation; }
+		observable::value<int> &						sound_attenuation()			{ return m_sound_attenuation; }
 
 		// higher level methods
 		const image *find_image(const QString &tag) const;
@@ -256,11 +256,11 @@ namespace status
 		observable::value<std::vector<image>>			m_images;
 		observable::value<std::vector<input>>			m_inputs;
 		observable::value<std::vector<input_class>>		m_input_classes;
-		QString											m_frameskip;
+		observable::value<QString>						m_frameskip;
 		bool											m_throttled;
-		float											m_throttle_rate;
+		observable::value<float>						m_throttle_rate;
 		bool											m_is_recording;
-		int												m_sound_attenuation;
+		observable::value<int>							m_sound_attenuation;
 
 		template<typename TStateField, typename TUpdateField>
 		bool take(TStateField &state_field, std::optional<TUpdateField> &update_field);

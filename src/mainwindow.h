@@ -80,32 +80,46 @@ private:
 
 	class Pauser;
 
+	class Aspect
+	{
+	public:
+		typedef std::unique_ptr<Aspect> ptr;
+
+		virtual ~Aspect() { }
+		virtual void start() = 0;
+		virtual void stop() = 0;
+	};
+
+	template<typename TStartAction, typename TStopAction> class ActionAspect;
+	template<typename TValueType, typename TObserve> class PropertySyncAspect;
+	class StatusBarAspect;
+	class MenuBarAspect;
+
 	// statics
-	static const float						s_throttle_rates[];
+	static const float							s_throttle_rates[];
 
 	// variables configured at startup
-	std::unique_ptr<Ui::MainWindow>			m_ui;
-	Preferences								m_prefs;
-	MameClient								m_client;
-	CollectionViewModel *					m_machinesViewModel;
-	SoftwareListViewModel *					m_softwareListViewModel;
-	QTimer *								m_pingTimer;
-	std::vector<std::function<void()>>		m_updateMenuBarItemActions;
+	std::unique_ptr<Ui::MainWindow>		m_ui;
+	Preferences							m_prefs;
+	MameClient							m_client;
+	CollectionViewModel *				m_machinesViewModel;
+	SoftwareListViewModel *				m_softwareListViewModel;
+	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
-	QString									m_mame_version;
+	QString								m_mame_version;
 
 	// information retrieved by -listxml
-	info::database							m_info_db;
+	info::database						m_info_db;
 
 	// other
-	software_list_collection				m_software_list_collection;
-	QString									m_software_list_collection_machine_name;
-	std::optional<status::state>			m_state;
-	observable::value<bool>					m_menu_bar_shown;
-	observable::value<bool>					m_capture_mouse;
-	bool									m_pinging;
-	const Pauser *							m_current_pauser;
+	software_list_collection			m_software_list_collection;
+	QString								m_software_list_collection_machine_name;
+	std::optional<status::state>		m_state;
+	observable::value<bool>				m_menu_bar_shown;
+	observable::value<bool>				m_capture_mouse;
+	bool								m_pinging;
+	const Pauser *						m_current_pauser;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -113,6 +127,13 @@ private:
 	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);
 	bool onStatusUpdate(StatusUpdateEvent &event);
 	bool onChatter(const ChatterEvent &event);
+
+	// templated property/action binding
+	template<typename TStartAction, typename TStopAction>			void setupActionAspect(TStartAction &&startAction, TStopAction &&stopAction);
+	template<typename TObj, typename TValueType>					void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(TValueType), TValueType value);
+	template<typename TObj, typename TValueType, typename TObserve>	void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(TValueType), TObserve &&func);
+	template<typename TObj, typename TValueType>					void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TValueType value);
+	template<typename TObj, typename TValueType, typename TObserve>	void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TObserve &&func);
 
 	// methods
 	bool IsMameExecutablePresent() const;
@@ -130,12 +151,8 @@ private:
 	QString preflightCheck() const;
 	info::machine GetMachineFromIndex(long item) const;
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
-	void updateEmulationSession();
-	void updateTitleBar();
+	observable::value<QString> observeTitleBarText();
 	void updateMenuBar();
-	void updateMenuBarItems();
-	void updateEmulationMenuItemAction(QAction &action, std::optional<bool> checked = { }, bool enabled = true);
-	void updateStatusBar();
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<std::string> &args);
 	void Issue(const char *command);
@@ -146,7 +163,6 @@ private:
 	void ChangeThrottleRate(float throttle_rate);
 	void ChangeThrottleRate(int adjustment);
 	void ChangeSound(bool sound_enabled);
-	bool IsSoundEnabled() const;
 };
 
 #endif // MAINWINDOW_H

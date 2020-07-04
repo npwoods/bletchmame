@@ -86,9 +86,207 @@ public:
 	}
 
 private:
-	MainWindow &m_host;
-	const Pauser *m_last_pauser;
+	MainWindow &	m_host;
+	const Pauser *	m_last_pauser;
 	bool			m_is_running;
+};
+
+
+// ======================> ActionAspect
+
+template<typename TStartAction, typename TStopAction>
+class MainWindow::ActionAspect : public Aspect
+{
+public:
+	ActionAspect(TStartAction &&startAction, TStopAction &&stopAction)
+		: m_startAction(startAction)
+		, m_stopAction(stopAction)
+	{
+	}
+
+	virtual void start()
+	{
+		m_startAction();
+	}
+
+	virtual void stop()
+	{
+		m_stopAction();
+	}
+
+private:
+	TStartAction	m_startAction;
+	TStopAction		m_stopAction;
+};
+
+
+// ======================> PropertySyncAspect
+
+template<typename TValueType, typename TObserve>
+class MainWindow::PropertySyncAspect : public Aspect
+{
+public:
+	PropertySyncAspect(std::function<void(const TValueType &)> &&setFunc, TValueType &&defaultValue, TObserve &&observeFunc)
+		: m_setFunc(std::move(setFunc))
+		, m_defaultValue(std::move(defaultValue))
+		, m_observeFunc(std::move(observeFunc))
+	{
+	}
+
+	virtual void start()
+	{
+		// emplace the observable value into our optional memeber
+		m_value.emplace(m_observeFunc());
+
+		// subscribe to changes
+		m_value.value().subscribe([this](const TValueType &value) { m_setFunc(value); });
+
+		// and set the initial value
+		m_setFunc(m_value.value().get());
+	}
+
+	virtual void stop()
+	{
+		// clear out our value
+		m_value.reset();
+
+		// and restore the default
+		m_setFunc(m_defaultValue);
+	}
+
+private:
+	std::function<void(const TValueType &)>			m_setFunc;
+	TValueType										m_defaultValue;
+	TObserve										m_observeFunc;
+	std::optional<observable::value<TValueType>>	m_value;
+};
+
+
+// ======================> StatusBarAspect
+
+class MainWindow::StatusBarAspect : public Aspect
+{
+public:
+	StatusBarAspect(MainWindow &host)
+		: m_host(host)
+	{
+	}
+
+	virtual void start()
+	{
+		m_host.m_state->phase().subscribe([this]() { update(); });
+		m_host.m_state->speed_percent().subscribe([this]() { update(); });
+		m_host.m_state->effective_frameskip().subscribe([this]() { update(); });
+		m_host.m_state->startup_text().subscribe([this]() { update(); });
+		m_host.m_state->images().subscribe([this]() { update(); });
+		update();
+	}
+
+	virtual void stop()
+	{
+		update();
+	}
+
+private:
+	MainWindow &m_host;
+
+	void update()
+	{
+		// prepare a vector with the status text
+		QStringList statusText;
+
+		// is there a running emulation?
+		if (state().has_value())
+		{
+			// first entry depends on whether we are running
+			if (state()->phase().get() == status::machine_phase::RUNNING)
+			{
+				QString speedText;
+				int speedPercent = (int)(m_host.m_state->speed_percent().get() * 100.0 + 0.5);
+				if (state()->effective_frameskip().get() == 0)
+				{
+					speedText = QString("%2%1").arg(
+						"%",
+						QString::number(speedPercent));
+				}
+				else
+				{
+					speedText = QString("%2%1 (frameskip %3/10)").arg(
+						"%",
+						QString::number(speedPercent),
+						QString::number((int)m_host.m_state->effective_frameskip().get()));
+				}
+				statusText.push_back(std::move(speedText));
+			}
+			else
+			{
+				statusText.push_back(state()->startup_text().get());
+			}
+
+			// next entries come from device displays
+			for (auto iter = state()->images().get().cbegin(); iter < state()->images().get().cend(); iter++)
+			{
+				if (!iter->m_display.isEmpty())
+					statusText.push_back(iter->m_display);
+			}
+		}
+
+		// and specify it
+		QString statusTextString = statusText.join(' ');
+		statusBar().showMessage(statusTextString);
+	}
+
+
+	std::optional<status::state> &state()
+	{
+		return m_host.m_state;
+	}
+
+
+	QStatusBar &statusBar()
+	{
+		return *m_host.m_ui->statusBar;
+	}
+};
+
+
+// ======================> MenuBarAspect
+
+class MainWindow::MenuBarAspect : public Aspect
+{
+public:
+	MenuBarAspect(MainWindow &host)
+		: m_host(host)
+	{
+		QMenuBar &menuBar = *m_host.m_ui->menubar;
+		m_menuBarShown = true;
+		m_menuBarShown.subscribe([&menuBar](bool shown) { menuBar.setVisible(shown); });
+	}
+
+	virtual void start()
+	{
+		// update the menu bar from the prefs
+		m_menuBarShown = m_host.m_prefs.GetMenuBarShown();
+
+		// mouse capturing is a bit more involved
+		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_menuBarShown);
+		m_mouseCaptured.subscribe([this]()
+		{
+			m_host.Issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
+			// TODO - change cursor?
+		});
+	}
+
+	virtual void stop()
+	{
+		m_host.m_prefs.SetMenuBarShown(m_menuBarShown.get());
+		m_menuBarShown = true;
+	}
+
+private:
+	MainWindow &			m_host;
+	observable::value<bool>	m_menuBarShown;
+	observable::value<bool>	m_mouseCaptured;
 };
 
 
@@ -124,7 +322,6 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_client(*this, m_prefs)
 	, m_machinesViewModel(nullptr)
 	, m_softwareListViewModel(nullptr)
-	, m_pingTimer(nullptr)
 	, m_menu_bar_shown(false)
 	, m_capture_mouse(false)
 	, m_pinging(false)
@@ -158,16 +355,28 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up software list search box
 	setupSearchBox(*m_ui->softwareSearchBox, SOFTLIST_VIEW_DESC_NAME, *m_softwareListViewModel);
 
-	// set up menu bar actions
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionStop); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionPause, m_state && m_state->paused().get()); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDebugger); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionSoftReset); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionHardReset); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionIncreaseSpeed); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionDecreaseSpeed); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionWarpMode); });
-	m_updateMenuBarItemActions.emplace_back([this] { updateEmulationMenuItemAction(*m_ui->actionToggleSound, IsSoundEnabled()); });
+	// set up the ping timer
+	QTimer &pingTimer = *new QTimer(this);
+	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::InvokePing);
+	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
+
+	// setup properties that pertain to runtime behavior
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isEnabled,	&QWidget::setEnabled,		false);
+	setupPropSyncAspect(*m_ui->rootWidget,				&QWidget::isVisible,	&QWidget::setVisible,		[this]() { return AttachToRootPanel(); });
+	setupPropSyncAspect((QWidget &) *this,				&QWidget::windowTitle,	&QWidget::setWindowTitle,	[this]() { return observeTitleBarText(); });
+
+	// actions
+	setupPropSyncAspect(*m_ui->actionStop,				&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->paused()); });
+	setupPropSyncAspect(*m_ui->actionDebugger,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionSoftReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionHardReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,		&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,		&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionWarpMode,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,		&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,		&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->sound_attenuation() != SOUND_ATTENUATION_OFF); });
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
@@ -177,28 +386,38 @@ MainWindow::MainWindow(QWidget *parent)
 		QString text = QString::number((int)(throttle_rate * 100)) + "%";
 		QAction &action = *new QAction(text, m_ui->menuThrottle);
 		m_ui->menuThrottle->insertAction(&throttleSeparator, &action);
+		action.setEnabled(false);
 		action.setCheckable(true);
+
 		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { ChangeThrottleRate(throttle_rate); });
-		m_updateMenuBarItemActions.emplace_back([this, &action, throttle_rate] { updateEmulationMenuItemAction(action, m_state && m_state->throttle_rate() == throttle_rate); });
+		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, true);
+		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, [this, throttle_rate]() { return observable::observe(m_state->throttle_rate() == throttle_rate); });
 	}
 
 	// special setup for frameskip dynamic menu
 	for (int i = -1; i <= 10; i++)
 	{
+		QString value = i == -1 ? "auto" : QString::number(i);
 		QString text = i == -1 ? "Auto" : QString::number(i);
 		QAction &action = *m_ui->menuFrameSkip->addAction(text);
+		action.setEnabled(false);
 		action.setCheckable(true);
-		std::string value = i == -1 ? "auto" : std::to_string(i);
-		m_updateMenuBarItemActions.emplace_back([this, &action, value{ QString::fromStdString(value) }]{ updateEmulationMenuItemAction(action, m_state && m_state->frameskip() == value); });
-		connect(&action, &QAction::triggered, this, [this, value{std::move(value)}]() { Issue({ "frameskip", value }); });
+
+		connect(&action, &QAction::triggered, this, [this, value{ value.toStdString()}]() { Issue({ "frameskip", value }); });
+		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, true);
+		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, [this, value{std::move(value)}]() { return observable::observe(m_state->frameskip() == value); });
 	}
 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
 
-	// set up the ping timer
-	m_pingTimer = new QTimer(this);
-	connect(m_pingTimer, &QTimer::timeout, this, &MainWindow::InvokePing);
+	// set up the aspect controlling status bar behavior
+	Aspect::ptr statusBarAspect = std::make_unique<StatusBarAspect>(*this);
+	m_aspects.push_back(std::move(statusBarAspect));
+
+	// set up the aspect controlling menu bar behavior
+	Aspect::ptr menuBarAspect = std::make_unique<MenuBarAspect>(*this);
+	m_aspects.push_back(std::move(menuBarAspect));
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -212,6 +431,71 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
 	m_prefs.Save();
+}
+
+
+//-------------------------------------------------
+//  setupActionAspect
+//-------------------------------------------------
+
+template<typename TStartAction, typename TStopAction>			
+void MainWindow::setupActionAspect(TStartAction &&startAction, TStopAction &&stopAction)
+{
+	Aspect::ptr action = std::make_unique<ActionAspect<TStartAction, TStopAction>>(
+		std::move(startAction),
+		std::move(stopAction));
+	m_aspects.push_back(std::move(action));
+}
+
+
+//-------------------------------------------------
+//  setupPropSyncAspect
+//-------------------------------------------------
+
+template<typename TObj, typename TValueType>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(TValueType), TValueType value)
+{
+	setupPropSyncAspect(obj, getFunc, setFunc, [value]() { return observable::value<TValueType>(value); });
+}
+
+
+template<typename TObj, typename TValueType, typename TObserve>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(TValueType), TObserve &&func)
+{
+	// determine the original value (to be restored when the emulation completes)
+	TValueType originalValue = ((obj).*(getFunc))();
+
+	// create the action
+	Aspect::ptr action = std::make_unique<PropertySyncAspect<TValueType, TObserve>>(
+		[&obj, setFunc](const TValueType &value) { ((obj).*(setFunc))(value); },
+		std::move(originalValue),
+		std::move(func));
+
+	// and add it to the list
+	m_aspects.push_back(std::move(action));
+}
+
+
+template<typename TObj, typename TValueType>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TValueType value)
+{
+	setupPropSyncAspect(obj, getFunc, setFunc, [value]() { return observable::value<TValueType>(value); });
+}
+
+template<typename TObj, typename TValueType, typename TObserve>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TObserve &&func)
+{
+	// determine the original value (to be restored when the emulation completes)
+	TValueType originalValue = ((obj).*(getFunc))();
+
+	// create the action
+	Aspect::ptr action = std::make_unique<PropertySyncAspect<TValueType, TObserve>>(
+		[&obj, setFunc](const TValueType &value) { ((obj).*(setFunc))(value); },
+		std::move(originalValue),
+		std::move(func));
+
+	// and add it to the list
+	m_aspects.push_back(std::move(action));
 }
 
 
@@ -321,7 +605,8 @@ void MainWindow::on_actionWarpMode_triggered()
 
 void MainWindow::on_actionToggleSound_triggered()
 {
-	ChangeSound(!IsSoundEnabled());
+	bool isEnabled = m_ui->actionToggleSound->isEnabled();
+	ChangeSound(!isEnabled);
 }
 
 
@@ -677,28 +962,18 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	Task::ptr task = std::make_shared<RunMachineTask>(
 		machine,
 		std::move(software_name),
-		AttachToRootPanel() ? *m_ui->centralwidget : *this);
+		AttachToRootPanel() ? *m_ui->rootWidget : *this);
 	m_client.launch(std::move(task));
 
 	// set up running state and subscribe to events
 	m_state.emplace();
-	m_state->paused().subscribe([this]() { updateTitleBar(); });
-	m_state->phase().subscribe([this]() { updateStatusBar(); });
-	m_state->speed_percent().subscribe([this]() { updateStatusBar(); });
-	m_state->effective_frameskip().subscribe([this]() { updateStatusBar(); });
-	m_state->startup_text().subscribe([this]() { updateStatusBar(); });
-	m_state->images().subscribe([this]() { updateStatusBar(); });
 
-	// mouse capturing is a bit more involved
-	m_capture_mouse = observable::observe(m_state->has_input_using_mouse() && !m_menu_bar_shown);
-	m_capture_mouse.subscribe([this]()
-	{
-		Issue({ "SET_MOUSE_ENABLED", m_capture_mouse ? "true" : "false" });
-		// TODO - change cursor
-	});
+	// execute the start handler for all aspects
+	for (const auto &aspect : m_aspects)
+		aspect->start();
 
 	// we have a session running; hide/show things respectively
-	updateEmulationSession();
+	updateMenuBar();
 
 	// set the focus to the main window
 	setFocus();
@@ -1020,8 +1295,10 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	m_current_profile_path = util::g_empty_string;
 	m_current_profile_auto_save_state = false;
 #endif
-	updateEmulationSession();
-	updateStatusBar();
+
+	// execute the stop handler for all aspects
+	for (const auto &aspect : m_aspects)
+		aspect->stop();
 
 	// report any errors
 	if (!event.errorMessage().isEmpty())
@@ -1066,7 +1343,6 @@ bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
 {
 	m_state->update(event.detachStatus());
 	m_pinging = false;
-	updateMenuBarItems();
 	return true;
 }
 
@@ -1113,46 +1389,25 @@ const QString &MainWindow::GetMachineListItemText(info::machine machine, long co
 
 
 //-------------------------------------------------
-//  updateEmulationSession
+//  observeTitleBarText
 //-------------------------------------------------
 
-void MainWindow::updateEmulationSession()
+observable::value<QString> MainWindow::observeTitleBarText()
 {
-	// is the emulation session active?
-	bool is_active = m_state.has_value();
+	// identify the correct text for paused and not paused
+	const QString &machineDesc = m_client.GetCurrentTask<RunMachineTask>()->getMachine().description();
+	QString titleTextNotPaused = QString("%1: %2").arg(
+		QCoreApplication::applicationName(),
+		machineDesc);
+	QString titleTextPaused = QString("%1: %2 PAUSED").arg(
+		QCoreApplication::applicationName(),
+		machineDesc);
 
-	// if so, hide the machine list UX
-	m_ui->tabWidget->setVisible(!is_active);
-	m_ui->centralwidget->setVisible(!is_active || AttachToRootPanel());
-
-	// ...and enable pinging
-	if (is_active)
-		m_pingTimer->start(500);
-	else
-		m_pingTimer->stop();
-
-	// ...and cascade other updates
-	updateTitleBar();
-	updateMenuBar();
-}
-
-
-//-------------------------------------------------
-//  updateTitleBar
-//-------------------------------------------------
-
-void MainWindow::updateTitleBar()
-{
-	QString title_text = QCoreApplication::applicationName();
-	if (m_state.has_value())
-	{
-		title_text += ": " + m_client.GetCurrentTask<RunMachineTask>()->getMachine().description();
-
-		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
-		if (m_state->paused().get() && !m_current_pauser)
-			title_text += " PAUSED";
-	}
-	setWindowTitle(title_text);
+	// and observe the result
+	return observable::observe(observable::select(
+		m_state->paused(),
+		titleTextPaused,
+		titleTextNotPaused));
 }
 
 
@@ -1174,85 +1429,6 @@ void MainWindow::updateMenuBar()
 		// show/hide the menu bar
 		m_ui->menubar->setVisible(m_menu_bar_shown.get());
 	}
-
-	updateMenuBarItems();
-}
-
-
-//-------------------------------------------------
-//  updateMenuBarItems
-//-------------------------------------------------
-
-void MainWindow::updateMenuBarItems()
-{
-	for (const auto &action : m_updateMenuBarItemActions)
-		action();
-}
-
-
-//-------------------------------------------------
-//  updateEmulationMenuItemAction
-//-------------------------------------------------
-
-void MainWindow::updateEmulationMenuItemAction(QAction &action, std::optional<bool> checked, bool enabled)
-{
-	action.setEnabled(m_state.has_value() && enabled);
-	if (checked.has_value())
-	{
-		assert(action.isCheckable());
-		action.setChecked(checked.value());
-	}
-}
-
-
-//-------------------------------------------------
-//  updateStatusBar
-//-------------------------------------------------
-
-void MainWindow::updateStatusBar()
-{
-	// prepare a vector with the status text
-	QStringList statusText;
-	
-	// is there a running emulation?
-	if (m_state.has_value())
-	{
-		// first entry depends on whether we are running
-		if (m_state->phase().get() == status::machine_phase::RUNNING)
-		{
-			QString speedText;
-			int speedPercent = (int)(m_state->speed_percent().get() * 100.0 + 0.5);
-			if (m_state->effective_frameskip().get() == 0)
-			{
-				speedText = QString("%2%1").arg(
-					"%",
-					QString::number(speedPercent));
-			}
-			else
-			{
-				speedText = QString("%2%1 (frameskip %3/10)").arg(
-					"%",
-					QString::number(speedPercent),
-					QString::number((int)m_state->effective_frameskip().get()));
-			}
-			statusText.push_back(std::move(speedText));
-		}
-		else
-		{
-			statusText.push_back(m_state->startup_text().get());
-		}
-
-		// next entries come from device displays
-		for (auto iter = m_state->images().get().cbegin(); iter < m_state->images().get().cend(); iter++)
-		{
-			if (!iter->m_display.isEmpty())
-				statusText.push_back(iter->m_display);
-		}
-	}
-
-	// and specify it
-	QString statusTextString = statusText.join(' ');
-	m_ui->statusBar->showMessage(statusTextString);
 }
 
 
@@ -1375,7 +1551,7 @@ void MainWindow::ChangeThrottleRate(int adjustment)
 	int index;
 	for (index = 0; index < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); index++)
 	{
-		if (m_state->throttle_rate() >= s_throttle_rates[index])
+		if (m_state->throttle_rate().get() >= s_throttle_rates[index])
 			break;
 	}
 
@@ -1396,14 +1572,4 @@ void MainWindow::ChangeThrottleRate(int adjustment)
 void MainWindow::ChangeSound(bool sound_enabled)
 {
 	Issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
-}
-
-
-//-------------------------------------------------
-//  IsSoundEnabled
-//-------------------------------------------------
-
-bool MainWindow::IsSoundEnabled() const
-{
-	return m_state && m_state->sound_attenuation() != SOUND_ATTENUATION_OFF;
 }
