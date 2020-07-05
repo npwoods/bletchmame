@@ -72,6 +72,7 @@ private slots:
 
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
+	virtual void keyPressEvent(QKeyEvent *event) override;
 
 private:
 	// status of MAME version checks
@@ -131,7 +132,6 @@ private:
 	QString								m_software_list_collection_machine_name;
 	std::optional<status::state>		m_state;
 	observable::value<bool>				m_menu_bar_shown;
-	observable::value<bool>				m_capture_mouse;
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
 	observable::value<QString>			m_current_recording_movie_filename;
@@ -170,7 +170,6 @@ private:
 	info::machine GetMachineFromIndex(long item) const;
 	const QString &GetMachineListItemText(info::machine machine, long column) const;
 	observable::value<QString> observeTitleBarText();
-	void updateMenuBar();
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<std::string> &args);
 	void Issue(const char *command);

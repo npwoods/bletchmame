@@ -260,33 +260,32 @@ public:
 		: m_host(host)
 	{
 		QMenuBar &menuBar = *m_host.m_ui->menubar;
-		m_menuBarShown = true;
-		m_menuBarShown.subscribe([&menuBar](bool shown) { menuBar.setVisible(shown); });
+		m_host.m_menu_bar_shown.subscribe([&menuBar](bool shown) { menuBar.setVisible(shown); });
+		m_host.m_menu_bar_shown = true;
 	}
 
 	virtual void start()
 	{
 		// update the menu bar from the prefs
-		m_menuBarShown = m_host.m_prefs.GetMenuBarShown();
+		m_host.m_menu_bar_shown = m_host.m_prefs.GetMenuBarShown();
 
 		// mouse capturing is a bit more involved
-		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_menuBarShown);
+		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_host.m_menu_bar_shown);
 		m_mouseCaptured.subscribe([this]()
 		{
 			m_host.Issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
-			// TODO - change cursor?
+			m_host.setCursor(m_mouseCaptured.get() ? Qt::BlankCursor : Qt::ArrowCursor);
 		});
 	}
 
 	virtual void stop()
 	{
-		m_host.m_prefs.SetMenuBarShown(m_menuBarShown.get());
-		m_menuBarShown = true;
+		m_host.m_prefs.SetMenuBarShown(m_host.m_menu_bar_shown.get());
+		m_host.m_menu_bar_shown = true;
 	}
 
 private:
 	MainWindow &			m_host;
-	observable::value<bool>	m_menuBarShown;
 	observable::value<bool>	m_mouseCaptured;
 };
 
@@ -363,8 +362,6 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_client(*this, m_prefs)
 	, m_machinesViewModel(nullptr)
 	, m_softwareListViewModel(nullptr)
-	, m_menu_bar_shown(false)
-	, m_capture_mouse(false)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -1148,9 +1145,6 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	for (const auto &aspect : m_aspects)
 		aspect->start();
 
-	// we have a session running; hide/show things respectively
-	updateMenuBar();
-
 	// set the focus to the main window
 	setFocus();
 
@@ -1331,6 +1325,22 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 	// yup, we're closing
 	event->accept();
+}
+
+
+//-------------------------------------------------
+//  keyPressEvent
+//-------------------------------------------------
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+	// in an ode to MAME's normal UI, ScrollLock toggles the menu bar
+	if (event->key() == Qt::Key::Key_ScrollLock)
+		m_menu_bar_shown = !m_menu_bar_shown.get();
+
+	// pressing ALT to bring up menus is not friendly when running the emulation
+	if (m_state.has_value() && (event->modifiers() & Qt::AltModifier))
+		event->ignore();
 }
 
 
@@ -1659,27 +1669,6 @@ observable::value<QString> MainWindow::observeTitleBarText()
 		m_state->paused(),
 		titleTextPaused,
 		titleTextNotPaused));
-}
-
-
-//-------------------------------------------------
-//  updateMenuBar
-//-------------------------------------------------
-
-void MainWindow::updateMenuBar()
-{
-	// are we supposed to show the menu bar?
-	m_menu_bar_shown = !m_state.has_value() || m_prefs.GetMenuBarShown();
-
-	// is this different than the current state?
-	if (m_menu_bar_shown.get() != m_ui->menubar->isVisible())
-	{
-		// when we hide the menu bar, we disable the accelerators
-		// TODO?
-
-		// show/hide the menu bar
-		m_ui->menubar->setVisible(m_menu_bar_shown.get());
-	}
 }
 
 
