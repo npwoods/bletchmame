@@ -901,6 +901,24 @@ void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
 
 
 //-------------------------------------------------
+//  on_softwareTableView_activated
+//-------------------------------------------------
+
+void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
+{
+	// identify the machine
+	long machine_index = m_machinesViewModel->getFirstSelected();
+	const info::machine machine = GetMachineFromIndex(machine_index);
+
+	// identify the software
+	const software_list::software *software = m_softwareListViewModel->GetSelectedSoftware();
+
+	// and run!
+	Run(machine, software);
+}
+
+
+//-------------------------------------------------
 //  on_tabWidget_currentChanged
 //-------------------------------------------------
 

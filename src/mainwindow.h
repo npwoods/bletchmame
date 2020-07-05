@@ -69,6 +69,7 @@ private slots:
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
 	void on_machinesTableView_activated(const QModelIndex &index);
+	void on_softwareTableView_activated(const QModelIndex &index);
 	void on_tabWidget_currentChanged(int index);
 
 protected:

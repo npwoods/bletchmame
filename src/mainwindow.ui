@@ -24,7 +24,7 @@
        <attribute name="title">
         <string>Machines</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout">
+       <layout class="QVBoxLayout" name="machinesVerticalLayout">
         <item>
          <widget class="QLineEdit" name="machinesSearchBox"/>
         </item>
@@ -50,12 +50,25 @@
        <attribute name="title">
         <string>Software</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
+       <layout class="QVBoxLayout" name="softwareVerticalLayout">
         <item>
          <widget class="QLineEdit" name="softwareSearchBox"/>
         </item>
         <item>
-         <widget class="QTableView" name="softwareTableView"/>
+         <widget class="QTableView" name="softwareTableView">
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::NoPen</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
