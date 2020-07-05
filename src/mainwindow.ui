@@ -298,14 +298,17 @@
    </property>
   </action>
   <action name="actionFullScreen">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Full Screen</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>F11</string>
    </property>
   </action>
   <action name="actionConsole">

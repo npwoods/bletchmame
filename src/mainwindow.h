@@ -62,6 +62,7 @@ private slots:
 	void on_actionIncreaseSpeed_triggered();
 	void on_actionDecreaseSpeed_triggered();
 	void on_actionWarpMode_triggered();
+	void on_actionFullScreen_triggered();
 	void on_actionToggleSound_triggered();
 	void on_actionPaths_triggered();
 	void on_actionAbout_triggered();

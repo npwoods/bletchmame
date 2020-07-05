@@ -756,6 +756,27 @@ void MainWindow::on_actionWarpMode_triggered()
 
 
 //-------------------------------------------------
+//  on_actionFullScreen_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionFullScreen_triggered()
+{
+	// figure out the new value
+	bool currentFullScreen = (windowState() & Qt::WindowFullScreen) != 0;
+	bool newFullScreen = !currentFullScreen;
+
+	// change the window state
+	if (newFullScreen)
+		showFullScreen();
+	else
+		showNormal();
+
+	// and update the menu item
+	m_ui->actionFullScreen->setChecked(newFullScreen);
+}
+
+
+//-------------------------------------------------
 //  on_actionToggleSound_triggered
 //-------------------------------------------------
 
