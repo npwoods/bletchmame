@@ -291,6 +291,42 @@ private:
 };
 
 
+// ======================> ToggleMovieTextAspect
+
+class MainWindow::ToggleMovieTextAspect : public Aspect
+{
+public:
+	ToggleMovieTextAspect(observable::value<QString> &currentRecordingMovieFilename, QAction &actionToggleRecordMovie)
+		: m_currentRecordingMovieFilename(currentRecordingMovieFilename)
+		, m_actionToggleRecordMovie(actionToggleRecordMovie)
+	{
+		m_currentRecordingMovieFilename.subscribe([this] { update(); });
+	}
+
+	virtual void start()
+	{
+		m_currentRecordingMovieFilename = "";
+	}
+
+	virtual void stop()
+	{
+		m_currentRecordingMovieFilename = "";
+	}
+
+private:
+	observable::value<QString> &	m_currentRecordingMovieFilename;
+	QAction &						m_actionToggleRecordMovie;
+
+	void update()
+	{
+		QString text = m_currentRecordingMovieFilename.get().isEmpty()
+			? QString("Record Movie...")
+			: QString("Stop Recording Movie \"%1\"").arg(QDir::toNativeSeparators(m_currentRecordingMovieFilename.get()));
+		m_actionToggleRecordMovie.setText(std::move(text));
+	}
+};
+
+
 //**************************************************************************
 //  MAIN IMPLEMENTATION
 //**************************************************************************
@@ -299,6 +335,7 @@ const float MainWindow::s_throttle_rates[] = { 10.0f, 5.0f, 2.0f, 1.0f, 0.5f, 0.
 
 const QString MainWindow::s_wc_saved_state = "MAME Saved State Files (*.sta);;All Files (*.*)";
 const QString MainWindow::s_wc_save_snapshot = "PNG Files (*.png);;All Files (*.*)";
+const QString MainWindow::s_wc_record_movie = "AVI Files (*.avi);;MNG Files (*.mng);;All Files (*.*)";
 
 static const CollectionViewDesc s_machine_collection_view_desc =
 {
@@ -377,6 +414,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionLoadState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionSaveState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionSaveScreenshot,	&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,	&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionDebugger,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionSoftReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionHardReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
@@ -419,13 +457,10 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
 
-	// set up the aspect controlling status bar behavior
-	Aspect::ptr statusBarAspect = std::make_unique<StatusBarAspect>(*this);
-	m_aspects.push_back(std::move(statusBarAspect));
-
-	// set up the aspect controlling menu bar behavior
-	Aspect::ptr menuBarAspect = std::make_unique<MenuBarAspect>(*this);
-	m_aspects.push_back(std::move(menuBarAspect));
+	// set up other miscellaneous aspects
+	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
+	m_aspects.push_back(std::make_unique<MenuBarAspect>(*this));
+	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -579,6 +614,77 @@ void MainWindow::on_actionSaveScreenshot_triggered()
 		false,
 		s_wc_save_snapshot,
 		file_dialog_type::SAVE);
+}
+
+
+//-------------------------------------------------
+//  on_actionToggleRecordMovie_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionToggleRecordMovie_triggered()
+{
+	// recording movies by specifying absolute paths was introduced in MAME 0.221
+	const MameVersion REQUIRED_MAME_VERSION_TOGGLE_MOVIE = MameVersion(0, 220, true);
+
+	// Are we the required version? 
+	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
+	{
+		QString message = QString("Recording movies requires MAME %1 or newer to function")
+			.arg(REQUIRED_MAME_VERSION_TOGGLE_MOVIE.NextCleanVersion().ToString());
+		messageBox(message);
+		return;
+	}
+
+	// We're toggling the movie status... so are we recording?
+	if (m_state.value().is_recording())
+	{
+		// If so, stop the recording
+		Issue({ "end_recording" });
+		m_current_recording_movie_filename = "";
+	}
+	else
+	{
+		enum class recording_type
+		{
+			AVI,
+			MNG
+		};
+
+		// If not, show a file dialog and start recording
+		Pauser pauser(*this);
+		QString path = GetFileDialogFilename(
+			Preferences::machine_path_type::WORKING_DIRECTORY,
+			s_wc_record_movie,
+			file_dialog_type::SAVE);
+		if (!path.isEmpty())
+		{
+			// determine the recording file type
+			QFileInfo fi(path);
+			QString extension = fi.suffix().toUpper();
+			recording_type recordingType = extension == "MNG"
+				? recording_type::MNG
+				: recording_type::AVI;
+
+			// convert to a string
+			QString recordingTypeString;
+			switch (recordingType)
+			{
+			case recording_type::AVI:
+				recordingTypeString = "avi";
+				break;
+			case recording_type::MNG:
+				recordingTypeString = "mng";
+				break;
+			default:
+				throw false;
+			}
+
+			// and issue the command
+			QString nativePath = QDir::toNativeSeparators(path);
+			Issue({ "begin_recording", std::move(nativePath), recordingTypeString });
+			m_current_recording_movie_filename = std::move(path);
+		}
+	}
 }
 
 

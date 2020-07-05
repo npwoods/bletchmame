@@ -107,7 +107,7 @@
     <addaction name="actionSaveState"/>
     <addaction name="separator"/>
     <addaction name="actionSaveScreenshot"/>
-    <addaction name="actionRecordMovie"/>
+    <addaction name="actionToggleRecordMovie"/>
     <addaction name="separator"/>
     <addaction name="actionDebugger"/>
     <addaction name="menuReset"/>
@@ -243,7 +243,7 @@
     <string>F12</string>
    </property>
   </action>
-  <action name="actionRecordMovie">
+  <action name="actionToggleRecordMovie">
    <property name="enabled">
     <bool>false</bool>
    </property>

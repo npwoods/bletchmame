@@ -54,6 +54,7 @@ private slots:
 	void on_actionLoadState_triggered();
 	void on_actionSaveState_triggered();
 	void on_actionSaveScreenshot_triggered();
+	void on_actionToggleRecordMovie_triggered();
 	void on_actionDebugger_triggered();
 	void on_actionSoftReset_triggered();
 	void on_actionHardReset_triggered();
@@ -103,11 +104,13 @@ private:
 	template<typename TValueType, typename TObserve> class PropertySyncAspect;
 	class StatusBarAspect;
 	class MenuBarAspect;
+	class ToggleMovieTextAspect;
 
 	// statics
 	static const float					s_throttle_rates[];
 	static const QString				s_wc_saved_state;
 	static const QString				s_wc_save_snapshot;
+	static const QString				s_wc_record_movie;
 
 	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>		m_ui;
@@ -131,6 +134,7 @@ private:
 	observable::value<bool>				m_capture_mouse;
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
+	observable::value<QString>			m_current_recording_movie_filename;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
