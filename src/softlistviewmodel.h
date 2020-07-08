@@ -22,7 +22,7 @@
 class SoftwareListViewModel : public CollectionViewModel
 {
 public:
-	SoftwareListViewModel(QAbstractItemView &itemView, Preferences &prefs);
+	SoftwareListViewModel(QTableView &tableView, Preferences &prefs);
 
 	void Load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = util::g_empty_string);
 	void Clear();

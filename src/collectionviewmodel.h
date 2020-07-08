@@ -17,7 +17,7 @@
 #include "prefs.h"
 
 class QItemSelectionModel;
-class QAbstractItemView;
+class QTableView;
 
 // ======================> ColumnDesc
 
@@ -45,8 +45,8 @@ class CollectionViewModel : public QAbstractItemModel
 public:
 	// ctor
 	template<typename TFuncGetItemText, typename TFuncGetSize>
-	CollectionViewModel(QAbstractItemView &itemView, Preferences &prefs, const CollectionViewDesc &desc, TFuncGetItemText &&func_get_item_text, TFuncGetSize &&func_get_size, bool support_label_edit)
-        : CollectionViewModel(itemView, prefs, desc, std::make_unique<CollectionImpl<TFuncGetItemText, TFuncGetSize>>(std::move(func_get_item_text), std::move(func_get_size)), support_label_edit)
+	CollectionViewModel(QTableView &tableView, Preferences &prefs, const CollectionViewDesc &desc, TFuncGetItemText &&func_get_item_text, TFuncGetSize &&func_get_size, bool support_label_edit)
+        : CollectionViewModel(tableView, prefs, desc, std::make_unique<CollectionImpl<TFuncGetItemText, TFuncGetSize>>(std::move(func_get_item_text), std::move(func_get_size)), support_label_edit)
     {
     }
 
@@ -111,22 +111,26 @@ private:
 	const CollectionViewDesc &			m_desc;
 	Preferences &						m_prefs;
 	std::unique_ptr<ICollectionImpl>	m_coll_impl;
+	std::vector<int>					m_columnOrder;
 	std::vector<int>					m_indirections;
 	int									m_key_column_index;
 	int									m_sort_column;
 	ColumnPrefs::sort_type				m_sort_type;
 
 	// ctor
-	CollectionViewModel(QAbstractItemView &itemView, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
+	CollectionViewModel(QTableView &tableView, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
 
 	// methods
 	int rowCount() const;
 	int columnCount() const;
-	QAbstractItemView &parentAsItemView();
-	const QAbstractItemView &parentAsItemView() const;
+	QTableView &parentAsTableView();
+	const QTableView &parentAsTableView() const;
 	void selectByIndex(long item_index);
 	int compareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const;
 	const QString &getActualItemText(long item, long column) const;
+	void updateColumnPrefs();
+	int logicalFromDisplayColumn(int displayColumn) const;
+	int displayFromLogicalColumn(int logicalColumn) const;
 };
 
 #endif // COLLECTIONVIEWMODEL_H

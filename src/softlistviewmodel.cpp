@@ -30,9 +30,9 @@ static const CollectionViewDesc s_view_desc =
 //  ctor
 //-------------------------------------------------
 
-SoftwareListViewModel::SoftwareListViewModel(QAbstractItemView &itemView, Preferences &prefs)
+SoftwareListViewModel::SoftwareListViewModel(QTableView &tableView, Preferences &prefs)
 	: CollectionViewModel(
-		itemView,
+		tableView,
 		prefs,
 		s_view_desc,
 		[this](long item, long column) -> const QString &{ return GetListItemText(m_parts[item].software(), column); },
