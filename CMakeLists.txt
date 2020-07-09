@@ -56,8 +56,10 @@ add_library(BletchMAME_core
 	src/status.h
 	src/utility.cpp
 	src/utility.h
+	src/tableviewmanager.cpp
+	src/tableviewmanager.h
 	src/task.cpp
-	src/task.h
+	src/task.h	
 	src/versiontask.cpp
 	src/versiontask.h
 	src/xmlparser.cpp

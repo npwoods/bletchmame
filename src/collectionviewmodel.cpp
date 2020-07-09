@@ -11,8 +11,10 @@
 #include <QItemSelectionModel>
 #include <QTableView>
 #include <QHeaderView>
+#include <QSortFilterProxyModel>
 
 #include "collectionviewmodel.h"
+#include "tableviewmanager.h"
 #include "utility.h"
 #include "prefs.h"
 
@@ -27,8 +29,6 @@ CollectionViewModel::CollectionViewModel(QTableView &tableView, Preferences &pre
     , m_prefs(prefs)
     , m_coll_impl(std::move(coll_impl))
 	, m_key_column_index(-1)
-	, m_sort_column(0)
-    , m_sort_type(ColumnPrefs::sort_type::ASCENDING)
 {
 	// figure out the key column index
 	for (int i = 0; i < desc.m_columns.size(); i++)
@@ -37,48 +37,16 @@ CollectionViewModel::CollectionViewModel(QTableView &tableView, Preferences &pre
 			m_key_column_index = i;
 	}
 
+	// create a proxy model for sorting
+	QSortFilterProxyModel &proxyModel = *new QSortFilterProxyModel(&tableView);
+	proxyModel.setSourceModel(this);
+	proxyModel.setSortCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+
 	// set the model on the actual tab view
-	tableView.setModel(this);
+	tableView.setModel(&proxyModel);
 
-	// set column width and order
-	{
-		const std::unordered_map<std::string, ColumnPrefs> &col_prefs = m_prefs.GetColumnPrefs(m_desc.m_name);
-		std::vector<int> logicalColumnWidths;
-		m_columnOrder.resize(m_desc.m_columns.size());
-		logicalColumnWidths.resize(m_desc.m_columns.size());
-
-		// unpack the preferences
-		for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
-		{
-			auto iter = col_prefs.find(m_desc.m_columns[logicalColumn].m_id);
-			if (iter != col_prefs.end())
-			{
-				logicalColumnWidths[logicalColumn] = iter->second.m_width;
-				m_columnOrder[logicalColumn] = iter->second.m_order;
-			}
-			else
-			{
-				logicalColumnWidths[logicalColumn] = m_desc.m_columns[logicalColumn].m_default_width;
-				m_columnOrder[logicalColumn] = logicalColumn;
-			}
-		}
-
-		// do a check to see if all display columns are found; if not, we need to reset the orders
-		for (int displayColumn = 0; displayColumn < m_desc.m_columns.size(); displayColumn++)
-		{
-			if (std::find(m_columnOrder.begin(), m_columnOrder.end(), displayColumn) == m_columnOrder.end())
-			{
-				// sigh, we need to reset the order
-				for (int i = 0; i < m_columnOrder.size(); i++)
-					m_columnOrder[i] = i;
-				break;
-			}
-		}
-
-		// now finally set the sizes
-		for (int logicalColumn = 0; logicalColumn < m_columnOrder.size(); logicalColumn++)
-			tableView.setColumnWidth(m_columnOrder[logicalColumn], logicalColumnWidths[logicalColumn]);
-	}
+	// set up the table view manager
+	(void) new TableViewManager(tableView, m_prefs, m_desc);
 
 	// handle selection
 	connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
@@ -90,12 +58,6 @@ CollectionViewModel::CollectionViewModel(QTableView &tableView, Preferences &pre
 			const QString &val = getActualItemText(actual_item, m_key_column_index);
 			setListViewSelection(val);
 		}
-	});
-
-	// handle resizing
-	connect(tableView.horizontalHeader(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
-	{
-		updateColumnPrefs();
 	});
 }
 
@@ -132,23 +94,6 @@ void CollectionViewModel::updateListView()
 		if (match)
 			m_indirections.push_back(i);
 	}
-
-	// sort the indirection list
-	std::sort(m_indirections.begin(), m_indirections.end(), [this, column_count](int a, int b)
-	{
-		// first compare the actual sort
-		int rc = compareActualRows(a, b, m_sort_column, m_sort_type);
-		if (rc != 0)
-			return rc < 0;
-
-		// in the unlikely event of a tie, try comparing the other columns
-		for (int column_index = 0; rc == 0 && column_index < column_count; column_index++)
-		{
-			if (column_index != m_sort_column)
-				rc = compareActualRows(a, b, column_index, ColumnPrefs::sort_type::ASCENDING);
-		}
-		return rc < 0;
-	});
 
 	// we're done resetting the model
 	endResetModel();
@@ -203,58 +148,12 @@ void CollectionViewModel::selectByIndex(long item_index)
 
 
 //-------------------------------------------------
-//  CompareActualRows
-//-------------------------------------------------
-
-int CollectionViewModel::compareActualRows(int row_a, int row_b, int sort_column, ColumnPrefs::sort_type sort_type) const
-{
-	const QString &a_string = getActualItemText(row_a, sort_column);
-	const QString &b_string = getActualItemText(row_b, sort_column);
-	int compare_result = util::string_icompare(a_string.toStdWString(), b_string.toStdWString());
-	return sort_type == ColumnPrefs::sort_type::ASCENDING
-		? compare_result
-		: -compare_result;
-}
-
-
-//-------------------------------------------------
 //  getActualItemText
 //-------------------------------------------------
 
 const QString &CollectionViewModel::getActualItemText(long item, long column) const
 {
 	return m_coll_impl->GetItemText(item, column);
-}
-
-
-//-------------------------------------------------
-//  updateColumnPrefs
-//-------------------------------------------------
-
-void CollectionViewModel::updateColumnPrefs()
-{
-	const QTableView &tableView = parentAsTableView();
-
-	// get the column count
-	int column_count = columnCount();
-
-	// start preparing column prefs
-	std::unordered_map<std::string, ColumnPrefs> col_prefs;
-	col_prefs.reserve(column_count);
-
-	// get all info about each column
-	for (int logicalColumn = 0; logicalColumn < column_count; logicalColumn++)
-	{
-		int displayColumn = displayFromLogicalColumn(logicalColumn);
-		int width = tableView.columnWidth(displayColumn);
-		ColumnPrefs &this_col_pref = col_prefs[m_desc.m_columns[logicalColumn].m_id];
-		this_col_pref.m_width = tableView.columnWidth(displayColumn);
-		this_col_pref.m_order = displayColumn;
-		this_col_pref.m_sort = m_sort_column == logicalColumn ? m_sort_type : std::optional<ColumnPrefs::sort_type>();
-	}
-
-	// and save it
-	m_prefs.SetColumnPrefs(m_desc.m_name, std::move(col_prefs));
 }
 
 
@@ -353,11 +252,8 @@ QVariant CollectionViewModel::data(const QModelIndex &index, int role) const
         && index.row() < rowCount()
         && role == Qt::DisplayRole)
     {
-		// resolve the column order
-		int logicalColumn = logicalFromDisplayColumn(index.column());
-
 		long actual_item = m_indirections[index.row()];
-		result = getActualItemText(actual_item, logicalColumn);
+		result = getActualItemText(actual_item, index.column());
     }
     return result;
 }
@@ -372,14 +268,11 @@ QVariant CollectionViewModel::headerData(int section, Qt::Orientation orientatio
     if (orientation != Qt::Orientation::Horizontal || section < 0 || section >= columnCount())
         return QVariant();
 
-	// resolve the column order
-	int logicalColumn = logicalFromDisplayColumn(section);
-
     QVariant result;
     switch (role)
     {
     case Qt::DisplayRole:
-        result = m_desc.m_columns[logicalColumn].m_description;
+        result = m_desc.m_columns[section].m_description;
         break;
 
     default:
@@ -394,43 +287,9 @@ QVariant CollectionViewModel::headerData(int section, Qt::Orientation orientatio
 //  sort
 //-------------------------------------------------
 
+#if 0
 void CollectionViewModel::sort(int displayColumn, Qt::SortOrder order)
 {
-	int logicalColumn = logicalFromDisplayColumn(displayColumn);
-	m_sort_column = logicalColumn;
-	switch (order)
-	{
-	case Qt::SortOrder::AscendingOrder:
-		m_sort_type = ColumnPrefs::sort_type::ASCENDING;
-		break;
-	case Qt::SortOrder::DescendingOrder:
-		m_sort_type = ColumnPrefs::sort_type::DESCENDING;
-		break;
-	default:
-		throw false;
-	}
 	updateListView();
 }
-
-
-//-------------------------------------------------
-//  logicalFromDisplayColumn
-//-------------------------------------------------
-
-int CollectionViewModel::logicalFromDisplayColumn(int displayColumn) const
-{
-	auto iter = std::find(m_columnOrder.begin(), m_columnOrder.end(), displayColumn);
-	int logicalColumn = iter - m_columnOrder.begin();
-	assert(logicalColumn >= 0 && logicalColumn <= m_columnOrder.size());
-	return logicalColumn;
-}
-
-
-//-------------------------------------------------
-//  displayFromLogicalColumn
-//-------------------------------------------------
-
-int CollectionViewModel::displayFromLogicalColumn(int logicalColumn) const
-{
-	return m_columnOrder[logicalColumn];
-}
+#endif
