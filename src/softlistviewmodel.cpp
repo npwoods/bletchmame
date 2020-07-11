@@ -155,8 +155,7 @@ const SoftwareListViewModel::SoftwareAndPart *SoftwareListViewModel::GetSelected
 	long selected_item = getFirstSelected();
 	if (selected_item >= 0)
 	{
-		int actual_selected_item = getActualIndex(selected_item);
-		result = &m_parts[actual_selected_item];
+		result = &m_parts[selected_item];
 	}
 	return result;
 }

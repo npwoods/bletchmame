@@ -895,7 +895,8 @@ void MainWindow::on_actionBletchMameWebSite_triggered()
 
 void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
 {
-	const info::machine machine = GetMachineFromIndex(index.row());
+	QModelIndex actualIndex = m_machinesViewModel->mapToSource(index);
+	const info::machine machine = GetMachineFromIndex(actualIndex.row());
 	Run(machine);
 }
 
@@ -1546,8 +1547,7 @@ void MainWindow::updateSoftwareList()
 	long selected = m_machinesViewModel->getFirstSelected();
 	if (selected >= 0)
 	{
-		int actual_selected = m_machinesViewModel->getActualIndex(selected);
-		info::machine machine = m_info_db.machines()[actual_selected];
+		info::machine machine = m_info_db.machines()[selected];
 		if (machine.name() != m_software_list_collection_machine_name)
 		{
 			m_software_list_collection.load(m_prefs, machine);
@@ -1663,11 +1663,8 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, Preferences:
 
 info::machine MainWindow::GetMachineFromIndex(long item) const
 {
-	// look up the indirection
-	int machine_index = m_machinesViewModel->getActualIndex(item);
-
 	// and look up in the info DB
-	return m_info_db.machines()[machine_index];
+	return m_info_db.machines()[item];
 }
 
 

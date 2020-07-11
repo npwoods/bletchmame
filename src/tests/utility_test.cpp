@@ -18,8 +18,6 @@ namespace
     private slots:
 		void string_split_string() { string_split<std::string>(); }
 		void string_split_wstring() { string_split<std::wstring>(); }
-		void string_icontains_string() { string_icontains<std::string>(); }
-		void string_icontains_wstring() { string_icontains<std::wstring>(); }
 
 		void enum_parser();
 		void return_value_substitutor();
@@ -33,24 +31,6 @@ namespace
 			QVERIFY(result[0] == build_string<TStr>("Alpha"));
 			QVERIFY(result[1] == build_string<TStr>("Bravo"));
 			QVERIFY(result[2] == build_string<TStr>("Charlie"));
-		}
-
-		template<typename TStr>
-		void string_icontains()
-		{
-			TStr str = build_string<TStr>("Alpha,Bravo,Charlie");
-
-			bool result1 = util::string_icontains(str, build_string<TStr>("Bravo"));
-			QVERIFY(result1);
-			(void)result1;
-
-			bool result2 = util::string_icontains(str, build_string<TStr>("brAvo"));
-			QVERIFY(result2);
-			(void)result2;
-
-			bool result3 = util::string_icontains(str, build_string<TStr>("ZYXZYX"));
-			QVERIFY(!result3);
-			(void)result3;
 		}
 
 		//-------------------------------------------------

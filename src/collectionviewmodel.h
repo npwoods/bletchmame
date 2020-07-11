@@ -16,8 +16,12 @@
 
 #include "prefs.h"
 
+QT_BEGIN_NAMESPACE
 class QItemSelectionModel;
+class QAbstractItemView;
 class QTableView;
+class QSortFilterProxyModel;
+QT_END_NAMESPACE
 
 // ======================> ColumnDesc
 
@@ -53,7 +57,7 @@ public:
 	// methods
 	void updateListView();
 	long getFirstSelected() const;
-	int getActualIndex(long indirect_index) const	{ return m_indirections[indirect_index]; }
+	QModelIndex mapToSource(const QModelIndex &index) const;
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -110,18 +114,21 @@ private:
 	const CollectionViewDesc &			m_desc;
 	Preferences &						m_prefs;
 	std::unique_ptr<ICollectionImpl>	m_coll_impl;
-	std::vector<int>					m_indirections;
 	int									m_key_column_index;
 
 	// ctor
 	CollectionViewModel(QTableView &tableView, Preferences &prefs, const CollectionViewDesc &desc, std::unique_ptr<ICollectionImpl> &&coll_impl, bool support_label_edit);
 
+	// accessors for associate objects
+	QAbstractItemView &parentAsAbstractItemView();
+	const QAbstractItemView &parentAsAbstractItemView() const;
+	QSortFilterProxyModel &sortFilterProxyModel();
+	const QSortFilterProxyModel &sortFilterProxyModel() const;
+
 	// methods
 	int rowCount() const;
 	int columnCount() const;
-	QTableView &parentAsTableView();
-	const QTableView &parentAsTableView() const;
-	void selectByIndex(long item_index);
+	void selectItemByText(const QString &text);
 	const QString &getActualItemText(long item, long column) const;
 };
 

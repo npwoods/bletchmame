@@ -224,11 +224,6 @@ public:
 
 extern const QString g_empty_string;
 
-#ifdef WIN32
-#define strcasecmp	_stricmp
-#define wcscasecmp	_wcsicmp
-#endif // WIN32
-
 
 //-------------------------------------------------
 //  string_split
@@ -292,41 +287,6 @@ template<typename TStr, typename TColl>
 TStr string_join(const TStr &delim, const TColl &collection)
 {
 	return string_join(delim, collection, [](const TStr &s) { return s; });
-}
-
-//-------------------------------------------------
-//  string_icontains
-//-------------------------------------------------
-
-template<typename TStr>
-inline bool string_icontains(const TStr &str, const TStr &target)
-{
-	auto iter = std::search(str.begin(), str.end(), target.begin(), target.end(), [](auto ch1, auto ch2)
-	{
-		// TODO - this does not handle UTF-8
-		return sizeof(ch1) > 1
-			? towlower(static_cast<wchar_t>(ch1)) == towlower(static_cast<wchar_t>(ch2))
-			: tolower(static_cast<char>(ch1)) == tolower(static_cast<char>(ch2));
-	});
-	return iter < str.end();
-}
-
-	
-//-------------------------------------------------
-//  string_icompare
-//-------------------------------------------------
-
-template<typename TStr>
-inline int string_icompare(const TStr &a, const TStr &b)
-{
-	int rc;
-	if (sizeof(QChar) == sizeof(wchar_t))
-		rc = wcscasecmp((const wchar_t *) a.c_str(), (const wchar_t *)b.c_str());
-	else if (sizeof(QChar) == sizeof(char))
-		rc = strcasecmp((const char *)a.c_str(), (const char *)b.c_str());
-	else
-		throw false;
-	return rc;
 }
 
 

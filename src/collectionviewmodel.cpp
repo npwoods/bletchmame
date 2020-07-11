@@ -41,6 +41,9 @@ CollectionViewModel::CollectionViewModel(QTableView &tableView, Preferences &pre
 	QSortFilterProxyModel &proxyModel = *new QSortFilterProxyModel(&tableView);
 	proxyModel.setSourceModel(this);
 	proxyModel.setSortCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+	proxyModel.setSortLocaleAware(true);
+	proxyModel.setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+	proxyModel.setFilterKeyColumn(-1);
 
 	// set the model on the actual tab view
 	tableView.setModel(&proxyModel);
@@ -54,8 +57,8 @@ CollectionViewModel::CollectionViewModel(QTableView &tableView, Preferences &pre
 		QModelIndexList selectedIndexes = newSelection.indexes();
 		if (!selectedIndexes.empty())
 		{
-			long actual_item = m_indirections[selectedIndexes[0].row()];
-			const QString &val = getActualItemText(actual_item, m_key_column_index);
+			QModelIndex actualSelectedIndex = mapToSource(selectedIndexes[0]);
+			const QString &val = getActualItemText(actualSelectedIndex.row(), m_key_column_index);
 			setListViewSelection(val);
 		}
 	});
@@ -77,23 +80,7 @@ void CollectionViewModel::updateListView()
 
 	// get the filter text
 	const QString &filter_text = m_prefs.GetSearchBoxText(m_desc.m_name);
-
-	// rebuild the indirection list
-	m_indirections.clear();
-	m_indirections.reserve(collection_size);
-	for (long i = 0; i < collection_size; i++)
-	{
-		// check for a match
-		bool match = filter_text.isEmpty();
-		for (int column = 0; !match && (column < column_count); column++)
-		{
-			QString cell_text = getActualItemText(i, column);
-			match = util::string_icontains(cell_text.toStdWString(), filter_text.toStdWString());
-		}
-
-		if (match)
-			m_indirections.push_back(i);
-	}
+	sortFilterProxyModel().setFilterFixedString(filter_text);
 
 	// we're done resetting the model
 	endResetModel();
@@ -101,49 +88,70 @@ void CollectionViewModel::updateListView()
 	// after resetting the model, restore the selection (this is probably not the Qt way to do things,
 	// but so be it, at least for now)
 	const QString &selected_item = getListViewSelection();
-	const int *selected_actual_index = nullptr;
-	if (!selected_item.isEmpty())
+	selectItemByText(selected_item);
+}
+
+
+//-------------------------------------------------
+//  parentAsAbstractItemView
+//-------------------------------------------------
+
+QAbstractItemView &CollectionViewModel::parentAsAbstractItemView()
+{
+	return *dynamic_cast<QAbstractItemView *>(QObject::parent());
+}
+
+
+const QAbstractItemView &CollectionViewModel::parentAsAbstractItemView() const
+{
+	return *dynamic_cast<const QAbstractItemView *>(QObject::parent());
+}
+
+
+//-------------------------------------------------
+//  sortFilterProxyModel
+//-------------------------------------------------
+
+QSortFilterProxyModel &CollectionViewModel::sortFilterProxyModel()
+{
+	return *(dynamic_cast<QSortFilterProxyModel *>(parentAsAbstractItemView().model()));
+}
+
+
+const QSortFilterProxyModel &CollectionViewModel::sortFilterProxyModel() const
+{
+	return *(dynamic_cast<const QSortFilterProxyModel *>(parentAsAbstractItemView().model()));
+}
+
+
+//-------------------------------------------------
+//  selectItemByText
+//-------------------------------------------------
+
+void CollectionViewModel::selectItemByText(const QString &text)
+{
+	std::optional<QModelIndex> selectedIndex;
+
+	// simple heuristic - only select non-empty text
+	if (!text.isEmpty())
 	{
-		selected_actual_index = util::find_if_ptr(m_indirections, [this, &selected_item](int actual_index)
+		// find the selected item
+		QSortFilterProxyModel &proxyModel = sortFilterProxyModel();
+		int rowCount = proxyModel.rowCount();
+		for (int row = 0; !selectedIndex.has_value() && row < rowCount; row++)
 		{
-			return selected_item == getActualItemText(actual_index, m_key_column_index);
-		});
+			QModelIndex index = proxyModel.index(row, m_key_column_index);
+			QString data = proxyModel.data(index).toString();
+			if (text == data)
+				selectedIndex = index;
+		}
 	}
-	selectByIndex(selected_actual_index ? selected_actual_index - &m_indirections[0] : -1);
-}
 
-
-//-------------------------------------------------
-//  parentAsTableView
-//-------------------------------------------------
-
-QTableView &CollectionViewModel::parentAsTableView()
-{
-	return *dynamic_cast<QTableView *>(QObject::parent());
-}
-
-
-const QTableView &CollectionViewModel::parentAsTableView() const
-{
-	return *dynamic_cast<const QTableView *>(QObject::parent());
-}
-
-
-//-------------------------------------------------
-//  selectByIndex
-//-------------------------------------------------
-
-void CollectionViewModel::selectByIndex(long item_index)
-{
-	if (item_index < 0)
-	{
-		parentAsTableView().clearSelection();
-	}
+	// if we found a QModelIndex, select it
+	if (selectedIndex.has_value())
+		parentAsAbstractItemView().selectionModel()->select(selectedIndex.value(), QItemSelectionModel::Select | QItemSelectionModel::Rows);
 	else
-	{
-		QModelIndex modelIndex = index(item_index, 0, QModelIndex());
-		parentAsTableView().selectionModel()->select(modelIndex, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-	}
+		parentAsAbstractItemView().clearSelection();
 }
 
 
@@ -178,13 +186,26 @@ void CollectionViewModel::setListViewSelection(const QString &selection)
 
 
 //-------------------------------------------------
-//  getFirstSelected
+//  getFirstSelected - modelled after
+//	wxListView::GetFirstSelected() from wxWidgets
 //-------------------------------------------------
 
 long CollectionViewModel::getFirstSelected() const
 {
-	// modelled after wxListView::GetFirstSelected() from wxWidgets
-	return parentAsTableView().currentIndex().row();
+	// find the selection
+	QModelIndex selectedIndex = parentAsAbstractItemView().currentIndex();
+	QModelIndex actualSelectedIndex = mapToSource(selectedIndex);
+	return actualSelectedIndex.isValid() ? actualSelectedIndex.row() : -1;
+}
+
+
+//-------------------------------------------------
+//  mapToSource
+//-------------------------------------------------
+
+QModelIndex CollectionViewModel::mapToSource(const QModelIndex &index) const
+{
+	return sortFilterProxyModel().mapToSource(index);
 }
 
 
@@ -214,7 +235,7 @@ QModelIndex CollectionViewModel::parent(const QModelIndex &child) const
 
 int CollectionViewModel::rowCount() const
 {
-	return util::safe_static_cast<int>(m_indirections.size());
+	return util::safe_static_cast<int>(m_coll_impl->GetSize());
 }
 
 
@@ -252,8 +273,7 @@ QVariant CollectionViewModel::data(const QModelIndex &index, int role) const
         && index.row() < rowCount()
         && role == Qt::DisplayRole)
     {
-		long actual_item = m_indirections[index.row()];
-		result = getActualItemText(actual_item, index.column());
+		result = getActualItemText(index.row(), index.column());
     }
     return result;
 }
@@ -281,15 +301,3 @@ QVariant CollectionViewModel::headerData(int section, Qt::Orientation orientatio
     }
     return result;
 }
-
-
-//-------------------------------------------------
-//  sort
-//-------------------------------------------------
-
-#if 0
-void CollectionViewModel::sort(int displayColumn, Qt::SortOrder order)
-{
-	updateListView();
-}
-#endif
