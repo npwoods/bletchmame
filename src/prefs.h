@@ -23,15 +23,9 @@
 
 struct ColumnPrefs
 {
-	enum class sort_type
-	{
-		ASCENDING,
-		DESCENDING
-	};
-
-	int							m_width;
-	int							m_order;
-	std::optional<sort_type>	m_sort;
+	int								m_width;
+	int								m_order;
+	std::optional<Qt::SortOrder>	m_sort;
 };
 
 

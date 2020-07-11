@@ -15,46 +15,6 @@
 
 
 //-------------------------------------------------
-//  convert
-//-------------------------------------------------
-
-static ColumnPrefs::sort_type convert(Qt::SortOrder sortOrder)
-{
-    ColumnPrefs::sort_type result;
-    switch (sortOrder)
-    {
-    case Qt::SortOrder::AscendingOrder:
-        result = ColumnPrefs::sort_type::ASCENDING;
-        break;
-    case Qt::SortOrder::DescendingOrder:
-        result = ColumnPrefs::sort_type::DESCENDING;
-        break;
-    default:
-        throw false;
-    }
-    return result;
-}
-
-
-static Qt::SortOrder convert(ColumnPrefs::sort_type sortType)
-{
-    Qt::SortOrder result;
-    switch (sortType)
-    {
-    case ColumnPrefs::sort_type::ASCENDING:
-        result = Qt::SortOrder::AscendingOrder;
-        break;
-    case ColumnPrefs::sort_type::DESCENDING:
-        result = Qt::SortOrder::DescendingOrder;
-        break;
-    default:
-        throw false;
-    }
-    return result;
-}
-
-
-//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -68,7 +28,7 @@ TableViewManager::TableViewManager(QTableView &tableView, Preferences &prefs, co
 
     // unpack them
     int sortLogicalColumn = 0;
-    ColumnPrefs::sort_type sortType = ColumnPrefs::sort_type::ASCENDING;
+    Qt::SortOrder sortType = Qt::SortOrder::AscendingOrder;
     std::vector<int> logicalColumnOrdering;
     logicalColumnOrdering.resize(m_desc.m_columns.size());
     for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
@@ -94,7 +54,7 @@ TableViewManager::TableViewManager(QTableView &tableView, Preferences &prefs, co
 
     // configure the header
     tableView.horizontalHeader()->setSectionsMovable(true);
-    tableView.horizontalHeader()->setSortIndicator(sortLogicalColumn, convert(sortType));
+    tableView.horizontalHeader()->setSortIndicator(sortLogicalColumn, sortType);
 
     // reorder columns appropriately
     for (int column = 0; column < m_desc.m_columns.size() - 1; column++)
@@ -167,8 +127,8 @@ void TableViewManager::persistColumnPrefs()
 		this_col_pref.m_width = headerView.sectionSize(logicalColumn);
 		this_col_pref.m_order = headerView.visualIndex(logicalColumn);
 		this_col_pref.m_sort = headerView.sortIndicatorSection() == logicalColumn
-            ? convert(headerView.sortIndicatorOrder())
-            : std::optional<ColumnPrefs::sort_type>();
+            ? headerView.sortIndicatorOrder()
+            : std::optional<Qt::SortOrder>();
 	}
 
 	// and save it

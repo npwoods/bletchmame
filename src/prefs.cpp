@@ -38,10 +38,10 @@ std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUN
 };
 
 
-static const util::enum_parser_bidirectional<ColumnPrefs::sort_type> s_column_sort_type_parser =
+static const util::enum_parser_bidirectional<Qt::SortOrder> s_column_sort_type_parser =
 {
-	{ "ascending", ColumnPrefs::sort_type::ASCENDING, },
-	{ "descending", ColumnPrefs::sort_type::DESCENDING }
+	{ "ascending", Qt::SortOrder::AscendingOrder, },
+	{ "descending", Qt::SortOrder::DescendingOrder }
 };
 
 
