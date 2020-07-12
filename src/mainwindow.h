@@ -30,6 +30,7 @@ class QTableView;
 QT_END_NAMESPACE
 
 class SoftwareListItemModel;
+class ProfileListItemModel;
 class MameVersion;
 class VersionResultEvent;
 class ListXmlResultEvent;
@@ -122,6 +123,7 @@ private:
 	Preferences							m_prefs;
 	MameClient							m_client;
 	SoftwareListItemModel *				m_softwareListItemModel;
+	ProfileListItemModel *				m_profileListItemModel;
 	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
@@ -160,7 +162,7 @@ private:
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	bool shouldPromptOnStop() const;
 	bool isMameVersionAtLeast(const MameVersion &version) const;
-	void setupTableView(QTableView &tableView, QLineEdit &lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
+	void setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
 	void updateSoftwareList();
 	info::machine GetRunningMachine() const;
 	bool AttachToRootPanel() const;

@@ -22,6 +22,7 @@
 #include "ui_mainwindow.h"
 #include "machinelistitemmodel.h"
 #include "softwarelistitemmodel.h"
+#include "profilelistitemmodel.h"
 #include "tableviewmanager.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
@@ -370,6 +371,22 @@ static const TableViewManager::Description s_softwareListTableViewDesc =
 	s_softwareListTableViewColumns
 };
 
+static const TableViewManager::ColumnDesc s_profileListTableViewColumns[] =
+{
+	{ "name",			85 },
+	{ "machine",		85 },
+	{ "path",			600 },
+	{ nullptr }
+};
+
+static const TableViewManager::Description s_profileListTableViewDesc =
+{
+	"profile",
+	(int)ProfileListItemModel::Column::Path,
+	s_profileListTableViewColumns
+};
+
+
 static const int SOUND_ATTENUATION_OFF = -32;
 static const int SOUND_ATTENUATION_ON = 0;
 
@@ -382,6 +399,7 @@ MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_client(*this, m_prefs)
 	, m_softwareListItemModel(nullptr)
+	, m_profileListItemModel(nullptr)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -396,7 +414,7 @@ MainWindow::MainWindow(QWidget *parent)
 	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db);
 	setupTableView(
 		*m_ui->machinesTableView,
-		*m_ui->machinesSearchBox,
+		m_ui->machinesSearchBox,
 		machineListItemModel,
 		s_machineListTableViewDesc);
 
@@ -404,9 +422,18 @@ MainWindow::MainWindow(QWidget *parent)
 	m_softwareListItemModel = new SoftwareListItemModel(this);
 	setupTableView(
 		*m_ui->softwareTableView,
-		*m_ui->softwareSearchBox,
+		m_ui->softwareSearchBox,
 		*m_softwareListItemModel,
 		s_softwareListTableViewDesc);
+
+	// set up the profile list view
+	m_profileListItemModel = new ProfileListItemModel(this, m_prefs);
+	setupTableView(
+		*m_ui->profilesTableView,
+		nullptr,
+		*m_profileListItemModel,
+		s_profileListTableViewDesc);
+	m_profileListItemModel->refresh(true, true);
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
@@ -855,11 +882,9 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-#if HAVE_PROFILES
 	// did the user change the profiles path?
 	if (is_changed(Preferences::global_path_type::PROFILES))
-		UpdateProfileDirectories(true, true);
-#endif
+		m_profileListItemModel->refresh(true, true);
 
 #if 0
 	// did the user change the icons path?
@@ -1488,7 +1513,7 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 //  setupTableView
 //-------------------------------------------------
 
-void MainWindow::setupTableView(QTableView &tableView, QLineEdit &lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc)
+void MainWindow::setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc)
 {
 	// create a proxy model for sorting
 	QSortFilterProxyModel &proxyModel = *new QSortFilterProxyModel(this);
@@ -1498,19 +1523,23 @@ void MainWindow::setupTableView(QTableView &tableView, QLineEdit &lineEdit, QAbs
 	proxyModel.setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 	proxyModel.setFilterKeyColumn(-1);
 
-	// set the initial text on the search box
-	const QString &text = m_prefs.GetSearchBoxText(desc.m_name);
-	lineEdit.setText(text);
-	proxyModel.setFilterFixedString(text);
-
-	// make the search box functional
-	auto callback = [&proxyModel, &lineEdit, descName{desc.m_name}, this]()
+	// do we have a search box?
+	if (lineEdit)
 	{
-		QString text = lineEdit.text();
-		m_prefs.SetSearchBoxText(descName, std::move(text));
+		// set the initial text on the search box
+		const QString &text = m_prefs.GetSearchBoxText(desc.m_name);
+		lineEdit->setText(text);
 		proxyModel.setFilterFixedString(text);
-	};
-	connect(&lineEdit, &QLineEdit::textEdited, this, callback);
+
+		// make the search box functional
+		auto callback = [&proxyModel, lineEdit, descName{ desc.m_name }, this]()
+		{
+			QString text = lineEdit->text();
+			m_prefs.SetSearchBoxText(descName, std::move(text));
+			proxyModel.setFilterFixedString(text);
+		};
+		connect(lineEdit, &QLineEdit::textEdited, this, callback);
+	}
 
 	// set up a TableViewManager
 	(void)new TableViewManager(tableView, itemModel, proxyModel, m_prefs, desc);

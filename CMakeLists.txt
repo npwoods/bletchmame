@@ -46,6 +46,10 @@ add_library(BletchMAME_core
 	src/messagequeue.h
 	src/prefs.cpp
 	src/prefs.h
+	src/profile.cpp
+	src/profile.h
+	src/profilelistitemmodel.cpp
+	src/profilelistitemmodel.h
 	src/runmachinetask.cpp
 	src/runmachinetask.h
 	src/softwarelist.cpp
