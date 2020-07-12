@@ -28,8 +28,6 @@ find_package(Qt5Test REQUIRED)
 add_library(BletchMAME_core
 	src/client.cpp
 	src/client.h
-	src/collectionviewmodel.cpp
-	src/collectionviewmodel.h
 	src/info.cpp
 	src/info.h
 	src/info_builder.cpp
@@ -38,6 +36,8 @@ add_library(BletchMAME_core
 	src/job.h
 	src/listxmltask.cpp
 	src/listxmltask.h
+	src/machinelistitemmodel.cpp
+	src/machinelistitemmodel.h
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui
@@ -48,10 +48,10 @@ add_library(BletchMAME_core
 	src/prefs.h
 	src/runmachinetask.cpp
 	src/runmachinetask.h
-	src/softlistviewmodel.cpp
-	src/softlistviewmodel.h
 	src/softwarelist.cpp
 	src/softwarelist.h
+	src/softwarelistitemmodel.cpp
+	src/softwarelistitemmodel.h
 	src/status.cpp
 	src/status.h
 	src/utility.cpp

@@ -15,12 +15,14 @@
 #include <QUrl>
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QSortFilterProxyModel>
 
 #include "mainwindow.h"
 #include "mameversion.h"
 #include "ui_mainwindow.h"
-#include "collectionviewmodel.h"
-#include "softlistviewmodel.h"
+#include "machinelistitemmodel.h"
+#include "softwarelistitemmodel.h"
+#include "tableviewmanager.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "versiontask.h"
@@ -336,18 +338,37 @@ const QString MainWindow::s_wc_saved_state = "MAME Saved State Files (*.sta);;Al
 const QString MainWindow::s_wc_save_snapshot = "PNG Files (*.png);;All Files (*.*)";
 const QString MainWindow::s_wc_record_movie = "AVI Files (*.avi);;MNG Files (*.mng);;All Files (*.*)";
 
-static const CollectionViewDesc s_machine_collection_view_desc =
+static const TableViewManager::ColumnDesc s_machineListTableViewColumns[] =
 {
-	"machine",
-	"name",
-	{
-		{ "name",			"Name",			85 },
-		{ "description",	"Description",		370 },
-		{ "year",			"Year",			50 },
-		{ "manufacturer",	"Manufacturer",	320 }
-	}
+	{ "name",			85 },
+	{ "description",	370 },
+	{ "year",			50 },
+	{ "manufacturer",	320 },
+	{ nullptr }
 };
 
+static const TableViewManager::Description s_machineListTableViewDesc =
+{
+	"machine",
+	(int) MachineListItemModel::Column::Machine,
+	s_machineListTableViewColumns
+};
+
+static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
+{
+	{ "name",			85 },
+	{ "description",	220 },
+	{ "year",			50 },
+	{ "publisher",		190 },
+	{ nullptr }
+};
+
+static const TableViewManager::Description s_softwareListTableViewDesc =
+{
+	SOFTLIST_VIEW_DESC_NAME,
+	(int)SoftwareListItemModel::Column::Name,
+	s_softwareListTableViewColumns
+};
 
 static const int SOUND_ATTENUATION_OFF = -32;
 static const int SOUND_ATTENUATION_ON = 0;
@@ -360,8 +381,7 @@ static const int SOUND_ATTENUATION_ON = 0;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_client(*this, m_prefs)
-	, m_machinesViewModel(nullptr)
-	, m_softwareListViewModel(nullptr)
+	, m_softwareListItemModel(nullptr)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -373,25 +393,20 @@ MainWindow::MainWindow(QWidget *parent)
 	m_prefs.Load();
 
 	// set up machines view
-	m_machinesViewModel = new CollectionViewModel(
+	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db);
+	setupTableView(
 		*m_ui->machinesTableView,
-		m_prefs,
-		s_machine_collection_view_desc,
-		[this](long item, long column) -> const QString &{ return GetMachineListItemText(m_info_db.machines()[item], column); },
-		[this]() { return m_info_db.machines().size(); },
-		false);
-	m_info_db.set_on_changed([this]{ m_machinesViewModel->updateListView(); });
-
-	// set up machines search box
-	setupSearchBox(*m_ui->machinesSearchBox, "machine", *m_machinesViewModel);
+		*m_ui->machinesSearchBox,
+		machineListItemModel,
+		s_machineListTableViewDesc);
 
 	// set up software list view
-	m_softwareListViewModel = new SoftwareListViewModel(
+	m_softwareListItemModel = new SoftwareListItemModel(this);
+	setupTableView(
 		*m_ui->softwareTableView,
-		m_prefs);
-
-	// set up software list search box
-	setupSearchBox(*m_ui->softwareSearchBox, SOFTLIST_VIEW_DESC_NAME, *m_softwareListViewModel);
+		*m_ui->softwareSearchBox,
+		*m_softwareListItemModel,
+		s_softwareListTableViewDesc);
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
@@ -895,8 +910,8 @@ void MainWindow::on_actionBletchMameWebSite_triggered()
 
 void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
 {
-	QModelIndex actualIndex = m_machinesViewModel->mapToSource(index);
-	const info::machine machine = GetMachineFromIndex(actualIndex.row());
+	// run the machine
+	const info::machine machine = machineFromModelIndex(index);
 	Run(machine);
 }
 
@@ -908,14 +923,17 @@ void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
 void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
 {
 	// identify the machine
-	long machine_index = m_machinesViewModel->getFirstSelected();
-	const info::machine machine = GetMachineFromIndex(machine_index);
+	const info::machine machine = m_info_db.find_machine(m_softwareListItemModel->currentMachineName()).value();
+
+	// map the index to the actual index
+	QSortFilterProxyModel &proxyModel = *dynamic_cast<QSortFilterProxyModel *>(m_ui->softwareTableView->model());
+	QModelIndex actualIndex = proxyModel.mapToSource(index);
 
 	// identify the software
-	const software_list::software *software = m_softwareListViewModel->GetSelectedSoftware();
+	const software_list::software &software = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
 
 	// and run!
-	Run(machine, software);
+	Run(machine, &software);
 }
 
 
@@ -931,7 +949,6 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 	switch (list_view_type)
 	{
 	case Preferences::list_view_type::SOFTWARELIST:
-		m_software_list_collection_machine_name.clear();
 		updateSoftwareList();
 		break;
 	}
@@ -1468,21 +1485,38 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 
 
 //-------------------------------------------------
-//  setupSearchBox
+//  setupTableView
 //-------------------------------------------------
 
-void MainWindow::setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel)
+void MainWindow::setupTableView(QTableView &tableView, QLineEdit &lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc)
 {
-	const QString &text = m_prefs.GetSearchBoxText(collection_view_desc_name);
-	lineEdit.setText(text);
+	// create a proxy model for sorting
+	QSortFilterProxyModel &proxyModel = *new QSortFilterProxyModel(this);
+	proxyModel.setSourceModel(&itemModel);
+	proxyModel.setSortCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+	proxyModel.setSortLocaleAware(true);
+	proxyModel.setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+	proxyModel.setFilterKeyColumn(-1);
 
-	auto callback = [&collectionViewModel, &lineEdit, collection_view_desc_name, this]()
+	// set the initial text on the search box
+	const QString &text = m_prefs.GetSearchBoxText(desc.m_name);
+	lineEdit.setText(text);
+	proxyModel.setFilterFixedString(text);
+
+	// make the search box functional
+	auto callback = [&proxyModel, &lineEdit, descName{desc.m_name}, this]()
 	{
 		QString text = lineEdit.text();
-		m_prefs.SetSearchBoxText(collection_view_desc_name, std::move(text));
-		collectionViewModel.updateListView();
+		m_prefs.SetSearchBoxText(descName, std::move(text));
+		proxyModel.setFilterFixedString(text);
 	};
 	connect(&lineEdit, &QLineEdit::textEdited, this, callback);
+
+	// set up a TableViewManager
+	(void)new TableViewManager(tableView, itemModel, proxyModel, m_prefs, desc);
+
+	// finally set the model
+	tableView.setModel(&proxyModel);
 }
 
 
@@ -1544,22 +1578,19 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 
 void MainWindow::updateSoftwareList()
 {
-	long selected = m_machinesViewModel->getFirstSelected();
-	if (selected >= 0)
+	// identify the selection
+	QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
 	{
-		info::machine machine = m_info_db.machines()[selected];
-		if (machine.name() != m_software_list_collection_machine_name)
-		{
-			m_software_list_collection.load(m_prefs, machine);
-			m_software_list_collection_machine_name = machine.name();
-		}
-		m_softwareListViewModel->Load(m_software_list_collection, false);
+		// load software lists for the current machine
+		const info::machine machine = machineFromModelIndex(selection[0]);
+		m_softwareListItemModel->load(m_prefs, machine, false);
 	}
 	else
 	{
-		m_softwareListViewModel->Clear();
+		// no machines are selected - reset the software list view
+		m_softwareListItemModel->reset();
 	}
-	m_softwareListViewModel->updateListView();
 }
 
 
@@ -1658,30 +1689,17 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, Preferences:
 
 
 //-------------------------------------------------
-//  GetMachineFromIndex
+//  machineFromModelIndex
 //-------------------------------------------------
 
-info::machine MainWindow::GetMachineFromIndex(long item) const
+info::machine MainWindow::machineFromModelIndex(const QModelIndex &index) const
 {
+	// map the index to the actual index
+	QSortFilterProxyModel &proxyModel = *dynamic_cast<QSortFilterProxyModel *>(m_ui->machinesTableView->model());
+	QModelIndex actualIndex = proxyModel.mapToSource(index);
+
 	// and look up in the info DB
-	return m_info_db.machines()[item];
-}
-
-
-//-------------------------------------------------
-//  GetMachineListItemText
-//-------------------------------------------------
-
-const QString &MainWindow::GetMachineListItemText(info::machine machine, long column) const
-{
-	switch (column)
-	{
-	case 0:	return machine.name();
-	case 1:	return machine.description();
-	case 2:	return machine.year();
-	case 3:	return machine.manufacturer();
-	}
-	throw false;
+	return m_info_db.machines()[actualIndex.row()];
 }
 
 

@@ -8,8 +8,8 @@
 
 #include <QTableView>
 #include <QHeaderView>
+#include <QSortFilterProxyModel>
 
-#include "collectionviewmodel.h"
 #include "tableviewmanager.h"
 #include "prefs.h"
 
@@ -18,24 +18,30 @@
 //  ctor
 //-------------------------------------------------
 
-TableViewManager::TableViewManager(QTableView &tableView, Preferences &prefs, const CollectionViewDesc &desc)
+TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QSortFilterProxyModel &proxyModel, Preferences &prefs, const Description &desc)
     : QObject((QObject *) &tableView)
     , m_prefs(prefs)
     , m_desc(desc)
+    , m_columnCount(-1)
 {
     // get the preferences
     const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.GetColumnPrefs(m_desc.m_name);
+
+    // count the number of columns
+    m_columnCount = 0;
+    while (m_desc.m_columns[m_columnCount].m_id)
+        m_columnCount++;
 
     // unpack them
     int sortLogicalColumn = 0;
     Qt::SortOrder sortType = Qt::SortOrder::AscendingOrder;
     std::vector<int> logicalColumnOrdering;
-    logicalColumnOrdering.resize(m_desc.m_columns.size());
-    for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
+    logicalColumnOrdering.resize(m_columnCount);
+    for (int logicalColumn = 0; logicalColumn < m_columnCount; logicalColumn++)
     {
         // get the info out of preferences
         auto iter = columnPrefs.find(m_desc.m_columns[logicalColumn].m_id);
-        int width = iter != columnPrefs.end() ? iter->second.m_width : m_desc.m_columns[logicalColumn].m_default_width;
+        int width = iter != columnPrefs.end() ? iter->second.m_width : m_desc.m_columns[logicalColumn].m_defaultWidth;
         int order = iter != columnPrefs.end() ? iter->second.m_order : logicalColumn;
 
         // resize the column
@@ -57,7 +63,7 @@ TableViewManager::TableViewManager(QTableView &tableView, Preferences &prefs, co
     tableView.horizontalHeader()->setSortIndicator(sortLogicalColumn, sortType);
 
     // reorder columns appropriately
-    for (int column = 0; column < m_desc.m_columns.size() - 1; column++)
+    for (int column = 0; column < m_columnCount - 1; column++)
     {
         if (logicalColumnOrdering[column] != column)
         {
@@ -76,6 +82,19 @@ TableViewManager::TableViewManager(QTableView &tableView, Preferences &prefs, co
             }
         }
     }
+
+    // handle selection
+	connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this, &proxyModel, &itemModel](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	{
+		QModelIndexList selectedIndexes = newSelection.indexes();
+		if (!selectedIndexes.empty())
+		{
+            int selectedRow = proxyModel.mapToSource(selectedIndexes[0]).row();
+            QModelIndex selectedIndex = itemModel.index(selectedRow, m_desc.m_keyColumnIndex);
+            QString selectedValue = itemModel.data(selectedIndex).toString();
+            m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
+		}
+	});
 
     // handle resizing
 	connect(tableView.horizontalHeader(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
@@ -118,10 +137,10 @@ void TableViewManager::persistColumnPrefs()
 
 	// start preparing column prefs
 	std::unordered_map<std::string, ColumnPrefs> col_prefs;
-	col_prefs.reserve(m_desc.m_columns.size());
+	col_prefs.reserve(m_columnCount);
 
 	// get all info about each column
-	for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
+	for (int logicalColumn = 0; logicalColumn < m_columnCount; logicalColumn++)
 	{
 		ColumnPrefs &this_col_pref = col_prefs[m_desc.m_columns[logicalColumn].m_id];
 		this_col_pref.m_width = headerView.sectionSize(logicalColumn);
@@ -134,5 +153,3 @@ void TableViewManager::persistColumnPrefs()
 	// and save it
 	m_prefs.SetColumnPrefs(m_desc.m_name, std::move(col_prefs));
 }
-
-

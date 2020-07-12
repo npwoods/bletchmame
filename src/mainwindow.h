@@ -17,6 +17,7 @@
 #include "client.h"
 #include "info.h"
 #include "softwarelist.h"
+#include "tableviewmanager.h"
 #include "status.h"
 
 
@@ -24,11 +25,12 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 class QLineEdit;
 class QTableWidgetItem;
+class QAbstractItemModel;
+class QTableView;
 QT_END_NAMESPACE
 
-class CollectionViewModel;
+class SoftwareListItemModel;
 class MameVersion;
-class SoftwareListViewModel;
 class VersionResultEvent;
 class ListXmlResultEvent;
 class RunMachineCompletedEvent;
@@ -119,8 +121,7 @@ private:
 	std::unique_ptr<Ui::MainWindow>		m_ui;
 	Preferences							m_prefs;
 	MameClient							m_client;
-	CollectionViewModel *				m_machinesViewModel;
-	SoftwareListViewModel *				m_softwareListViewModel;
+	SoftwareListItemModel *				m_softwareListItemModel;
 	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
@@ -130,8 +131,6 @@ private:
 	info::database						m_info_db;
 
 	// other
-	software_list_collection			m_software_list_collection;
-	QString								m_software_list_collection_machine_name;
 	std::optional<status::state>		m_state;
 	observable::value<bool>				m_menu_bar_shown;
 	bool								m_pinging;
@@ -161,7 +160,7 @@ private:
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	bool shouldPromptOnStop() const;
 	bool isMameVersionAtLeast(const MameVersion &version) const;
-	void setupSearchBox(QLineEdit &lineEdit, const char *collection_view_desc_name, CollectionViewModel &collectionViewModel);
+	void setupTableView(QTableView &tableView, QLineEdit &lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
 	void updateSoftwareList();
 	info::machine GetRunningMachine() const;
 	bool AttachToRootPanel() const;
@@ -169,8 +168,7 @@ private:
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(Preferences::machine_path_type path_type, const QString &wildcard_string, file_dialog_type dlgtype);
 	void FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, file_dialog_type dlgtype);
-	info::machine GetMachineFromIndex(long item) const;
-	const QString &GetMachineListItemText(info::machine machine, long column) const;
+	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	observable::value<QString> observeTitleBarText();
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<std::string> &args);
