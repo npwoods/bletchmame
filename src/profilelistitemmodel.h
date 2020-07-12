@@ -40,6 +40,12 @@ public:
 	// methods
 	void refresh(bool updateProfileList, bool updateFileSystemWatcher);
 
+	// accessors
+	const profiles::profile &getProfileByIndex(int index) const
+	{
+		return m_profiles[index];
+	}
+
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
 	virtual QModelIndex parent(const QModelIndex &child) const override;

@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <memory.h>
 
+#include "profile.h"
 #include "prefs.h"
 #include "client.h"
 #include "info.h"
@@ -73,6 +74,7 @@ private slots:
 	void on_actionBletchMameWebSite_triggered();
 	void on_machinesTableView_activated(const QModelIndex &index);
 	void on_softwareTableView_activated(const QModelIndex &index);
+	void on_profilesTableView_activated(const QModelIndex &index);
 	void on_tabWidget_currentChanged(int index);
 
 protected:
@@ -132,8 +134,12 @@ private:
 	// information retrieved by -listxml
 	info::database						m_info_db;
 
-	// other
+	// status of running emulation
+	QString								m_current_profile_path;
+	bool								m_current_profile_auto_save_state;
 	std::optional<status::state>		m_state;
+
+	// other
 	observable::value<bool>				m_menu_bar_shown;
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
@@ -166,7 +172,8 @@ private:
 	void updateSoftwareList();
 	info::machine GetRunningMachine() const;
 	bool AttachToRootPanel() const;
-	void Run(const info::machine &machine, const software_list::software *software = nullptr, void *profile = nullptr);
+	void Run(const info::machine &machine, const software_list::software *software = nullptr, const profiles::profile *profile = nullptr);
+	void Run(const profiles::profile &profile);
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(Preferences::machine_path_type path_type, const QString &wildcard_string, file_dialog_type dlgtype);
 	void FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, file_dialog_type dlgtype);

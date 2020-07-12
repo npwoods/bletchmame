@@ -40,9 +40,6 @@
 // BletchMAME requires MAME 0.213 or later
 const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
 
-// profiles are not yet implemented
-#define HAVE_PROFILES		0
-
 
 //**************************************************************************
 //  VERSION INFO
@@ -963,6 +960,24 @@ void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
 
 
 //-------------------------------------------------
+//  on_profilesTableView_activated
+//-------------------------------------------------
+
+void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
+{
+	// map the index to the actual index
+	QSortFilterProxyModel &proxyModel = *dynamic_cast<QSortFilterProxyModel *>(m_ui->profilesTableView->model());
+	QModelIndex actualIndex = proxyModel.mapToSource(index);
+
+	// identify the profile
+	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+
+	// and run!
+	Run(profile);
+}
+
+
+//-------------------------------------------------
 //  on_tabWidget_currentChanged
 //-------------------------------------------------
 
@@ -1189,7 +1204,7 @@ bool MainWindow::AttachToRootPanel() const
 //  Run
 //-------------------------------------------------
 
-void MainWindow::Run(const info::machine &machine, const software_list::software *software, void *profile)
+void MainWindow::Run(const info::machine &machine, const software_list::software *software, const profiles::profile *profile)
 {
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
 	QString preflight_errors = preflightCheck();
@@ -1204,10 +1219,8 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	QString software_name;
 	if (software)
 		software_name = software->m_name;
-#if HAVE_PROFILES
 	else if (profile && profile->images().empty())
 		software_name = profile->software();
-#endif
 
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
@@ -1241,7 +1254,6 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	}
 
 	// set up profile (if we have one)
-#if HAVE_PROFILES
 	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
 	m_current_profile_auto_save_state = profile ? profile->auto_save_states() : false;
 	if (profile)
@@ -1254,11 +1266,11 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 		if (profile->auto_save_states())
 		{
 			QString save_state_path = profiles::profile::change_path_save_state(profile->path());
-			if (wxFile::Exists(save_state_path))
+			QFileInfo fi(save_state_path);
+			if (fi.exists())
 				Issue({ "state_load", save_state_path });
 		}
 	}
-#endif
 
 	// do we have any images that require images?
 	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [](const status::image &image)
@@ -1281,6 +1293,20 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 
 	// unpause
 	ChangePaused(false);
+}
+
+
+void MainWindow::Run(const profiles::profile &profile)
+{
+	// find the machine
+	std::optional<info::machine> machine = m_info_db.find_machine(profile.machine());
+	if (!machine)
+	{
+		messageBox("Unknown machine: " + profile.machine());
+		return;
+	}
+
+	Run(machine.value(), nullptr, &profile);
 }
 
 
@@ -1432,11 +1458,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 bool MainWindow::shouldPromptOnStop() const
 {
-#if HAVE_PROFILE
-	return m_current_profile_path.empty() || !m_current_profile_auto_save_state;
-#else
-	return true;
-#endif
+	return m_current_profile_path.isEmpty() || !m_current_profile_auto_save_state;
 }
 
 
@@ -1556,8 +1578,7 @@ void MainWindow::setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbs
 bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 {
 	// update the profile, if present
-#if HAVE_PROFILES
-	if (!m_current_profile_path.empty())
+	if (!m_current_profile_path.isEmpty())
 	{
 		std::optional<profiles::profile> profile = profiles::profile::load(m_current_profile_path);
 		if (profile)
@@ -1565,7 +1586,7 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 			profile->images().clear();
 			for (const status::image &status_image : m_state->images().get())
 			{
-				if (!status_image.m_file_name.empty())
+				if (!status_image.m_file_name.isEmpty())
 				{
 					profiles::image &profile_image = profile->images().emplace_back();
 					profile_image.m_tag = status_image.m_tag;
@@ -1575,15 +1596,12 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 			profile->save();
 		}
 	}
-#endif
 
 	// clear out all of the state
 	m_client.waitForCompletion();
 	m_state.reset();
-#if HAVE_PROFILES
 	m_current_profile_path = util::g_empty_string;
 	m_current_profile_auto_save_state = false;
-#endif
 
 	// execute the stop handler for all aspects
 	for (const auto &aspect : m_aspects)
@@ -1820,14 +1838,12 @@ void MainWindow::InvokePing()
 
 void MainWindow::InvokeExit()
 {
-#if HAVE_PROFILES
 	if (m_current_profile_auto_save_state)
 	{
 		QString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);
-		Issue({ "state_save_and_exit", save_state_path });
+		Issue({ "state_save_and_exit", QDir::toNativeSeparators(save_state_path) });
 	}
 	else
-#endif
 	{
 		Issue({ "exit" });
 	}
