@@ -39,11 +39,7 @@ void ProfileListItemModel::refresh(bool updateProfileList, bool updateFileSystem
     assert(updateProfileList || updateFileSystemWatcher);
 
     // get the paths
-    std::vector<QString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
-
-    // normalize them
-    for (QString &path : paths)
-        path = QDir::fromNativeSeparators(path);
+    QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
 
     // now update the list if we are asked to
     if (updateProfileList)

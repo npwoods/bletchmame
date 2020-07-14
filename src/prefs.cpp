@@ -226,10 +226,19 @@ void Preferences::SetGlobalPath(global_path_type type, const QString &path)
 //  GetSplitPaths
 //-------------------------------------------------
 
-std::vector<QString> Preferences::GetSplitPaths(global_path_type type) const
+QStringList Preferences::GetSplitPaths(global_path_type type) const
 {
-	const QString &paths_string = GetGlobalPath(type);
-	return util::string_split(paths_string, [](const QChar ch) { return ch == ';'; });
+	const QString &pathsString = GetGlobalPath(type);
+	QStringList paths = pathsString.split(';');
+	for (QString &path : paths)
+	{
+		// apply variable substituions
+		path = ApplySubstitutions(path);
+
+		// normalize path separators
+		path = QDir::fromNativeSeparators(path);
+	}
+	return paths;
 }
 
 

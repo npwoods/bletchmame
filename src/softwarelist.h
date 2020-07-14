@@ -51,7 +51,7 @@ public:
 	software_list(software_list &&) = default;
 
 	// attempts to load a software list from a list of paths
-	static std::optional<software_list> try_load(const std::vector<QString> &hash_paths, const QString &softlist_name);
+	static std::optional<software_list> try_load(const QStringList &hash_paths, const QString &softlist_name);
 
 	// accessors
 	const QString &name() const							{ return m_name; }

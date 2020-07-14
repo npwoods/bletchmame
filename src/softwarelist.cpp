@@ -78,7 +78,7 @@ bool software_list::load(QDataStream &stream, QString &error_message)
 //  try_load
 //-------------------------------------------------
 
-std::optional<software_list> software_list::try_load(const std::vector<QString> &hash_paths, const QString &softlist_name)
+std::optional<software_list> software_list::try_load(const QStringList &hash_paths, const QString &softlist_name)
 {
 	for (const QString &path : hash_paths)
 	{
@@ -111,7 +111,7 @@ std::optional<software_list> software_list::try_load(const std::vector<QString> 
 void software_list_collection::load(const Preferences &prefs, info::machine machine)
 {
 	m_software_lists.clear();
-	std::vector<QString> hash_paths = prefs.GetSplitPaths(Preferences::global_path_type::HASH);
+	QStringList hash_paths = prefs.GetSplitPaths(Preferences::global_path_type::HASH);
 	for (const info::software_list softlist_info : machine.software_lists())
 	{
 		std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());

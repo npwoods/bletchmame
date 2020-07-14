@@ -90,7 +90,7 @@ public:
 	void SetGlobalPath(global_path_type type, QString &&path);
 	void SetGlobalPath(global_path_type type, const QString &path);
 	
-    std::vector<QString> GetSplitPaths(global_path_type type) const;
+    QStringList GetSplitPaths(global_path_type type) const;
 
     QString GetGlobalPathWithSubstitutions(global_path_type type) const;
 

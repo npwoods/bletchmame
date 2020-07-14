@@ -79,7 +79,7 @@ bool profiles::profile::is_valid() const
 //  scan_directory
 //-------------------------------------------------
 
-std::vector<profiles::profile> profiles::profile::scan_directories(const std::vector<QString> &paths)
+std::vector<profiles::profile> profiles::profile::scan_directories(const QStringList &paths)
 {
 	std::vector<profile> results;
 

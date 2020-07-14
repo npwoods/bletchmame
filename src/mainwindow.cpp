@@ -1366,19 +1366,13 @@ void MainWindow::Run(const profiles::profile &profile)
 QString MainWindow::preflightCheck() const
 {
 	// get a list of the plugin paths, checking for the obvious problem where there are no paths
-	std::vector<QString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PLUGINS);
+	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PLUGINS);
 	if (paths.empty())
 		return QString("No plug-in paths are specified.  Under these circumstances, the required \"%1\" plug-in cannot be loaded.").arg(WORKER_UI_PLUGIN_NAME);
 
 	// apply substitutions and normalize the paths
 	for (QString &path : paths)
 	{
-		// apply variable substituions
-		path = m_prefs.ApplySubstitutions(path);
-
-		// normalize path separators
-		path = QDir::fromNativeSeparators(path);
-
 		// if there is no trailing '/', append one
 		if (!path.endsWith('/'))
 			path += '/';
