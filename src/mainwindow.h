@@ -182,9 +182,11 @@ private:
 	void FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, file_dialog_type dlgtype);
 	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
 	void CreateProfile(const info::machine &machine, const software_list::software *software);
+	static bool DirExistsOrMake(const QString &path);
 	void DuplicateProfile(const profiles::profile &profile);
 	void RenameProfile(const profiles::profile &profile);
 	void DeleteProfile(const profiles::profile &profile);
+	void FocusOnNewProfile(QString &&new_profile_path);
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	observable::value<QString> observeTitleBarText();

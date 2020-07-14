@@ -16,6 +16,7 @@
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
+#include <QTextStream>
 
 #include "mainwindow.h"
 #include "mameversion.h"
@@ -1018,6 +1019,7 @@ void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &p
 	popupMenu.addAction("Duplicate",								[this, &profile]() { DuplicateProfile(profile); });
 	popupMenu.addAction("Rename",									[this, &profile]() { RenameProfile(profile); });
 	popupMenu.addAction("Delete",									[this, &profile]() { DeleteProfile(profile); });
+	popupMenu.addSeparator();
 	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile.path()); });
 	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
 }
@@ -1798,12 +1800,94 @@ void MainWindow::LaunchingListContextMenu(const QPoint &pos, const software_list
 
 
 //-------------------------------------------------
+//  GetUniqueFileName
+//-------------------------------------------------
+
+template<typename TFunc>
+static QString GetUniqueProfilePath(const QString &dir_path, TFunc generate_name)
+{
+	// prepare for building file paths
+	QString file_path;
+
+	// try up to 10 attempts
+	for (int attempt = 0; file_path.isEmpty() && attempt < 10; attempt++)
+	{
+		// build the file path
+		QString name = generate_name(attempt);
+		QString path = dir_path + "/" + name + ".bletchmameprofile";
+		QFileInfo fi(path);
+
+		// get the file path if this file doesn't exist
+		if (!fi.exists())
+			file_path = fi.absoluteFilePath();
+	}
+	return file_path;
+}
+
+
+//-------------------------------------------------
 //  CreateProfile
 //-------------------------------------------------
 
 void MainWindow::CreateProfile(const info::machine &machine, const software_list::software *software)
 {
-	throw false;
+	// find a path to create the new profile in
+	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
+	auto iter = std::find_if(paths.begin(), paths.end(), [](const QString &path)
+	{
+		QDir dir(path);
+		return dir.exists();
+	});
+	if (iter == paths.end())
+	{
+		iter = std::find_if(paths.begin(), paths.end(), DirExistsOrMake);
+		m_profileListItemModel->refresh(false, true);
+	}
+	if (iter == paths.end())
+	{
+		messageBox("Cannot create profile without valid profile path");
+		return;
+	}
+	const QString &path = *iter;
+
+	// identify the description, for use when we create the file name
+	const QString &description = software
+		? software->m_description
+		: machine.name();
+
+	// get the full path for a new profile
+	QString new_profile_path = GetUniqueProfilePath(path, [&description](int attempt)
+	{
+		return attempt == 0
+			? QString("%1 - New profile").arg(description)
+			: QString("%1 - New profile (%2)").arg(description, QString::number(attempt + 1));
+	});
+
+	// create the file stream
+	QFile file(new_profile_path);
+	if (!file.open(QIODevice::WriteOnly))
+	{
+		messageBox("Could not create profile");
+		return;
+	}
+
+	// create the new profile and focus
+	QTextStream text_stream(&file);
+	profiles::profile::create(text_stream, machine, software);
+	FocusOnNewProfile(std::move(new_profile_path));
+}
+
+
+//-------------------------------------------------
+//  DirExistsOrMake
+//-------------------------------------------------
+
+bool MainWindow::DirExistsOrMake(const QString &path)
+{
+	bool result = QDir(path).exists();
+	if (!result)
+		result = QDir().mkdir(path);
+	return result;
 }
 
 
@@ -1813,7 +1897,38 @@ void MainWindow::CreateProfile(const info::machine &machine, const software_list
 
 void MainWindow::DuplicateProfile(const profiles::profile &profile)
 {
-	throw false;
+	QString dir_path = profile.directory_path();
+
+	// get the full path for a new profile
+	QString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
+	{
+		return attempt == 0
+			? QString("%1 - Copy").arg(profile.name())
+			: QString("%1 - Copy (%2)").arg(profile.name(), QString::number(attempt + 1));
+	});
+
+	// create the file stream
+	QFile file(new_profile_path);
+	if (!file.open(QIODevice::WriteOnly))
+	{
+		messageBox("Could not create profile");
+		return;
+	}
+
+	// create the new profile
+	QTextStream stream(&file);
+	profile.save_as(stream);
+
+	// copy the save state file also, if present
+	QString old_save_state_file = profiles::profile::change_path_save_state(profile.path());
+	if (QFile(old_save_state_file).exists())
+	{
+		QString new_save_state_file = profiles::profile::change_path_save_state(new_profile_path);
+		QFile::copy(old_save_state_file, new_save_state_file);
+	}
+
+	// finally focus
+	FocusOnNewProfile(std::move(new_profile_path));
 }
 
 
@@ -1839,6 +1954,34 @@ void MainWindow::DeleteProfile(const profiles::profile &profile)
 
 	if (!profiles::profile::profile_file_remove(profile.path()))
 		messageBox("Could not delete profile");
+}
+
+
+//-------------------------------------------------
+//  FocusOnNewProfile
+//-------------------------------------------------
+
+void MainWindow::FocusOnNewProfile(QString &&new_profile_path)
+{
+	// set the profiles tab as selected
+	m_ui->tabWidget->setCurrentWidget(m_ui->profilesTab);
+
+	// set the profile as selected, so we focus on it when we rebuild the list view
+	m_prefs.SetListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
+
+	// we want the current profile to be renamed - do this with a callback
+	m_profileListItemModel->setOneTimeFswCallback([this, profilePath{std::move(new_profile_path)}]()
+	{
+		QModelIndex actualIndex = m_profileListItemModel->findProfileIndex(profilePath);
+		if (!actualIndex.isValid())
+			return;
+
+		QModelIndex index = sortFilterProxyModel(*m_ui->profilesTableView).mapFromSource(index);
+		if (!index.isValid())
+			return;
+
+		m_ui->profilesTableView->edit(actualIndex);
+	});
 }
 
 

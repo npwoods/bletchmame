@@ -24,7 +24,15 @@ ProfileListItemModel::ProfileListItemModel(QObject *parent, Preferences &prefs)
 {
     connect(&m_fileSystemWatcher, &QFileSystemWatcher::directoryChanged, this, [this](const QString &path)
     {
+        // do the refresh
         refresh(true, false);
+
+        // do the one time callback, if present
+        if (m_fswCallback)
+        {
+            m_fswCallback();
+            m_fswCallback = std::function<void()>();
+        }
     });
 }
 
@@ -64,6 +72,41 @@ void ProfileListItemModel::refresh(bool updateProfileList, bool updateFileSystem
                 m_fileSystemWatcher.addPath(path);
         }
     }
+}
+
+
+//-------------------------------------------------
+//  setOneTimeFswCallback
+//-------------------------------------------------
+
+void ProfileListItemModel::setOneTimeFswCallback(std::function<void()> &&fswCallback)
+{
+    m_fswCallback = std::move(fswCallback);
+}
+
+
+//-------------------------------------------------
+//  getProfileByIndex
+//-------------------------------------------------
+
+const profiles::profile &ProfileListItemModel::getProfileByIndex(int index) const
+{
+    return m_profiles[index];
+}
+
+
+//-------------------------------------------------
+//  findProfileIndex
+//-------------------------------------------------
+
+QModelIndex ProfileListItemModel::findProfileIndex(const QString &path) const
+{
+    for (int i = 0; i < m_profiles.size(); i++)
+    {
+        if (m_profiles[i].path() == path)
+            return createIndex(i, 0);
+    }
+    return QModelIndex();
 }
 
 
@@ -166,5 +209,18 @@ QVariant ProfileListItemModel::headerData(int section, Qt::Orientation orientati
             break;
         }
     }
+    return result;
+}
+
+
+//-------------------------------------------------
+//  headerData
+//-------------------------------------------------
+
+Qt::ItemFlags ProfileListItemModel::flags(const QModelIndex &index) const
+{
+    Qt::ItemFlags result = QAbstractItemModel::flags(index);
+    if (index.column() == (int)Column::Name)
+        result |= Qt::ItemIsEditable;
     return result;
 }

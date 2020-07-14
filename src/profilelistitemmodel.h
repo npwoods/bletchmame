@@ -39,12 +39,9 @@ public:
 
 	// methods
 	void refresh(bool updateProfileList, bool updateFileSystemWatcher);
-
-	// accessors
-	const profiles::profile &getProfileByIndex(int index) const
-	{
-		return m_profiles[index];
-	}
+	void setOneTimeFswCallback(std::function<void()> &&fswCallback);
+	const profiles::profile &getProfileByIndex(int index) const;
+	QModelIndex findProfileIndex(const QString &path) const;
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -53,11 +50,14 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const override;
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 private:
 	Preferences &					m_prefs;
 	QFileSystemWatcher &			m_fileSystemWatcher;
 	std::vector<profiles::profile>	m_profiles;
+	std::function<void()>			m_fswCallback;
+
 };
 
 #endif // PROFILELISTITEMMODEL_H
