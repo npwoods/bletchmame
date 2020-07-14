@@ -73,8 +73,11 @@ private slots:
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
 	void on_machinesTableView_activated(const QModelIndex &index);
+	void on_machinesTableView_customContextMenuRequested(const QPoint &pos);
 	void on_softwareTableView_activated(const QModelIndex &index);
+	void on_softwareTableView_customContextMenuRequested(const QPoint &pos);
 	void on_profilesTableView_activated(const QModelIndex &index);
+	void on_profilesTableView_customContextMenuRequested(const QPoint &pos);
 	void on_tabWidget_currentChanged(int index);
 
 protected:
@@ -177,6 +180,12 @@ private:
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(Preferences::machine_path_type path_type, const QString &wildcard_string, file_dialog_type dlgtype);
 	void FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, file_dialog_type dlgtype);
+	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
+	void CreateProfile(const info::machine &machine, const software_list::software *software);
+	void DuplicateProfile(const profiles::profile &profile);
+	void RenameProfile(const profiles::profile &profile);
+	void DeleteProfile(const profiles::profile &profile);
+	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	observable::value<QString> observeTitleBarText();
 	void Issue(const std::vector<QString> &args);
@@ -189,6 +198,7 @@ private:
 	void ChangeThrottleRate(float throttle_rate);
 	void ChangeThrottleRate(int adjustment);
 	void ChangeSound(bool sound_enabled);
+	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 };
 
 #endif // MAINWINDOW_H

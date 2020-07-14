@@ -939,6 +939,16 @@ void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
 
 
 //-------------------------------------------------
+//  on_machinesTableView_customContextMenuRequested
+//-------------------------------------------------
+
+void MainWindow::on_machinesTableView_customContextMenuRequested(const QPoint &pos)
+{
+	LaunchingListContextMenu(m_ui->machinesTableView->mapToGlobal(pos));
+}
+
+
+//-------------------------------------------------
 //  on_softwareTableView_activated
 //-------------------------------------------------
 
@@ -948,8 +958,7 @@ void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
 	const info::machine machine = m_info_db.find_machine(m_softwareListItemModel->currentMachineName()).value();
 
 	// map the index to the actual index
-	QSortFilterProxyModel &proxyModel = *dynamic_cast<QSortFilterProxyModel *>(m_ui->softwareTableView->model());
-	QModelIndex actualIndex = proxyModel.mapToSource(index);
+	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(index);
 
 	// identify the software
 	const software_list::software &software = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
@@ -960,20 +969,57 @@ void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
 
 
 //-------------------------------------------------
+//  on_softwareTableView_customContextMenuRequested
+//-------------------------------------------------
+
+void MainWindow::on_softwareTableView_customContextMenuRequested(const QPoint &pos)
+{
+	// identify the selected software
+	QModelIndexList selection = m_ui->softwareTableView->selectionModel()->selectedIndexes();
+	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(selection[0]);
+	const software_list::software &sw = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
+	
+	// and launch the context menu
+	LaunchingListContextMenu(m_ui->softwareTableView->mapToGlobal(pos), &sw);
+}
+
+
+//-------------------------------------------------
 //  on_profilesTableView_activated
 //-------------------------------------------------
 
 void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
 {
 	// map the index to the actual index
-	QSortFilterProxyModel &proxyModel = *dynamic_cast<QSortFilterProxyModel *>(m_ui->profilesTableView->model());
-	QModelIndex actualIndex = proxyModel.mapToSource(index);
+	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(index);
 
 	// identify the profile
 	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
 	// and run!
 	Run(profile);
+}
+
+
+//-------------------------------------------------
+//  on_profilesTableView_customContextMenuRequested
+//-------------------------------------------------
+
+void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &pos)
+{
+	// identify the selected software
+	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
+	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
+	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+
+	// build the popup menu
+	QMenu popupMenu;
+	popupMenu.addAction(QString("Run \"%1\"").arg(profile.name()),	[this, &profile]() { Run(profile); });
+	popupMenu.addAction("Duplicate",								[this, &profile]() { DuplicateProfile(profile); });
+	popupMenu.addAction("Rename",									[this, &profile]() { RenameProfile(profile); });
+	popupMenu.addAction("Delete",									[this, &profile]() { DeleteProfile(profile); });
+	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile.path()); });
+	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
 }
 
 
@@ -1736,14 +1782,97 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, Preferences:
 
 
 //-------------------------------------------------
+//  LaunchingListContextMenu
+//-------------------------------------------------
+
+void MainWindow::LaunchingListContextMenu(const QPoint &pos, const software_list::software *software)
+{
+	// identify the machine
+	QModelIndex index = m_ui->machinesTableView->selectionModel()->selectedIndexes()[0];
+	const info::machine machine = machineFromModelIndex(index);
+
+	// identify the description
+	const QString &description = software
+		? software->m_description
+		: machine.description();
+
+	QMenu popupMenu(this);
+	popupMenu.addAction(QString("Run \"%1\"").arg(description),	[this, machine, &software]() { Run(machine, std::move(software));	});
+	popupMenu.addAction("Create profile",						[this, machine, &software]() { CreateProfile(machine, software);	});
+	popupMenu.exec(pos);
+}
+
+
+//-------------------------------------------------
+//  CreateProfile
+//-------------------------------------------------
+
+void MainWindow::CreateProfile(const info::machine &machine, const software_list::software *software)
+{
+	throw false;
+}
+
+
+//-------------------------------------------------
+//  DuplicateProfile
+//-------------------------------------------------
+
+void MainWindow::DuplicateProfile(const profiles::profile &profile)
+{
+	throw false;
+}
+
+
+//-------------------------------------------------
+//  RenameProfile
+//-------------------------------------------------
+
+void MainWindow::RenameProfile(const profiles::profile &profile)
+{
+	throw false;
+}
+
+
+//-------------------------------------------------
+//  DeleteProfile
+//-------------------------------------------------
+
+void MainWindow::DeleteProfile(const profiles::profile &profile)
+{
+	QString message = QString("Are you sure you want to delete profile \"%1\"").arg(profile.name());
+	if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
+		return;
+
+	if (!profiles::profile::profile_file_remove(profile.path()))
+		messageBox("Could not delete profile");
+}
+
+
+//-------------------------------------------------
+//  showInGraphicalShell
+//-------------------------------------------------
+
+void MainWindow::showInGraphicalShell(const QString &path) const
+{
+	// Windows-only code here; we really should eventually be doing something like:
+	// https://stackoverflow.com/questions/3490336/how-to-reveal-in-finder-or-show-in-explorer-with-qt
+	QFileInfo fi(path);
+	QStringList args;
+	if (!fi.isDir())
+		args += QLatin1String("/select,");
+	args << QDir::toNativeSeparators(fi.canonicalFilePath());
+	QProcess::startDetached("explorer.exe", args);
+}
+
+
+//-------------------------------------------------
 //  machineFromModelIndex
 //-------------------------------------------------
 
 info::machine MainWindow::machineFromModelIndex(const QModelIndex &index) const
 {
 	// map the index to the actual index
-	QSortFilterProxyModel &proxyModel = *dynamic_cast<QSortFilterProxyModel *>(m_ui->machinesTableView->model());
-	QModelIndex actualIndex = proxyModel.mapToSource(index);
+	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->machinesTableView).mapToSource(index);
 
 	// and look up in the info DB
 	return m_info_db.machines()[actualIndex.row()];
@@ -1911,4 +2040,15 @@ void MainWindow::ChangeThrottleRate(int adjustment)
 void MainWindow::ChangeSound(bool sound_enabled)
 {
 	Issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
+}
+
+
+//-------------------------------------------------
+//  sortFilterProxyModel
+//-------------------------------------------------
+
+const QSortFilterProxyModel &MainWindow::sortFilterProxyModel(const QTableView &tableView) const
+{
+	assert(&tableView == m_ui->machinesTableView || &tableView == m_ui->softwareTableView || &tableView == m_ui->profilesTableView);
+	return *dynamic_cast<QSortFilterProxyModel *>(tableView.model());
 }

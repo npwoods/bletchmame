@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="machinesTab">
        <attribute name="title">
@@ -30,6 +30,9 @@
         </item>
         <item>
          <widget class="QTableView" name="machinesTableView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
           <property name="selectionMode">
            <enum>QAbstractItemView::SingleSelection</enum>
           </property>
@@ -56,6 +59,9 @@
         </item>
         <item>
          <widget class="QTableView" name="softwareTableView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
           <property name="selectionMode">
            <enum>QAbstractItemView::SingleSelection</enum>
           </property>
@@ -79,6 +85,9 @@
        <layout class="QVBoxLayout" name="profilesVerticalLayout">
         <item>
          <widget class="QTableView" name="profilesTableView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
           <property name="selectionMode">
            <enum>QAbstractItemView::SingleSelection</enum>
           </property>
@@ -343,11 +352,11 @@
    </property>
   </action>
   <action name="actionToggleSound">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Sound</string>
@@ -448,11 +457,11 @@
    </property>
   </action>
   <action name="actionWarpMode">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Warp Mode</string>
