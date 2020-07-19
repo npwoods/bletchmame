@@ -150,6 +150,8 @@ private:
 	const Pauser *						m_current_pauser;
 	observable::value<QString>			m_current_recording_movie_filename;
 	observable::unique_subscription		m_watch_subscription;
+	QString								m_currentSoftwareList;
+	software_list_collection			m_softwareListCollection;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);

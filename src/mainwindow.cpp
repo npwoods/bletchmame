@@ -30,6 +30,7 @@
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
+#include "dialogs/choosesw.h"
 #include "dialogs/images.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
@@ -438,22 +439,6 @@ static const TableViewManager::Description s_machineListTableViewDesc =
 	s_machineListTableViewColumns
 };
 
-static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
-{
-	{ "name",			85 },
-	{ "description",	220 },
-	{ "year",			50 },
-	{ "publisher",		190 },
-	{ nullptr }
-};
-
-static const TableViewManager::Description s_softwareListTableViewDesc =
-{
-	SOFTLIST_VIEW_DESC_NAME,
-	(int)SoftwareListItemModel::Column::Name,
-	s_softwareListTableViewColumns
-};
-
 static const TableViewManager::ColumnDesc s_profileListTableViewColumns[] =
 {
 	{ "name",			85 },
@@ -507,7 +492,7 @@ MainWindow::MainWindow(QWidget *parent)
 		*m_ui->softwareTableView,
 		m_ui->softwareSearchBox,
 		*m_softwareListItemModel,
-		s_softwareListTableViewDesc);
+		ChooseSoftlistPartDialog::s_tableViewDesc);
 
 	// set up the profile list view
 	m_profileListItemModel = new ProfileListItemModel(this, m_prefs);
@@ -1055,7 +1040,7 @@ void MainWindow::on_machinesTableView_customContextMenuRequested(const QPoint &p
 void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
 {
 	// identify the machine
-	const info::machine machine = m_info_db.find_machine(m_softwareListItemModel->currentMachineName()).value();
+	const info::machine machine = m_info_db.find_machine(m_currentSoftwareList).value();
 
 	// map the index to the actual index
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(index);
@@ -1677,37 +1662,11 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 
 void MainWindow::setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc)
 {
-	// create a proxy model for sorting
-	QSortFilterProxyModel &proxyModel = *new QSortFilterProxyModel(this);
-	proxyModel.setSourceModel(&itemModel);
-	proxyModel.setSortCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-	proxyModel.setSortLocaleAware(true);
-	proxyModel.setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-	proxyModel.setFilterKeyColumn(-1);
-
-	// do we have a search box?
-	if (lineEdit)
-	{
-		// set the initial text on the search box
-		const QString &text = m_prefs.GetSearchBoxText(desc.m_name);
-		lineEdit->setText(text);
-		proxyModel.setFilterFixedString(text);
-
-		// make the search box functional
-		auto callback = [&proxyModel, lineEdit, descName{ desc.m_name }, this]()
-		{
-			QString text = lineEdit->text();
-			m_prefs.SetSearchBoxText(descName, std::move(text));
-			proxyModel.setFilterFixedString(text);
-		};
-		connect(lineEdit, &QLineEdit::textEdited, this, callback);
-	}
-
 	// set up a TableViewManager
-	(void)new TableViewManager(tableView, itemModel, proxyModel, m_prefs, desc);
+	TableViewManager &manager = *new TableViewManager(tableView, itemModel, lineEdit, m_prefs, desc);
 
 	// finally set the model
-	tableView.setModel(&proxyModel);
+	tableView.setModel(&manager.sortFilterProxyModel());
 }
 
 
@@ -1771,7 +1730,13 @@ void MainWindow::updateSoftwareList()
 	{
 		// load software lists for the current machine
 		const info::machine machine = machineFromModelIndex(selection[0]);
-		m_softwareListItemModel->load(m_prefs, machine, false);
+
+		// load the software
+		m_currentSoftwareList = machine.name();
+		m_softwareListCollection.load(m_prefs, machine);
+
+		// and load the model
+		m_softwareListItemModel->load(m_softwareListCollection, false);
 	}
 	else
 	{

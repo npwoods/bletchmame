@@ -14,9 +14,10 @@
 #include <QObject>
 
 QT_BEGIN_NAMESPACE
-class QTableView;
 class QAbstractItemModel;
+class QLineEdit;
 class QSortFilterProxyModel;
+class QTableView;
 QT_END_NAMESPACE
 
 class Preferences;
@@ -40,12 +41,17 @@ public:
         const ColumnDesc *  m_columns;
     };
 
-    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QSortFilterProxyModel &proxyModel, Preferences &prefs, const Description &desc);
+    // ctor
+    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc);
+
+    // accessors
+    QSortFilterProxyModel &sortFilterProxyModel() { return *m_proxyModel; }
 
 private:
-    Preferences &       m_prefs;
-    const Description & m_desc;
-    int                 m_columnCount;
+    Preferences &           m_prefs;
+    const Description &     m_desc;
+    int                     m_columnCount;
+    QSortFilterProxyModel * m_proxyModel;
 
     const QTableView &parentAsTableView() const;
     void persistColumnPrefs();

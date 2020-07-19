@@ -16,6 +16,7 @@
 
 #include "images.h"
 #include "ui_images.h"
+#include "dialogs/choosesw.h"
 
 
 //**************************************************************************
@@ -348,7 +349,13 @@ bool ImagesDialog::LoadImage(const QString &tag)
 
 bool ImagesDialog::LoadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface)
 {
-    throw false;
+    ChooseSoftlistPartDialog dialog(this, m_host.GetPreferences(), software_col, dev_interface);
+    dialog.exec();
+    if (dialog.result() != QDialog::DialogCode::Accepted)
+        return false;
+
+    m_host.LoadImage(tag, dialog.selection());
+    return true;
 }
 
 

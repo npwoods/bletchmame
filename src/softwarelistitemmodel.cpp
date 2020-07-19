@@ -23,19 +23,15 @@ SoftwareListItemModel::SoftwareListItemModel(QObject *parent)
 //  load
 //-------------------------------------------------
 
-void SoftwareListItemModel::load(const Preferences &prefs, const info::machine &machine, bool load_parts, const QString &dev_interface)
+void SoftwareListItemModel::load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface)
 {
     beginResetModel();
 
     // clear things out
     internalReset();
 
-    // load the software list collection for this machine
-    m_softwareListCollection.load(prefs, machine);
-    m_softwareListCollectionMachineName = machine.name();
-
     // now enumerate through each list and build the m_parts vector
-    for (const software_list &softlist : m_softwareListCollection.software_lists())
+    for (const software_list &softlist : software_col.software_lists())
     {
         // if the name of this software list is not in m_softlist_names, add it
         if (std::find(m_softlist_names.begin(), m_softlist_names.end(), softlist.name()) == m_softlist_names.end())

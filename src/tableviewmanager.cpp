@@ -6,8 +6,9 @@
 
 ***************************************************************************/
 
-#include <QTableView>
 #include <QHeaderView>
+#include <QLineEdit>
+#include <QTableView>
 #include <QSortFilterProxyModel>
 
 #include "tableviewmanager.h"
@@ -18,12 +19,39 @@
 //  ctor
 //-------------------------------------------------
 
-TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QSortFilterProxyModel &proxyModel, Preferences &prefs, const Description &desc)
+TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc)
     : QObject((QObject *) &tableView)
     , m_prefs(prefs)
     , m_desc(desc)
     , m_columnCount(-1)
+    , m_proxyModel(nullptr)
 {
+    // create a proxy model for sorting
+    m_proxyModel = new QSortFilterProxyModel((QObject *)&tableView);
+    m_proxyModel->setSourceModel(&itemModel);
+    m_proxyModel->setSortCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+    m_proxyModel->setSortLocaleAware(true);
+    m_proxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+    m_proxyModel->setFilterKeyColumn(-1);
+
+    // do we have a search box?
+    if (lineEdit)
+    {
+        // set the initial text on the search box
+        const QString &text = m_prefs.GetSearchBoxText(desc.m_name);
+        lineEdit->setText(text);
+        m_proxyModel->setFilterFixedString(text);
+
+        // make the search box functional
+        auto callback = [this, lineEdit, descName{ desc.m_name }]()
+        {
+            QString text = lineEdit->text();
+            m_prefs.SetSearchBoxText(descName, std::move(text));
+            m_proxyModel->setFilterFixedString(text);
+        };
+        connect(lineEdit, &QLineEdit::textEdited, this, callback);
+    }
+
     // get the preferences
     const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.GetColumnPrefs(m_desc.m_name);
 
@@ -84,12 +112,12 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
     }
 
     // handle selection
-	connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this, &proxyModel, &itemModel](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this, &itemModel](const QItemSelection &newSelection, const QItemSelection &oldSelection)
 	{
 		QModelIndexList selectedIndexes = newSelection.indexes();
 		if (!selectedIndexes.empty())
 		{
-            int selectedRow = proxyModel.mapToSource(selectedIndexes[0]).row();
+            int selectedRow = m_proxyModel->mapToSource(selectedIndexes[0]).row();
             QModelIndex selectedIndex = itemModel.index(selectedRow, m_desc.m_keyColumnIndex);
             QString selectedValue = itemModel.data(selectedIndex).toString();
             m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));

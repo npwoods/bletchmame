@@ -34,11 +34,10 @@ public:
 	SoftwareListItemModel(QObject *parent);
 
 	// methods
-	void load(const Preferences &prefs, const info::machine &machine, bool load_parts, const QString &dev_interface = "");
+	void load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = "");
 	void reset();
 
 	// accessors
-	const QString &currentMachineName() const { return m_softwareListCollectionMachineName; }
 	const software_list::software &getSoftwareByIndex(int index) const { return m_parts[index].software(); }
 
 	// virtuals
@@ -67,8 +66,6 @@ private:
 		const software_list::part *m_part;
 	};
 
-	software_list_collection		m_softwareListCollection;
-	QString							m_softwareListCollectionMachineName;
 	std::vector<SoftwareAndPart>	m_parts;
 	std::vector<QString>			m_softlist_names;
 
