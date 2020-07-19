@@ -55,6 +55,7 @@ public:
 private slots:
 	void on_actionStop_triggered();
 	void on_actionPause_triggered();
+	void on_actionImages_triggered();
 	void on_actionLoadState_triggered();
 	void on_actionSaveState_triggered();
 	void on_actionSaveScreenshot_triggered();
@@ -100,6 +101,7 @@ private:
 	};
 
 	class Pauser;
+	class ImagesHost;
 
 	class Aspect
 	{
@@ -147,6 +149,7 @@ private:
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
 	observable::value<QString>			m_current_recording_movie_filename;
+	observable::unique_subscription		m_watch_subscription;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -172,6 +175,9 @@ private:
 	bool shouldPromptOnStop() const;
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
+	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
+	void WatchForImageMount(const QString &tag);
+	void PlaceInRecentFiles(const QString &tag, const QString &path);
 	void updateSoftwareList();
 	info::machine GetRunningMachine() const;
 	bool AttachToRootPanel() const;

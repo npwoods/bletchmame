@@ -71,6 +71,9 @@ add_library(BletchMAME_core
 	src/dialogs/about.cpp
 	src/dialogs/about.h
 	src/dialogs/about.ui
+	src/dialogs/images.cpp
+	src/dialogs/images.h
+	src/dialogs/images.ui
 	src/dialogs/loading.cpp
 	src/dialogs/loading.h
 	src/dialogs/loading.ui

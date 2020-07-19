@@ -294,7 +294,10 @@ status::update status::update::read(QDataStream &input_stream)
 //-------------------------------------------------
 
 status::state::state()
+	: m_throttled(false)
+	, m_is_recording(false)
 {
+	m_images.subscribe_and_call([this] { m_has_images = m_images.get().size() > 0; });
 }
 
 

@@ -30,6 +30,7 @@
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
+#include "dialogs/images.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
 
@@ -91,6 +92,90 @@ private:
 	MainWindow &	m_host;
 	const Pauser *	m_last_pauser;
 	bool			m_is_running;
+};
+
+
+// ======================> ActionAspect
+
+class MainWindow::ImagesHost : public IImagesHost
+{
+public:
+	ImagesHost(MainWindow &host)
+		: m_host(host)
+	{
+	}
+
+	virtual info::machine GetMachine()
+	{
+		return m_host.GetRunningMachine();
+	}
+
+	virtual Preferences &GetPreferences()
+	{
+		return m_host.m_prefs;
+	}
+
+	virtual observable::value<std::vector<status::image>> &GetImages()
+	{
+		return m_host.m_state->images();
+	}
+
+	virtual const QString &GetWorkingDirectory() const
+	{
+		return m_host.m_prefs.GetMachinePath(GetMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
+	}
+
+	virtual void SetWorkingDirectory(QString &&dir)
+	{
+		m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
+	}
+
+	virtual const std::vector<QString> &GetRecentFiles(const QString &tag) const
+	{
+		info::machine machine = m_host.GetRunningMachine();
+		const QString &device_type = GetDeviceType(machine, tag);
+		return m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+	}
+
+	virtual std::vector<QString> GetExtensions(const QString &tag) const
+	{
+		// find the device declaration
+		auto devices = m_host.GetRunningMachine().devices();
+
+		auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
+		{
+			return dev.tag() == tag;
+		});
+		assert(iter != devices.end());
+
+		// and return it!
+		return util::string_split((*iter).extensions(), [](auto ch) { return ch == ','; });
+	}
+
+	virtual void CreateImage(const QString &tag, QString &&path)
+	{
+		m_host.WatchForImageMount(tag);
+		m_host.Issue({ "create", tag, std::move(path) });
+	}
+
+	virtual void LoadImage(const QString &tag, QString &&path)
+	{
+		m_host.WatchForImageMount(tag);
+		m_host.Issue({ "load", tag, std::move(path) });
+	}
+
+	virtual void UnloadImage(const QString &tag)
+	{
+		m_host.Issue({ "unload", tag });
+	}
+
+private:
+	MainWindow &m_host;
+
+	const QString &GetMachineName() const
+	{
+		return m_host.GetRunningMachine().name();
+	}
 };
 
 
@@ -448,6 +533,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionStop,				&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->paused()); });
+	setupPropSyncAspect(*m_ui->actionImages,			&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return observable::observe(m_state->has_images()); });
 	setupPropSyncAspect(*m_ui->actionLoadState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionSaveState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionSaveScreenshot,	&QAction::isEnabled,	&QAction::setEnabled,		true);
@@ -606,6 +692,19 @@ void MainWindow::on_actionStop_triggered()
 void MainWindow::on_actionPause_triggered()
 {
 	ChangePaused(!m_state->paused().get());
+}
+
+
+//-------------------------------------------------
+//  on_actionImages_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionImages_triggered()
+{
+	Pauser pauser(*this);
+	ImagesHost images_host(*this);
+	ImagesDialog dialog(*this, images_host, false);
+	dialog.exec();
 }
 
 
@@ -1327,16 +1426,15 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	});
 	if (iter != m_state->images().get().cend())
 	{
-		throw std::logic_error("NYI");
-#if 0
 		// if so, show the dialog
 		ImagesHost images_host(*this);
-		if (!show_images_dialog_cancellable(images_host))
+		ImagesDialog dialog(*this, images_host, true);
+		dialog.exec();
+		if (dialog.result() != QDialog::DialogCode::Accepted)
 		{
 			Issue("exit");
 			return;
 		}
-#endif
 	}
 
 	// unpause
@@ -1692,6 +1790,85 @@ bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
 	m_state->update(event.detachStatus());
 	m_pinging = false;
 	return true;
+}
+
+
+//-------------------------------------------------
+//  WatchForImageMount
+//-------------------------------------------------
+
+void MainWindow::WatchForImageMount(const QString &tag)
+{
+	// find the current value; we want to monitor for this value changing
+	QString current_value;
+	const status::image *image = m_state->find_image(tag);
+	if (image)
+		current_value = image->m_file_name;
+
+	// start watching
+	m_watch_subscription = m_state->images().subscribe([this, current_value{std::move(current_value)}, tag{std::move(tag)}]
+	{
+		// did the value change?
+		const status::image *image = m_state->find_image(tag);
+		if (image && image->m_file_name != current_value)
+		{
+			// it did!  place the new file in recent files
+			PlaceInRecentFiles(tag, image->m_file_name);
+
+			// and stop subscribing
+			m_watch_subscription = observable::unique_subscription();
+		}
+	});	
+}
+
+
+//-------------------------------------------------
+//  PlaceInRecentFiles
+//-------------------------------------------------
+
+void MainWindow::PlaceInRecentFiles(const QString &tag, const QString &path)
+{
+	// get the machine and device type to update recents
+	info::machine machine = GetRunningMachine();
+	const QString &device_type = GetDeviceType(machine, tag);
+
+	// actually edit the recent files; start by getting recent files
+	std::vector<QString> &recent_files = m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+
+	// ...and clearing out places where that entry already exists
+	std::vector<QString>::iterator iter;
+	while ((iter = std::find(recent_files.begin(), recent_files.end(), path)) != recent_files.end())
+		recent_files.erase(iter);
+
+	// ...insert the new value
+	recent_files.insert(recent_files.begin(), path);
+
+	// and cull the list
+	const size_t MAXIMUM_RECENT_FILES = 10;
+	if (recent_files.size() > MAXIMUM_RECENT_FILES)
+		recent_files.erase(recent_files.begin() + MAXIMUM_RECENT_FILES, recent_files.end());
+}
+
+
+//-------------------------------------------------
+//  GetDeviceType
+//-------------------------------------------------
+
+const QString &MainWindow::GetDeviceType(const info::machine &machine, const QString &tag)
+{
+	static const QString s_empty;
+
+	auto iter = std::find_if(
+		machine.devices().begin(),
+		machine.devices().end(),
+		[&tag](const info::device device)
+		{
+			return device.tag() == tag;
+		});
+
+	return iter != machine.devices().end()
+		? (*iter).type()
+		: s_empty;
 }
 
 
