@@ -74,6 +74,8 @@ private:
 	bool LoadImage(const QString &tag);
 	bool LoadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface);
 	bool UnloadImage(const QString &tag);
+	QString GetWildcardString(const QString &tag, bool support_zip) const;
+	void UpdateWorkingDirectory(const QString &path);
 
 	template<class T>
 	T &getOrCreateGridWidget(int row, int column, void (ImagesDialog::*setupFunc)(T &, int) = nullptr);

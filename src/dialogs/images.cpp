@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include <QAction>
+#include <QFileDialog>
 #include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -157,14 +158,10 @@ void ImagesDialog::setupGridLineEdit(QLineEdit &lineEdit, int row)
 
 void ImagesDialog::setupGridButton(QPushButton &button, int row)
 {
-    // create the action
-    QAction &action = *new QAction(this);
-    connect(&action, &QAction::triggered, this, [this, row, &button]() { ImageMenu(button, row); });
-
     // set up the button
     button.setText("...");
     button.setFixedWidth(30);
-    button.addAction(&action);
+    connect(&button, &QPushButton::clicked, this, [this, row, &button]() { ImageMenu(button, row); });
 }
 
 
@@ -281,8 +278,9 @@ bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
     }
 
     // execute!
-    QPoint pos(button.pos().x(), button.pos().y() + button.height());
-    return popupMenu.exec(pos) ? true : false;
+    QPoint localPos(button.pos().x(), button.pos().y() + button.height());
+    QPoint globalPos = mapToGlobal(localPos);
+    return popupMenu.exec(globalPos) ? true : false;
 }
 
 
@@ -292,7 +290,26 @@ bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
 
 bool ImagesDialog::CreateImage(const QString &tag)
 {
-    throw false;
+    // show the fialog
+    QFileDialog dialog(
+        this,
+        "Create Image",
+        m_host.GetWorkingDirectory(),
+        GetWildcardString(tag, false));
+    dialog.setFileMode(QFileDialog::FileMode::AnyFile);
+    dialog.exec();
+    if (dialog.result() != QDialog::DialogCode::Accepted)
+        return false;
+
+    // get the result from the dialog
+    QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
+
+    // update our host's working directory
+    UpdateWorkingDirectory(path);
+
+    // and load the image
+    m_host.CreateImage(tag, std::move(path));
+    return true;
 }
 
 
@@ -302,7 +319,26 @@ bool ImagesDialog::CreateImage(const QString &tag)
 
 bool ImagesDialog::LoadImage(const QString &tag)
 {
-    throw false;
+    // show the fialog
+    QFileDialog dialog(
+        this,
+        "Load Image",
+        m_host.GetWorkingDirectory(),
+        GetWildcardString(tag, true));
+    dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
+    dialog.exec();
+    if (dialog.result() != QDialog::DialogCode::Accepted)
+        return false;
+
+    // get the result from the dialog
+    QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
+
+    // update our host's working directory
+    UpdateWorkingDirectory(path);
+
+    // and load the image
+    m_host.LoadImage(tag, std::move(path));
+    return true;
 }
 
 
@@ -324,4 +360,47 @@ bool ImagesDialog::UnloadImage(const QString &tag)
 {
     m_host.UnloadImage(tag);
     return false;
+}
+
+
+//-------------------------------------------------
+//  GetWildcardString
+//-------------------------------------------------
+
+QString ImagesDialog::GetWildcardString(const QString &tag, bool support_zip) const
+{
+    // get the list of extensions
+    std::vector<QString> extensions = m_host.GetExtensions(tag);
+
+    // append zip if appropriate
+    if (support_zip)
+        extensions.push_back("zip");
+
+    // figure out the "general" wildcard part for all devices
+    QString all_extensions = util::string_join(QString(";"), extensions, [](QString ext) { return QString("*.%1").arg(ext); });
+    QString result = QString("Device files (%1)").arg(all_extensions);
+
+    // now break out each extension
+    for (const QString &ext : extensions)
+    {
+        result += QString(";;%1 files (*.%2s)").arg(
+            ext.toUpper(),
+            ext);
+    }
+
+    // and all files
+    result += ";;All files (*.*)";
+    return result;
+}
+
+
+//-------------------------------------------------
+//  UpdateWorkingDirectory
+//-------------------------------------------------
+
+void ImagesDialog::UpdateWorkingDirectory(const QString &path)
+{
+    QString dir;
+    wxFileName::SplitPath(path, &dir, nullptr, nullptr);
+    m_host.SetWorkingDirectory(std::move(dir));
 }
