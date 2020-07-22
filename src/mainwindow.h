@@ -69,6 +69,11 @@ private slots:
 	void on_actionWarpMode_triggered();
 	void on_actionFullScreen_triggered();
 	void on_actionToggleSound_triggered();
+	void on_actionJoysticksAndControllers_triggered();
+	void on_actionKeyboard_triggered();
+	void on_actionMiscellaneousInput_triggered();
+	void on_actionConfiguration_triggered();
+	void on_actionDipSwitches_triggered();
 	void on_actionPaths_triggered();
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
@@ -102,6 +107,8 @@ private:
 
 	class Pauser;
 	class ImagesHost;
+	class InputsHost;
+	class SwitchesHost;
 
 	class Aspect
 	{
@@ -175,6 +182,8 @@ private:
 	bool refreshMameInfoDatabase();
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	bool shouldPromptOnStop() const;
+	void showInputsDialog(status::input::input_class input_class);
+	void showSwitchesDialog(status::input::input_class input_class);
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
 	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
@@ -198,6 +207,7 @@ private:
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	observable::value<QString> observeTitleBarText();
+	static QString InputClassText(status::input::input_class input_class, bool elipsis);
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<std::string> &args);
 	void Issue(const char *command);

@@ -77,12 +77,17 @@ add_library(BletchMAME_core
 	src/dialogs/images.cpp
 	src/dialogs/images.h
 	src/dialogs/images.ui
+	src/dialogs/inputs.cpp
+	src/dialogs/inputs.h
+	src/dialogs/inputs.ui
 	src/dialogs/loading.cpp
 	src/dialogs/loading.h
 	src/dialogs/loading.ui
 	src/dialogs/paths.cpp
 	src/dialogs/paths.h
 	src/dialogs/paths.ui
+	src/dialogs/switches.cpp
+	src/dialogs/switches.h
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)

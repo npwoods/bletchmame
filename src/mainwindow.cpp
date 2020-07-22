@@ -32,8 +32,10 @@
 #include "dialogs/about.h"
 #include "dialogs/choosesw.h"
 #include "dialogs/images.h"
+#include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
+#include "dialogs/switches.h"
 
 
 //**************************************************************************
@@ -96,7 +98,7 @@ private:
 };
 
 
-// ======================> ActionAspect
+// ======================> ImagesHost
 
 class MainWindow::ImagesHost : public IImagesHost
 {
@@ -177,6 +179,107 @@ private:
 	{
 		return m_host.GetRunningMachine().name();
 	}
+};
+
+
+// ======================> InputsHost
+
+class MainWindow::InputsHost : public IInputsHost
+{
+public:
+	InputsHost(MainWindow &host) : m_host(host) { }
+
+	virtual observable::value<std::vector<status::input>> &GetInputs() override
+	{
+		return m_host.m_state->inputs();
+	}
+
+	virtual const std::vector<status::input_class> &GetInputClasses() override
+	{
+		return m_host.m_state->input_classes().get();
+	}
+
+	virtual observable::value<bool> &GetPollingSeqChanged() override
+	{
+		return m_host.m_state->polling_input_seq();
+	}
+
+	virtual void SetInputSeqs(std::vector<SetInputSeqRequest> &&seqs) override
+	{
+		// sanity check
+		assert(!seqs.empty());
+
+		// set up arguments
+		std::vector<QString> args;
+		args.reserve(seqs.size() * 3 + 1);
+		args.emplace_back("seq_set");
+
+		// append sequences
+		for (SetInputSeqRequest &seq : seqs)
+		{
+			args.emplace_back(std::move(seq.m_port_tag));
+			args.emplace_back(QString::number(seq.m_mask));
+			args.emplace_back(SeqTypeString(seq.m_seq_type));
+			args.emplace_back(seq.m_tokens);
+		}
+
+		// invoke!
+		m_host.Issue(args);
+	}
+
+	virtual void StartPolling(const QString &port_tag, ioport_value mask, status::input_seq::type seq_type, const QString &start_seq_tokens) override
+	{
+		m_host.Issue({ "seq_poll_start", port_tag, QString::number(mask), SeqTypeString(seq_type), start_seq_tokens });
+	}
+
+	virtual void StopPolling() override
+	{
+		m_host.Issue({ "seq_poll_stop" });
+	}
+
+private:
+	MainWindow &m_host;
+
+	static const QString &SeqTypeString(status::input_seq::type seq_type)
+	{
+		static const QString s_standard = "standard";
+		static const QString s_increment = "increment";
+		static const QString s_decrement = "decrement";
+
+		switch (seq_type)
+		{
+		case status::input_seq::type::STANDARD:		return s_standard;
+		case status::input_seq::type::INCREMENT:	return s_increment;
+		case status::input_seq::type::DECREMENT:	return s_decrement;
+		default:
+			throw false;
+		}
+	}
+};
+
+
+// ======================> SwitchesHost
+
+class MainWindow::SwitchesHost : public ISwitchesHost
+{
+public:
+	SwitchesHost(MainWindow &host)
+		: m_host(host)
+	{
+	}
+
+	virtual const std::vector<status::input> &GetInputs() override
+	{
+		return m_host.m_state->inputs().get();
+	}
+
+	virtual void SetInputValue(const QString &port_tag, ioport_value mask, ioport_value value) override
+	{
+		m_host.Issue({ "set_input_value", port_tag, QString::number(mask), QString::number(value) });
+	}
+
+private:
+	MainWindow &m_host;
 };
 
 
@@ -509,28 +612,33 @@ MainWindow::MainWindow(QWidget *parent)
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// setup properties that pertain to runtime behavior
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isEnabled,	&QWidget::setEnabled,		false);
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,	&QWidget::isHidden,		&QWidget::setHidden,		true);
-	setupPropSyncAspect(*m_ui->rootWidget,				&QWidget::isHidden,		&QWidget::setHidden,		[this]() { return !AttachToRootPanel(); });
-	setupPropSyncAspect((QWidget &) *this,				&QWidget::windowTitle,	&QWidget::setWindowTitle,	[this]() { return observeTitleBarText(); });
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isEnabled,	&QWidget::setEnabled,		false);
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isHidden,		&QWidget::setHidden,		true);
+	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		[this]() { return !AttachToRootPanel(); });
+	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	[this]() { return observeTitleBarText(); });
 
 	// actions
-	setupPropSyncAspect(*m_ui->actionStop,				&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionPause,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->paused()); });
-	setupPropSyncAspect(*m_ui->actionImages,			&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return observable::observe(m_state->has_images()); });
-	setupPropSyncAspect(*m_ui->actionLoadState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionSaveState,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionSaveScreenshot,	&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,	&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionDebugger,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionSoftReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionHardReset,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,		&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,		&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionWarpMode,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,		&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,		&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->sound_attenuation() != SOUND_ATTENUATION_OFF); });
+	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->paused()); });
+	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return observable::observe(m_state->has_images()); });
+	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->sound_attenuation() != SOUND_ATTENUATION_OFF); });
+	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::CONTROLLER)); */ });
+	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::KEYBOARD)); */ });
+	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::MISC)); */ });
+	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::CONFIG)); */ });
+	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::DIPSWITCH)); */ });
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
@@ -908,6 +1016,56 @@ void MainWindow::on_actionToggleSound_triggered()
 {
 	bool isEnabled = m_ui->actionToggleSound->isEnabled();
 	ChangeSound(!isEnabled);
+}
+
+
+//-------------------------------------------------
+//  on_actionJoysticksAndControllers_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionJoysticksAndControllers_triggered()
+{
+	showInputsDialog(status::input::input_class::CONTROLLER);
+}
+
+
+//-------------------------------------------------
+//  on_actionKeyboard_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionKeyboard_triggered()
+{
+	showInputsDialog(status::input::input_class::KEYBOARD);
+}
+
+
+//-------------------------------------------------
+//  on_actionMiscellaneousInput_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionMiscellaneousInput_triggered()
+{
+	showInputsDialog(status::input::input_class::MISC);
+}
+
+
+//-------------------------------------------------
+//  on_actionConfiguration_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionConfiguration_triggered()
+{
+	showSwitchesDialog(status::input::input_class::CONFIG);
+}
+
+
+//-------------------------------------------------
+//  on_actionDipSwitches_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionDipSwitches_triggered()
+{
+	showSwitchesDialog(status::input::input_class::DIPSWITCH);
 }
 
 
@@ -1588,6 +1746,34 @@ bool MainWindow::shouldPromptOnStop() const
 
 
 //-------------------------------------------------
+//  showInputsDialog
+//-------------------------------------------------
+
+void MainWindow::showInputsDialog(status::input::input_class input_class)
+{
+	QString title = InputClassText(input_class, false);
+	Pauser pauser(*this);
+	InputsHost host(*this);
+	InputsDialog dialog(*this, title, host, input_class);
+	dialog.exec();
+}
+
+
+//-------------------------------------------------
+//  showSwitchesDialog
+//-------------------------------------------------
+
+void MainWindow::showSwitchesDialog(status::input::input_class input_class)
+{
+	QString title = InputClassText(input_class, false);
+	Pauser pauser(*this);
+	SwitchesHost host(*this);
+	SwitchesDialog dialog(*this, title, host, input_class);
+	dialog.exec();
+}
+
+
+//-------------------------------------------------
 //  isMameVersionAtLeast
 //-------------------------------------------------
 
@@ -2178,6 +2364,41 @@ observable::value<QString> MainWindow::observeTitleBarText()
 		m_state->paused(),
 		titleTextPaused,
 		titleTextNotPaused));
+}
+
+
+//-------------------------------------------------
+//  InputClassText
+//-------------------------------------------------
+
+QString MainWindow::InputClassText(status::input::input_class input_class, bool elipsis)
+{
+	QString result;
+	switch (input_class)
+	{
+	case status::input::input_class::CONTROLLER:
+		result = "Joysticks and Controllers";
+		break;
+	case status::input::input_class::KEYBOARD:
+		result = "Keyboard";
+		break;
+	case status::input::input_class::MISC:
+		result = "Miscellaneous Input";
+		break;
+	case status::input::input_class::CONFIG:
+		result = "Configuration";
+		break;
+	case status::input::input_class::DIPSWITCH:
+		result = "DIP Switches";
+		break;
+	default:
+		throw false;
+	}
+
+	if (elipsis)
+		result += "...";
+
+	return result;
 }
 
 
