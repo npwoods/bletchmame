@@ -31,6 +31,7 @@
 #include "utility.h"
 #include "dialogs/about.h"
 #include "dialogs/choosesw.h"
+#include "dialogs/console.h"
 #include "dialogs/images.h"
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
@@ -634,6 +635,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->sound_attenuation() != SOUND_ATTENUATION_OFF); });
+	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,	&QAction::setEnabled,		true);
 	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::CONTROLLER)); */ });
 	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::KEYBOARD)); */ });
 	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::MISC)); */ });
@@ -1016,6 +1018,17 @@ void MainWindow::on_actionToggleSound_triggered()
 {
 	bool isEnabled = m_ui->actionToggleSound->isEnabled();
 	ChangeSound(!isEnabled);
+}
+
+
+//-------------------------------------------------
+//  on_actionConsole_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionConsole_triggered()
+{
+	ConsoleDialog dialog(this, m_client.GetCurrentTask<RunMachineTask>(), *this);
+	dialog.exec();
 }
 
 
@@ -2024,11 +2037,23 @@ const QString &MainWindow::GetDeviceType(const info::machine &machine, const QSt
 
 
 //-------------------------------------------------
+//  SetChatterListener
+//-------------------------------------------------
+
+void MainWindow::SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func)
+{
+	m_on_chatter = std::move(func);
+}
+
+
+//-------------------------------------------------
 //  onChatter
 //-------------------------------------------------
 
 bool MainWindow::onChatter(const ChatterEvent &event)
 {
+	if (m_on_chatter)
+		m_on_chatter(event);
 	return true;
 }
 

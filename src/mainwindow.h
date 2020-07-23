@@ -20,6 +20,7 @@
 #include "softwarelist.h"
 #include "tableviewmanager.h"
 #include "status.h"
+#include "dialogs/console.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -42,7 +43,7 @@ class ChatterEvent;
 
 // ======================> MainWindow
 
-class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow, private IConsoleDialogHost
 {
 	Q_OBJECT
 
@@ -69,6 +70,7 @@ private slots:
 	void on_actionWarpMode_triggered();
 	void on_actionFullScreen_triggered();
 	void on_actionToggleSound_triggered();
+	void on_actionConsole_triggered();
 	void on_actionJoysticksAndControllers_triggered();
 	void on_actionKeyboard_triggered();
 	void on_actionMiscellaneousInput_triggered();
@@ -159,6 +161,7 @@ private:
 	observable::unique_subscription		m_watch_subscription;
 	QString								m_currentSoftwareList;
 	software_list_collection			m_softwareListCollection;
+	std::function<void(const ChatterEvent &)>	m_on_chatter;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -187,6 +190,7 @@ private:
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	void setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
 	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
+	virtual void SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func);
 	void WatchForImageMount(const QString &tag);
 	void PlaceInRecentFiles(const QString &tag, const QString &path);
 	void updateSoftwareList();

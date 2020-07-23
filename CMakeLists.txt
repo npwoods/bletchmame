@@ -74,6 +74,9 @@ add_library(BletchMAME_core
 	src/dialogs/choosesw.cpp
 	src/dialogs/choosesw.h
 	src/dialogs/choosesw.ui
+	src/dialogs/console.cpp
+	src/dialogs/console.h
+	src/dialogs/console.ui
 	src/dialogs/images.cpp
 	src/dialogs/images.h
 	src/dialogs/images.ui

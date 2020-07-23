@@ -90,7 +90,9 @@ public:
 
 	ChatterEvent(ChatterType type, QString &&text);
 
-	static QEvent::Type eventId() { return s_eventId; }
+	static QEvent::Type eventId()	{ return s_eventId; }
+	ChatterType type() const		{ return m_type; }
+	const QString &text() const		{ return m_text; }
 
 private:
 	static QEvent::Type		s_eventId;
