@@ -41,7 +41,7 @@ private:
 
 	void onInvoke();
 	void onChatter(const ChatterEvent &evt);
-	bool isChatterPing(ChatterEvent::ChatterType type, const QString &text) const;
+	static bool isChatterPing(const ChatterEvent &evt);
 };
 
 #endif // DIALOGS_CONSOLE_H

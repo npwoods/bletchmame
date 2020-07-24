@@ -78,13 +78,8 @@ void ConsoleDialog::onInvoke()
 
 void ConsoleDialog::onChatter(const ChatterEvent &evt)
 {
-	// remove line endings
-	QString text = evt.text();
-	while (text.endsWith("\r") || text.endsWith("\n"))
-		text.resize(text.size() - 1);
-
 	// ignore pings; they are noisy
-	if (isChatterPing(evt.type(), text) && m_ui->filterOutPingsCheckBox->checkState() == Qt::CheckState::Checked)
+	if (isChatterPing(evt) && m_ui->filterOutPingsCheckBox->checkState() == Qt::CheckState::Checked)
 		return;
 
 	// determine the text color
@@ -95,7 +90,7 @@ void ConsoleDialog::onChatter(const ChatterEvent &evt)
 		color = QColorConstants::Blue;
 		break;
 	case ChatterEvent::ChatterType::RESPONSE:
-		color = text.startsWith("OK") ? QColorConstants::Black : QColorConstants::Red;
+		color = evt.text().startsWith("OK") ? QColorConstants::Black : QColorConstants::Red;
 		break;
 	default:
 		throw false;
@@ -106,7 +101,7 @@ void ConsoleDialog::onChatter(const ChatterEvent &evt)
 	QTextCharFormat format;
 	format.setForeground(QBrush(color));
 	cursor.setCharFormat(format);
-	cursor.insertText(text);
+	cursor.insertText(evt.text());
 	cursor.insertText("\r\n");
 }
 
@@ -115,9 +110,9 @@ void ConsoleDialog::onChatter(const ChatterEvent &evt)
 //  isChatterPing
 //-------------------------------------------------
 
-bool ConsoleDialog::isChatterPing(ChatterEvent::ChatterType type, const QString &text) const
+bool ConsoleDialog::isChatterPing(const ChatterEvent &evt)
 {
 	// hack, but good enough for now
-	return (type == ChatterEvent::ChatterType::COMMAND_LINE && text == "ping")
-		|| (type == ChatterEvent::ChatterType::RESPONSE && text.contains("pong"));
+	return (evt.type() == ChatterEvent::ChatterType::COMMAND_LINE && evt.text() == "ping")
+		|| (evt.type() == ChatterEvent::ChatterType::RESPONSE && evt.text().contains("pong"));
 }

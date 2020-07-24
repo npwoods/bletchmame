@@ -481,6 +481,9 @@ StatusUpdateEvent::StatusUpdateEvent(status::update &&update)
 ChatterEvent::ChatterEvent(ChatterType type, QString &&text)
 	: QEvent(s_eventId) 
 	, m_type(type)
-	, m_text(text)
+	, m_text(std::move(text))
 {
+	// remove line endings from the text
+	while (!m_text.isEmpty() && (m_text[m_text.size() - 1] == '\r' || m_text[m_text.size() - 1] == '\n'))
+		m_text.resize(m_text.size() - 1);
 }
