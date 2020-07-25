@@ -123,10 +123,11 @@ private:
 	};
 
 	template<typename TStartAction, typename TStopAction> class ActionAspect;
-	template<typename TValueType, typename TObserve> class PropertySyncAspect;
+	template<typename TObj, typename TGetValueType, typename TSetValueType, typename TSubscribable, typename TGetValue> class PropertySyncAspect;
 	class StatusBarAspect;
 	class MenuBarAspect;
 	class ToggleMovieTextAspect;
+	class Dummy;
 
 	// statics
 	static const float					s_throttle_rates[];
@@ -171,11 +172,11 @@ private:
 	bool onChatter(const ChatterEvent &event);
 
 	// templated property/action binding
-	template<typename TStartAction, typename TStopAction>			void setupActionAspect(TStartAction &&startAction, TStopAction &&stopAction);
-	template<typename TObj, typename TValueType>					void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(TValueType), TValueType value);
-	template<typename TObj, typename TValueType, typename TObserve>	void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(TValueType), TObserve &&func);
-	template<typename TObj, typename TValueType>					void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TValueType value);
-	template<typename TObj, typename TValueType, typename TObserve>	void setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TObserve &&func);
+	template<typename TStartAction, typename TStopAction>				void setupActionAspect(TStartAction &&startAction, TStopAction &&stopAction);
+	template<typename TObj, typename TValueType, typename TSubscribable = Dummy>						void setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(TValueType),			observable::value<TSubscribable>&(status::state::*getSubscribableFunc)(), TValueType value);
+	template<typename TObj, typename TValueType, typename TSubscribable = Dummy, typename TGetValue>	void setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(TValueType),			observable::value<TSubscribable>&(status::state::*getSubscribableFunc)(), TGetValue &&func);
+	template<typename TObj, typename TValueType, typename TSubscribable = Dummy>						void setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(const TValueType &),	observable::value<TSubscribable>&(status::state::*getSubscribableFunc)(), TValueType value);
+	template<typename TObj, typename TValueType, typename TSubscribable = Dummy, typename TGetValue>	void setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(const TValueType &),	observable::value<TSubscribable>&(status::state::*getSubscribableFunc)(), TGetValue &&func);
 
 	// methods
 	bool IsMameExecutablePresent() const;
@@ -210,7 +211,7 @@ private:
 	void FocusOnNewProfile(QString &&new_profile_path);
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
-	observable::value<QString> observeTitleBarText();
+	QString getTitleBarText();
 	static QString InputClassText(status::input::input_class input_class, bool elipsis);
 	void Issue(const std::vector<QString> &args);
 	void Issue(const std::initializer_list<std::string> &args);

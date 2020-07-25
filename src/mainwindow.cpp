@@ -314,43 +314,60 @@ private:
 
 // ======================> PropertySyncAspect
 
-template<typename TValueType, typename TObserve>
+template<typename TObj, typename TGetValueType, typename TSetValueType, typename TSubscribable, typename TGetValueFunc>
 class MainWindow::PropertySyncAspect : public Aspect
 {
 public:
-	PropertySyncAspect(std::function<void(const TValueType &)> &&setFunc, TValueType &&defaultValue, TObserve &&observeFunc)
-		: m_setFunc(std::move(setFunc))
-		, m_defaultValue(std::move(defaultValue))
-		, m_observeFunc(std::move(observeFunc))
+	PropertySyncAspect(MainWindow &host, TObj &obj, TGetValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(TSetValueType), observable::value<TSubscribable> &(status::state:: *getSubscribableFunc)(), TGetValueFunc &&getValueFunc)
+		: m_host(host)
+		, m_obj(obj)
+		, m_setFunc(setFunc)
+		, m_getSubscribableFunc(getSubscribableFunc)
+		, m_getValueFunc(std::move(getValueFunc))
 	{
+		// determine the original value (to be restored when the emulation completes)
+		m_originalValue = ((m_obj).*(getFunc))();
 	}
 
 	virtual void start()
 	{
-		// emplace the observable value into our optional memeber
-		m_value.emplace(m_observeFunc());
+		// perform the initial refresh
+		refresh();
 
-		// subscribe to changes
-		m_value.value().subscribe([this](const TValueType &value) { m_setFunc(value); });
-
-		// and set the initial value
-		m_setFunc(m_value.value().get());
+		// and subscribe (if necessary)
+		if (m_getSubscribableFunc && sizeof(TSubscribable) > 0)
+		{
+			auto &subscribable = ((*m_host.m_state).*(m_getSubscribableFunc))();
+			subscribable.subscribe([this]()
+			{
+				refresh();
+			});
+		}
 	}
 
 	virtual void stop()
 	{
-		// clear out our value
-		m_value.reset();
-
-		// and restore the default
-		m_setFunc(m_defaultValue);
+		setValue(m_originalValue);
 	}
 
 private:
-	std::function<void(const TValueType &)>			m_setFunc;
-	TValueType										m_defaultValue;
-	TObserve										m_observeFunc;
-	std::optional<observable::value<TValueType>>	m_value;
+	MainWindow &		m_host;
+	TObj &				m_obj;
+	void (TObj:: *m_setFunc)(TSetValueType);
+	observable::value<TSubscribable> &(status::state:: *m_getSubscribableFunc)();
+	TGetValueFunc		m_getValueFunc;
+	TGetValueType		m_originalValue;
+
+	void refresh()
+	{
+		TGetValueType value = m_getValueFunc();
+		setValue(value);
+	}
+
+	void setValue(TSetValueType value)
+	{
+		((m_obj).*(m_setFunc))(value);
+	}
 };
 
 
@@ -517,6 +534,14 @@ private:
 };
 
 
+// ======================> Dummy
+
+class MainWindow::Dummy
+{
+	// completely bogus dummy class
+};
+
+
 //**************************************************************************
 //  MAIN IMPLEMENTATION
 //**************************************************************************
@@ -613,34 +638,34 @@ MainWindow::MainWindow(QWidget *parent)
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// setup properties that pertain to runtime behavior
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isEnabled,	&QWidget::setEnabled,		false);
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isHidden,		&QWidget::setHidden,		true);
-	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		[this]() { return !AttachToRootPanel(); });
-	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	[this]() { return observeTitleBarText(); });
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isEnabled,	&QWidget::setEnabled,		{ },								false);
+	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isHidden,		&QWidget::setHidden,		{ },								true);
+	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		{ },								[this]() { return !AttachToRootPanel(); });
+	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	&status::state::paused,				[this]() { return getTitleBarText(); });
 
 	// actions
-	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->paused()); });
-	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return observable::observe(m_state->has_images()); });
-	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		[this]() { return observable::observe(m_state->sound_attenuation() != SOUND_ATTENUATION_OFF); });
-	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,	&QAction::setEnabled,		true);
-	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::CONTROLLER)); */ });
-	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::KEYBOARD)); */ });
-	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::MISC)); */ });
-	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::CONFIG)); */ });
-	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,	&QAction::setEnabled,		[this]() { return false; /* observable::observe(m_state->has_input_class(status::input::input_class::DIPSWITCH)); */ });
+	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,	&QAction::setChecked,		&status::state::paused,				[this]() { return m_state->paused().get(); });
+	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::images,				[this]() { return m_state->images().get().size() > 0;});
+	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		&status::state::sound_attenuation,	[this]() { return m_state->sound_attenuation().get() != SOUND_ATTENUATION_OFF; });
+	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
+	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONTROLLER); });
+	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::KEYBOARD); });
+	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::MISC); });
+	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONFIG); });
+	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::DIPSWITCH); });
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
@@ -654,8 +679,8 @@ MainWindow::MainWindow(QWidget *parent)
 		action.setCheckable(true);
 
 		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { ChangeThrottleRate(throttle_rate); });
-		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, true);
-		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, [this, throttle_rate]() { return observable::observe(m_state->throttle_rate() == throttle_rate); });
+		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },								true);
+		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::throttle_rate,	[this, throttle_rate]() { return m_state->throttle_rate().get() == throttle_rate; });
 	}
 
 	// special setup for frameskip dynamic menu
@@ -668,8 +693,8 @@ MainWindow::MainWindow(QWidget *parent)
 		action.setCheckable(true);
 
 		connect(&action, &QAction::triggered, this, [this, value{ value.toStdString()}]() { Issue({ "frameskip", value }); });
-		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, true);
-		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, [this, value{std::move(value)}]() { return observable::observe(m_state->frameskip() == value); });
+		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },							true);
+		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::frameskip,	[this, value{std::move(value)}]() { return m_state->frameskip().get() == value; });
 	}
 
 	// set up the tab widget
@@ -713,50 +738,49 @@ void MainWindow::setupActionAspect(TStartAction &&startAction, TStopAction &&sto
 //  setupPropSyncAspect
 //-------------------------------------------------
 
-template<typename TObj, typename TValueType>
-void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(TValueType), TValueType value)
+template<typename TObj, typename TValueType, typename TSubscribable>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj:: *setFunc)(TValueType), observable::value<TSubscribable> &(status::state:: *getSubscribableFunc)(), TValueType value)
 {
-	setupPropSyncAspect(obj, getFunc, setFunc, [value]() { return observable::value<TValueType>(value); });
+	setupPropSyncAspect(obj, getFunc, setFunc, getSubscribableFunc, [value]() { return value; });
 }
 
 
-template<typename TObj, typename TValueType, typename TObserve>
-void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj::*getFunc)() const, void (TObj::*setFunc)(TValueType), TObserve &&func)
+template<typename TObj, typename TValueType, typename TSubscribable, typename TGetValue>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj:: *setFunc)(TValueType), observable::value<TSubscribable> &(status::state:: *getSubscribableFunc)(), TGetValue &&func)
 {
-	// determine the original value (to be restored when the emulation completes)
-	TValueType originalValue = ((obj).*(getFunc))();
-
-	// create the action
-	Aspect::ptr action = std::make_unique<PropertySyncAspect<TValueType, TObserve>>(
-		[&obj, setFunc](TValueType value) { ((obj).*(setFunc))(value); },
-		std::move(originalValue),
+	Aspect::ptr aspect = std::make_unique<PropertySyncAspect<TObj, TValueType, TValueType, TSubscribable, TGetValue>>(
+		*this,
+		obj,
+		getFunc,
+		setFunc,
+		getSubscribableFunc,
 		std::move(func));
 
 	// and add it to the list
-	m_aspects.push_back(std::move(action));
+	m_aspects.push_back(std::move(aspect));
 }
 
 
-template<typename TObj, typename TValueType>
-void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TValueType value)
+template<typename TObj, typename TValueType, typename TSubscribable>	
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj:: *setFunc)(const TValueType &), observable::value<TSubscribable> &(status::state:: *getSubscribableFunc)(), TValueType value)
 {
-	setupPropSyncAspect(obj, getFunc, setFunc, [value]() { return observable::value<TValueType>(value); });
+	setupPropSyncAspect(obj, getFunc, setFunc, getSubscribableFunc, [value]() { return value; });
 }
 
-template<typename TObj, typename TValueType, typename TObserve>
-void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj::*setFunc)(const TValueType &), TObserve &&func)
-{
-	// determine the original value (to be restored when the emulation completes)
-	TValueType originalValue = ((obj).*(getFunc))();
 
-	// create the action
-	Aspect::ptr action = std::make_unique<PropertySyncAspect<TValueType, TObserve>>(
-		[&obj, setFunc](const TValueType &value) { ((obj).*(setFunc))(value); },
-		std::move(originalValue),
+template<typename TObj, typename TValueType, typename TSubscribable, typename TGetValue>
+void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() const, void (TObj:: *setFunc)(const TValueType &), observable::value<TSubscribable> &(status::state:: *getSubscribableFunc)(), TGetValue &&func)
+{
+	Aspect::ptr aspect = std::make_unique<PropertySyncAspect<TObj, TValueType, const TValueType &, TSubscribable, TGetValue>>(
+		*this,
+		obj,
+		getFunc,
+		setFunc,
+		getSubscribableFunc,
 		std::move(func));
 
 	// and add it to the list
-	m_aspects.push_back(std::move(action));
+	m_aspects.push_back(std::move(aspect));
 }
 
 
@@ -2370,25 +2394,23 @@ info::machine MainWindow::machineFromModelIndex(const QModelIndex &index) const
 
 
 //-------------------------------------------------
-//  observeTitleBarText
+//  getTitleBarText
 //-------------------------------------------------
 
-observable::value<QString> MainWindow::observeTitleBarText()
+QString MainWindow::getTitleBarText()
 {
-	// identify the correct text for paused and not paused
-	const QString &machineDesc = m_client.GetCurrentTask<RunMachineTask>()->getMachine().description();
-	QString titleTextNotPaused = QString("%1: %2").arg(
-		QCoreApplication::applicationName(),
-		machineDesc);
-	QString titleTextPaused = QString("%1: %2 PAUSED").arg(
-		QCoreApplication::applicationName(),
-		machineDesc);
+	// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
+	QString titleTextFormat = m_state->paused().get() && !m_current_pauser
+		? "%1: %2 PAUSED"
+		: "%1: %2";
 
-	// and observe the result
-	return observable::observe(observable::select(
-		m_state->paused(),
-		titleTextPaused,
-		titleTextNotPaused));
+	// get the machine description
+	const QString &machineDesc = m_client.GetCurrentTask<RunMachineTask>()->getMachine().description();
+
+	// and apply the format
+	return titleTextFormat.arg(
+		QCoreApplication::applicationName(),
+		machineDesc);
 }
 
 

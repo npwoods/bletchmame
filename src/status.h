@@ -231,7 +231,6 @@ namespace status
 		observable::value<bool>	&						debugger_present()			{ return m_debugger_present; }
 		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
 		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
-		observable::value<bool> &						has_images()				{ return m_has_images; }
 		observable::value<std::vector<image>> &			images()					{ return m_images; }
 		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
 		observable::value<std::vector<input_class>> &	input_classes()				{ return m_input_classes; }
@@ -254,7 +253,6 @@ namespace status
 		observable::value<bool>							m_debugger_present;
 		observable::value<float>						m_speed_percent;
 		observable::value<int>							m_effective_frameskip;
-		observable::value<bool>							m_has_images;
 		observable::value<std::vector<image>>			m_images;
 		observable::value<std::vector<input>>			m_inputs;
 		observable::value<std::vector<input_class>>		m_input_classes;
