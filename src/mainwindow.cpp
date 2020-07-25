@@ -1328,7 +1328,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
 bool MainWindow::event(QEvent *event)
 {
-	bool result;
+	std::optional<bool> result = { };
 	if (event->type() == VersionResultEvent::eventId())
 	{
 		result = onVersionCompleted(static_cast<VersionResultEvent &>(*event));
@@ -1349,11 +1349,29 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onChatter(static_cast<ChatterEvent &>(*event));
 	}
-	else
+	else if (event->type() == QEvent::WindowActivate)
 	{
-		result = QMainWindow::event(event);
+#ifdef WIN32
+		// Windows specific hack - for some reason, the act of moving the focus away
+		// from the application (even it is for a dialog) seems to cause the rootWidget
+		// to lose focus.  Setting the Qt focusPolicy property doesn't seem to help
+		//
+		// In absence of a better way to handle this, we have some Windows specific
+		// code below.  Eventually this code should be retired once there is an understanding
+		// of the proper Qt techniques to apply here
+		if (AttachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
+		{
+			if (::GetFocus() == (HWND)winId())
+				::SetFocus((HWND)m_ui->rootWidget->winId());
+		}
+#endif
 	}
-	return result;
+
+	// if we have a result, we've handled the event; otherwise we have to pass it on
+	// to QMainWindow::event()
+	return result.has_value()
+		? result.value()
+		: QMainWindow::event(event);
 }
 
 
