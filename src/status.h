@@ -22,7 +22,7 @@
 #endif
 
 #include "observable/observable.hpp"
-#include <QString.h>
+#include <QString>
 #include <optional>
 
 #include "utility.h"

@@ -11,7 +11,7 @@
 #ifndef DIALOGS_CONSOLE_H
 #define DIALOGS_CONSOLE_H
 
-#include <QDialog.h>
+#include <QDialog>
 #include "runmachinetask.h"
 
 QT_BEGIN_NAMESPACE
