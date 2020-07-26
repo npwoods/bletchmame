@@ -41,11 +41,17 @@ class SwitchesDialog : public QDialog
 {
 	Q_OBJECT
 public:
-	SwitchesDialog(QWidget &parent, const QString &title, ISwitchesHost &host, status::input::input_class input_class);
+	SwitchesDialog(QWidget &parent, const QString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine);
 	~SwitchesDialog();
 
 private:
 	std::unique_ptr<Ui::InputsDialog>	m_ui;
+	ISwitchesHost &						m_host;
+	status::input::input_class			m_input_class;
+	info::machine						m_machine;
+
+	void UpdateInputs();
+	std::unordered_map<std::uint32_t, QString> GetChoices(const status::input &input) const;
 };
 
 

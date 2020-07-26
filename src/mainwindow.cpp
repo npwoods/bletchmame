@@ -1827,7 +1827,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 	QString title = InputClassText(input_class, false);
 	Pauser pauser(*this);
 	SwitchesHost host(*this);
-	SwitchesDialog dialog(*this, title, host, input_class);
+	SwitchesDialog dialog(*this, title, host, input_class, GetRunningMachine());
 	dialog.exec();
 }
 
