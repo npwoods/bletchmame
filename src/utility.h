@@ -18,6 +18,7 @@
 #include <wctype.h>
 
 #include <QFileInfo>
+#include <QWidget>
 
 
 //**************************************************************************
@@ -378,6 +379,10 @@ public:
 	static bool IsPathSeparator(QChar ch);
 	static void SplitPath(const QString &fullpath, QString *path, QString *name, QString *ext);
 };
+
+
+// useful for popup menus
+QPoint globalPositionBelowWidget(const QWidget &widget);
 
 
 #endif // UTILITY_H

@@ -43,3 +43,15 @@ void wxFileName::SplitPath(const QString &fullpath, QString *path, QString *name
 	if (ext)
 		*ext = fi.suffix();
 }
+
+
+//-------------------------------------------------
+//  globalPositionBelowWidget
+//-------------------------------------------------
+
+QPoint globalPositionBelowWidget(const QWidget &widget)
+{
+	QPoint localPos(0, widget.height());
+	QPoint globalPos = widget.mapToGlobal(localPos);
+	return globalPos;
+}

@@ -13,11 +13,15 @@
 
 #include <QDialog>
 
+#include "dialogs/inputs.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class SeqPollingDialog; }
 QT_END_NAMESPACE
 
-class SeqPollingDialog : public QDialog
+class IInputsHost;
+
+class InputsDialog::SeqPollingDialog : public QDialog
 {
     Q_OBJECT
 public:
@@ -28,7 +32,7 @@ public:
     };
 
     // ctor/dtor
-    SeqPollingDialog(QWidget *parent, Type type, const QString &label);
+    SeqPollingDialog(InputsDialog &host, Type type, const QString &label);
     ~SeqPollingDialog();
 
     // accessor
@@ -40,6 +44,8 @@ private slots:
 private:
     std::unique_ptr<Ui::SeqPollingDialog>   m_ui;
     QString                                 m_dialog_selected_result;
+
+    const std::vector<status::input_class> &GetInputClasses();
 };
 
 

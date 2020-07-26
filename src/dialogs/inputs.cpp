@@ -358,6 +358,25 @@ InputsDialog::~InputsDialog()
 //  FindInputSeq
 //-------------------------------------------------
 
+InputsDialog::axis_type InputsDialog::AxisType(const status::input_device_item &item)
+{
+	axis_type result;
+	if (item.m_token == "XAXIS")
+		result = axis_type::X;
+	else if (item.m_token == "YAXIS")
+		result = axis_type::Y;
+	else if (item.m_token == "ZAXIS")
+		result = axis_type::Z;
+	else
+		result = axis_type::NONE;
+	return result;
+}
+
+
+//-------------------------------------------------
+//  FindInputSeq
+//-------------------------------------------------
+
 const status::input_seq &InputsDialog::FindInputSeq(const InputFieldRef &field_ref, status::input_seq::type seq_type)
 {
 	// look up the input port by tag and mask
@@ -388,7 +407,7 @@ void InputsDialog::StartInputPoll(const QString &label, const InputFieldRef &fie
 	SeqPollingDialog::Type dialogType = start_seq.isEmpty()
 		? SeqPollingDialog::Type::SPECIFY
 		: SeqPollingDialog::Type::ADD;
-	SeqPollingDialog dialog(this, dialogType, label);
+	SeqPollingDialog dialog(*this, dialogType, label);
 	m_current_dialog = &dialog;
 	dialog.exec();
 	m_current_dialog = nullptr;

@@ -279,9 +279,8 @@ bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
     }
 
     // execute!
-    QPoint localPos(button.pos().x(), button.pos().y() + button.height());
-    QPoint globalPos = mapToGlobal(localPos);
-    return popupMenu.exec(globalPos) ? true : false;
+    QPoint popupPos = globalPositionBelowWidget(button);
+    return popupMenu.exec(popupPos) ? true : false;
 }
 
 

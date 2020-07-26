@@ -6,8 +6,12 @@
 
 ***************************************************************************/
 
+#include <QMenu>
+
+#include "dialogs/inputs.h"
 #include "dialogs/inputs_seqpoll.h"
 #include "ui_inputs_seqpoll.h"
+#include "status.h"
 
 
 //**************************************************************************
@@ -18,7 +22,8 @@
 //  ctor
 //-------------------------------------------------
 
-SeqPollingDialog::SeqPollingDialog(QWidget *parent, Type type, const QString &label)
+InputsDialog::SeqPollingDialog::SeqPollingDialog(InputsDialog &host, Type type, const QString &label)
+	: QDialog(&host)
 {
 	// set up UI
 	m_ui = std::make_unique<Ui::SeqPollingDialog>();
@@ -52,7 +57,7 @@ SeqPollingDialog::SeqPollingDialog(QWidget *parent, Type type, const QString &la
 //  dtor
 //-------------------------------------------------
 
-SeqPollingDialog::~SeqPollingDialog()
+InputsDialog::SeqPollingDialog::~SeqPollingDialog()
 {
 }
 
@@ -61,7 +66,54 @@ SeqPollingDialog::~SeqPollingDialog()
 //  on_specifyMouseInputButton_clicked
 //-------------------------------------------------
 
-void SeqPollingDialog::on_specifyMouseInputButton_clicked()
+void InputsDialog::SeqPollingDialog::on_specifyMouseInputButton_clicked()
 {
-	throw false;	// NYI
+	// identify pertinent mouse inputs
+	std::vector<const status::input_device_item *> items;
+	for (const status::input_class &devclass : GetInputClasses())
+	{
+		if (devclass.m_name == "mouse")
+		{
+			for (const status::input_device &dev : devclass.m_devices)
+			{
+				for (const status::input_device_item &item : dev.m_items)
+				{
+					if (AxisType(item) == axis_type::NONE)
+						items.emplace_back(&item);
+				}
+			}
+		}
+	}
+
+	// sort the mouse inputs
+	std::sort(items.begin(), items.end(), [](const status::input_device_item *x, const status::input_device_item *y)
+	{
+		return x->m_code < y->m_code;
+	});
+
+	// build the popup menu
+	QMenu popupMenu;
+	for (const auto &item : items)
+	{
+		popupMenu.addAction(item->m_name, [this, item]()
+		{
+			m_dialog_selected_result = item->m_code;
+			close();
+		});
+	}
+
+	// and display it
+	QPoint popupPos = globalPositionBelowWidget(*m_ui->specifyMouseInputButton);
+	popupMenu.exec(popupPos);
+}
+
+
+//-------------------------------------------------
+//  GetInputClasses
+//-------------------------------------------------
+
+const std::vector<status::input_class> &InputsDialog::SeqPollingDialog::GetInputClasses()
+{
+	InputsDialog &host = *dynamic_cast<InputsDialog *>(parent());
+	return host.m_host.GetInputClasses();
 }

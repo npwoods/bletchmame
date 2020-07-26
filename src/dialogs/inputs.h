@@ -71,12 +71,22 @@ protected:
 	virtual void OnRestoreButtonPressed() override;
 
 private:
+	enum class axis_type
+	{
+		NONE,
+		X,
+		Y,
+		Z
+	};
+
 	struct InputEntryDesc;
 	struct InputFieldRef;
 	class InputEntry;
 	
 	class SingularInputEntry;
 	class MultiAxisInputEntry;
+
+	class SeqPollingDialog;
 
 	IInputsHost &								m_host;
 	QDialog *									m_current_dialog;
@@ -85,6 +95,7 @@ private:
 	observable::unique_subscription				m_inputs_subscription;
 	observable::unique_subscription				m_polling_seq_changed_subscription;
 
+	static axis_type AxisType(const status::input_device_item &item);
 	const status::input_seq &FindInputSeq(const InputFieldRef &field_ref, status::input_seq::type seq_type);
 	void StartInputPoll(const QString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const QString &start_seq = "");
 	void OnInputsChanged();
@@ -100,10 +111,6 @@ private:
 	void SetInputSeqs(std::vector<SetInputSeqRequest> &&seqs)
 	{
 		m_host.SetInputSeqs(std::move(seqs));
-	}
-	const std::vector<status::input_class> &GetInputClasses()
-	{
-		return m_host.GetInputClasses();
 	}
 	observable::value<std::vector<status::input>> &GetInputs()
 	{
