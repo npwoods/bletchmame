@@ -79,13 +79,49 @@ private:
 		Z
 	};
 
+	struct InputFieldRef
+	{
+	public:
+		QString				m_port_tag;
+		ioport_value		m_mask;
+
+		InputFieldRef()
+			: m_mask(0)
+		{
+		}
+
+		InputFieldRef(const QString &port_tag, ioport_value mask)
+			: m_port_tag(port_tag)
+			, m_mask(mask)
+		{
+		}
+
+		InputFieldRef(const status::input &input)
+			: InputFieldRef(input.m_port_tag, input.m_mask)
+		{
+		}
+
+		bool operator==(const InputFieldRef &that) const
+		{
+			return m_port_tag == that.m_port_tag
+				&& m_mask == that.m_mask;
+		}
+	};
+
+	struct QuickItem
+	{
+		QString							m_label;
+		std::vector<SetInputSeqRequest>	m_selections;
+	};
+
 	struct InputEntryDesc;
-	struct InputFieldRef;
-	class InputEntry;
-	
+
+	class InputEntry;	
 	class SingularInputEntry;
 	class MultiAxisInputEntry;
 
+	class MultiAxisInputDialog;
+	class MultipleQuickItemsDialog;
 	class SeqPollingDialog;
 
 	IInputsHost &								m_host;

@@ -85,6 +85,12 @@ add_library(BletchMAME_core
 	src/dialogs/inputs_base.cpp
 	src/dialogs/inputs_base.h
 	src/dialogs/inputs_base.ui
+	src/dialogs/inputs_multiaxis.cpp
+	src/dialogs/inputs_multiaxis.h
+	src/dialogs/inputs_multiaxis.ui
+	src/dialogs/inputs_multiquick.cpp
+	src/dialogs/inputs_multiquick.h
+	src/dialogs/inputs_multiquick.ui
 	src/dialogs/inputs_seqpoll.cpp
 	src/dialogs/inputs_seqpoll.h
 	src/dialogs/inputs_seqpoll.ui

@@ -11,6 +11,8 @@
 #include <QPushButton>
 
 #include "dialogs/inputs.h"
+#include "dialogs/inputs_multiaxis.h"
+#include "dialogs/inputs_multiquick.h"
 #include "dialogs/inputs_seqpoll.h"
 
 
@@ -65,48 +67,11 @@ struct InputsDialog::InputEntryDesc
 };
 
 
-// ======================> InputFieldRef
-struct InputsDialog::InputFieldRef
-{
-public:
-	QString				m_port_tag;
-	ioport_value		m_mask;
-
-	InputFieldRef()
-		: m_mask(0)
-	{
-	}
-
-	InputFieldRef(const QString &port_tag, ioport_value mask)
-		: m_port_tag(port_tag)
-		, m_mask(mask)
-	{
-	}
-
-	InputFieldRef(const status::input &input)
-		: InputFieldRef(input.m_port_tag, input.m_mask)
-	{
-	}
-
-	bool operator==(const InputFieldRef &that) const
-	{
-		return m_port_tag == that.m_port_tag
-			&& m_mask == that.m_mask;
-	}
-};
-
-
 // ======================> InputEntry
 // abstract base class for lines/entries in the input dialog
 class InputsDialog::InputEntry
 {
 public:
-	struct QuickItem
-	{
-		QString							m_label;
-		std::vector<SetInputSeqRequest>	m_selections;
-	};
-
 	InputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text)
 		: m_host(host)
 		, m_main_button(main_button)
@@ -255,6 +220,9 @@ protected:
 
 	bool ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last)
 	{
+		MultipleQuickItemsDialog dialog(m_host, first, last);
+		if (dialog.exec() != QDialog::DialogCode::Accepted)
+			return false;
 		throw false;	// NYI
 	}
 
@@ -389,35 +357,119 @@ public:
 	MultiAxisInputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text, const status::input *x_input, const status::input *y_input)
 		: InputEntry(host, main_button, menu_button, static_text)
 	{
-		throw false;	// NYI
+		// sanity checks
+		assert(x_input || x_input);
+
+		if (x_input)
+			m_x_field_ref.emplace(*x_input);
+		if (y_input)
+			m_y_field_ref.emplace(*y_input);
 	}
 
 	virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override
 	{
-		throw false;	// NYI
+		std::vector<std::tuple<InputFieldRef, status::input_seq::type>> results;
+		if (m_x_field_ref)
+		{
+			results.emplace_back(*m_x_field_ref, status::input_seq::type::STANDARD);
+			results.emplace_back(*m_x_field_ref, status::input_seq::type::DECREMENT);
+			results.emplace_back(*m_x_field_ref, status::input_seq::type::INCREMENT);
+		}
+		if (m_y_field_ref)
+		{
+			results.emplace_back(*m_y_field_ref, status::input_seq::type::STANDARD);
+			results.emplace_back(*m_y_field_ref, status::input_seq::type::DECREMENT);
+			results.emplace_back(*m_y_field_ref, status::input_seq::type::INCREMENT);
+		}
+		return results;
 	}
 
 protected:
 	virtual void OnMainButtonPressed() override
 	{
-		throw false;	// NYI
+		Specify();
 	}
 
 	virtual bool OnMenuButtonPressed() override
 	{
-		throw false;	// NYI
+		// keep a list of so-called "quick" items; direct specifications of input seqs
+		std::vector<QuickItem> quick_items = BuildQuickItems(m_x_field_ref, m_y_field_ref, { });
+
+		// create the pop up menu
+		QMenu popup_menu;
+
+		// append quick items to the pop up menu (item #0 is clear; we do that later)
+		for (int i = 1; i < quick_items.size(); i++)
+		{
+			popup_menu.addAction(quick_items[i].m_label, [this, &quick_items, i]
+			{
+				InvokeQuickItem(std::move(quick_items[i]));
+			});
+		}
+
+		// finally append "multiple...", a separator, specify and clear
+		popup_menu.addAction(s_menu_item_text_multiple, [this, &quick_items]
+		{
+			ShowMultipleQuickItemsDialog(std::next(quick_items.begin()), quick_items.end());
+		});
+		popup_menu.addSeparator();
+		popup_menu.addAction(s_menu_item_text_specify, [this]
+		{
+			Specify();
+		});
+		popup_menu.addAction(quick_items[0].m_label, [this, &quick_items]
+		{
+			InvokeQuickItem(std::move(quick_items[0]));
+		});
+
+		// show the pop up menu
+		return PopupMenu(popup_menu);
 	}
 
 	virtual QString GetText() override
 	{
-		throw false;	// NYI
+		std::vector<std::tuple<char16_t, std::reference_wrapper<InputFieldRef>, status::input_seq::type>> seqs;
+		seqs.reserve(6);
+		if (m_x_field_ref)
+		{
+			seqs.emplace_back(0x2194, *m_x_field_ref, status::input_seq::type::STANDARD);
+			seqs.emplace_back(0x25C0, *m_x_field_ref, status::input_seq::type::DECREMENT);
+			seqs.emplace_back(0x25B6, *m_x_field_ref, status::input_seq::type::INCREMENT);
+		}
+		if (m_y_field_ref)
+		{
+			seqs.emplace_back(0x2195, *m_y_field_ref, status::input_seq::type::STANDARD);
+			seqs.emplace_back(0x25B2, *m_y_field_ref, status::input_seq::type::DECREMENT);
+			seqs.emplace_back(0x25BC, *m_y_field_ref, status::input_seq::type::INCREMENT);
+		}
+
+		QString result;
+		for (const auto &[ch, field_ref, seq_type] : seqs)
+		{
+			const status::input_seq &seq = Host().FindInputSeq(field_ref, seq_type);
+			QString seq_text = Host().GetSeqTextFromTokens(seq.m_tokens);
+
+			if (!seq_text.isEmpty())
+			{
+				if (!result.isEmpty())
+					result += " / ";
+				result += ch;
+				result += seq_text;
+			}
+		}
+		return result;
 	}
 
 private:
 	std::optional<InputFieldRef>	m_x_field_ref;
 	std::optional<InputFieldRef>	m_y_field_ref;
 
-	bool Specify();
+	bool Specify()
+	{
+		MultiAxisInputDialog dialog(Host(), m_x_field_ref, m_y_field_ref);
+		dialog.setWindowTitle(MainButton().text());
+		return dialog.exec() == QDialog::DialogCode::Accepted;
+	}
 };
 
 
