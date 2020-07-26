@@ -223,7 +223,36 @@ protected:
 		MultipleQuickItemsDialog dialog(m_host, first, last);
 		if (dialog.exec() != QDialog::DialogCode::Accepted)
 			return false;
-		throw false;	// NYI
+
+		// merge the quick items
+		std::vector<SetInputSeqRequest> merged_quick_items;
+		for (const QuickItem &item : dialog.GetSelectedQuickItems())
+		{
+			for (const SetInputSeqRequest &req : item.m_selections)
+			{
+				auto iter = std::find_if(merged_quick_items.begin(), merged_quick_items.end(), [&req](const SetInputSeqRequest &x)
+				{
+					return x.m_port_tag == req.m_port_tag
+						&& x.m_mask == req.m_mask
+						&& x.m_seq_type == req.m_seq_type;
+				});
+				if (iter == merged_quick_items.end())
+				{
+					SetInputSeqRequest &new_merged_quick_item = merged_quick_items.emplace_back();
+					new_merged_quick_item.m_port_tag = req.m_port_tag;
+					new_merged_quick_item.m_mask = req.m_mask;
+					new_merged_quick_item.m_seq_type = req.m_seq_type;
+					iter = merged_quick_items.end() - 1;
+				}
+				if (!iter->m_tokens.isEmpty())
+					iter->m_tokens += " or ";
+				iter->m_tokens += req.m_tokens;
+			}
+		}
+
+		// and specify them
+		Host().SetInputSeqs(std::move(merged_quick_items));
+		return true;
 	}
 
 private:

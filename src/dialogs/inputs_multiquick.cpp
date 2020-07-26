@@ -30,3 +30,13 @@ InputsDialog::MultipleQuickItemsDialog::MultipleQuickItemsDialog(InputsDialog &p
 InputsDialog::MultipleQuickItemsDialog::~MultipleQuickItemsDialog()
 {
 }
+
+
+//-------------------------------------------------
+//  GetSelectedQuickItems
+//-------------------------------------------------
+
+std::vector<std::reference_wrapper<const InputsDialog::QuickItem>> InputsDialog::MultipleQuickItemsDialog::GetSelectedQuickItems() const
+{
+    throw false;
+}

@@ -22,6 +22,8 @@ public:
     MultipleQuickItemsDialog(InputsDialog &parent, std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last);
     ~MultipleQuickItemsDialog();
 
+    std::vector<std::reference_wrapper<const QuickItem>> GetSelectedQuickItems() const;
+
 private:
     std::unique_ptr<Ui::MultipleQuickItemsDialog> m_ui;
 };
