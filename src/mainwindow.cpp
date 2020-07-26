@@ -1810,10 +1810,9 @@ bool MainWindow::shouldPromptOnStop() const
 
 void MainWindow::showInputsDialog(status::input::input_class input_class)
 {
-	QString title = InputClassText(input_class, false);
 	Pauser pauser(*this);
 	InputsHost host(*this);
-	InputsDialog dialog(*this, title, host, input_class);
+	InputsDialog dialog(this, host, input_class);
 	dialog.exec();
 }
 
@@ -1824,10 +1823,9 @@ void MainWindow::showInputsDialog(status::input::input_class input_class)
 
 void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 {
-	QString title = InputClassText(input_class, false);
 	Pauser pauser(*this);
 	SwitchesHost host(*this);
-	SwitchesDialog dialog(*this, title, host, input_class, GetRunningMachine());
+	SwitchesDialog dialog(this, host, input_class, GetRunningMachine());
 	dialog.exec();
 }
 
@@ -2434,41 +2432,6 @@ QString MainWindow::getTitleBarText()
 	return titleTextFormat.arg(
 		QCoreApplication::applicationName(),
 		machineDesc);
-}
-
-
-//-------------------------------------------------
-//  InputClassText
-//-------------------------------------------------
-
-QString MainWindow::InputClassText(status::input::input_class input_class, bool elipsis)
-{
-	QString result;
-	switch (input_class)
-	{
-	case status::input::input_class::CONTROLLER:
-		result = "Joysticks and Controllers";
-		break;
-	case status::input::input_class::KEYBOARD:
-		result = "Keyboard";
-		break;
-	case status::input::input_class::MISC:
-		result = "Miscellaneous Input";
-		break;
-	case status::input::input_class::CONFIG:
-		result = "Configuration";
-		break;
-	case status::input::input_class::DIPSWITCH:
-		result = "DIP Switches";
-		break;
-	default:
-		throw false;
-	}
-
-	if (elipsis)
-		result += "...";
-
-	return result;
 }
 
 

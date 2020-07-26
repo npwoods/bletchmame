@@ -11,7 +11,6 @@
 #include <QStringListModel>
 
 #include "dialogs/switches.h"
-#include "ui_inputs.h"
 
 
 //**************************************************************************
@@ -22,29 +21,13 @@
 //  ctor
 //-------------------------------------------------
 
-SwitchesDialog::SwitchesDialog(QWidget &parent, const QString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine)
-    : m_host(host)
-    , m_input_class(input_class)
+SwitchesDialog::SwitchesDialog(QWidget *parent, ISwitchesHost &host, status::input::input_class input_class, info::machine machine)
+    : InputsDialogBase(parent, input_class)
+	, m_host(host)
 	, m_machine(machine)
 {
-	// set up UI
-	m_ui = std::make_unique<Ui::InputsDialog>();
-	m_ui->setupUi(this);
-
-	// caller decides the window title
-	setWindowTitle(title);
-
 	// update the inputs
 	UpdateInputs();
-}
-
-
-//-------------------------------------------------
-//  dtor
-//-------------------------------------------------
-
-SwitchesDialog::~SwitchesDialog()
-{
 }
 
 
@@ -54,13 +37,11 @@ SwitchesDialog::~SwitchesDialog()
 
 void SwitchesDialog::UpdateInputs()
 {
-	const int COLUMN_LABEL = 0;
-	const int COLUMN_COMBO_BOX = 1;
 	int row = 0;
 
 	for (const status::input &input : m_host.GetInputs())
 	{
-		if (input.m_class == m_input_class)
+		if (isRelevantInputClass(input.m_class))
 		{
 			// get all choices
 			std::unordered_map<std::uint32_t, QString> choices = GetChoices(input);
@@ -76,13 +57,14 @@ void SwitchesDialog::UpdateInputs()
 
 			// add static text with the name of the config item
 			QLabel &label = *new QLabel(input.m_name, this);
-			m_ui->gridLayout->addWidget(&label, row, COLUMN_LABEL);
 
 			// create a combo box with the values
 			QStringListModel &comboBoxModel = *new QStringListModel(choice_strings, this);
 			QComboBox &comboBox = *new QComboBox(this);
 			comboBox.setModel(&comboBoxModel);
-			m_ui->gridLayout->addWidget(&comboBox, row, COLUMN_COMBO_BOX);
+
+			// add the widgets to the grid
+			addWidgetsToGrid(row++, { label, comboBox });
 
 			// select the proper value
 			auto iter = std::find(choice_values.begin(), choice_values.end(), input.m_value);
@@ -100,9 +82,6 @@ void SwitchesDialog::UpdateInputs()
 				// and specify it
 				m_host.SetInputValue(port_tag, mask, value);
 			});
-
-			// next row
-			row++;
 		}
 	}
 }

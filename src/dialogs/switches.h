@@ -11,12 +11,11 @@
 #ifndef DIALOGS_SWITCHES_H
 #define DIALOGS_SWITCHES_H
 
-#include <QDialog>
 #include <vector>
 
+#include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
 #include "info.h"
-#include "status.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class InputsDialog; }
@@ -37,17 +36,13 @@ public:
 
 // ======================> SwitchesDialog
 
-class SwitchesDialog : public QDialog
+class SwitchesDialog : public InputsDialogBase
 {
-	Q_OBJECT
 public:
-	SwitchesDialog(QWidget &parent, const QString &title, ISwitchesHost &host, status::input::input_class input_class, info::machine machine);
-	~SwitchesDialog();
+	SwitchesDialog(QWidget *parent, ISwitchesHost &host, status::input::input_class input_class, info::machine machine);
 
 private:
-	std::unique_ptr<Ui::InputsDialog>	m_ui;
 	ISwitchesHost &						m_host;
-	status::input::input_class			m_input_class;
 	info::machine						m_machine;
 
 	void UpdateInputs();

@@ -82,7 +82,9 @@ add_library(BletchMAME_core
 	src/dialogs/images.ui
 	src/dialogs/inputs.cpp
 	src/dialogs/inputs.h
-	src/dialogs/inputs.ui
+	src/dialogs/inputs_base.cpp
+	src/dialogs/inputs_base.h
+	src/dialogs/inputs_base.ui
 	src/dialogs/loading.cpp
 	src/dialogs/loading.h
 	src/dialogs/loading.ui

@@ -11,16 +11,11 @@
 #ifndef DIALOGS_INPUTS_H
 #define DIALOGS_INPUTS_H
 
-#include <QDialog>
 #include <vector>
 #include <observable/observable.hpp>
 
+#include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
-#include "status.h"
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class InputsDialog; }
-QT_END_NAMESPACE
 
 
 // ======================> SetInputSeqRequest
@@ -66,15 +61,35 @@ public:
 
 // ======================> InputsDialog
 
-class InputsDialog : public QDialog
+class InputsDialog : public InputsDialogBase
 {
-	Q_OBJECT
 public:
-	InputsDialog(QWidget &parent, const QString &title, IInputsHost &host, status::input::input_class input_class);
+	InputsDialog(QWidget *parent, IInputsHost &host, status::input::input_class input_class);
 	~InputsDialog();
 
 private:
-	std::unique_ptr<Ui::InputsDialog>	m_ui;
+	struct InputEntryDesc;
+	struct InputFieldRef;
+	class InputEntry;
+	
+	class SingularInputEntry;
+	class MultiAxisInputEntry;
+
+	IInputsHost &								m_host;
+	std::unordered_map<QString, QString>		m_codes;
+	std::vector<std::unique_ptr<InputEntry>>	m_entries;
+	observable::unique_subscription				m_inputs_subscription;
+	observable::unique_subscription				m_polling_seq_changed_subscription;
+
+	const status::input_seq &FindInputSeq(const InputFieldRef &field_ref, status::input_seq::type seq_type);
+	void OnInputsChanged();
+	void OnPollingSeqChanged();
+	static std::unordered_map<QString, QString> InputsDialog::BuildCodes(const std::vector<status::input_class> &devclasses);
+	static bool CompareInputs(const status::input &a, const status::input &b);
+	std::vector<InputEntryDesc> BuildInitialEntryDescriptions(status::input::input_class input_class) const;
+	static QString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
+	QString GetSeqTextFromTokens(const QString &seq_tokens);
+	static std::tuple<QString, QString> ParseIndividualToken(QString &&token);
 };
 
 
