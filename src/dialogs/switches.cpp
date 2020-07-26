@@ -22,7 +22,7 @@
 //-------------------------------------------------
 
 SwitchesDialog::SwitchesDialog(QWidget *parent, ISwitchesHost &host, status::input::input_class input_class, info::machine machine)
-    : InputsDialogBase(parent, input_class)
+    : InputsDialogBase(parent, input_class, false)
 	, m_host(host)
 	, m_machine(machine)
 {
@@ -116,4 +116,15 @@ std::unordered_map<std::uint32_t, QString> SwitchesDialog::GetChoices(const stat
 	}
 
 	return results;
+}
+
+
+//-------------------------------------------------
+//  OnRestoreButtonPressed
+//-------------------------------------------------
+
+void SwitchesDialog::OnRestoreButtonPressed()
+{
+	// this was never implemented
+	throw false;
 }

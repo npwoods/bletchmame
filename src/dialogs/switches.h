@@ -41,6 +41,9 @@ class SwitchesDialog : public InputsDialogBase
 public:
 	SwitchesDialog(QWidget *parent, ISwitchesHost &host, status::input::input_class input_class, info::machine machine);
 
+protected:
+	virtual void OnRestoreButtonPressed() override;
+
 private:
 	ISwitchesHost &						m_host;
 	info::machine						m_machine;

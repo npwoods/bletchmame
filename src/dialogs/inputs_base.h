@@ -25,12 +25,16 @@ class InputsDialogBase : public QDialog
 {
     Q_OBJECT
 public:
-    InputsDialogBase(QWidget *parent, status::input::input_class input_class);
+    InputsDialogBase(QWidget *parent, status::input::input_class input_class, bool restoreEnabled = true);
     ~InputsDialogBase();
 
 protected:
     bool isRelevantInputClass(status::input::input_class inputClass) const;
     void addWidgetsToGrid(int row, std::initializer_list<std::reference_wrapper<QWidget>> widgets);
+    virtual void OnRestoreButtonPressed() = 0;
+
+private slots:
+    void on_restoreDefaultsButton_clicked();
 
 private:
     std::unique_ptr<Ui::InputsDialogBase>	m_ui;

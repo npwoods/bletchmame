@@ -67,6 +67,9 @@ public:
 	InputsDialog(QWidget *parent, IInputsHost &host, status::input::input_class input_class);
 	~InputsDialog();
 
+protected:
+	virtual void OnRestoreButtonPressed() override;
+
 private:
 	struct InputEntryDesc;
 	struct InputFieldRef;
@@ -76,12 +79,14 @@ private:
 	class MultiAxisInputEntry;
 
 	IInputsHost &								m_host;
+	QDialog *									m_current_dialog;
 	std::unordered_map<QString, QString>		m_codes;
 	std::vector<std::unique_ptr<InputEntry>>	m_entries;
 	observable::unique_subscription				m_inputs_subscription;
 	observable::unique_subscription				m_polling_seq_changed_subscription;
 
 	const status::input_seq &FindInputSeq(const InputFieldRef &field_ref, status::input_seq::type seq_type);
+	void StartInputPoll(const QString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const QString &start_seq = "");
 	void OnInputsChanged();
 	void OnPollingSeqChanged();
 	static std::unordered_map<QString, QString> InputsDialog::BuildCodes(const std::vector<status::input_class> &devclasses);
@@ -90,6 +95,20 @@ private:
 	static QString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
 	QString GetSeqTextFromTokens(const QString &seq_tokens);
 	static std::tuple<QString, QString> ParseIndividualToken(QString &&token);
+
+	// trampolines
+	void SetInputSeqs(std::vector<SetInputSeqRequest> &&seqs)
+	{
+		m_host.SetInputSeqs(std::move(seqs));
+	}
+	const std::vector<status::input_class> &GetInputClasses()
+	{
+		return m_host.GetInputClasses();
+	}
+	observable::value<std::vector<status::input>> &GetInputs()
+	{
+		return m_host.GetInputs();
+	}
 };
 
 

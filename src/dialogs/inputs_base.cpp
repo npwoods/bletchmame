@@ -18,13 +18,17 @@
 //  ctor
 //-------------------------------------------------
 
-InputsDialogBase::InputsDialogBase(QWidget *parent, status::input::input_class input_class)
+InputsDialogBase::InputsDialogBase(QWidget *parent, status::input::input_class input_class, bool restoreEnabled)
 	: QDialog(parent)
 	, m_input_class(input_class)
 {
 	// set up UI
 	m_ui = std::make_unique<Ui::InputsDialogBase>();
 	m_ui->setupUi(this);
+
+	// the "Switches" dialog never had this implemented, so we have to have a provision for
+	// keeping this disabled
+	m_ui->restoreDefaultsButton->setEnabled(restoreEnabled);
 
 	// input class drives the title
 	QString title = getDialogTitle(m_input_class);
@@ -42,7 +46,17 @@ InputsDialogBase::~InputsDialogBase()
 
 
 //-------------------------------------------------
-//  dtor
+//  on_restoreDefaultsButton_clicked
+//-------------------------------------------------
+
+void InputsDialogBase::on_restoreDefaultsButton_clicked()
+{
+	OnRestoreButtonPressed();
+}
+
+
+//-------------------------------------------------
+//  getDialogTitle
 //-------------------------------------------------
 
 QString InputsDialogBase::getDialogTitle(status::input::input_class input_class)

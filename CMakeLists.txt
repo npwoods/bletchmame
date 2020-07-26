@@ -85,6 +85,9 @@ add_library(BletchMAME_core
 	src/dialogs/inputs_base.cpp
 	src/dialogs/inputs_base.h
 	src/dialogs/inputs_base.ui
+	src/dialogs/inputs_seqpoll.cpp
+	src/dialogs/inputs_seqpoll.h
+	src/dialogs/inputs_seqpoll.ui
 	src/dialogs/loading.cpp
 	src/dialogs/loading.h
 	src/dialogs/loading.ui

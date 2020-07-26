@@ -8,7 +8,9 @@
 
 #include <QPushButton>
 #include <QLabel>
+
 #include "dialogs/inputs.h"
+#include "dialogs/inputs_seqpoll.h"
 
 
 //**************************************************************************
@@ -162,7 +164,13 @@ public:
 
 	virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override
 	{
-		throw false;
+		return
+		{
+			{
+				{ m_field_ref.m_port_tag, m_field_ref.m_mask },
+				m_seq_type
+			}
+		};
 	}
 
 protected:
@@ -190,12 +198,12 @@ protected:
 
 	virtual void OnMainButtonPressed() override
 	{
-		throw false;
+		Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type);
 	}
 
 	virtual bool OnMenuButtonPressed() override
 	{
-		throw false;
+		throw false;	// NYI
 	}
 
 private:
@@ -211,28 +219,28 @@ public:
 	MultiAxisInputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text, const status::input *x_input, const status::input *y_input)
 		: InputEntry(host, main_button, menu_button, static_text)
 	{
-		throw false;
+		throw false;	// NYI
 	}
 
 	virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override
 	{
-		throw false;
+		throw false;	// NYI
 	}
 
 protected:
 	virtual void OnMainButtonPressed() override
 	{
-		throw false;
+		throw false;	// NYI
 	}
 
 	virtual bool OnMenuButtonPressed() override
 	{
-		throw false;
+		throw false;	// NYI
 	}
 
 	virtual QString GetText() override
 	{
-		throw false;
+		throw false;	// NYI
 	}
 
 private:
@@ -254,6 +262,7 @@ private:
 InputsDialog::InputsDialog(QWidget *parent, IInputsHost &host, status::input::input_class input_class)
 	: InputsDialogBase(parent, input_class)
 	, m_host(host)
+	, m_current_dialog(nullptr)
 {
 	// build codes map
 	m_codes = BuildCodes(m_host.GetInputClasses());
@@ -367,6 +376,42 @@ const status::input_seq &InputsDialog::FindInputSeq(const InputFieldRef &field_r
 
 
 //-------------------------------------------------
+//  StartInputPoll
+//-------------------------------------------------
+
+void InputsDialog::StartInputPoll(const QString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const QString &start_seq)
+{
+	// start polling
+	m_host.StartPolling(field_ref.m_port_tag, field_ref.m_mask, seq_type, start_seq);
+
+	// present the dialog
+	SeqPollingDialog::Type dialogType = start_seq.isEmpty()
+		? SeqPollingDialog::Type::SPECIFY
+		: SeqPollingDialog::Type::ADD;
+	SeqPollingDialog dialog(this, dialogType, label);
+	m_current_dialog = &dialog;
+	dialog.exec();
+	m_current_dialog = nullptr;
+
+	// stop polling (though this might have happened implicitly)
+	m_host.StopPolling();
+
+	// did the user select an input through the dialog?  if so, we need to
+	// specify it (as opposed to MAME handling things)
+	if (!dialog.DialogSelectedResult().isEmpty())
+	{
+		// assemble the tokens
+		QString new_tokens = !start_seq.isEmpty()
+			? start_seq + " or " + dialog.DialogSelectedResult()
+			: std::move(dialog.DialogSelectedResult());
+
+		// and set it
+		SetInputSeqs({ { field_ref.m_port_tag, field_ref.m_mask, seq_type, std::move(new_tokens) } });
+	}
+}
+
+
+//-------------------------------------------------
 //  OnInputsChanged
 //-------------------------------------------------
 
@@ -383,7 +428,27 @@ void InputsDialog::OnInputsChanged()
 
 void InputsDialog::OnPollingSeqChanged()
 {
-	throw false;
+	if (!m_host.GetPollingSeqChanged().get() && m_current_dialog)
+		m_current_dialog->close();
+}
+
+
+//-------------------------------------------------
+//  OnRestoreButtonPressed
+//-------------------------------------------------
+
+void InputsDialog::OnRestoreButtonPressed()
+{
+	std::vector<SetInputSeqRequest> seqs;
+	seqs.reserve(m_entries.size());
+
+	for (const std::unique_ptr<InputEntry> &entry : m_entries)
+	{
+		for (auto &[field_ref, seq_type] : entry->GetInputSeqRefs())
+			seqs.emplace_back(std::move(field_ref.m_port_tag), field_ref.m_mask, seq_type, "*");
+	}
+
+	SetInputSeqs(std::move(seqs));
 }
 
 
