@@ -11,6 +11,7 @@
 
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QFileDialog>
 #include <memory.h>
 
 #include "profile.h"
@@ -99,12 +100,6 @@ private:
 		SUCCESS,			// we've loaded an info DB that matches the expected MAME version
 		MAME_NOT_FOUND,		// we can't find the MAME executable
 		DB_NEEDS_REBUILD	// we've found MAME, but we must rebuild the database
-	};
-
-	enum class file_dialog_type
-	{
-		LOAD,
-		SAVE
 	};
 
 	class Pauser;
@@ -200,8 +195,8 @@ private:
 	void Run(const info::machine &machine, const software_list::software *software = nullptr, const profiles::profile *profile = nullptr);
 	void Run(const profiles::profile &profile);
 	QString preflightCheck() const;
-	QString GetFileDialogFilename(Preferences::machine_path_type path_type, const QString &wildcard_string, file_dialog_type dlgtype);
-	void FileDialogCommand(std::vector<QString> &&commands, Preferences::machine_path_type path_type, bool path_is_file, const QString &wildcard_string, file_dialog_type dlgtype);
+	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
+	void FileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
 	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
 	void CreateProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);
