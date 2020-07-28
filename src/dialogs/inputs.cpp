@@ -457,7 +457,7 @@ protected:
 
 	virtual QString GetText() override
 	{
-		std::vector<std::tuple<char16_t, std::reference_wrapper<InputFieldRef>, status::input_seq::type>> seqs;
+		std::vector<std::tuple<QChar, std::reference_wrapper<InputFieldRef>, status::input_seq::type>> seqs;
 		seqs.reserve(6);
 		if (m_x_field_ref)
 		{
@@ -477,7 +477,6 @@ protected:
 		{
 			const status::input_seq &seq = Host().FindInputSeq(field_ref, seq_type);
 			QString seq_text = Host().GetSeqTextFromTokens(seq.m_tokens);
-
 			if (!seq_text.isEmpty())
 			{
 				if (!result.isEmpty())
@@ -862,7 +861,13 @@ QString InputsDialog::GetDeviceClassName(const status::input_class &devclass, bo
 //  GetSeqTextFromTokens
 //-------------------------------------------------
 
-QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens)
+QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens) const
+{
+	return GetSeqTextFromTokens(seq_tokens, m_codes);
+}
+
+
+QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens, const std::unordered_map<QString, QString> &codes)
 {
 	// this replicates logic in core MAME; need to more fully build this out, and perhaps
 	// more fully dissect input sequences
@@ -883,8 +888,8 @@ QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens)
 			auto [token_base, modifier] = ParseIndividualToken(std::move(token));
 
 			// now do the lookup
-			auto iter = m_codes.find(token_base);
-			if (iter != m_codes.end())
+			auto iter = codes.find(token_base);
+			if (iter != codes.end())
 				word = iter->second;
 
 			// do we have a modifier?  if so, append it

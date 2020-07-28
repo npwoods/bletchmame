@@ -64,6 +64,8 @@ public:
 class InputsDialog : public InputsDialogBase
 {
 public:
+	class Test;
+
 	InputsDialog(QWidget *parent, IInputsHost &host, status::input::input_class input_class);
 	~InputsDialog();
 
@@ -140,7 +142,8 @@ private:
 	static bool CompareInputs(const status::input &a, const status::input &b);
 	std::vector<InputEntryDesc> BuildInitialEntryDescriptions(status::input::input_class input_class) const;
 	static QString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
-	QString GetSeqTextFromTokens(const QString &seq_tokens);
+	QString GetSeqTextFromTokens(const QString &seq_tokens) const;
+	static QString GetSeqTextFromTokens(const QString &seq_tokens, const std::unordered_map<QString, QString> &codes);
 	static std::tuple<QString, QString> ParseIndividualToken(QString &&token);
 
 	// trampolines

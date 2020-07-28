@@ -131,6 +131,7 @@ add_executable(BletchMAME_tests
 	src/tests/softwarelist_test.cpp
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
+	src/tests/dialogs/inputs_test.cpp
 	src/tests/dialogs/paths_test.cpp
 	src/tests/resources.qrc
 )
