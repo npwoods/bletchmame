@@ -25,6 +25,8 @@ public:
     std::vector<std::reference_wrapper<const QuickItem>> GetSelectedQuickItems() const;
 
 private:
+    class Model;
+
     std::unique_ptr<Ui::MultipleQuickItemsDialog> m_ui;
 };
 
