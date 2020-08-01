@@ -150,8 +150,8 @@ protected:
 		if (m_x_field_ref)
 		{
 			seqs.emplace_back(0x2194, *m_x_field_ref, status::input_seq::type::STANDARD);
-			seqs.emplace_back(0x25C0, *m_x_field_ref, status::input_seq::type::DECREMENT);
-			seqs.emplace_back(0x25B6, *m_x_field_ref, status::input_seq::type::INCREMENT);
+			seqs.emplace_back(0x25C4, *m_x_field_ref, status::input_seq::type::DECREMENT);
+			seqs.emplace_back(0x25BA, *m_x_field_ref, status::input_seq::type::INCREMENT);
 		}
 		if (m_y_field_ref)
 		{
