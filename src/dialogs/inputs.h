@@ -17,6 +17,12 @@
 #include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
 
+QT_BEGIN_NAMESPACE
+class QLabel;
+class QMenu;
+class QPushButton;
+QT_END_NAMESPACE
+
 
 // ======================> SetInputSeqRequest
 
@@ -110,15 +116,68 @@ private:
 		}
 	};
 
+	// ======================> QuickItem
 	struct QuickItem
 	{
 		QString							m_label;
 		std::vector<SetInputSeqRequest>	m_selections;
 	};
 
+
+	// ======================> InputEntry
+	// abstract base class for lines/entries in the input dialog
+	class InputEntry
+	{
+	public:
+		InputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text);
+		virtual ~InputEntry();
+
+		void UpdateText();
+		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() = 0;
+
+	protected:
+		// overridden by child classes
+		virtual QString GetText() = 0;
+		virtual void OnMainButtonPressed() = 0;
+		virtual bool OnMenuButtonPressed() = 0;
+
+		// accessors
+		InputsDialog &Host() { return m_host; }
+		QPushButton &MainButton() { return m_main_button; }
+
+		// methods
+		bool PopupMenu(QMenu &popup_menu);
+		std::vector<QuickItem> BuildQuickItems(const std::optional<InputFieldRef> &x_field_ref, const std::optional<InputFieldRef> &y_field_ref, const std::optional<InputFieldRef> &all_axes_field_ref);
+		void InvokeQuickItem(QuickItem &&quick_item);
+		bool ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last);
+
+	private:
+		InputsDialog &m_host;
+		QPushButton &m_main_button;
+		QPushButton &m_menu_button;
+		QLabel &m_static_text;
+	};
+
+	// ======================> SingularInputEntry
+	class SingularInputEntry : public InputEntry
+	{
+	public:
+		SingularInputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text, InputFieldRef &&field_ref, status::input_seq::type seq_type);
+
+		virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override;
+
+	protected:
+		virtual QString GetText() override;
+		virtual void OnMainButtonPressed() override;
+		virtual bool OnMenuButtonPressed() override;
+
+	private:
+		InputFieldRef			m_field_ref;
+		status::input_seq::type	m_seq_type;
+	};
+
 	struct InputEntryDesc;
 
-	class InputEntry;	
 	class SingularInputEntry;
 	class MultiAxisInputEntry;
 

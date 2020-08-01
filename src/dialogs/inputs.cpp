@@ -67,318 +67,6 @@ struct InputsDialog::InputEntryDesc
 };
 
 
-// ======================> InputEntry
-// abstract base class for lines/entries in the input dialog
-class InputsDialog::InputEntry
-{
-public:
-	InputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text)
-		: m_host(host)
-		, m_main_button(main_button)
-		, m_menu_button(menu_button)
-		, m_static_text(static_text)
-	{
-		m_host.connect(&m_main_button, &QPushButton::clicked, &m_host, [this]() { OnMainButtonPressed(); });
-		m_host.connect(&m_menu_button, &QPushButton::clicked, &m_host, [this]() { OnMenuButtonPressed(); });
-	}
-
-	virtual ~InputEntry()
-	{
-	}
-
-	void UpdateText()
-	{
-		// get the text (which behaves differently for digital and analog)
-		QString text = GetText();
-
-		// show something at least
-		if (text.isEmpty())
-			text = "None";
-
-		// and set the label
-		m_static_text.setText(text);
-	}
-
-	virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() = 0;
-
-protected:
-	// overridden by child classes
-	virtual QString GetText() = 0;
-	virtual void OnMainButtonPressed() = 0;
-	virtual bool OnMenuButtonPressed() = 0;
-
-	// accessors
-	InputsDialog &Host()		{ return m_host; }
-	QPushButton &MainButton()	{ return m_main_button; }
-
-	bool PopupMenu(QMenu &popup_menu)
-	{
-		QPoint pos = globalPositionBelowWidget(m_menu_button);
-		return popup_menu.exec(pos) != nullptr;
-	}
-
-	std::vector<QuickItem> BuildQuickItems(const std::optional<InputFieldRef> &x_field_ref, const std::optional<InputFieldRef> &y_field_ref, const std::optional<InputFieldRef> &all_axes_field_ref)
-	{
-		std::vector<QuickItem> results;
-
-		// precanned arrow/number keys
-		if (x_field_ref || y_field_ref)
-		{
-			results.resize(3);
-			QuickItem &clear_quick_item = results[0];
-			QuickItem &arrows_quick_item = results[1];
-			QuickItem &numpad_quick_item = results[2];
-			clear_quick_item.m_label = "Clear";
-			arrows_quick_item.m_label = "Arrow Keys";
-			numpad_quick_item.m_label = "Numeric Keypad";
-
-			if (x_field_ref)
-			{
-				clear_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
-				clear_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
-				clear_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
-
-				arrows_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
-				arrows_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_LEFT");
-				arrows_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_RIGHT");
-
-				numpad_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
-				numpad_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_4PAD");
-				numpad_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_6PAD");
-			}
-
-			if (y_field_ref)
-			{
-				clear_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
-				clear_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
-				clear_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
-
-				arrows_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
-				arrows_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_UP");
-				arrows_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_DOWN");
-
-				numpad_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
-				numpad_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_8PAD");
-				numpad_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_2PAD");
-			}
-		}
-
-		// build the results based on analog devices from MAME
-		const std::vector<status::input_class> &devclasses = Host().m_host.GetInputClasses();
-		for (const status::input_class &devclass : devclasses)
-		{
-			for (const status::input_device &dev : devclass.m_devices)
-			{
-				QuickItem dev_quick_item;
-
-				for (const status::input_device_item &item : dev.m_items)
-				{
-					axis_type at = AxisType(item);
-					if (x_field_ref && at == axis_type::X)
-					{
-						dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
-						dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
-						dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
-					}
-					if (y_field_ref && at == axis_type::Y)
-					{
-						dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
-						dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
-						dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
-					}
-					if (all_axes_field_ref && at != axis_type::NONE)
-					{
-						QuickItem &axis_quick_item = results.emplace_back();
-						axis_quick_item.m_label = QString("%1 #%2 %3 (%4)").arg(
-							InputsDialog::GetDeviceClassName(devclass, false),
-							QString::number(dev.m_index + 1),
-							item.m_name,
-							dev.m_name);
-						axis_quick_item.m_selections.emplace_back(all_axes_field_ref->m_port_tag, all_axes_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
-						axis_quick_item.m_selections.emplace_back(all_axes_field_ref->m_port_tag, all_axes_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
-						axis_quick_item.m_selections.emplace_back(all_axes_field_ref->m_port_tag, all_axes_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
-					}
-				}
-
-				if (!dev_quick_item.m_selections.empty())
-				{
-					dev_quick_item.m_label = QString("%1 #%2 (%3)").arg(
-						InputsDialog::GetDeviceClassName(devclass, false),
-						QString::number(dev.m_index + 1),
-						dev.m_name);
-					results.push_back(std::move(dev_quick_item));
-				}
-			}
-		}
-		return results;
-	}
-
-	void InvokeQuickItem(QuickItem &&quick_item)
-	{
-		Host().SetInputSeqs(std::move(quick_item.m_selections));
-	}
-
-	bool ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last)
-	{
-		MultipleQuickItemsDialog dialog(m_host, first, last);
-		if (dialog.exec() != QDialog::DialogCode::Accepted)
-			return false;
-
-		// merge the quick items
-		std::vector<SetInputSeqRequest> merged_quick_items;
-		for (const QuickItem &item : dialog.GetSelectedQuickItems())
-		{
-			for (const SetInputSeqRequest &req : item.m_selections)
-			{
-				auto iter = std::find_if(merged_quick_items.begin(), merged_quick_items.end(), [&req](const SetInputSeqRequest &x)
-				{
-					return x.m_port_tag == req.m_port_tag
-						&& x.m_mask == req.m_mask
-						&& x.m_seq_type == req.m_seq_type;
-				});
-				if (iter == merged_quick_items.end())
-				{
-					SetInputSeqRequest &new_merged_quick_item = merged_quick_items.emplace_back();
-					new_merged_quick_item.m_port_tag = req.m_port_tag;
-					new_merged_quick_item.m_mask = req.m_mask;
-					new_merged_quick_item.m_seq_type = req.m_seq_type;
-					iter = merged_quick_items.end() - 1;
-				}
-				if (!iter->m_tokens.isEmpty())
-					iter->m_tokens += " or ";
-				iter->m_tokens += req.m_tokens;
-			}
-		}
-
-		// and specify them
-		Host().SetInputSeqs(std::move(merged_quick_items));
-		return true;
-	}
-
-private:
-	InputsDialog &m_host;
-	QPushButton &m_main_button;
-	QPushButton &m_menu_button;
-	QLabel &m_static_text;
-};
-
-
-// ======================> SingularInputEntry
-class InputsDialog::SingularInputEntry : public InputEntry
-{
-public:
-	SingularInputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text, InputFieldRef &&field_ref, status::input_seq::type seq_type)
-		: InputEntry(host, main_button, menu_button, static_text)
-		, m_field_ref(std::move(field_ref))
-		, m_seq_type(seq_type)
-	{
-	}
-
-	virtual std::vector<std::tuple<InputFieldRef, status::input_seq::type>> GetInputSeqRefs() override
-	{
-		return
-		{
-			{
-				{ m_field_ref.m_port_tag, m_field_ref.m_mask },
-				m_seq_type
-			}
-		};
-	}
-
-protected:
-	virtual QString GetText() override
-	{
-		QStringList parts;
-
-		// if this is not for input_seq::type::STANDARD(and hence, this is a part of the MultiAxisInputDialog), then
-		// we have to display the standard seq
-		if (m_seq_type != status::input_seq::type::STANDARD)
-		{
-			const status::input_seq &standard_seq = Host().FindInputSeq(m_field_ref, status::input_seq::type::STANDARD);
-			QString standard_text = Host().GetSeqTextFromTokens(standard_seq.m_tokens);
-			if (!standard_text.isEmpty())
-				parts.push_back(std::move(standard_text));
-		}
-
-		const status::input_seq &seq = Host().FindInputSeq(m_field_ref, m_seq_type);
-		QString text = Host().GetSeqTextFromTokens(seq.m_tokens);
-		if (!text.isEmpty())
-			parts.push_back(std::move(text));
-
-		return parts.join(" / ");
-	}
-
-	virtual void OnMainButtonPressed() override
-	{
-		Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type);
-	}
-
-	virtual bool OnMenuButtonPressed() override
-	{
-		// if this is not for input_seq::type::STANDARD (and hence, this is a part of the MultiAxisInputDialog), then
-		// we have quick items
-		std::vector<QuickItem> quick_items = m_seq_type != status::input_seq::type::STANDARD
-			? BuildQuickItems({ }, { }, m_field_ref)
-			: std::vector<QuickItem>();
-
-		// create the pop up menu
-		QMenu popup_menu;
-
-		// append any quick items
-		if (!quick_items.empty())
-		{
-			for (int i = 0; i < quick_items.size(); i++)
-			{
-				popup_menu.addAction(quick_items[i].m_label, [this, &quick_items, i]
-				{
-					InvokeQuickItem(std::move(quick_items[i]));
-				});
-			}
-			popup_menu.addAction(s_menu_item_text_multiple, [this, &quick_items]()
-			{
-				ShowMultipleQuickItemsDialog(std::next(quick_items.begin()), quick_items.end());
-			});
-			popup_menu.addSeparator();
-		}
-
-		// identify the input seq we'd append to if the user chooses "add"
-		const status::input_seq &append_to_seq = Host().FindInputSeq(m_field_ref, m_seq_type);
-
-		// append the normal items
-		popup_menu.addAction(s_menu_item_text_specify, [this]
-		{
-			Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type);
-		});
-		popup_menu.addAction(s_menu_item_text_add, [this, &append_to_seq]
-		{
-			Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type, append_to_seq.m_tokens);
-		});
-		popup_menu.addAction(s_menu_item_text_clear, [this]
-		{
-			std::vector<SetInputSeqRequest> reqs;
-			SetInputSeqRequest &req1 = reqs.emplace_back();
-			req1.m_port_tag = m_field_ref.m_port_tag;
-			req1.m_mask = m_field_ref.m_mask;
-			req1.m_seq_type = m_seq_type;
-
-			if (m_seq_type != status::input_seq::type::STANDARD)
-			{
-				SetInputSeqRequest &req2 = reqs.emplace_back();
-				req2.m_port_tag = m_field_ref.m_port_tag;
-				req2.m_mask = m_field_ref.m_mask;
-				req2.m_seq_type = status::input_seq::type::STANDARD;
-			}
-			Host().SetInputSeqs(std::move(reqs));
-		});
-		return PopupMenu(popup_menu);
-	}
-
-private:
-	InputFieldRef			m_field_ref;
-	status::input_seq::type	m_seq_type;
-};
-
-
 // ======================> MultiAxisInputEntry
 class InputsDialog::MultiAxisInputEntry : public InputEntry
 {
@@ -494,8 +182,7 @@ private:
 
 	bool Specify()
 	{
-		MultiAxisInputDialog dialog(Host(), m_x_field_ref, m_y_field_ref);
-		dialog.setWindowTitle(MainButton().text());
+		MultiAxisInputDialog dialog(Host(), MainButton().text(), m_x_field_ref, m_y_field_ref);
 		return dialog.exec() == QDialog::DialogCode::Accepted;
 	}
 };
@@ -960,3 +647,342 @@ std::tuple<QString, QString> InputsDialog::ParseIndividualToken(QString &&token)
 	return { std::move(token), std::move(modifier) };
 }
 
+
+//**************************************************************************
+//  INPUT ENTRIES
+//**************************************************************************
+
+//-------------------------------------------------
+//  InputEntry ctor
+//-------------------------------------------------
+
+InputsDialog::InputEntry::InputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text)
+	: m_host(host)
+	, m_main_button(main_button)
+	, m_menu_button(menu_button)
+	, m_static_text(static_text)
+{
+	m_host.connect(&m_main_button, &QPushButton::clicked, &m_host, [this]() { OnMainButtonPressed(); });
+	m_host.connect(&m_menu_button, &QPushButton::clicked, &m_host, [this]() { OnMenuButtonPressed(); });
+}
+
+
+//-------------------------------------------------
+//  InputEntry dtor
+//-------------------------------------------------
+
+InputsDialog::InputEntry::~InputEntry()
+{
+}
+
+
+//-------------------------------------------------
+//  InputEntry::UpdateText
+//-------------------------------------------------
+
+void InputsDialog::InputEntry::UpdateText()
+{
+	// get the text (which behaves differently for digital and analog)
+	QString text = GetText();
+
+	// show something at least
+	if (text.isEmpty())
+		text = "None";
+
+	// and set the label
+	m_static_text.setText(text);
+}
+
+
+//-------------------------------------------------
+//  InputEntry::PopupMenu
+//-------------------------------------------------
+
+bool InputsDialog::InputEntry::PopupMenu(QMenu &popup_menu)
+{
+	QPoint pos = globalPositionBelowWidget(m_menu_button);
+	return popup_menu.exec(pos) != nullptr;
+}
+
+
+//-------------------------------------------------
+//  InputEntry::BuildQuickItems
+//-------------------------------------------------
+
+std::vector<InputsDialog::QuickItem> InputsDialog::InputEntry::BuildQuickItems(const std::optional<InputFieldRef> &x_field_ref, const std::optional<InputFieldRef> &y_field_ref, const std::optional<InputFieldRef> &all_axes_field_ref)
+{
+	std::vector<QuickItem> results;
+
+	// precanned arrow/number keys
+	if (x_field_ref || y_field_ref)
+	{
+		results.resize(3);
+		QuickItem &clear_quick_item = results[0];
+		QuickItem &arrows_quick_item = results[1];
+		QuickItem &numpad_quick_item = results[2];
+		clear_quick_item.m_label = "Clear";
+		arrows_quick_item.m_label = "Arrow Keys";
+		numpad_quick_item.m_label = "Numeric Keypad";
+
+		if (x_field_ref)
+		{
+			clear_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
+			clear_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
+			clear_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
+
+			arrows_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
+			arrows_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_LEFT");
+			arrows_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_RIGHT");
+
+			numpad_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
+			numpad_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_4PAD");
+			numpad_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_6PAD");
+		}
+
+		if (y_field_ref)
+		{
+			clear_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
+			clear_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
+			clear_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
+
+			arrows_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
+			arrows_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_UP");
+			arrows_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_DOWN");
+
+			numpad_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, QString());
+			numpad_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, "KEYCODE_8PAD");
+			numpad_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, "KEYCODE_2PAD");
+		}
+	}
+
+	// build the results based on analog devices from MAME
+	const std::vector<status::input_class> &devclasses = Host().m_host.GetInputClasses();
+	for (const status::input_class &devclass : devclasses)
+	{
+		for (const status::input_device &dev : devclass.m_devices)
+		{
+			QuickItem dev_quick_item;
+
+			for (const status::input_device_item &item : dev.m_items)
+			{
+				axis_type at = AxisType(item);
+				if (x_field_ref && at == axis_type::X)
+				{
+					dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
+					dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
+					dev_quick_item.m_selections.emplace_back(x_field_ref->m_port_tag, x_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
+				}
+				if (y_field_ref && at == axis_type::Y)
+				{
+					dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
+					dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
+					dev_quick_item.m_selections.emplace_back(y_field_ref->m_port_tag, y_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
+				}
+				if (all_axes_field_ref && at != axis_type::NONE)
+				{
+					QuickItem &axis_quick_item = results.emplace_back();
+					axis_quick_item.m_label = QString("%1 #%2 %3 (%4)").arg(
+						InputsDialog::GetDeviceClassName(devclass, false),
+						QString::number(dev.m_index + 1),
+						item.m_name,
+						dev.m_name);
+					axis_quick_item.m_selections.emplace_back(all_axes_field_ref->m_port_tag, all_axes_field_ref->m_mask, status::input_seq::type::STANDARD, item.m_code);
+					axis_quick_item.m_selections.emplace_back(all_axes_field_ref->m_port_tag, all_axes_field_ref->m_mask, status::input_seq::type::DECREMENT, QString());
+					axis_quick_item.m_selections.emplace_back(all_axes_field_ref->m_port_tag, all_axes_field_ref->m_mask, status::input_seq::type::INCREMENT, QString());
+				}
+			}
+
+			if (!dev_quick_item.m_selections.empty())
+			{
+				dev_quick_item.m_label = QString("%1 #%2 (%3)").arg(
+					InputsDialog::GetDeviceClassName(devclass, false),
+					QString::number(dev.m_index + 1),
+					dev.m_name);
+				results.push_back(std::move(dev_quick_item));
+			}
+		}
+	}
+	return results;
+}
+
+
+//-------------------------------------------------
+//  InputEntry::InvokeQuickItem
+//-------------------------------------------------
+
+void InputsDialog::InputEntry::InvokeQuickItem(QuickItem &&quick_item)
+{
+	Host().SetInputSeqs(std::move(quick_item.m_selections));
+}
+
+
+//-------------------------------------------------
+//  InputEntry::ShowMultipleQuickItemsDialog
+//-------------------------------------------------
+
+bool InputsDialog::InputEntry::ShowMultipleQuickItemsDialog(std::vector<QuickItem>::const_iterator first, std::vector<QuickItem>::const_iterator last)
+{
+	MultipleQuickItemsDialog dialog(m_host, first, last);
+	if (dialog.exec() != QDialog::DialogCode::Accepted)
+		return false;
+
+	// merge the quick items
+	std::vector<SetInputSeqRequest> merged_quick_items;
+	for (const QuickItem &item : dialog.GetSelectedQuickItems())
+	{
+		for (const SetInputSeqRequest &req : item.m_selections)
+		{
+			auto iter = std::find_if(merged_quick_items.begin(), merged_quick_items.end(), [&req](const SetInputSeqRequest &x)
+				{
+					return x.m_port_tag == req.m_port_tag
+						&& x.m_mask == req.m_mask
+						&& x.m_seq_type == req.m_seq_type;
+				});
+			if (iter == merged_quick_items.end())
+			{
+				SetInputSeqRequest &new_merged_quick_item = merged_quick_items.emplace_back();
+				new_merged_quick_item.m_port_tag = req.m_port_tag;
+				new_merged_quick_item.m_mask = req.m_mask;
+				new_merged_quick_item.m_seq_type = req.m_seq_type;
+				iter = merged_quick_items.end() - 1;
+			}
+			if (!iter->m_tokens.isEmpty())
+				iter->m_tokens += " or ";
+			iter->m_tokens += req.m_tokens;
+		}
+	}
+
+	// and specify them
+	Host().SetInputSeqs(std::move(merged_quick_items));
+	return true;
+}
+
+
+//-------------------------------------------------
+//  SingularInputEntry ctor
+//-------------------------------------------------
+
+InputsDialog::SingularInputEntry::SingularInputEntry(InputsDialog &host, QPushButton &main_button, QPushButton &menu_button, QLabel &static_text, InputFieldRef &&field_ref, status::input_seq::type seq_type)
+	: InputEntry(host, main_button, menu_button, static_text)
+	, m_field_ref(std::move(field_ref))
+	, m_seq_type(seq_type)
+{
+}
+
+
+//-------------------------------------------------
+//  SingularInputEntry::GetInputSeqRefs
+//-------------------------------------------------
+
+std::vector<std::tuple<InputsDialog::InputFieldRef, status::input_seq::type>> InputsDialog::SingularInputEntry::GetInputSeqRefs()
+{
+	return
+	{
+		{
+			{ m_field_ref.m_port_tag, m_field_ref.m_mask },
+			m_seq_type
+		}
+	};
+}
+
+
+//-------------------------------------------------
+//  SingularInputEntry::GetText
+//-------------------------------------------------
+
+QString InputsDialog::SingularInputEntry::GetText()
+{
+	QStringList parts;
+
+	// if this is not for input_seq::type::STANDARD(and hence, this is a part of the MultiAxisInputDialog), then
+	// we have to display the standard seq
+	if (m_seq_type != status::input_seq::type::STANDARD)
+	{
+		const status::input_seq &standard_seq = Host().FindInputSeq(m_field_ref, status::input_seq::type::STANDARD);
+		QString standard_text = Host().GetSeqTextFromTokens(standard_seq.m_tokens);
+		if (!standard_text.isEmpty())
+			parts.push_back(std::move(standard_text));
+	}
+
+	const status::input_seq &seq = Host().FindInputSeq(m_field_ref, m_seq_type);
+	QString text = Host().GetSeqTextFromTokens(seq.m_tokens);
+	if (!text.isEmpty())
+		parts.push_back(std::move(text));
+
+	return parts.join(" / ");
+}
+
+
+//-------------------------------------------------
+//  SingularInputEntry::OnMainButtonPressed
+//-------------------------------------------------
+
+void InputsDialog::SingularInputEntry::OnMainButtonPressed()
+{
+	Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type);
+}
+
+
+//-------------------------------------------------
+//  SingularInputEntry::OnMenuButtonPressed
+//-------------------------------------------------
+
+bool InputsDialog::SingularInputEntry::OnMenuButtonPressed()
+{
+	// if this is not for input_seq::type::STANDARD (and hence, this is a part of the MultiAxisInputDialog), then
+	// we have quick items
+	std::vector<QuickItem> quick_items = m_seq_type != status::input_seq::type::STANDARD
+		? BuildQuickItems({ }, { }, m_field_ref)
+		: std::vector<QuickItem>();
+
+	// create the pop up menu
+	QMenu popup_menu;
+
+	// append any quick items
+	if (!quick_items.empty())
+	{
+		for (int i = 0; i < quick_items.size(); i++)
+		{
+			popup_menu.addAction(quick_items[i].m_label, [this, &quick_items, i]
+			{
+				InvokeQuickItem(std::move(quick_items[i]));
+			});
+		}
+		popup_menu.addAction(s_menu_item_text_multiple, [this, &quick_items]()
+		{
+			ShowMultipleQuickItemsDialog(std::next(quick_items.begin()), quick_items.end());
+		});
+		popup_menu.addSeparator();
+	}
+
+	// identify the input seq we'd append to if the user chooses "add"
+	const status::input_seq &append_to_seq = Host().FindInputSeq(m_field_ref, m_seq_type);
+
+	// append the normal items
+	popup_menu.addAction(s_menu_item_text_specify, [this]
+	{
+		Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type);
+	});
+	popup_menu.addAction(s_menu_item_text_add, [this, &append_to_seq]
+	{
+		Host().StartInputPoll(MainButton().text(), m_field_ref, m_seq_type, append_to_seq.m_tokens);
+	});
+	popup_menu.addAction(s_menu_item_text_clear, [this]
+	{
+		std::vector<SetInputSeqRequest> reqs;
+		SetInputSeqRequest &req1 = reqs.emplace_back();
+		req1.m_port_tag = m_field_ref.m_port_tag;
+		req1.m_mask = m_field_ref.m_mask;
+		req1.m_seq_type = m_seq_type;
+
+		if (m_seq_type != status::input_seq::type::STANDARD)
+		{
+			SetInputSeqRequest &req2 = reqs.emplace_back();
+			req2.m_port_tag = m_field_ref.m_port_tag;
+			req2.m_mask = m_field_ref.m_mask;
+			req2.m_seq_type = status::input_seq::type::STANDARD;
+		}
+		Host().SetInputSeqs(std::move(reqs));
+	});
+	return PopupMenu(popup_menu);
+}

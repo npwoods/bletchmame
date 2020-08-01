@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>590</width>
     <height>300</height>
    </rect>
   </property>
@@ -22,6 +22,208 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="3" colspan="2">
+       <widget class="QLabel" name="upLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>[[Up Label FPO]]</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QPushButton" name="upButton">
+        <property name="text">
+         <string>[[Up Input FPO]]</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QPushButton" name="upMenuButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>▼</string>
+        </property>
+       </widget>
+      </item>
+       <item row="2" column="3">
+         <spacer name="upSpacer">
+           <property name="orientation">
+             <enum>Qt::Vertical</enum>
+           </property>
+         </spacer>
+       </item>
+         
+       
+      <item row="3" column="0" colspan="2">
+       <widget class="QLabel" name="leftLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>[[Left Label FPO]]</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QPushButton" name="leftButton">
+        <property name="text">
+         <string>[[Left Input FPO]]</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QPushButton" name="leftMenuButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>▼</string>
+        </property>
+       </widget>
+      </item>
+       <item row="4" column="2">
+         <spacer name="leftSpacer">
+           <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+           </property>
+         </spacer>
+       </item>
+
+
+       <item row="3" column="6" colspan="2">
+       <widget class="QLabel" name="rightLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>[[Right Label FPO]]</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="6">
+       <widget class="QPushButton" name="rightButton">
+        <property name="text">
+         <string>[[Right Input FPO]]</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="7">
+       <widget class="QPushButton" name="rightMenuButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>▼</string>
+        </property>
+       </widget>
+      </item>
+       <item row="4" column="5">
+         <spacer name="rightSpacer">
+           <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+           </property>
+         </spacer>
+       </item>
+       <item row="6" column="3" colspan="2">
+       <widget class="QLabel" name="downLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>[[Down Label FPO]]</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="3">
+       <widget class="QPushButton" name="downButton">
+        <property name="text">
+         <string>[[Down Input FPO]]</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="4">
+       <widget class="QPushButton" name="downMenuButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>▼</string>
+        </property>
+       </widget>
+      </item>
+       <item row="5" column="3">
+         <spacer name="downSpacer">
+           <property name="orientation">
+             <enum>Qt::Vertical</enum>
+           </property>
+         </spacer>
+       </item>
+     </layout>
     </widget>
    </item>
    <item>
