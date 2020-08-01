@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include "machinelistitemmodel.h"
+#include "iconloader.h"
 #include "utility.h"
 
 
@@ -14,9 +15,10 @@
 //  ctor
 //-------------------------------------------------
 
-MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb)
+MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader &iconLoader)
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
+    , m_iconLoader(iconLoader)
 {
     m_infoDb.set_on_changed([this]
     {
@@ -75,24 +77,34 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
     QVariant result;
     if (index.isValid()
         && index.row() >= 0
-        && index.row() < m_infoDb.machines().size()
-        && role == Qt::DisplayRole)
+        && index.row() < m_infoDb.machines().size())
     {
         info::machine machine = m_infoDb.machines()[index.row()];
         Column column = (Column)index.column();
-        switch (column)
+
+        switch (role)
         {
-        case Column::Machine:
-            result = machine.name();
+        case Qt::DisplayRole:
+            switch (column)
+            {
+            case Column::Machine:
+                result = machine.name();
+                break;
+            case Column::Description:
+                result = machine.description();
+                break;
+            case Column::Year:
+                result = machine.year();
+                break;
+            case Column::Manufacturer:
+                result = machine.manufacturer();
+                break;
+            }
             break;
-        case Column::Description:
-            result = machine.description();
-            break;
-        case Column::Year:
-            result = machine.year();
-            break;
-        case Column::Manufacturer:
-            result = machine.manufacturer();
+
+        case Qt::DecorationRole:
+            if (column == Column::Machine)
+                result = m_iconLoader.getIcon(machine);
             break;
         }
     }

@@ -28,6 +28,8 @@ find_package(Qt5Test REQUIRED)
 add_library(BletchMAME_core
 	src/client.cpp
 	src/client.h
+	src/iconloader.cpp
+	src/iconloader.h
 	src/info.cpp
 	src/info.h
 	src/info_builder.cpp

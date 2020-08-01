@@ -17,6 +17,7 @@
 #include "profile.h"
 #include "prefs.h"
 #include "client.h"
+#include "iconloader.h"
 #include "info.h"
 #include "softwarelist.h"
 #include "tableviewmanager.h"
@@ -158,6 +159,7 @@ private:
 	QString								m_currentSoftwareList;
 	software_list_collection			m_softwareListCollection;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
+	IconLoader							m_icon_loader;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);

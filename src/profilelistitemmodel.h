@@ -18,6 +18,7 @@ QT_BEGIN_NAMESPACE
 class QFileSystemWatcher;
 QT_END_NAMESPACE
 
+class IconLoader;
 class Preferences;
 
 
@@ -35,7 +36,7 @@ public:
 	};
 
 	// ctor
-	ProfileListItemModel(QObject *parent, Preferences &prefs);
+	ProfileListItemModel(QObject *parent, Preferences &prefs, info::database &infoDb, IconLoader &iconLoader);
 
 	// methods
 	void refresh(bool updateProfileList, bool updateFileSystemWatcher);
@@ -54,6 +55,8 @@ public:
 
 private:
 	Preferences &					m_prefs;
+	info::database &				m_infoDb;
+	IconLoader &					m_iconLoader;
 	QFileSystemWatcher &			m_fileSystemWatcher;
 	std::vector<profiles::profile>	m_profiles;
 	std::function<void()>			m_fswCallback;

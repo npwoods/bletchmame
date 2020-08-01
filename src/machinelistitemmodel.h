@@ -13,6 +13,8 @@
 
 #include "info.h"
 
+class IconLoader;
+
 
 // ======================> MachineListItemModel
 
@@ -28,7 +30,7 @@ public:
 		Count
 	};
 
-	MachineListItemModel(QObject *parent, info::database &infoDb);
+	MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader &iconLoader);
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -39,7 +41,8 @@ public:
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 private:
-	info::database &m_infoDb;
+	info::database &	m_infoDb;
+	IconLoader &		m_iconLoader;
 };
 
 #endif // MACHINELISTITEMMODEL_H

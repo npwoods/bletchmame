@@ -599,6 +599,7 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_profileListItemModel(nullptr)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
+	, m_icon_loader(m_prefs)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -608,7 +609,7 @@ MainWindow::MainWindow(QWidget *parent)
 	m_prefs.Load();
 
 	// set up machines view
-	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db);
+	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db, m_icon_loader);
 	setupTableView(
 		*m_ui->machinesTableView,
 		m_ui->machinesSearchBox,
@@ -624,7 +625,7 @@ MainWindow::MainWindow(QWidget *parent)
 		ChooseSoftlistPartDialog::s_tableViewDesc);
 
 	// set up the profile list view
-	m_profileListItemModel = new ProfileListItemModel(this, m_prefs);
+	m_profileListItemModel = new ProfileListItemModel(this, m_prefs, m_info_db, m_icon_loader);
 	setupTableView(
 		*m_ui->profilesTableView,
 		nullptr,
@@ -1167,15 +1168,11 @@ void MainWindow::on_actionPaths_triggered()
 	if (is_changed(Preferences::global_path_type::PROFILES))
 		m_profileListItemModel->refresh(true, true);
 
-#if 0
 	// did the user change the icons path?
 	if (is_changed(Preferences::global_path_type::ICONS))
 	{
-		m_icon_loader.RefreshIcons();
-		if (m_machine_view->GetItemCount() > 0)
-			m_machine_view->RefreshItems(0, m_machine_view->GetItemCount() - 1);
+		m_icon_loader.refreshIcons();
 	}
-#endif
 }
 
 

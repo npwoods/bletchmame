@@ -10,6 +10,7 @@
 #include <QFileSystemWatcher>
 
 #include "profilelistitemmodel.h"
+#include "iconloader.h"
 #include "prefs.h"
 
 
@@ -17,9 +18,11 @@
 //  ctor
 //-------------------------------------------------
 
-ProfileListItemModel::ProfileListItemModel(QObject *parent, Preferences &prefs)
+ProfileListItemModel::ProfileListItemModel(QObject *parent, Preferences &prefs, info::database &infoDb, IconLoader &iconLoader)
     : QAbstractItemModel(parent)
     , m_prefs(prefs)
+    , m_infoDb(infoDb)
+    , m_iconLoader(iconLoader)
     , m_fileSystemWatcher(*new QFileSystemWatcher(this))
 {
     connect(&m_fileSystemWatcher, &QFileSystemWatcher::directoryChanged, this, [this](const QString &path)
@@ -159,21 +162,35 @@ QVariant ProfileListItemModel::data(const QModelIndex &index, int role) const
     QVariant result;
     if (index.isValid()
         && index.row() >= 0
-        && index.row() < m_profiles.size()
-        && role == Qt::DisplayRole)
+        && index.row() < m_profiles.size())
     {
         const profiles::profile &p = m_profiles[index.row()];
         Column column = (Column)index.column();
-        switch (column)
+
+        switch (role)
         {
-        case Column::Name:
-            result = p.name();
+        case Qt::DisplayRole:
+            switch (column)
+            {
+            case Column::Name:
+                result = p.name();
+                break;
+            case Column::Machine:
+                result = p.machine();
+                break;
+            case Column::Path:
+                result = QDir::toNativeSeparators(p.path());
+                break;
+            }
             break;
-        case Column::Machine:
-            result = p.machine();
-            break;
-        case Column::Path:
-            result = QDir::toNativeSeparators(p.path());
+
+        case Qt::DecorationRole:
+            if (column == Column::Name)
+            {
+                std::optional<info::machine> machine = m_infoDb.find_machine(p.machine());
+                if (machine)
+                    result = m_iconLoader.getIcon(*machine);
+            }
             break;
         }
     }
