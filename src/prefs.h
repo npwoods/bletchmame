@@ -65,7 +65,8 @@ public:
 	{
 		FILE,
 		SINGLE_DIRECTORY,
-		MULTIPLE_DIRECTORIES
+		MULTIPLE_DIRECTORIES,
+		MULTIPLE_MIXED
 	};
 
 	// we have three different list views, each with a tab; this identifies them

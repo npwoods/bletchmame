@@ -8,6 +8,8 @@
 
 #include "iconloader.h"
 #include "prefs.h"
+#include "quazip/quazip.h"
+#include "quazip/quazipfile.h"
 
 
 //**************************************************************************
@@ -34,7 +36,7 @@ public:
 	{
 	}
 
-	virtual QByteArray OpenFile(const QString &filename) = 0;
+	virtual QByteArray getIconBytes(const QString &filename) = 0;
 };
 
 
@@ -47,7 +49,7 @@ public:
 	{
 	}
 
-	virtual QByteArray OpenFile(const QString &filename) override
+	virtual QByteArray getIconBytes(const QString &filename) override
 	{
 		// does the file exist?  if so, open it
 		QFile file(m_path + "/" + filename);
@@ -58,6 +60,39 @@ public:
 
 private:
 	QString		m_path;
+};
+
+// ======================> IconLoader::DirectoryIconFinder
+class IconLoader::ZipIconFinder : public IconLoader::IconFinder
+{
+public:
+	ZipIconFinder(const QString &path)
+		: m_zip(path)
+	{
+	}
+
+	bool openZip()
+	{
+		return m_zip.open(QuaZip::Mode::mdUnzip);
+	}
+
+	virtual QByteArray getIconBytes(const QString &filename) override
+	{
+		// find the file
+		if (!m_zip.setCurrentFile(filename))
+			return { };
+
+		// open it
+		QuaZipFile zipFile(&m_zip);
+		if (!zipFile.open(QIODevice::ReadOnly))
+			return { };
+
+		// and read all bytes
+		return zipFile.readAll();
+	}
+
+private:
+	QuaZip	m_zip;
 };
 
 
@@ -101,14 +136,22 @@ void IconLoader::refreshIcons()
 	for (QString &path : paths)
 	{
 		// try to create an appropiate path entry
-		std::unique_ptr<IconFinder> finder;
+		std::unique_ptr<IconFinder> iconFinder;
 		QFileInfo fi(path);
 		if (fi.isDir())
-			finder = std::make_unique<DirectoryIconFinder>(std::move(path));
+		{
+			iconFinder = std::make_unique<DirectoryIconFinder>(std::move(path));
+		}
+		else if (fi.isFile())
+		{
+			auto zipIconFinder = std::make_unique<ZipIconFinder>(path);
+			if (zipIconFinder->openZip())
+				iconFinder = std::move(zipIconFinder);
+		}
 
 		// if successful, add it
-		if (finder)
-			m_finders.push_back(std::move(finder));
+		if (iconFinder)
+			m_finders.push_back(std::move(iconFinder));
 	}
 }
 
@@ -149,7 +192,7 @@ const QPixmap *IconLoader::getIconByName(const QString &icon_name)
 		for (const auto &finder : m_finders)
 		{
 			// get the byte array
-			QByteArray byteArray = finder->OpenFile(icon_file_name);
+			QByteArray byteArray = finder->getIconBytes(icon_file_name);
 			if (byteArray.size() > 0)
 			{
 				// we've found an entry - try to load the icon; note that while this can

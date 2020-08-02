@@ -35,6 +35,7 @@ public:
 private:
 	class IconFinder;
 	class DirectoryIconFinder;
+	class ZipIconFinder;
 	
 	Preferences &										m_prefs;
 	std::unordered_map<QString, std::optional<QPixmap>>	m_icon_map;

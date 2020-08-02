@@ -144,8 +144,11 @@ Preferences::path_category Preferences::GetPathCategory(global_path_type path_ty
 	case Preferences::global_path_type::ARTWORK:
 	case Preferences::global_path_type::PLUGINS:
 	case Preferences::global_path_type::PROFILES:
-	case Preferences::global_path_type::ICONS:
 		result = path_category::MULTIPLE_DIRECTORIES;
+		break;
+
+	case Preferences::global_path_type::ICONS:
+		result = path_category::MULTIPLE_MIXED;
 		break;
 
 	default:
@@ -185,7 +188,9 @@ Preferences::path_category Preferences::GetPathCategory(machine_path_type path_t
 
 void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path)
 {
-	if (category != path_category::FILE && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
+	bool isDirectory = category == path_category::SINGLE_DIRECTORY
+		|| category == path_category::MULTIPLE_DIRECTORIES;
+	if (isDirectory && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
 	{
 		path += QDir::separator();
 	}

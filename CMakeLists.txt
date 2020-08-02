@@ -11,14 +11,17 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Expat
 include(FindEXPAT)
 find_package(EXPAT REQUIRED)
 include_directories(${EXPAT_INCLUDE_DIRS})
 
-enable_testing(true)
-
+# Qt
 find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt5Test REQUIRED)
+
+# Yes, we're unit testing
+enable_testing(true)
 
 
 #############################################################################
@@ -107,7 +110,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets)
+target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
 
 
 #############################################################################
@@ -140,6 +143,46 @@ add_executable(BletchMAME_tests
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
 target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES})
+
+
+#############################################################################
+# QuaZib																	#
+#############################################################################
+
+add_library(QuaZip
+	lib/quazip/ioapi.h
+	lib/quazip/JlCompress.cpp
+	lib/quazip/JlCompress.h
+	lib/quazip/minizip_crypt.h
+	lib/quazip/qioapi.cpp
+	lib/quazip/quaadler32.cpp
+	lib/quazip/quaadler32.h
+	lib/quazip/quachecksum32.h
+	lib/quazip/quacrc32.cpp
+	lib/quazip/quacrc32.h
+	lib/quazip/quagzipfile.cpp
+	lib/quazip/quagzipfile.h
+	lib/quazip/quaziodevice.cpp
+	lib/quazip/quaziodevice.h
+	lib/quazip/quazip.cpp
+	lib/quazip/quazip.h
+	lib/quazip/quazipdir.cpp
+	lib/quazip/quazipdir.h
+	lib/quazip/quazipfile.cpp
+	lib/quazip/quazipfile.h
+	lib/quazip/quazipfileinfo.cpp
+	lib/quazip/quazipfileinfo.h
+	lib/quazip/quazipnewinfo.cpp
+	lib/quazip/quazipnewinfo.h
+	lib/quazip/quazip_global.h
+	lib/quazip/unzip.cpp
+	lib/quazip/unzip.h
+	lib/quazip/zip.cpp
+	lib/quazip/zip.h
+)
+target_include_directories(QuaZip PRIVATE lib/quazip)
+target_link_libraries(QuaZip PRIVATE Qt5::Widgets)
+add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
 
 
 #############################################################################
