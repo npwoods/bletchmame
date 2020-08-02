@@ -175,15 +175,11 @@ const QPixmap &IconLoader::getIcon(const info::machine &machine)
 
 const QPixmap *IconLoader::getIconByName(const QString &icon_name)
 {
-	const QPixmap *result = nullptr;
+	// look up the result in the icon map
 	auto iter = m_icon_map.find(icon_name);
-	if (iter != m_icon_map.end())
-	{
-		// we've previously loaded (or tried to load) this icon; use our old result
-		if (iter->second.has_value())
-			result = &*iter->second;
-	}
-	else
+
+	// did we come up empty?
+	if (iter == m_icon_map.end())
 	{
 		// we have not tried to load this icon - first determine the real file name
 		QString icon_file_name = icon_name + ".ico";
@@ -200,11 +196,16 @@ const QPixmap *IconLoader::getIconByName(const QString &icon_name)
 				std::optional<QPixmap> icon = LoadIcon(std::move(icon_file_name), byteArray);
 
 				// record the result in the icon map
-				m_icon_map.emplace(icon_name, std::move(icon));
+				iter = m_icon_map.emplace(icon_name, std::move(icon)).first;
 				break;
 			}
 		}
 	}
+
+	// if we found (or added) something, return it
+	const QPixmap *result = (iter != m_icon_map.end() && iter->second.has_value())
+		? &*iter->second
+		: nullptr;
 	return result;
 }
 
