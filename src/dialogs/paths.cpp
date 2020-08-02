@@ -33,14 +33,14 @@ public:
 	bool expandable() const { return m_expandable; }
 
 	// setting/getting full paths
-	void setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool isDir);
+	void setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool supportsFiles, bool supportsDirectories);
 	QString paths() const;
 
 	// setting/getting individual paths
 	void setPath(int index, QString &&path);
 	const QString &path(int index) const;
 	int pathCount() const;
-	void insert(int index, Entry &&entry = Entry("", true));
+	void insert(int index);
 	void erase(int index);
 
 	// virtuals
@@ -61,11 +61,12 @@ private:
 	std::function<QString(const QString &)>	m_applySubstitutionsFunc;
 	bool									m_applySubstitutions;
 	bool									m_expandable;
-	bool									m_isDir;
+	bool									m_supportsFiles;
+	bool									m_supportsDirectories;
 	std::vector<Entry>						m_entries;
 
 	// private methods
-	bool isPathValid(const QString &path) const;
+	bool validateAndCanonicalize(QString &path) const;
 	bool hasExpandEntry() const;
 };
 
@@ -84,7 +85,6 @@ const QStringList PathsDialog::s_combo_box_strings = buildComboBoxStrings();
 PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 	: QDialog(&parent)
 	, m_prefs(prefs)
-	, m_listViewModel(nullptr)
 	, m_listViewModelCurrentPath({ })
 {
 	m_ui = std::make_unique<Ui::PathsDialog>();
@@ -95,8 +95,8 @@ PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 		m_pathLists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
 
 	// list view
-	m_listViewModel = new PathListModel(*this, [this](const QString &path) { return m_prefs.ApplySubstitutions(path); });
-	m_ui->listView->setModel(m_listViewModel);
+	PathListModel &model = *new PathListModel(*this, [this](const QString &path) { return m_prefs.ApplySubstitutions(path); });
+	m_ui->listView->setModel(&model);
 
 	// combo box
 	QStringListModel &comboBoxModel = *new QStringListModel(s_combo_box_strings, this);
@@ -160,8 +160,11 @@ void PathsDialog::on_comboBox_currentIndexChanged(int index)
 
 void PathsDialog::on_browseButton_clicked()
 {
-	QModelIndex index = m_ui->listView->currentIndex();
-	browseForPath(index.row());
+	QModelIndexList selectedIndexes = m_ui->listView->selectionModel()->selectedIndexes();
+	int item = selectedIndexes.size() == 1
+		? selectedIndexes[0].row()
+		: listModel().pathCount();
+	browseForPath(item);
 }
 
 
@@ -175,11 +178,11 @@ void PathsDialog::on_insertButton_clicked()
 	int item = m_ui->listView->currentIndex().row();
 
 	// if we're not appending, insert an item
-	if (item < m_listViewModel->pathCount())
-		m_listViewModel->insert(item);
+	if (item < listModel().pathCount())
+		listModel().insert(item);
 
 	// and tell the list view to start editing
-	QModelIndex index = m_listViewModel->index(item);
+	QModelIndex index = listModel().index(item);
 	m_ui->listView->edit(index);
 }
 
@@ -190,7 +193,7 @@ void PathsDialog::on_insertButton_clicked()
 
 void PathsDialog::on_deleteButton_clicked()
 {
-	m_listViewModel->erase(m_ui->listView->currentIndex().row());
+	listModel().erase(m_ui->listView->currentIndex().row());
 }
 
 
@@ -213,10 +216,10 @@ void PathsDialog::updateButtonsEnabled()
 	std::optional<int> selectedItem = m_ui->listView->selectionModel()->hasSelection()
 		? m_ui->listView->selectionModel()->selectedRows()[0].row()
 		: std::optional<int>();
-	bool isSelectingPath = selectedItem.has_value() && selectedItem.value() < m_listViewModel->pathCount();
+	bool isSelectingPath = selectedItem.has_value() && selectedItem.value() < listModel().pathCount();
 
-	m_ui->insertButton->setEnabled(m_listViewModel->expandable());
-	m_ui->deleteButton->setEnabled(m_listViewModel->expandable() && isSelectingPath);
+	m_ui->insertButton->setEnabled(listModel().expandable());
+	m_ui->deleteButton->setEnabled(listModel().expandable() && isSelectingPath);
 }
 
 
@@ -230,12 +233,12 @@ bool PathsDialog::browseForPath(int index)
 	QString path = browseForPathDialog(
 		*this,
 		getCurrentPath(),
-		index < m_listViewModel->pathCount() ? m_listViewModel->path(index) : "");
+		index < listModel().pathCount() ? listModel().path(index) : "");
 	if (path.isEmpty())
 		return false;
 
 	// specify it
-	m_listViewModel->setPath(index, std::move(path));
+	listModel().setPath(index, std::move(path));
 	return true;
 }
 
@@ -249,7 +252,7 @@ void PathsDialog::extractPathsFromListView()
 	if (m_listViewModelCurrentPath.has_value())
 	{
 		// reflect changes on the m_current_path_list back into m_pathLists 
-		QString paths = m_listViewModel->paths();
+		QString paths = listModel().paths();
 		m_pathLists[(int)m_listViewModelCurrentPath.value()] = std::move(paths);
 	}
 }
@@ -263,14 +266,18 @@ void PathsDialog::updateCurrentPathList()
 {
 	const Preferences::global_path_type currentPathType = getCurrentPath();
 	bool applySubstitutions = currentPathType != Preferences::global_path_type::EMU_EXECUTABLE;
-	bool isMultiple = Preferences::GetPathCategory(currentPathType) == Preferences::path_category::MULTIPLE_DIRECTORIES;
-	bool isDir = isDirPathType(currentPathType);
+	Preferences::path_category category = Preferences::GetPathCategory(currentPathType);
+	bool isMultiple = category == Preferences::path_category::MULTIPLE_DIRECTORIES
+		|| category == Preferences::path_category::MULTIPLE_MIXED;
+	bool supportsFiles = isFilePathType(currentPathType);
+	bool supportsDirectories = isDirPathType(currentPathType);
 	
-	m_listViewModel->setPaths(
+	listModel().setPaths(
 		m_pathLists[(int)currentPathType],
 		applySubstitutions,
 		isMultiple,
-		isDir);
+		supportsFiles,
+		supportsDirectories);
 
 	m_listViewModelCurrentPath = currentPathType;
 }
@@ -347,23 +354,42 @@ bool PathsDialog::isDirPathType(Preferences::global_path_type type)
 
 QString PathsDialog::browseForPathDialog(QWidget &parent, Preferences::global_path_type type, const QString &default_path)
 {
-	QString result;
-	if (type == Preferences::global_path_type::EMU_EXECUTABLE)
+	QString caption, filter;
+	switch (type)
 	{
-		result = QFileDialog::getOpenFileName(
-			&parent,
-			"Specify MAME Path",
-			default_path,
-			"EXE files (*.exe);*.exe");
-	}
-	else
-	{
-		result = QFileDialog::getExistingDirectory(
-			&parent,
-			"Specify Path",
-			default_path);
-	}
-	return result;
+	case Preferences::global_path_type::EMU_EXECUTABLE:
+		caption = "Specify MAME Path";
+		filter = "EXE files (*.exe);*.exe";
+		break;
+
+	default:
+		caption = "Specify Path";
+		break;
+	};
+
+	// determine the FileMode
+	QFileDialog::FileMode fileMode = isDirPathType(type)
+		? QFileDialog::FileMode::Directory
+		: QFileDialog::FileMode::ExistingFile;
+
+	// show the dialog
+	QFileDialog dialog(&parent, caption, default_path, filter);
+	dialog.setFileMode(fileMode);
+	dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptOpen);
+	dialog.exec();
+	return dialog.result() == QDialog::DialogCode::Accepted
+		? dialog.selectedFiles().first()
+		: QString();
+}
+
+
+//-------------------------------------------------
+//  listModel
+//-------------------------------------------------
+
+PathsDialog::PathListModel &PathsDialog::listModel()
+{
+	return *dynamic_cast<PathListModel *>(m_ui->listView->model());
 }
 
 
@@ -382,21 +408,23 @@ PathsDialog::PathListModel::PathListModel(QObject &parent, std::function<QString
 //  PathListModel::setPaths
 //-------------------------------------------------
 
-void PathsDialog::PathListModel::setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool isDir)
+void PathsDialog::PathListModel::setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool supportsFiles, bool supportsDirectories)
 {
 	beginResetModel();
 
 	m_applySubstitutions = applySubstitutions;
 	m_expandable = expandable;
-	m_isDir = isDir;
+	m_supportsFiles = supportsFiles;
+	m_supportsDirectories = supportsDirectories;
 	m_entries.clear();
 	if (!paths.isEmpty())
 	{
-		for (const QString &path : util::string_split(paths, [](auto ch) { return ch == ';'; }))
+		for (const QString &nativePath : util::string_split(paths, [](auto ch) { return ch == ';'; }))
 		{
+			QString path = QDir::fromNativeSeparators(nativePath);
 			Entry &entry = m_entries.emplace_back();
-			entry.m_isValid = isPathValid(path);
-			entry.m_path = QDir::fromNativeSeparators(path);
+			entry.m_isValid = validateAndCanonicalize(path);
+			entry.m_path = std::move(path);
 		}
 	}
 
@@ -437,7 +465,10 @@ QString PathsDialog::PathListModel::paths() const
 
 void PathsDialog::PathListModel::setPath(int index, QString &&path)
 {
-	assert(index >= 0 && index < (m_entries.size() + hasExpandEntry() ? 1 : 0));
+	// sanity check
+	int maxIndex = m_entries.size() + (hasExpandEntry() ? 1 : 0);
+	if (index < 0 || index >= maxIndex)
+		throw false;
 
 	if (path.isEmpty())
 	{
@@ -446,25 +477,22 @@ void PathsDialog::PathListModel::setPath(int index, QString &&path)
 	}
 	else
 	{
-		// we're updating or inserting something - ensure that there is a final
-		// path separator if appropriate
-		if (m_isDir && !path.endsWith("/"))
-			path += "/";
+		// we're updating or inserting something - tell Qt that something is changing
+		beginResetModel();
 
-		// appending or updating?
-		if (hasExpandEntry() && index == m_entries.size())
+		// are we appending?  if so create a new entry
+		if (index == m_entries.size())
 		{
-			// setting at the end of an expandable path appends
-			bool isValid = isPathValid(path);
-			insert(index, Entry(std::move(path), isValid));
+			assert(hasExpandEntry());
+			m_entries.insert(m_entries.end(), Entry("", true));
 		}
-		else
-		{
-			beginResetModel();
-			m_entries[index].m_isValid = isPathValid(path);
-			m_entries[index].m_path = std::move(path);
-			endResetModel();
-		}
+
+		// set the path
+		m_entries[index].m_isValid = validateAndCanonicalize(path);
+		m_entries[index].m_path = std::move(path);
+
+		// we're done!
+		endResetModel();
 	}
 }
 
@@ -494,12 +522,12 @@ int PathsDialog::PathListModel::pathCount() const
 //  PathListModel::insert
 //-------------------------------------------------
 
-void PathsDialog::PathListModel::insert(int position, Entry &&entry)
+void PathsDialog::PathListModel::insert(int position)
 {
 	assert(position >= 0 && position <= m_entries.size());
 
 	beginResetModel();
-	m_entries.insert(m_entries.begin() + position, std::move(entry));
+	m_entries.insert(m_entries.begin() + position, Entry("", true));
 	endResetModel();
 }
 
@@ -603,10 +631,10 @@ Qt::ItemFlags PathsDialog::PathListModel::flags(const QModelIndex &index) const
 
 
 //-------------------------------------------------
-//  PathListModel::isPathValid
+//  PathListModel::validateAndCanonicalize
 //-------------------------------------------------
 
-bool PathsDialog::PathListModel::isPathValid(const QString &path) const
+bool PathsDialog::PathListModel::validateAndCanonicalize(QString &path) const
 {
 	// apply substitutions (e.g. - $(MAMEPATH) with actual MAME path)
 	QString pathAfterSubstitutions = m_applySubstitutions
@@ -614,10 +642,19 @@ bool PathsDialog::PathListModel::isPathValid(const QString &path) const
 		: path;
 
 	// check the file
+	bool isValid = false;
 	QFileInfo fileInfo(pathAfterSubstitutions);
-	return m_isDir
-		? fileInfo.isDir()
-		: fileInfo.isFile();
+	if (fileInfo.isFile())
+	{
+		isValid = m_supportsFiles;
+	}
+	else if (fileInfo.isDir())
+	{
+		isValid = m_supportsDirectories;
+		if (!path.endsWith('/'))
+			path += '/';
+	}
+	return isValid;
 }
 
 
@@ -627,8 +664,8 @@ bool PathsDialog::PathListModel::isPathValid(const QString &path) const
 
 bool PathsDialog::PathListModel::hasExpandEntry() const
 {
-	return m_expandable
-		&& (m_entries.size() == 0 || m_entries[m_entries.size() - 1].m_path.isEmpty());
+	return m_entries.size() == 0
+		|| (m_expandable && !m_entries[m_entries.size() - 1].m_path.isEmpty());
 }
 
 

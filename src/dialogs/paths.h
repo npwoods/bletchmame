@@ -54,7 +54,6 @@ private:
 	Preferences &									m_prefs;
 
 	std::array<QString, PATH_COUNT>					m_pathLists;
-	PathListModel *									m_listViewModel;
 	std::optional<Preferences::global_path_type>	m_listViewModelCurrentPath;
 
 	// methods
@@ -63,6 +62,7 @@ private:
 	void updateButtonsEnabled();
 	Preferences::global_path_type getCurrentPath() const;
 	bool browseForPath(int item);
+	PathListModel &listModel();
 
 	// static methods
 	static QStringList buildComboBoxStrings();
