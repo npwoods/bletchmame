@@ -36,7 +36,7 @@ public:
 	{
 	}
 
-	virtual QByteArray getIconBytes(const QString &filename) = 0;
+	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) = 0;
 };
 
 
@@ -49,13 +49,9 @@ public:
 	{
 	}
 
-	virtual QByteArray getIconBytes(const QString &filename) override
+	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) override
 	{
-		// does the file exist?  if so, open it
-		QFile file(m_path + "/" + filename);
-		return file.open(QIODevice::ReadOnly)
-			? file.readAll()
-			: QByteArray();
+		return std::make_unique<QFile>(m_path + "/" + filename);
 	}
 
 private:
@@ -76,19 +72,14 @@ public:
 		return m_zip.open(QuaZip::Mode::mdUnzip);
 	}
 
-	virtual QByteArray getIconBytes(const QString &filename) override
+	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) override
 	{
 		// find the file
 		if (!m_zip.setCurrentFile(filename))
 			return { };
 
-		// open it
-		QuaZipFile zipFile(&m_zip);
-		if (!zipFile.open(QIODevice::ReadOnly))
-			return { };
-
-		// and read all bytes
-		return zipFile.readAll();
+		// and return a QuaZipFile
+		return std::make_unique<QuaZipFile>(&m_zip);
 	}
 
 private:
@@ -187,10 +178,13 @@ const QPixmap *IconLoader::getIconByName(const QString &icon_name)
 		// and try to load it from each ZIP file
 		for (const auto &finder : m_finders)
 		{
-			// get the byte array
-			QByteArray byteArray = finder->getIconBytes(icon_file_name);
-			if (byteArray.size() > 0)
+			// try to get a stream and open it
+			std::unique_ptr<QIODevice> stream = finder->getIconStream(icon_file_name);
+			if (stream && stream->open(QIODevice::ReadOnly))
 			{
+				// read the bytes
+				QByteArray byteArray = stream->readAll();
+
 				// we've found an entry - try to load the icon; note that while this can
 				// fail, we want to memoize the failure
 				std::optional<QPixmap> icon = LoadIcon(std::move(icon_file_name), byteArray);
