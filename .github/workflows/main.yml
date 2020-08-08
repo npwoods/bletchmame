@@ -44,5 +44,5 @@ jobs:
         dir $GITHUB_WORKSPACE
         cd $GITHUB_WORKSPACE
         dir
-        cmake .
+        cmake $GITHUB_WORKSPACE
 
