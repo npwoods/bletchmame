@@ -36,7 +36,7 @@ jobs:
     - name: Build libexpat
       run: |
         cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build
-        dir deps/libexpat_build
+        dir
         mingw32-make -f deps/libexpat_build/Makefile
         dir deps/libexpat_build
 
