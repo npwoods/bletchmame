@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [ master, qt_port ]
 
+# Defaults
+defaults:
+  run:
+    shell: bash
+    
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -51,6 +56,4 @@ jobs:
     # Executes CMake
     - name: Run CMake
       run: |
-       cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib --loglevel=VERBOSE -LA
-      working-directory: .
-      shell: bash
+       cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
