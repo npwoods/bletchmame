@@ -28,7 +28,7 @@ class TestFixture : public TestFixtureBase
 public:
     TestFixture()
     {
-        accumulateTest([] { return std::make_unique<T>(); });
+        // accumulateTest([] { return std::make_unique<T>(); });
     }
 };
 
