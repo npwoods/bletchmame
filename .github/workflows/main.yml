@@ -41,7 +41,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: '5.15.0'
+        version: '5.15.1'
         arch: 'win64_mingw81'
 
     # Build libexpat
@@ -55,4 +55,4 @@ jobs:
     - name: Build BletchMAME
       run: |
        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
-       mingw32-make
+       mingw32-make -j 8
