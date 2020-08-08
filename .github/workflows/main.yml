@@ -25,10 +25,6 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-    # Install Qt
-    # - name: Install Qt
-    #   uses: jurplel/install-qt-action@v2
-
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -40,6 +36,10 @@ jobs:
         repository: libexpat/libexpat.git
         ref: R_2_2_9
         path: deps/libexpat
+
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
 
     # Build libexpat
     - name: Build libexpat
