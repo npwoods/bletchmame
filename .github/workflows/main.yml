@@ -35,7 +35,7 @@ jobs:
     # Build libexpat
     - name: Build libexpat
       run: |
-        cmake deps/libexpat/expat
+        cmake deps/libexpat/expat -G "MinGW Makefiles"
         msbuild deps/libexpat/expat/ALL_BUILD.vcxproj
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -56,5 +56,5 @@ jobs:
     - name: Run CMake
       run: |
         dir
-        cmake . -DEXPAT_LIBRARY=deps/libexpat/expat/Release/libexpat.lib -DEXPAT_INCLUDE_DIR=deps/libexpat/expat/lib
+        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=deps/libexpat/expat/Release/libexpat.lib -DEXPAT_INCLUDE_DIR=deps/libexpat/expat/lib
         dir
