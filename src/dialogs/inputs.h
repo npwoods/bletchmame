@@ -14,6 +14,8 @@
 #include <vector>
 #include <observable/observable.hpp>
 
+#include <QHashFunctions>
+
 #include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
 
