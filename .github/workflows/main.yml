@@ -51,6 +51,6 @@ jobs:
     # Executes CMake
     - name: Run CMake
       run: |
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib --loglevel=VERBOSE -LA
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib --loglevel=VERBOSE
+        cmake . -G "MinGW Makefiles" --loglevel=VERBOSE -LA
+#        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib --loglevel=VERBOSE
         dir
