@@ -32,10 +32,11 @@ jobs:
         ref: R_2_2_9
         path: deps/libexpat
 
-    # Run CMake (libexpat)
-    - name: Run CMake
+    # Build libexpat
+    - name: Build libexpat
       run: |
         cmake deps/libexpat/expat
+        msbuild deps/libexpat/expat/ALL_BUILD.vcxproj
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
@@ -55,5 +56,5 @@ jobs:
     - name: Run CMake
       run: |
         dir
-        cmake .
+        cmake . -DEXPAT_LIBRARY=deps/libexpat/expat/Release/libexpat.lib -DEXPAT_INCLUDE_DIR=deps/libexpat/expat/lib
         dir
