@@ -41,7 +41,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: '5.15'
+        version: '5.15.0'
 
     # Build libexpat
     - name: Build libexpat
