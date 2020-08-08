@@ -47,9 +47,10 @@ jobs:
     # Build libexpat
     - name: Build libexpat
       run: |
-        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build
+        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DEXPAT_SHARED_LIBS=OFF
         cd deps/libexpat_build
         mingw32-make -j 8
+        dir
 
     # Build BletchMAME
     - name: Build BletchMAME
