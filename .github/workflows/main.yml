@@ -54,6 +54,10 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-       cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
-       mingw32-make -j 8
-       find . -name '*.exe'
+        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
+        mingw32-make -j 8
+
+    # Run Acceptance Tests
+    - name: Run Acceptance Tests
+      run: |
+        ./BletchMAME_tests.exe
