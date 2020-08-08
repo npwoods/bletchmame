@@ -37,10 +37,10 @@ private:
 	class DirectoryIconFinder;
 	class ZipIconFinder;
 	
-	Preferences &										m_prefs;
-	std::unordered_map<QString, std::optional<QPixmap>>	m_icon_map;
-	std::vector<std::unique_ptr<IconFinder>>			m_finders;
-	QPixmap												m_blankIcon;
+	Preferences &													m_prefs;
+	std::unordered_map<QString, std::optional<QPixmap>, util::Hash>	m_icon_map;
+	std::vector<std::unique_ptr<IconFinder>>						m_finders;
+	QPixmap															m_blankIcon;
 
 	std::optional<QPixmap> LoadIcon(QString &&icon_name, const QByteArray &byteArray);
 	const QPixmap *getIconByName(const QString &iconName);

@@ -51,6 +51,15 @@ namespace util
 			result = ((result << 5) + result) + s[i];
 		return result;
 	}
+
+	class Hash
+	{
+	public:
+		std::size_t operator()(const QString &s) const noexcept
+		{
+			return (size_t)qHash(s);
+		}
+	};
 };
 
 

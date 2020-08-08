@@ -466,7 +466,7 @@ QString PathsDialog::PathListModel::paths() const
 void PathsDialog::PathListModel::setPath(int index, QString &&path)
 {
 	// sanity check
-	int maxIndex = m_entries.size() + (hasExpandEntry() ? 1 : 0);
+	int maxIndex = util::safe_static_cast<int>(m_entries.size()) + (hasExpandEntry() ? 1 : 0);
 	if (index < 0 || index >= maxIndex)
 		throw false;
 

@@ -149,8 +149,8 @@ private:
 	mutable std::unordered_map<std::string, std::unordered_map<std::string, ColumnPrefs>>	m_column_prefs;
 	std::map<QString, MachineInfo>															m_machine_info;
 	list_view_type																			m_selected_tab;
-    std::unordered_map<QString, QString>													m_list_view_selection;
-	mutable std::unordered_map<QString, QString>											m_list_view_filter;
+    std::unordered_map<QString, QString, util::Hash>										m_list_view_selection;
+	mutable std::unordered_map<QString, QString, util::Hash>								m_list_view_filter;
 	bool																					m_menu_bar_shown;
 
 	void Save(std::ostream &output);
