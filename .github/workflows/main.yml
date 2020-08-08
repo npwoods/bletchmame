@@ -50,6 +50,7 @@ jobs:
     - name: Run CMake
       run: |
         dir
+        dir deps
         cmake deps/libexpat
         cmake .
         dir
