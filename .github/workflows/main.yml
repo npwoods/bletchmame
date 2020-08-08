@@ -50,12 +50,12 @@ jobs:
         cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DEXPAT_SHARED_LIBS=OFF
         cd deps/libexpat_build
         mingw32-make -j 8
-        dir
+        ls -l
 
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
+        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
         mingw32-make -j 8
 
     # Run Acceptance Tests
