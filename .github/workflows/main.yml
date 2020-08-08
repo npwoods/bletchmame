@@ -37,9 +37,8 @@ jobs:
       run: |
         cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build
         cd deps/libexpat_build
-        mingw32-make
+        mingw32-make -DBUILD_shared=OFF
         dir
-        dir /s
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
