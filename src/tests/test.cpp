@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <iostream>
 #include "test.h"
 
 static std::list<std::function<std::unique_ptr<QObject>()>> s_testFuncs;
@@ -31,8 +32,10 @@ void TestFixtureBase::accumulateTest(std::function<std::unique_ptr<QObject>()> &
 
 int main(int argc, char *argv[])
 {
-    bool anyFailed = false;
+    std::cout << "BletchMAME Test Harness" << std::endl;
+    std::cout << s_testFuncs.size() << " total test(s)" << std::endl;
 
+    bool anyFailed = false;
     for (const auto &func : s_testFuncs)
     {
         auto test = func();
