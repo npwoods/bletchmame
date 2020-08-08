@@ -32,7 +32,7 @@ jobs:
     - name: Checkout Dependent Repository (libexpat)
       uses: actions/checkout@v2
       with:
-        repository: https://github.com/libexpat/libexpat.git
+        repository: libexpat/libexpat.git
         path: deps
 
     # Runs a single command using the runners shell
