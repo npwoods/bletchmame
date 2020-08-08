@@ -34,7 +34,7 @@ jobs:
       with:
         repository: libexpat/libexpat.git
         ref: R_2_2_9
-        path: deps
+        path: deps/libexpat
 
     # Runs a single command using the runners shell
     - name: Run a one-line script
@@ -51,6 +51,6 @@ jobs:
       run: |
         dir
         dir deps
-        cmake deps/libexpat
+        cmake deps/libexpat/expat
         cmake .
         dir
