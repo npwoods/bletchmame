@@ -57,9 +57,7 @@ jobs:
     # Executes CMake
     - name: Run CMake
       run: |
-        dir ./deps/libexpat_build
-        dir ./deps/libexpat
-        dir ./deps/libexpat/expat
-        dir ./deps/libexpat/expat/lib
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=.\deps\libexpat_build\libexpat.dll.a -DEXPAT_INCLUDE_DIR=.\deps\libexpat\expat\lib
+        dir .\deps\libexpat_build\libexpat.dll.a
+        dir .\deps\libexpat\expat\lib
+        cmake . -DEXPAT_LIBRARY=.\deps\libexpat_build\libexpat.dll.a -DEXPAT_INCLUDE_DIR=.\deps\libexpat\expat\lib
         dir
