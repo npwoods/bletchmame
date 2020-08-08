@@ -199,7 +199,7 @@ private:
 	void StartInputPoll(const QString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const QString &start_seq = "");
 	void OnInputsChanged();
 	void OnPollingSeqChanged();
-	static std::unordered_map<QString, QString> InputsDialog::BuildCodes(const std::vector<status::input_class> &devclasses);
+	static std::unordered_map<QString, QString> BuildCodes(const std::vector<status::input_class> &devclasses);
 	static bool CompareInputs(const status::input &a, const status::input &b);
 	std::vector<InputEntryDesc> BuildInitialEntryDescriptions(status::input::input_class input_class) const;
 	static QString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
