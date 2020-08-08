@@ -41,6 +41,8 @@ jobs:
     # Executes CMake
     - name: Run CMake
       run: |
+        dir $GITHUB_WORKSPACE
         cd $GITHUB_WORKSPACE
+        dir
         cmake .
 
