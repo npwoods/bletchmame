@@ -24,6 +24,10 @@ jobs:
     # - name: Install Qt
     #   uses: jurplel/install-qt-action@v2
 
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
     # Checkout Dependent Repository (libexpat)
     - name: Checkout Dependent Repository (libexpat)
       uses: actions/checkout@v2
@@ -39,10 +43,6 @@ jobs:
         cd deps/libexpat_build
         mingw32-make
         dir
-
-    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - name: Checkout Repository
-      uses: actions/checkout@v2
 
     # Runs a single command using the runners shell
     - name: Run a one-line script
