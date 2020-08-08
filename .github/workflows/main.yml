@@ -24,17 +24,22 @@ jobs:
     # - name: Install Qt
     #   uses: jurplel/install-qt-action@v2
 
-    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    # Checks out Expat
+    # Checkout Dependent Repository (libexpat)
     - name: Checkout Dependent Repository (libexpat)
       uses: actions/checkout@v2
       with:
         repository: libexpat/libexpat.git
         ref: R_2_2_9
         path: deps/libexpat
+
+    # Run CMake (libexpat)
+    - name: Run CMake
+      run: |
+        cmake deps/libexpat/expat
+
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
     # Runs a single command using the runners shell
     - name: Run a one-line script
@@ -50,7 +55,5 @@ jobs:
     - name: Run CMake
       run: |
         dir
-        dir deps
-        cmake deps/libexpat/expat
         cmake .
         dir
