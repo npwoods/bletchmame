@@ -42,7 +42,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: '5.15.0'
-        arch: 'win64_mingw73'
+        arch: 'win64_mingw81_64'
 
     # Build libexpat
     - name: Build libexpat
