@@ -39,7 +39,7 @@ jobs:
     # Build libexpat
     - name: Build libexpat
       run: |
-        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DBUILD_shared=OFF
+        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build
         cd deps/libexpat_build
         mingw32-make
         dir
@@ -57,5 +57,7 @@ jobs:
     # Executes CMake
     - name: Run CMake
       run: |
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=.\deps\libexpat_build\libexpat.dll.a -DEXPAT_INCLUDE_DIR=.\deps\libexpat\expat\lib
+        dir ./deps/libexpat_build
+        dir ./deps\libexpat/lib
+        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
         dir
