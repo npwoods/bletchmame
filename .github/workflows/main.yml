@@ -57,8 +57,5 @@ jobs:
     # Executes CMake
     - name: Run CMake
       run: |
-        mingw-get install libexpat
-        cmake . -G "MinGW Makefiles"
-        
-#        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=deps/libexpat/expat/Release/libexpat.lib -DEXPAT_INCLUDE_DIR=deps/libexpat/expat/lib
-#        dir
+        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=deps/libexpat/libexpat.dll.a -DEXPAT_INCLUDE_DIR=deps/libexpat/expat/lib
+        dir
