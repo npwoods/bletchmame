@@ -53,3 +53,4 @@ jobs:
       run: |
        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.dll -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib --loglevel=VERBOSE -LA
       working-directory: .
+      shell: bash
