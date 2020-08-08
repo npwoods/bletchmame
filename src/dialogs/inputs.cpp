@@ -412,9 +412,9 @@ void InputsDialog::OnRestoreButtonPressed()
 //  BuildCodes
 //-------------------------------------------------
 
-std::unordered_map<QString, QString> InputsDialog::BuildCodes(const std::vector<status::input_class> &devclasses)
+std::unordered_map<QString, QString, InputsDialog::Hash> InputsDialog::BuildCodes(const std::vector<status::input_class> &devclasses)
 {
-	std::unordered_map<QString, QString> result;
+	std::unordered_map<QString, QString, Hash> result;
 	for (const status::input_class &devclass : devclasses)
 	{
 		// similar logic to devclass_string_table in MAME input.cpp
@@ -554,7 +554,7 @@ QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens) const
 }
 
 
-QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens, const std::unordered_map<QString, QString> &codes)
+QString InputsDialog::GetSeqTextFromTokens(const QString &seq_tokens, const std::unordered_map<QString, QString, Hash> &codes)
 {
 	// this replicates logic in core MAME; need to more fully build this out, and perhaps
 	// more fully dissect input sequences

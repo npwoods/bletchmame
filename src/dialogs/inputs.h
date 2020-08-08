@@ -14,8 +14,6 @@
 #include <vector>
 #include <observable/observable.hpp>
 
-#include <QHashFunctions>
-
 #include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
 
@@ -178,6 +176,15 @@ private:
 		status::input_seq::type	m_seq_type;
 	};
 
+	class Hash
+	{
+	public:
+		std::size_t operator()(const QString &s) const noexcept
+		{
+			return (size_t)qHash(s);
+		}
+	};
+
 	struct InputEntryDesc;
 
 	class SingularInputEntry;
@@ -189,7 +196,7 @@ private:
 
 	IInputsHost &								m_host;
 	QDialog *									m_current_dialog;
-	std::unordered_map<QString, QString>		m_codes;
+	std::unordered_map<QString, QString, Hash>	m_codes;
 	std::vector<std::unique_ptr<InputEntry>>	m_entries;
 	observable::unique_subscription				m_inputs_subscription;
 	observable::unique_subscription				m_polling_seq_changed_subscription;
@@ -199,12 +206,12 @@ private:
 	void StartInputPoll(const QString &label, const InputFieldRef &field_ref, status::input_seq::type seq_type, const QString &start_seq = "");
 	void OnInputsChanged();
 	void OnPollingSeqChanged();
-	static std::unordered_map<QString, QString> BuildCodes(const std::vector<status::input_class> &devclasses);
+	static std::unordered_map<QString, QString, Hash> BuildCodes(const std::vector<status::input_class> &devclasses);
 	static bool CompareInputs(const status::input &a, const status::input &b);
 	std::vector<InputEntryDesc> BuildInitialEntryDescriptions(status::input::input_class input_class) const;
 	static QString GetDeviceClassName(const status::input_class &devclass, bool hide_single_keyboard);
 	QString GetSeqTextFromTokens(const QString &seq_tokens) const;
-	static QString GetSeqTextFromTokens(const QString &seq_tokens, const std::unordered_map<QString, QString> &codes);
+	static QString GetSeqTextFromTokens(const QString &seq_tokens, const std::unordered_map<QString, QString, Hash> &codes);
 	static std::tuple<QString, QString> ParseIndividualToken(QString &&token);
 
 	// trampolines

@@ -29,7 +29,7 @@ private slots:
 void InputsDialog::Test::getSeqTextFromTokens()
 {
 	// bogus codes map
-	const std::unordered_map<QString, QString> codes =
+	const std::unordered_map<QString, QString, Hash> codes =
 	{
 		{ "KEYCODE_A",			"A" },
 		{ "KEYCODE_B",			"B" },
