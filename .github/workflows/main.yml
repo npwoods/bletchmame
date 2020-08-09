@@ -29,10 +29,6 @@ jobs:
     - name: Install PanDoc
       run: choco install pandoc
       
-    # Install WiX
-    - name: Install WiX Tests
-      run: choco install wixtoolset -y --version 3.10.3.300702
-      
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -68,3 +64,17 @@ jobs:
     # Run Acceptance Tests
     - name: Run Acceptance Tests
       run: ./BletchMAME_tests.exe
+
+    # Install PanDoc
+    - name: Install PanDoc
+      run: choco install pandoc      
+
+    # Generate readme.html
+    - name: Generate readme.html
+      run: pandoc README.md -o readme.html
+
+    # Build MSI
+    - name: Build MSI
+      run: |
+        candle -v bletchmame.wxs -dVERSION=`cat obj/mingw_win64/release/version.txt` -out bletchmame.wixobj
+        light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
