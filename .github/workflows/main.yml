@@ -39,12 +39,6 @@ jobs:
         ref: R_2_2_9
         path: deps/libexpat
 
-    # Generate version.txt
-    - name: Generate version.txt
-      run: |
-        ls -la
-        git describe --tags | python version.py | tee version.txt
-
     # Install Qt
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
@@ -80,8 +74,24 @@ jobs:
     - name: Generate readme.html
       run: deps/pandoc-2.10.1/pandoc.exe README.md -o readme.html
 
+    # Generate version.txt
+    - name: Generate version.txt
+      run: |
+        git describe --tags | python version.py | tee version.txt
+
     # Build MSI
     - name: Build MSI
       run: |
         /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat version.txt` -out bletchmame.wixobj
         /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
+        
+    # Prepare Artifacts
+    - name: Prepare Artifacts
+      run: |
+        mkdir rel
+        cp version.txt rel/version_latest.txt
+        mv BletchMAME.msi rel/BletchMAME_latest.msi
+        7z a rel/BletchMAME_latest.zip BletchMAME.exe
+        7z a rel/BletchMAME_latest.zip readme.html
+        7z a rel/BletchMAME_latest.zip plugins
+        ls -l rel
