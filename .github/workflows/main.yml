@@ -104,6 +104,7 @@ jobs:
 
     # Configure AWS Credentials
     - name: Configure AWS Credentials
+      if: success() && github.ref == 'refs/heads/master'
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -112,4 +113,5 @@ jobs:
       
     # Deploy Artifacts to S3
     - name: Deploy Artifacts to S3
+      if: success() && github.ref == 'refs/heads/master'
       run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete
