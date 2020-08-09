@@ -41,9 +41,10 @@ jobs:
     - name: Install PanDoc
       working-directory: deps
       run: |
-        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc.zip
-        7z e pandoc.zip
+        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc-2.10.1-windows-i386.zip
+        7z x pandoc-2.10.1-windows-i386.zip
         ls -l
+        ls -l pandoc-2.10.1
 
     # Install Qt
     - name: Install Qt
