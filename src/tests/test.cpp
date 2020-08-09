@@ -9,8 +9,6 @@
 #include <iostream>
 #include "test.h"
 
-std::list<std::reference_wrapper<const TestFixtureBase>> TestFixtureBase::s_testFixtures;
-
 
 //**************************************************************************
 //  IMPLEMENTATION
@@ -22,7 +20,7 @@ std::list<std::reference_wrapper<const TestFixtureBase>> TestFixtureBase::s_test
 
 TestFixtureBase::TestFixtureBase()
 {
-    s_testFixtures.push_front(*this);
+    testFixtures().push_front(*this);
 }
 
 
@@ -30,8 +28,9 @@ TestFixtureBase::TestFixtureBase()
 //  TestFixtureBase::testFixtures
 //-------------------------------------------------
 
-const std::list<std::reference_wrapper<const TestFixtureBase>> &TestFixtureBase::testFixtures()
+std::list<std::reference_wrapper<const TestFixtureBase>> &TestFixtureBase::testFixtures()
 {
+    static std::list<std::reference_wrapper<const TestFixtureBase>> s_testFixtures;
     return s_testFixtures;
 }
 
