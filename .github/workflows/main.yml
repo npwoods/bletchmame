@@ -101,7 +101,13 @@ jobs:
         7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Core.dll
         7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Gui.dll
         7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Widgets.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libgcc_s_seh-1.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libwinpthread-1.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libstdc++-6.dll
 
+  deploy:
+    needs: build
+    steps:
     # Configure AWS Credentials
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1

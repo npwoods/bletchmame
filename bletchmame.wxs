@@ -29,6 +29,15 @@
       <Component Id="Qt5Widgets.dll" Guid="9ce2fb83-081e-43e3-9eea-e2df115406e6" Win64="yes">
         <File Id="Qt5Widgets.dll" Source="$(var.QTBIN)\Qt5Widgets.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
+      <Component Id="libstdc++-6.dll" Guid="6b926b8f-9eb8-4410-82df-9a9d2c735425" Win64="yes">
+        <File Id="libstdc++-6.dll" Source="$(var.QTBIN)\libstdc++-6.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="libgcc_s_seh-1.dll" Guid="a839e9a1-4a23-4ec1-9f4b-d398d2500088" Win64="yes">
+        <File Id="libgcc_s_seh-1.dll" Source="$(var.QTBIN)\libgcc_s_seh-1.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="libwinpthread-1.dll" Guid="3291fe62-3964-4dd8-9877-1040e72f5d2a" Win64="yes">
+        <File Id="libwinpthread-1.dll" Source="$(var.QTBIN)\libwinpthread-1.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
       <Component Id="readme.html" Guid="326b1d99-f61a-4ba9-b5a6-794a49a8e246" Win64="yes">
         <File Id="readme.html" Source="readme.html" KeyPath="yes" Checksum="yes"/>
       </Component>
@@ -48,6 +57,9 @@
       <ComponentRef Id="Qt5Core.dll" />
       <ComponentRef Id="Qt5Gui.dll" />
       <ComponentRef Id="Qt5Widgets.dll" />
+      <ComponentRef Id="libstdc++-6.dll" />
+      <ComponentRef Id="libgcc_s_seh-1.dll" />
+      <ComponentRef Id="libwinpthread-1.dll" />
     </Feature>
     <Feature Id="WorkerUiPlugin" Title="Worker UI LUA Plugin" Level="1" ConfigurableDirectory="PLUGINSDIRECTORY">
       <ComponentRef Id="plugin.json" />
