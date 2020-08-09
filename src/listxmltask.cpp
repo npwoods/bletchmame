@@ -6,9 +6,9 @@
 
 ***************************************************************************/
 
-#include <wx/wfstream.h>
 #include <unordered_map>
 #include <exception>
+#include <QCoreApplication>
 
 #include "listxmltask.h"
 #include "xmlparser.h"
@@ -27,32 +27,32 @@ namespace
 	class ListXmlTask : public Task
 	{
 	public:
-		ListXmlTask(wxString &&output_filename);
+		ListXmlTask(QString &&output_filename);
 
 	protected:
-		virtual std::vector<wxString> GetArguments(const Preferences &) const;
-		virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
-		virtual void Abort() override;
+		virtual QStringList getArguments(const Preferences &) const;
+		virtual void process(QProcess &process, QObject &handler) override;
+		virtual void abort() override;
 
 	private:
-		wxString		m_output_filename;
+		QString			m_output_filename;
 		volatile bool	m_aborted;
 
-		void InternalProcess(wxInputStream &input);
+		void internalProcess(QProcess &process);
 	};
 
 	// ======================> list_xml_exception
 	class list_xml_exception : public std::exception
 	{
 	public:
-		list_xml_exception(ListXmlResult::status status, wxString &&message = wxString())
+		list_xml_exception(ListXmlResultEvent::Status status, QString &&message = QString())
 			: m_status(status)
 			, m_message(message)
 		{
 		}
 
-		ListXmlResult::status	m_status;
-		wxString				m_message;
+		ListXmlResultEvent::Status	m_status;
+		QString						m_message;
 	};
 };
 
@@ -61,14 +61,14 @@ namespace
 //  IMPLEMENTATION
 //**************************************************************************
 
-wxDEFINE_EVENT(EVT_LIST_XML_RESULT, PayloadEvent<ListXmlResult>);
+QEvent::Type ListXmlResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 
 
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
-ListXmlTask::ListXmlTask(wxString &&output_filename)
+ListXmlTask::ListXmlTask(QString &&output_filename)
 	: m_output_filename(std::move(output_filename))
 	, m_aborted(false)
 {
@@ -76,49 +76,51 @@ ListXmlTask::ListXmlTask(wxString &&output_filename)
 
 
 //-------------------------------------------------
-//  GetArguments
+//  getArguments
 //-------------------------------------------------
 
-std::vector<wxString> ListXmlTask::GetArguments(const Preferences &) const
+QStringList ListXmlTask::getArguments(const Preferences &) const
 {
 	return { "-listxml", "-nodtd" };
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void ListXmlTask::Abort()
+void ListXmlTask::abort()
 {
 	m_aborted = true;
 }
 
 
 //-------------------------------------------------
-//  Process
+//  process
 //-------------------------------------------------
 
-void ListXmlTask::Process(wxProcess &process, wxEvtHandler &handler)
+void ListXmlTask::process(QProcess &process, QObject &handler)
 {
-	ListXmlResult result;
+	ListXmlResultEvent::Status status;
+	QString errorMessage;
 	try
 	{
 		// process
-		InternalProcess(*process.GetInputStream());
+		internalProcess(process);
 
 		// we've succeeded!
-		result.m_status = ListXmlResult::status::SUCCESS;
+		status = ListXmlResultEvent::Status::SUCCESS;
 	}
 	catch (list_xml_exception &ex)
 	{
 		// an exception has occurred
-		result.m_status = ex.m_status;
-		result.m_error_message = std::move(ex.m_message);
+		status = ex.m_status;
+		errorMessage = std::move(ex.m_message);
 	}
 
 	// regardless of what happened, notify the main thread
-	util::QueueEvent(handler, EVT_LIST_XML_RESULT, wxID_ANY, std::move(result));
+	auto evt = std::make_unique<ListXmlResultEvent>(status, std::move(errorMessage));
+	QCoreApplication::postEvent(&handler, evt.release());
 }
 
 
@@ -126,31 +128,48 @@ void ListXmlTask::Process(wxProcess &process, wxEvtHandler &handler)
 //  InternalProcess
 //-------------------------------------------------
 
-void ListXmlTask::InternalProcess(wxInputStream &input)
+void ListXmlTask::internalProcess(QProcess &process)
 {
 	info::database_builder builder;
 
 	// first process the XML
-	wxString error_message;
+	QDataStream input(&process);
+	QString error_message;
 	bool success = builder.process_xml(input, error_message);
 
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected
 	if (m_aborted)
-		throw list_xml_exception(ListXmlResult::status::ABORTED);
+		throw list_xml_exception(ListXmlResultEvent::Status::ABORTED);
 
 	// now check for a parse error (which should be very unlikely)
 	if (!success)
-		throw list_xml_exception(ListXmlResult::status::ERROR, wxString(wxT("Error parsing XML from MAME -listxml: ")) + error_message);
+		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Error parsing XML from MAME -listxml: %1").arg(error_message));
 
 	// we finally have all of the info accumulated; now we can get to business with writing
 	// to the actual file
-	wxFileOutputStream output(m_output_filename);
-	if (!output.IsOk())
-		throw list_xml_exception(ListXmlResult::status::ERROR, wxString(wxT("Could not open file: ")) + m_output_filename);
+	QFile file(m_output_filename);
+	if (!file.open(QIODevice::WriteOnly))
+		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
+
+	QDataStream output(&file);
+	if (output.status() != QDataStream::Status::Ok)
+		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
 
 	// emit the data
-	builder.emit(output);
+	builder.emit_info(output);
+}
+
+
+//-------------------------------------------------
+//  ListXmlResultEvent ctor
+//-------------------------------------------------
+
+ListXmlResultEvent::ListXmlResultEvent(Status status, QString &&errorMessage)
+	: QEvent(eventId())
+	, m_status(status)
+	, m_errorMessage(errorMessage)
+{
 }
 
 
@@ -158,7 +177,7 @@ void ListXmlTask::InternalProcess(wxInputStream &input)
 //  create_list_xml_task
 //-------------------------------------------------
 
-Task::ptr create_list_xml_task(wxString &&dest)
+Task::ptr create_list_xml_task(QString &&dest)
 {
-	return std::make_unique<ListXmlTask>(std::move(dest));
+	return std::make_shared<ListXmlTask>(std::move(dest));
 }

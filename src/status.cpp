@@ -6,8 +6,7 @@
 
 ***************************************************************************/
 
-#include <wx/txtstrm.h>
-#include <wx/sstream.h>
+#include <QTextStream>
 
 #include "status.h"
 #include "xmlparser.h"
@@ -137,10 +136,10 @@ bool status::input_class::operator==(const status::input_class &that) const
 //	present
 //-------------------------------------------------
 
-static void normalize_tag(wxString &tag)
+static void normalize_tag(QString &tag)
 {
 	if (tag.size() > 0 && tag[0] == ':')
-		tag = tag.substr(1);
+		tag = tag.right(tag.length() - 1);
 }
 
 
@@ -170,7 +169,7 @@ status::update::~update()
 //  update::read()
 //-------------------------------------------------
 
-status::update status::update::read(wxTextInputStream &input_stream)
+status::update status::update::read(QDataStream &input_stream)
 {
 	status::update result;
 
@@ -265,22 +264,8 @@ status::update status::update::read(wxTextInputStream &input_stream)
 		attributes.Get("code",				item.m_code);
 	});
 
-	// because XmlParser::Parse() is not smart enough to read until XML ends, we are using this
-	// crude mechanism to read the XML
-	wxString buffer;
-	bool done = false;
-	while (!done)
-	{
-		wxString line = input_stream.ReadLine();
-		buffer.Append(line);
-
-		if (input_stream.GetInputStream().Eof() || line.StartsWith("</"))
-			done = true;
-	}
-
 	// parse the XML
-	wxStringInputStream input_buffer(buffer);
-	result.m_success = xml.Parse(input_buffer);
+	result.m_success = xml.Parse(input_stream);
 
 	// this should not happen unless there is a bug
 	if (!result.m_success)
@@ -309,6 +294,8 @@ status::update status::update::read(wxTextInputStream &input_stream)
 //-------------------------------------------------
 
 status::state::state()
+	: m_throttled(false)
+	, m_is_recording(false)
 {
 }
 
@@ -368,7 +355,7 @@ bool status::state::take(TStateField &state_field, std::optional<TUpdateField> &
 //  status::state::find_image()
 //-------------------------------------------------
 
-const status::image *status::state::find_image(const wxString &tag) const
+const status::image *status::state::find_image(const QString &tag) const
 {
 	return util::find_if_ptr(m_images.get(), [&tag](const status::image &image)
 	{

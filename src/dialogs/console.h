@@ -11,17 +11,37 @@
 #ifndef DIALOGS_CONSOLE_H
 #define DIALOGS_CONSOLE_H
 
-#include <wx/window.h>
-#include "client.h"
+#include <QDialog>
+#include "runmachinetask.h"
 
-struct Chatter;
+QT_BEGIN_NAMESPACE
+namespace Ui { class ConsoleDialog; }
+QT_END_NAMESPACE
+
+
+class ChatterEvent;
 
 class IConsoleDialogHost
 {
 public:
-	virtual void SetChatterListener(std::function<void(Chatter &&chatter)> &&func) = 0;
+	virtual void SetChatterListener(std::function<void(const ChatterEvent &)> &&func) = 0;
 };
 
-bool show_console_dialog(wxWindow &parent, MameClient &client, IConsoleDialogHost &host);
+
+class ConsoleDialog : public QDialog
+{
+public:
+	ConsoleDialog(QWidget *parent, std::shared_ptr<RunMachineTask> &&task, IConsoleDialogHost &host);
+	~ConsoleDialog();
+
+private:
+	IConsoleDialogHost &				m_host;
+	std::shared_ptr<RunMachineTask>		m_task;
+	std::unique_ptr<Ui::ConsoleDialog>	m_ui;
+
+	void onInvoke();
+	void onChatter(const ChatterEvent &evt);
+	static bool isChatterPing(const ChatterEvent &evt);
+};
 
 #endif // DIALOGS_CONSOLE_H

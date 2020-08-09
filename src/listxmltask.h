@@ -11,8 +11,9 @@
 #ifndef LISTXMLTASK_H
 #define LISTXMLTASK_H
 
+#include <QEvent>
+
 #include "task.h"
-#include "wxhelpers.h"
 
 
 //**************************************************************************
@@ -29,26 +30,35 @@
 //  TYPES
 //**************************************************************************
 
-struct ListXmlResult
+class ListXmlResultEvent : public QEvent
 {
-	enum class status
+public:
+	enum class Status
 	{
 		SUCCESS,		// the invocation of -listxml succeeded
 		ABORTED,		// the user aborted the -listxml request midflight
 		ERROR			// an error is to be reported to use user
 	};
 
-	status		m_status;
-	wxString	m_error_message;
-};
+	// ctor
+	ListXmlResultEvent(Status status, QString &&errorMessage);
 
-wxDECLARE_EVENT(EVT_LIST_XML_RESULT, PayloadEvent<ListXmlResult>);
+	// accessors
+	static QEvent::Type eventId()			{ return s_eventId; }
+	Status status() const					{ return m_status; }
+	const QString &	errorMessage() const	{ return m_errorMessage; }
+
+private:
+	static QEvent::Type	s_eventId;
+	Status				m_status;
+	QString				m_errorMessage;
+};
 
 
 //**************************************************************************
 //  FUNCTION PROTOTYPES
 //**************************************************************************
 
-Task::ptr create_list_xml_task(wxString &&dest);
+Task::ptr create_list_xml_task(QString &&dest);
 
 #endif // LISTXMLTASK_H

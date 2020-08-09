@@ -11,8 +11,9 @@
 #ifndef VERSIONTASK_H
 #define VERSIONTASK_H
 
+#include <QEvent>
+
 #include "task.h"
-#include "wxhelpers.h"
 
 
 //**************************************************************************
@@ -29,12 +30,18 @@
 //  TYPES
 //**************************************************************************
 
-struct VersionResult
+class VersionResultEvent : public QEvent
 {
-	wxString	m_version;
-};
+public:
+    VersionResultEvent(QString &&version);
 
-wxDECLARE_EVENT(EVT_VERSION_RESULT, PayloadEvent<VersionResult>);
+    static QEvent::Type eventId() { return s_eventId; }
+
+    QString	m_version;
+
+private:
+    static QEvent::Type s_eventId;
+};
 
 
 //**************************************************************************

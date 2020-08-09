@@ -11,7 +11,7 @@
 #ifndef INFO_BUILDER_H
 #define INFO_BUILDER_H
 
-#include <wx/stream.h>
+class QDataStream;
 
 #include "info.h"
 
@@ -27,8 +27,8 @@ namespace info
 		database_builder(database_builder &&) = default;
 
 		// methods
-		bool process_xml(wxInputStream &input, wxString &error_message);
-		void emit(wxOutputStream &stream) const;
+		bool process_xml(QDataStream &input, QString &error_message);
+		void emit_info(QDataStream &stream) const;
 
 	private:
 		// ======================> string_table
@@ -37,7 +37,7 @@ namespace info
 		public:
 			string_table();
 			std::uint32_t get(const std::string &string);
-			std::uint32_t get(const wxString &string);
+			std::uint32_t get(const QString &string);
 			const std::vector<char> &data() const;
 
 			template<typename T> void embed_value(T value)

@@ -6,77 +6,34 @@
 
 ***************************************************************************/
 
-#include "wx/wxprec.h"
-
-#include <wx/wx.h>
-#include <wx/process.h>
-#include <wx/txtstrm.h>
-#include <wx/sstream.h>
-#include <iostream>
+#include <QTextStream>
+#include <QWidget>
+#include <QCoreApplication>
 #include <thread>
 
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "utility.h"
 #include "prefs.h"
-#include "validity.h"
+
+
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+#define LOG_RECEIVE			0
+#define LOG_POST			0
+#define LOG_COMMANDS		0
+#define LOG_RESPONSES		0
 
 
 //**************************************************************************
 //  VARIABLES
 //**************************************************************************
 
-wxDEFINE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
-wxDEFINE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<status::update>);
-wxDEFINE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
-
-
-//**************************************************************************
-//  UTILITY
-//**************************************************************************
-
-//-------------------------------------------------
-//  BuildCommand
-//-------------------------------------------------
-
-wxString BuildCommand(const std::vector<wxString> &args)
-{
-	wxString command;
-	for (const wxString &arg : args)
-	{
-		if (!command.IsEmpty())
-			command += " ";
-
-		// do we need quotes?
-		bool needs_quotes = arg.empty() || arg.find(' ') != wxString::npos;
-
-		// append the argument, with quotes if necessary
-		if (needs_quotes)
-			command += "\"";
-		command += arg;
-		if (needs_quotes)
-			command += "\"";
-	}
-	command += "\r\n";
-	return command;
-}
-
-
-//-------------------------------------------------
-//  ReadUntilEnd
-//-------------------------------------------------
-
-static wxString ReadUntilEnd(wxTextInputStream &stream)
-{
-	wxString s, result;
-
-	while ((s = stream.ReadLine()), !s.IsEmpty())
-	{
-		result += s;
-		result += "\r\n";
-	}
-	return result;
-}
+QEvent::Type RunMachineCompletedEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+QEvent::Type StatusUpdateEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+QEvent::Type ChatterEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 
 
 //**************************************************************************
@@ -87,26 +44,26 @@ static wxString ReadUntilEnd(wxTextInputStream &stream)
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(info::machine machine, wxString &&software, wxWindow &target_window)
+RunMachineTask::RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow)
     : m_machine(machine)
 	, m_software(software)
-    , m_target_window((std::uintptr_t)target_window.GetHWND())
-	, m_chatter_enabled(false)
+    , m_attachWindowParameter(getAttachWindowParameter(targetWindow))
+	, m_chatterEnabled(false)
 {
 }
 
 
 //-------------------------------------------------
-//  GetArguments
+//  getArguments
 //-------------------------------------------------
 
-std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) const
+QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 {
-	std::vector<wxString> results = { GetMachine().name() };
-	if (!m_software.empty())
+	QStringList results = { getMachine().name() };
+	if (!m_software.isEmpty())
 		results.push_back(m_software);
 
-	std::vector<wxString> args =
+	QStringList args =
 	{
 		"-rompath",
 		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS),
@@ -130,7 +87,7 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		"-lightgunprovider",
 		"dinput",
 		"-attach_window",
-		std::to_string(m_target_window),
+		m_attachWindowParameter,
 		"-skip_gameinfo",
 		"-nomouse",
 		"-debug",
@@ -138,75 +95,117 @@ std::vector<wxString> RunMachineTask::GetArguments(const Preferences &prefs) con
 		WORKER_UI_PLUGIN_NAME
 	};
 
-	results.reserve(results.size() + args.size());
-	for (wxString &arg : args)
-		results.push_back(std::move(arg));
+	results.append(args);
 	return results;
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void RunMachineTask::Abort()
+void RunMachineTask::abort()
 {
-	Issue({ "exit" });
+	issue({ "exit" });
 }
 
 
 //-------------------------------------------------
-//  OnChildProcessCompleted
+//  onChildProcessCompleted
 //-------------------------------------------------
 
-void RunMachineTask::OnChildProcessCompleted(emu_error status)
+void RunMachineTask::onChildProcessCompleted(emu_error status)
 {
-	InternalPost(Message::type::TERMINATED, "", status);
+	internalPost(Message::type::TERMINATED, "", status);
 }
 
 
 //-------------------------------------------------
-//  OnChildProcessKilled
+//  onChildProcessKilled
 //-------------------------------------------------
 
-void RunMachineTask::OnChildProcessKilled()
+void RunMachineTask::onChildProcessKilled()
 {
-	InternalPost(Message::type::TERMINATED, "", emu_error::KILLED);
+	internalPost(Message::type::TERMINATED, "", emu_error::KILLED);
 }
 
 
 //-------------------------------------------------
-//  Issue
+//  issue
 //-------------------------------------------------
 
-void RunMachineTask::Issue(const std::vector<wxString> &args)
+void RunMachineTask::issue(const std::vector<QString> &args)
 {
-	wxString command = BuildCommand(args);
-	InternalPost(Message::type::COMMAND, std::move(command));
+	QString command = buildCommand(args);
+	internalPost(Message::type::COMMAND, std::move(command));
 }
 
 
 //-------------------------------------------------
-//  IssueFullCommandLine
+//  issueFullCommandLine
 //-------------------------------------------------
 
-void RunMachineTask::IssueFullCommandLine(const wxString &full_command)
+void RunMachineTask::issueFullCommandLine(QString &&fullCommand)
 {
-	InternalPost(Message::type::COMMAND, full_command + "\r\n");
+	fullCommand += "\r\n";
+	internalPost(Message::type::COMMAND, std::move(fullCommand));
 }
 
 
 //-------------------------------------------------
-//  InternalPost
+//  internalPost
 //-------------------------------------------------
 
-void RunMachineTask::InternalPost(Message::type type, wxString &&command, emu_error status)
+void RunMachineTask::internalPost(Message::type type, QString &&command, emu_error status)
 {
+	if (LOG_POST)
+		qDebug("RunMachineTask::internalPost(): command='%s'", command.trimmed().toStdString().c_str());
+
 	Message message;
 	message.m_type = type;
 	message.m_command = std::move(command);
 	message.m_status = status;
-	m_message_queue.Post(message);
+	m_messageQueue.post(std::move(message));
+}
+
+
+//-------------------------------------------------
+//  buildCommand
+//-------------------------------------------------
+
+QString RunMachineTask::buildCommand(const std::vector<QString> &args)
+{
+	QString command;
+	for (const QString &arg : args)
+	{
+		if (!command.isEmpty())
+			command += " ";
+
+		// do we need quotes?
+		bool needs_quotes = arg.isEmpty() || arg.indexOf(' ') >= 0;
+
+		// append the argument, with quotes if necessary
+		if (needs_quotes)
+			command += "\"";
+		command += arg;
+		if (needs_quotes)
+			command += "\"";
+	}
+	command += "\r\n";
+	return command;
+}
+
+
+//-------------------------------------------------
+//  getAttachWindowParameter - determine the
+//	parameter to pass to '-attach_window'
+//-------------------------------------------------
+
+QString RunMachineTask::getAttachWindowParameter(const QWidget &targetWindow)
+{
+	// the documentation for QWidget::WId() says that this value can change any
+	// time; this is probably not true on Windows (where this returns the HWND)
+	return QString::number(targetWindow.winId());
 }
 
 
@@ -215,102 +214,106 @@ void RunMachineTask::InternalPost(Message::type type, wxString &&command, emu_er
 //**************************************************************************
 
 //-------------------------------------------------
-//  Process
+//  process
 //-------------------------------------------------
 
-void RunMachineTask::Process(wxProcess &process, wxEvtHandler &handler)
+void RunMachineTask::process(QProcess &process, QObject &handler)
 {
-	RunMachineResult result;
+	bool success;
+	QString errorMessage;
 	Response response;
 
-	// set up streams (note that from our perspective, MAME's output streams are input
-	// for us, and this we use wxTextInputStream)
-	wxTextOutputStream emu_input_stream(*process.GetOutputStream());
-	wxTextInputStream emu_output_stream(*process.GetInputStream());
-	wxTextInputStream emu_error_stream(*process.GetErrorStream());
-
-	// receive the inaugural response from MAME; we want to call it quicks if this doesn't work
-	response = ReceiveResponse(handler, emu_output_stream);
+	// receive the inaugural response from MAME; we want to call it quits if this doesn't work
+	response = receiveResponse(handler, process);
 	if (response.m_type != Response::type::OK)
 	{
 		// alas, we have an error starting MAME
-		result.m_success = false;
+		success = false;
 
 		// try various strategies to get the best error message possible
-		if (!response.m_text.empty())
+		if (!response.m_text.isEmpty())
 		{
 			// we got an error message from the LUA worker_ui plug-in; display it
-			result.m_error_message = std::move(response.m_text);
+			errorMessage = std::move(response.m_text);
 		}
 		else
 		{
 			// we did not get an error message from the LUA worker_ui plug-in; capture
 			// MAME's standard output and present it (not ideal, but better than nothing)
-			wxString error_output = ReadUntilEnd(emu_error_stream);
-			result.m_error_message = !error_output.empty()
-				? wxT("Error starting MAME:\r\n\r\n") + error_output
-				: wxT("Error starting MAME");	// when all else fails...
+			QByteArray errorOutput = process.readAllStandardError();
+			errorMessage = errorOutput.length() > 0
+				? QString("Error starting MAME:\r\n\r\n%1").arg(QString::fromUtf8(errorOutput))
+				: QString("Error starting MAME");
 		}
-		util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
-		return;
 	}
-
-	// loop until the process terminates
-	bool done = false;
-	emu_error status = emu_error::NONE;
-	while (!done)
+	else
 	{
-		// await a message from the queue
-		Message message;
-		m_message_queue.Receive(message);
-
-		switch (message.m_type)
+		// loop until the process terminates
+		bool done = false;
+		emu_error status = emu_error::NONE;
+		while (!done)
 		{
-		case Message::type::COMMAND:
-			// emit this command to MAME
-			wxLogDebug("MAME <== [%s]", message.m_command);
-			emu_input_stream.WriteString(message.m_command);
+			// await a message from the queue
+			if (LOG_RECEIVE)
+				qDebug("RunMachineTask::process(): invoking MessageQueue::receive()");
+			Message message = m_messageQueue.receive();
 
-			if (m_chatter_enabled)
-				PostChatter(handler, Chatter::chatter_type::COMMAND_LINE, std::move(message.m_command));
+			switch (message.m_type)
+			{
+			case Message::type::COMMAND:
+				// emit this command to MAME
+				if (LOG_COMMANDS)
+					qDebug("RunMachineTask::process(): command='%s'", message.m_command.trimmed().toStdString().c_str());
+				process.write(message.m_command.toUtf8());
 
-			// and receive a response from MAME
-			response = ReceiveResponse(handler, emu_output_stream);
-			break;
+				if (m_chatterEnabled)
+					postChatter(handler, ChatterEvent::ChatterType::COMMAND_LINE, std::move(message.m_command));
 
-		case Message::type::TERMINATED:
-			wxLogDebug("MAME --- TERMINATED (status=%d)", message.m_status);
-			done = true;
-			status = message.m_status;
-			break;
+				// and receive a response from MAME
+				response = receiveResponse(handler, process);
+				break;
 
-		default:
-			throw false;
+			case Message::type::TERMINATED:
+				done = true;
+				status = message.m_status;
+				break;
+
+			default:
+				throw false;
+			}
+		}
+
+		// was there an error?
+		if (status != emu_error::NONE)
+		{
+			// if so, capture what was emitted by MAME's standard output stream
+			QByteArray errorMessageBytes = process.readAllStandardError();
+			errorMessage = errorMessageBytes.length() > 0
+				? QString::fromUtf8(errorMessageBytes)
+				: QString("Error %1 running MAME").arg(QString::number((int)status));
 		}
 	}
-
-	// was there an error?
-	wxString error_message;
-	if (status != emu_error::NONE)
-	{
-		// if so, capture what was emitted by MAME's standard output stream
-		error_message = ReadUntilEnd(emu_error_stream);
-
-		// if we were not able to collect any info, show something
-		if (error_message.IsEmpty())
-			error_message = wxString::Format("Error %d running MAME", (int)status);
-	}
-	result.m_error_message = std::move(error_message);
-
-	util::QueueEvent(handler, EVT_RUN_MACHINE_RESULT, wxID_ANY, std::move(result));
+	auto evt = std::make_unique<RunMachineCompletedEvent>(success, std::move(errorMessage));
+	QCoreApplication::postEvent(&handler, evt.release());
 }
 
 
 //-------------------------------------------------
-//  ReceiveResponse
+//  postChatter
 //-------------------------------------------------
 
-RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &emu_output_stream)
+void RunMachineTask::postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text)
+{
+	auto evt = std::make_unique<ChatterEvent>(type, std::move(text));
+	QCoreApplication::postEvent(&handler, evt.release());
+}
+
+
+//-------------------------------------------------
+//  receiveResponse
+//-------------------------------------------------
+
+RunMachineTask::Response RunMachineTask::receiveResponse(QObject &handler, QProcess &process)
 {
 	static const util::enum_parser<Response::type> s_response_type_parser =
 	{
@@ -319,93 +322,168 @@ RunMachineTask::Response RunMachineTask::ReceiveResponse(wxEvtHandler &handler, 
 	};
 	Response response;
 
-	// MAME has a pesky habit of emitting human readable messages to standard output, therefore
-	// we have a convention with the worker_ui plugin by which actual messages are preceeded with
-	// an at-sign
-	wxString str;
+	// This logic is complicated for two reasons:
+	//
+	//	1.  MAME has a pesky habit of emitting human readable messages to standard output, therefore
+	//		we have a convention with the worker_ui plugin by which actual messages are preceeded with
+	//		an at-sign
+	//
+	//	2.  Qt's stream classes are weird, hence the existance of reallyReadLineFromProcess()
+	QString str;
 	do
 	{
-		str = emu_output_stream.ReadLine();
-	} while ((!str.empty() && str[0] != '@') || (str.empty() && !emu_output_stream.GetInputStream().Eof()));
-	wxLogDebug("MAME ==> %s", str);
+		str = reallyReadLineFromProcess(process);
+	} while (!str.isEmpty() && str[0] != '@');
 
 	// special case; check for EOF
-	if (str.empty())
+	if (str.isEmpty())
 	{
 		response.m_type = Response::type::END_OF_FILE;
 		return response;
 	}
 
+	// log if debugging
+	if (LOG_RESPONSES)
+		qDebug("RunMachineTask::receiveResponse(): received '%s'", str.trimmed().toStdString().c_str());
+
 	// chatter
-	if (m_chatter_enabled)
-		PostChatter(handler, Chatter::chatter_type::RESPONSE, wxString(str));
+	if (m_chatterEnabled)
+		postChatter(handler, ChatterEvent::ChatterType::RESPONSE, QString(str));
 
 	// start interpreting the response; first get the text
-	size_t index = str.find('#');
-	if (index != std::string::npos)
+	int index = str.indexOf('#');
+	if (index > 0)
 	{
 		// get the response text
-		size_t response_text_position = index + 1;
+		int response_text_position = index + 1;
 		while (response_text_position < str.size() && str[response_text_position] == '#')
 			response_text_position++;
 		while (response_text_position < str.size() && str[response_text_position] == ' ')
 			response_text_position++;
-		response.m_text = str.substr(response_text_position);
+		response.m_text = str.right(str.length() - response_text_position);
 
 		// and resize the original string
 		str.resize(index);
 	}
 
 	// now get the arguments; there should be at least one
-	std::vector<wxString> args = util::string_split(str, [](wchar_t ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
+	std::vector<QString> args = util::string_split(str, [](auto ch) { return ch == ' ' || ch == '\r' || ch == '\n'; });
 	assert(!args.empty());
 
 	// interpret the main message
-	s_response_type_parser(args[0].ToStdString(), response.m_type);
+	s_response_type_parser(args[0].toStdString(), response.m_type);
 
 	// did we get a status reponse
 	if (response.m_type == Response::type::OK && args.size() >= 2 && args[1] == "STATUS")
 	{
-		status::update status_update = status::update::read(emu_output_stream);
-		util::QueueEvent(handler, EVT_STATUS_UPDATE, wxID_ANY, std::move(status_update));
+		status::update statusUpdate = readStatus(process);
+		auto evt = std::make_unique<StatusUpdateEvent>(std::move(statusUpdate));
+		QCoreApplication::postEvent(&handler, evt.release());
 	}
 	return response;
 }
 
 
 //-------------------------------------------------
-//  PostChatter
+//  readStatus - read status XML from a process
 //-------------------------------------------------
 
-void RunMachineTask::PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text)
+status::update RunMachineTask::readStatus(QProcess &process)
 {
-	Chatter chatter;
-	chatter.m_type = type;
-	chatter.m_text = std::move(text);
-	util::QueueEvent(handler, EVT_CHATTER, wxID_ANY, std::move(chatter));
+	bool done = false;
+	QByteArray buffer;
+
+	// because XmlParser::parse() is not smart enough to read until XML ends, we are using this
+	// crude mechanism to read the XML while leaving everything else intact
+	while (!done)
+	{
+		QString line = reallyReadLineFromProcess(process);
+		buffer.append(line.toUtf8());
+
+		{
+			auto x = QString::fromUtf8(buffer).toStdString();
+			auto y = x;
+		}
+
+		if (line.isEmpty() || line.startsWith("</"))
+			done = true;
+	}
+
+	// now that we have our own private buffer, read it
+	QDataStream stream(buffer);
+	return status::update::read(stream);
 }
 
 
-//**************************************************************************
-//  VALIDITY CHECKS
-//**************************************************************************
-
 //-------------------------------------------------
-//  test
+//  reallyReadLineFromProcess - read a line from
+//	a QProcess, all the while attempting to accomodate
+//	the behavior of QProcess
 //-------------------------------------------------
 
-static void test()
+QString RunMachineTask::reallyReadLineFromProcess(QProcess &process)
 {
-	wxString command = BuildCommand({ "alpha", "bravo", "charlie" });
-	assert(command == "alpha bravo charlie\r\n");
+	// Qt's stream classes are very clunky.  There seems to be an assumption that the caller
+	// wants something very simple (e.g. - read all input from a process), or wants something
+	// very asynchronous event driven
+	//
+	// The consequence is that there are a bunch of unwanted behaviors from our perspective (as
+	// a thread synchronously interacting with MAME) and this method is an attempt to isolate
+	// these behaviors to provide an illusion of a simple, blocking text reader
+
+	// loop while the process is running - because readLine() can return an empty string we
+	// need to keep on tryin'
+	QString result;
+	while(result.isEmpty() && process.state() == QProcess::ProcessState::Running)
+	{
+		if (!process.canReadLine())
+		{
+			// yes Qt, we _really_ want to block!  whole heartedly!  but at the same time we
+			// don't want to block forever without any escape
+			process.waitForReadyRead(50);
+		}
+
+		// read a line if we can
+		if (process.canReadLine())
+			result = process.readLine();
+	}
+	return result;
 }
 
 
 //-------------------------------------------------
-//  checks
+//  RunMachineCompletedEvent ctor
 //-------------------------------------------------
 
-static const validity_check checks[] =
+RunMachineCompletedEvent::RunMachineCompletedEvent(bool success, QString &&errorMessage)
+	: QEvent(s_eventId)
+	, m_success(success)
+	, m_errorMessage(errorMessage)
 {
-	test
-};
+}
+
+
+//-------------------------------------------------
+//  StatusUpdateEvent ctor
+//-------------------------------------------------
+
+StatusUpdateEvent::StatusUpdateEvent(status::update &&update)
+	: QEvent(s_eventId)
+	, m_update(std::move(update))
+{
+}
+
+
+//-------------------------------------------------
+//  ChatterEvent ctor
+//-------------------------------------------------
+
+ChatterEvent::ChatterEvent(ChatterType type, QString &&text)
+	: QEvent(s_eventId) 
+	, m_type(type)
+	, m_text(std::move(text))
+{
+	// remove line endings from the text
+	while (!m_text.isEmpty() && (m_text[m_text.size() - 1] == '\r' || m_text[m_text.size() - 1] == '\n'))
+		m_text.resize(m_text.size() - 1);
+}

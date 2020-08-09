@@ -11,12 +11,12 @@
 #ifndef RUNMACHINETASK_H
 #define RUNMACHINETASK_H
 
-#include <wx/msgqueue.h>
+#include <QEvent>
 #include <optional>
 
 #include "task.h"
+#include "messagequeue.h"
 #include "info.h"
-#include "wxhelpers.h"
 #include "status.h"
 
 
@@ -36,62 +36,91 @@
 #endif // !SHOULD_BE_DELETE
 
 // the name of the worker_ui plugin
-#define WORKER_UI_PLUGIN_NAME	wxT("worker_ui")
+#define WORKER_UI_PLUGIN_NAME	"worker_ui"
 
 
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
-struct RunMachineResult
-{
-	RunMachineResult() = default;
-	RunMachineResult(const RunMachineResult &that) = delete;
-	RunMachineResult(RunMachineResult &&that) = default;
+// ======================> RunMachineCompletedEvent
 
-	bool        m_success;
-    wxString    m_error_message;
+class RunMachineCompletedEvent : public QEvent
+{
+public:
+	RunMachineCompletedEvent(bool success, QString &&errorMessage);
+
+	static QEvent::Type eventId()		{ return s_eventId; }
+	bool success() const				{ return m_success; }
+	const QString &errorMessage() const { return m_errorMessage; }
+
+private:
+	static QEvent::Type		s_eventId;
+	bool					m_success;
+    QString					m_errorMessage;
 };
 
 
-struct Chatter
-{
-	Chatter() = default;
-	Chatter(const Chatter &that) = delete;
-	Chatter(Chatter &&that) = default;
+// ======================> StatusUpdateEvent
 
-	enum class chatter_type
+class StatusUpdateEvent : public QEvent
+{
+public:
+	StatusUpdateEvent(status::update &&update);
+
+	static QEvent::Type eventId() { return s_eventId; }
+	status::update detachStatus() { return std::move(m_update); }
+
+private:
+	static QEvent::Type		s_eventId;
+	status::update			m_update;
+};
+
+
+// ======================> ChatterEvent
+
+class ChatterEvent : public QEvent
+{
+public:
+	enum class ChatterType
 	{
 		COMMAND_LINE,
 		RESPONSE
 	};
 
-	chatter_type		m_type;
-	wxString			m_text;
+	ChatterEvent(ChatterType type, QString &&text);
+
+	static QEvent::Type eventId()	{ return s_eventId; }
+	ChatterType type() const		{ return m_type; }
+	const QString &text() const		{ return m_text; }
+
+private:
+	static QEvent::Type		s_eventId;
+	ChatterType				m_type;
+	QString					m_text;
 };
 
-wxDECLARE_EVENT(EVT_RUN_MACHINE_RESULT, PayloadEvent<RunMachineResult>);
-wxDECLARE_EVENT(EVT_STATUS_UPDATE, PayloadEvent<status::update>);
-wxDECLARE_EVENT(EVT_CHATTER, PayloadEvent<Chatter>);
 
-struct Machine;
+// ======================> RunMachineTask
 
 class RunMachineTask : public Task
 {
 public:
-	RunMachineTask(info::machine machine, wxString &&software, wxWindow &target_window);
+	class Test;
 
-	void Issue(const std::vector<wxString> &args);
-	void IssueFullCommandLine(const wxString &full_command);
-	const info::machine &GetMachine() const { return m_machine; }
-	void SetChatterEnabled(bool enabled) { m_chatter_enabled = enabled; }
+	RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow);
+
+	void issue(const std::vector<QString> &args);
+	void issueFullCommandLine(QString &&full_command);
+	const info::machine &getMachine() const { return m_machine; }
+	void setChatterEnabled(bool enabled) { m_chatterEnabled = enabled; }
 
 protected:
-	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const override;
-	virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
-	virtual void Abort() override;
-	virtual void OnChildProcessCompleted(emu_error status) override;
-	virtual void OnChildProcessKilled() override;
+	virtual QStringList getArguments(const Preferences &prefs) const override;
+	virtual void process(QProcess &process, QObject &handler) override;
+	virtual void abort() override;
+	virtual void onChildProcessCompleted(emu_error status) override;
+	virtual void onChildProcessKilled() override;
 
 private:
     struct Message
@@ -104,7 +133,7 @@ private:
 		};
 
 		type						m_type;
-		wxString	                m_command;
+		QString						m_command;
 		emu_error					m_status;
     };
 
@@ -119,18 +148,23 @@ private:
 		};
 
 		type						m_type;
-		wxString	                m_text;
+		QString						m_text;
 	};
 
 	info::machine					m_machine;
-	wxString						m_software;
-	std::uintptr_t					m_target_window;
-	wxMessageQueue<Message>         m_message_queue;
-	volatile bool					m_chatter_enabled;
+	QString							m_software;
+	QString							m_attachWindowParameter;
+	MessageQueue<Message>		    m_messageQueue;
+	volatile bool					m_chatterEnabled;
 
-	void InternalPost(Message::type type, wxString &&command, emu_error status = emu_error::INVALID);
-	Response ReceiveResponse(wxEvtHandler &handler, wxTextInputStream &emu_output_stream);
-	void PostChatter(wxEvtHandler &handler, Chatter::chatter_type type, wxString &&text);
+	static QString buildCommand(const std::vector<QString> &args);
+	static QString getAttachWindowParameter(const QWidget &targetWindow);
+
+	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
+	void postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text);
+	Response receiveResponse(QObject &handler, QProcess &process);
+	static status::update readStatus(QProcess &process);
+	static QString reallyReadLineFromProcess(QProcess &process);
 };
 
 

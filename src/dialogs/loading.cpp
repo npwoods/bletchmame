@@ -7,34 +7,10 @@
 ***************************************************************************/
 
 #include <memory>
-#include <wx/app.h>
-#include <wx/dialog.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/timer.h>
+#include <QTimer>
 
 #include "dialogs/loading.h"
-#include "wxhelpers.h"
-
-
-//**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
-
-namespace
-{
-	class LoadingDialog : public wxDialog
-	{
-	public:
-		LoadingDialog(wxWindow &parent, const std::function<bool()> &poll_completion_check);
-
-	private:
-		const std::function<bool()> &	m_poll_completion_check;
-		wxTimer							m_timer;
-
-		template<typename TControl, typename... TArgs> TControl &AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args);
-	};
-};
+#include "ui_loading.h"
 
 
 //**************************************************************************
@@ -45,48 +21,34 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-LoadingDialog::LoadingDialog(wxWindow &parent, const std::function<bool()> &poll_completion_check)
-	: wxDialog(&parent, wxID_ANY, wxTheApp->GetAppName())
-	, m_poll_completion_check(poll_completion_check)
-	, m_timer(this, wxID_ANY)
+LoadingDialog::LoadingDialog(QWidget &parent, std::function<bool()> &&pollCompletionCheck)
+	: m_pollCompletionCheck(pollCompletionCheck)
 {
-	// the message
-	wxStaticText *static_text = new wxStaticText(this, wxID_ANY, "Building MAME info database...");
+	m_ui = std::make_unique<Ui::LoadingDialog>();
+	m_ui->setupUi(this);
 
-	// and specify the layout
-	SpecifySizerAndFit(*this, { boxsizer_orientation::VERTICAL, 10, {
-		{ 0, wxALL,					*static_text },
-		{ 0, wxALL | wxALIGN_RIGHT,	CreateButtonSizer(wxCANCEL) }
-	}});
-	Centre();
-
-	// bind events
-	Bind(wxEVT_TIMER, [this](auto &) { if (m_poll_completion_check()) EndDialog(wxID_OK); });
-
-	// start the timer
-	m_timer.Start(100);
+	// set up the timer
+	QTimer &timer = *new QTimer(this);
+	connect(&timer, &QTimer::timeout, this, &LoadingDialog::poll);
+	timer.start(100);
 }
 
 
 //-------------------------------------------------
-//  AddControl
+//	dtor
 //-------------------------------------------------
 
-template<typename TControl, typename... TArgs>
-TControl &LoadingDialog::AddControl(std::unique_ptr<wxBoxSizer> &sizer, int proportion, int flags, TArgs&&... args)
+LoadingDialog::~LoadingDialog()
 {
-	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer->Add(control, proportion, flags, 4);
-	return *control;
 }
 
 
 //-------------------------------------------------
-//  show_loading_mame_info_dialog
+//	poll
 //-------------------------------------------------
 
-bool show_loading_mame_info_dialog(wxWindow &parent, const std::function<bool()> &poll_completed)
+void LoadingDialog::poll()
 {
-	LoadingDialog dialog(parent, poll_completed);
-	return dialog.ShowModal() == wxID_OK;
+	if (m_pollCompletionCheck())
+		done(QDialog::DialogCode::Accepted);
 }

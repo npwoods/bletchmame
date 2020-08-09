@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>793</width>
+    <height>593</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>BletchMAME</string>
+  </property>
+  <widget class="QWidget" name="rootWidget">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <widget class="QWidget" name="machinesTab">
+       <attribute name="title">
+        <string>Machines</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="machinesVerticalLayout">
+        <item>
+         <widget class="QLineEdit" name="machinesSearchBox"/>
+        </item>
+        <item>
+         <widget class="QTableView" name="machinesTableView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::NoPen</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="softwareTab">
+       <attribute name="title">
+        <string>Software</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="softwareVerticalLayout">
+        <item>
+         <widget class="QLineEdit" name="softwareSearchBox"/>
+        </item>
+        <item>
+         <widget class="QTableView" name="softwareTableView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::NoPen</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="profilesTab">
+       <attribute name="title">
+        <string>Profiles</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="profilesVerticalLayout">
+        <item>
+         <widget class="QTableView" name="profilesTableView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::NoPen</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>793</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <widget class="QMenu" name="menuReset">
+     <property name="title">
+      <string>Reset</string>
+     </property>
+     <addaction name="actionSoftReset"/>
+     <addaction name="actionHardReset"/>
+    </widget>
+    <addaction name="actionStop"/>
+    <addaction name="actionPause"/>
+    <addaction name="separator"/>
+    <addaction name="actionImages"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuickLoadState"/>
+    <addaction name="actionQuickSaveState"/>
+    <addaction name="actionLoadState"/>
+    <addaction name="actionSaveState"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveScreenshot"/>
+    <addaction name="actionToggleRecordMovie"/>
+    <addaction name="separator"/>
+    <addaction name="actionDebugger"/>
+    <addaction name="menuReset"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="title">
+     <string>&amp;Options</string>
+    </property>
+    <widget class="QMenu" name="menuThrottle">
+     <property name="title">
+      <string>Throttle</string>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="actionIncreaseSpeed"/>
+     <addaction name="actionDecreaseSpeed"/>
+     <addaction name="actionWarpMode"/>
+    </widget>
+    <widget class="QMenu" name="menuFrameSkip">
+     <property name="title">
+      <string>Frame Skip</string>
+     </property>
+    </widget>
+    <addaction name="menuThrottle"/>
+    <addaction name="menuFrameSkip"/>
+    <addaction name="actionFullScreen"/>
+    <addaction name="actionToggleSound"/>
+    <addaction name="separator"/>
+    <addaction name="actionConsole"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>&amp;Settings</string>
+    </property>
+    <addaction name="actionJoysticksAndControllers"/>
+    <addaction name="actionKeyboard"/>
+    <addaction name="actionMiscellaneousInput"/>
+    <addaction name="actionConfiguration"/>
+    <addaction name="actionDipSwitches"/>
+    <addaction name="separator"/>
+    <addaction name="actionPaths"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionRefreshMachineInfo"/>
+    <addaction name="actionBletchMameWebSite"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuOptions"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionStop">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Pause</string>
+   </property>
+   <property name="shortcut">
+    <string>Pause</string>
+   </property>
+  </action>
+  <action name="actionImages">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Images...</string>
+   </property>
+  </action>
+  <action name="actionQuickLoadState">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Quick Load State</string>
+   </property>
+   <property name="shortcut">
+    <string>F7</string>
+   </property>
+  </action>
+  <action name="actionQuickSaveState">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Quick Save State</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+  </action>
+  <action name="actionLoadState">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Load State...</string>
+   </property>
+  </action>
+  <action name="actionSaveState">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save State...</string>
+   </property>
+  </action>
+  <action name="actionSaveScreenshot">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save Screenshot...</string>
+   </property>
+   <property name="shortcut">
+    <string>F12</string>
+   </property>
+  </action>
+  <action name="actionToggleRecordMovie">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Record Movie...</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+F12</string>
+   </property>
+  </action>
+  <action name="actionDebugger">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Debugger...</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+X</string>
+   </property>
+  </action>
+  <action name="actionSoftReset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Soft Reset</string>
+   </property>
+  </action>
+  <action name="actionHardReset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Hard Reset</string>
+   </property>
+  </action>
+  <action name="actionThrottle">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Throttle</string>
+   </property>
+  </action>
+  <action name="actionFullScreen">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Full Screen</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
+  </action>
+  <action name="actionConsole">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Console</string>
+   </property>
+  </action>
+  <action name="actionToggleSound">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Sound</string>
+   </property>
+  </action>
+  <action name="actionJoysticksAndControllers">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Joysticks and Controllers...</string>
+   </property>
+  </action>
+  <action name="actionKeyboard">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Keyboard...</string>
+   </property>
+  </action>
+  <action name="actionMiscellaneousInput">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Miscellaneous Input...</string>
+   </property>
+  </action>
+  <action name="actionConfiguration">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Configuration...</string>
+   </property>
+  </action>
+  <action name="actionDipSwitches">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>DIP Switches...</string>
+   </property>
+  </action>
+  <action name="actionPaths">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Paths...</string>
+   </property>
+  </action>
+  <action name="actionRefreshMachineInfo">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Refresh MAME machine info...</string>
+   </property>
+  </action>
+  <action name="actionBletchMameWebSite">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>BletchMAME Web Site...</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
+   </property>
+  </action>
+  <action name="actionIncreaseSpeed">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Increase Speed</string>
+   </property>
+   <property name="shortcut">
+    <string>F9</string>
+   </property>
+  </action>
+  <action name="actionDecreaseSpeed">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Decrease Speed</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
+   </property>
+  </action>
+  <action name="actionWarpMode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Warp Mode</string>
+   </property>
+   <property name="shortcut">
+    <string>F10</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

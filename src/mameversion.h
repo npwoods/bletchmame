@@ -11,13 +11,15 @@
 #ifndef MAMEVERSION_H
 #define MAMEVERSION_H
 
-#include <wx/string.h>
+#include <QString>
 
 class MameVersion
 {
 public:
+	class Test;
+
 	// ctor
-	MameVersion(const wxString &version)
+	MameVersion(const QString &version)
 	{
 		Parse(version, m_major, m_minor, m_dirty);
 	}
@@ -55,12 +57,11 @@ public:
 		return MameVersion(Major(), Minor() + (Dirty() ? 1 : 0), false);
 	}
 
-	wxString ToString() const
+	QString ToString() const
 	{
-		return wxString::Format(\
-			Dirty() ? wxT("%d.%d (dirty)") : wxT("%d.%d"),
-			Major(),
-			Minor());
+		return QString(Dirty() ? "%1.%2 (dirty)" : "%1.%2").arg(
+			QString::number(Major()),
+			QString::number(Minor()));
 	}
 
 private:
@@ -68,7 +69,7 @@ private:
 	int m_minor;
 	bool m_dirty;
 
-	static void Parse(const wxString &version_string, int &major, int &minor, bool &dirty);
+	static void Parse(const QString &version_string, int &major, int &minor, bool &dirty);
 };
 
 #endif // MAMEVERSION_H

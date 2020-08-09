@@ -7,7 +7,9 @@
 ***************************************************************************/
 
 #include <assert.h>
-#include <wx/wfstream.h>
+#include <stdexcept>
+
+#include <QDataStream>
 
 #include "info.h"
 #include "utility.h"
@@ -34,19 +36,19 @@ static bool unaligned_check(const void *ptr, T value)
 //  load_data
 //-------------------------------------------------
 
-static std::vector<std::uint8_t> load_data(wxInputStream &input, info::binaries::header &header)
+static std::vector<std::uint8_t> load_data(QDataStream &input, info::binaries::header &header)
 {
 	// get the file size and read the header
-	size_t size = input.GetSize();
+	size_t size = util::safe_static_cast<size_t>(input.device()->bytesAvailable());
 	if (size <= sizeof(header))
 		return {};
-	if (!input.ReadAll(&header, sizeof(header)))
+	if (input.readRawData((char *) &header, sizeof(header)) != sizeof(header))
 		return {};
 
 	// read the data
 	std::vector<std::uint8_t> data;
 	data.resize(size - sizeof(header));
-	if (!input.ReadAll(data.data(), data.size()))
+	if (input.readRawData((char *) data.data(), (int)data.size()) != data.size())
 		return {};
 
 	// success! return it
@@ -59,7 +61,7 @@ static std::vector<std::uint8_t> load_data(wxInputStream &input, info::binaries:
 //	we can do version check on "uncommitted" data
 //-------------------------------------------------
 
-static const char *get_string_from_data(const std::vector<std::uint8_t> &data, std::uint32_t string_table_offset, std::uint32_t offset)
+static const char *get_string_from_data(const std::vector<std::uint8_t> &data, size_t string_table_offset, std::uint32_t offset)
 {
 	// sanity check
 	if (offset >= data.size() || (string_table_offset + offset) >= data.size())
@@ -74,22 +76,20 @@ static const char *get_string_from_data(const std::vector<std::uint8_t> &data, s
 //  database::load
 //-------------------------------------------------
 
-bool info::database::load(const wxString &file_name, const wxString &expected_version)
+bool info::database::load(const QString &file_name, const QString &expected_version)
 {
 	// check for file existance
-	if (!wxFileExists(file_name))
+	QFile file(file_name);
+	if (!file.open(QIODevice::ReadOnly))
 		return false;
 
 	// open up the file
-	wxFileInputStream input(file_name);
-	if (!input.IsOk())
-		return false;
-
+	QDataStream input(&file);
 	return load(input, expected_version);
 }
 
 
-bool info::database::load(wxInputStream &input, const wxString &expected_version)
+bool info::database::load(QDataStream &input, const QString &expected_version)
 {
 	// try to load the data
 	binaries::header salted_hdr;
@@ -135,7 +135,7 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 		return false;
 
 	// version check if appropriate
-	if (!expected_version.empty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
+	if (!expected_version.isEmpty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
 		return false;
 
 	// finally things look good - first shrink the data array to drop the ending magic bytes
@@ -146,17 +146,17 @@ bool info::database::load(wxInputStream &input, const wxString &expected_version
 
 	// ...and the tables
 	m_machines_count = hdr.m_machines_count;
-	m_devices_offset = devices_offset;
+	m_devices_offset = util::safe_static_cast<std::uint32_t>(devices_offset);
 	m_devices_count = hdr.m_devices_count;
-	m_configurations_offset = configurations_offset;
+	m_configurations_offset = util::safe_static_cast<std::uint32_t>(configurations_offset);
 	m_configurations_count = hdr.m_configurations_count;
-	m_configuration_settings_offset = configuration_settings_offset;
+	m_configuration_settings_offset = util::safe_static_cast<std::uint32_t>(configuration_settings_offset);
 	m_configuration_settings_count = hdr.m_configuration_settings_count;
-	m_configuration_conditions_offset = configuration_conditions_offset;
+	m_configuration_conditions_offset = util::safe_static_cast<std::uint32_t>(configuration_conditions_offset);
 	m_configuration_conditions_count = hdr.m_configuration_conditions_count;
-	m_software_lists_offset = software_lists_offset;
+	m_software_lists_offset = util::safe_static_cast<std::uint32_t>(software_lists_offset);
 	m_software_lists_count = hdr.m_software_lists_count;
-	m_ram_options_offset = ram_options_offset;
+	m_ram_options_offset = util::safe_static_cast<std::uint32_t>(ram_options_offset);
 	m_ram_options_count = hdr.m_ram_options_count;
 
 	// ...and set up string table info
@@ -214,7 +214,7 @@ void info::database::on_changed()
 //  database::get_string
 //-------------------------------------------------
 
-const wxString &info::database::get_string(std::uint32_t offset) const
+const QString &info::database::get_string(std::uint32_t offset) const
 {
 	if (m_string_table_offset + offset >= m_data.size())
 		throw false;
@@ -223,8 +223,8 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 	if (iter != m_loaded_strings.end())
 		return iter->second;
 
-	const char *string = get_string_from_data(m_data, m_string_table_offset, offset);
-	m_loaded_strings.emplace(offset, wxString::FromUTF8(string));
+	const char *string = get_string_from_data(m_data, m_string_table_offset, util::safe_static_cast<std::uint32_t>(offset));
+	m_loaded_strings.emplace(offset, QString::fromUtf8(string));
 	return m_loaded_strings.find(offset)->second;
 }
 
@@ -233,7 +233,7 @@ const wxString &info::database::get_string(std::uint32_t offset) const
 //  database::find_machine
 //-------------------------------------------------
 
-std::optional<info::machine> info::database::find_machine(const wxString &machine_name) const
+std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
 {
 	auto iter = std::find_if(
 		machines().begin(),

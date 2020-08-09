@@ -8,56 +8,14 @@
 
 #include "client.h"
 
+#include <QThread>
 
-// For compilers that support precompilation, includes "wx/wx.h".
-#include "wx/wxprec.h"
-#include <wx/process.h>
-#include <wx/txtstrm.h>
-#include <wx/sstream.h>
 #include <iostream>
 #include <thread>
-
-// for all others, include the necessary headers (this file is usually all you
-// need because it includes almost all "standard" wxWidgets headers)
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
-#endif
 
 #include "client.h"
 #include "prefs.h"
 #include "utility.h"
-
-
-//**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
-
-namespace
-{
-	class ClientProcess : public wxProcess
-	{
-	public:
-		ClientProcess(std::function<void(Task::emu_error status)> func)
-			: m_on_child_process_completed_func(std::move(func))
-		{
-		}
-
-		void SetProcess(std::shared_ptr<wxProcess> &&process)
-		{
-			m_process = std::move(process);
-		}
-
-		virtual void OnTerminate(int pid, int status) override
-		{
-			wxLogStatus("Worker process terminated; pid=%d status=%d", pid, status);
-			m_on_child_process_completed_func(static_cast<Task::emu_error>(status));
-		}
-
-	private:
-		std::function<void(Task::emu_error status)>	m_on_child_process_completed_func;
-		std::shared_ptr<wxProcess>					m_process;
-	};
-}
 
 
 //**************************************************************************
@@ -71,8 +29,8 @@ Job MameClient::s_job;
 //  ctor
 //-------------------------------------------------
 
-MameClient::MameClient(wxEvtHandler &event_handler, const Preferences &prefs)
-    : m_event_handler(event_handler)
+MameClient::MameClient(QObject &event_handler, const Preferences &prefs)
+    : m_eventHandler(event_handler)
 	, m_prefs(prefs)
 {
 }
@@ -84,91 +42,161 @@ MameClient::MameClient(wxEvtHandler &event_handler, const Preferences &prefs)
 
 MameClient::~MameClient()
 {
-	Abort();
-    Reset();
+	abort();
 }
 
 
-
 //-------------------------------------------------
-//  Launch
+//  launch (main thread)
 //-------------------------------------------------
 
-void MameClient::Launch(Task::ptr &&task)
+void MameClient::launch(Task::ptr &&task)
 {
 	// Sanity check; don't do anything if we already have a task
-	if (m_task)
-	{
+	if (m_task || m_workerThread.joinable() || m_process)
 		throw false;
-	}
 
-	// build the command line
-	wxString launch_command = util::build_command_line(
-		m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE),
-		task->GetArguments(m_prefs));
+	// set things up
+	m_task = std::move(task);
+	m_workerThread = std::thread([this]() { taskThreadProc(); });
+
+	// wait for the worker thread to start up and be ready
+	m_taskStartSemaphore.acquire();
+}
+
+
+//-------------------------------------------------
+//  taskThreadProc - worker thread
+//-------------------------------------------------
+
+void MameClient::taskThreadProc()
+{
+	// identify the program
+	const QString &program = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+
+	// get the arguments
+	QStringList arguments = m_task->getArguments(m_prefs);
 
 	// slap on any extra arguments
-	const wxString &extra_arguments(m_prefs.GetMameExtraArguments());
-	if (!extra_arguments.IsEmpty())
-		launch_command += " " + extra_arguments;
+	const QString &extra_arguments = m_prefs.GetMameExtraArguments();
+	appendExtraArguments(arguments, extra_arguments);
 
-	// set up the wxProcess, and work around the odd lifecycle of this wxWidgetism
-	auto process = std::make_shared<ClientProcess>([task](Task::emu_error status) { task->OnChildProcessCompleted(status); });
-	m_process = process;
-	process->Redirect();
-	process->SetProcess(process);
+	// set up the QProcess
+	{
+		QMutexLocker locker(&m_processMutex);
+		m_process = std::make_unique<QProcess>();
+	}
+
+	// set the callback
+	auto finishedCallback = [this](int exitCode, QProcess::ExitStatus exitStatus)
+	{
+		m_task->onChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
+	};
+	connect(m_process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
+	m_process->setReadChannel(QProcess::StandardOutput);
 
 	// launch the process
-	long process_id = ::wxExecute(launch_command, wxEXEC_ASYNC, m_process.get());
-	if (process_id == 0)
+	m_process->start(program, arguments);
+	if (!m_process->pid() || !m_process->waitForStarted() || !m_process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
 		throw false;
 	}
 
-	s_job.AddProcess(process_id);
+	// add the process to the job
+	s_job.AddProcess(m_process->pid());
 
-	m_task = std::move(task);
-	m_thread = std::thread([process, this]()
+	// we're done setting up; signal to the main thread
+	m_taskStartSemaphore.release();
+
+	// invoke the task's process method
+	m_task->process(*m_process, m_eventHandler);
+
+	// unlike wxWidgets, Qt whines with warnings if you destroy a QProcess before waiting
+	// for it to exit, so we need to go through these steps here
+	const int delayMilliseconds = 1000;
+	if (!m_process->waitForFinished(delayMilliseconds))
 	{
-		// we should really have logging, but wxWidgets handles logging oddly from child threads.  I want
-		// that to all go to error logging, not message boxes
-		wxLog::EnableLogging(false);
+		m_process->kill();
+		m_process->waitForFinished(delayMilliseconds);
+	}
 
-		// invoke the task's process method
-		m_task->Process(*process, m_event_handler);
-	});
+	// delete the process object
+	{
+		QMutexLocker locker(&m_processMutex);
+		m_process.reset();
+	}
 }
 
 
 //-------------------------------------------------
-//  Reset
+//  appendExtraArguments
 //-------------------------------------------------
 
-void MameClient::Reset()
+void MameClient::appendExtraArguments(QStringList &argv, const QString &extraArguments)
 {
-    if (m_thread.joinable())
-        m_thread.join();
+	std::optional<int> wordStartPos = { };
+	bool inQuotes = false;
+	for (int i = 0; i <= extraArguments.size(); i++)
+	{
+		if (i == extraArguments.size()
+			|| (inQuotes && extraArguments[i] == '\"')
+			|| (!inQuotes && extraArguments[i].isSpace()))
+		{
+			if (wordStartPos.has_value())
+			{
+				QString word = extraArguments.mid(wordStartPos.value(), i - wordStartPos.value());
+				argv.append(std::move(word));
+				wordStartPos = { };
+			}
+			inQuotes = false;
+  		}
+		else if (!inQuotes && extraArguments[i] == '\"')
+		{
+			inQuotes = true;
+			wordStartPos = i + 1;
+		}
+		else if (!inQuotes && !wordStartPos.has_value())
+		{
+			wordStartPos = i;
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  waitForCompletion
+//-------------------------------------------------
+
+void MameClient::waitForCompletion()
+{
+    if (m_workerThread.joinable())
+		m_workerThread.join();
     if (m_task)
         m_task.reset();
-	if (m_process)
-		m_process.reset();
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void MameClient::Abort()
+void MameClient::abort()
 {
+	// tell the task itself to abort
 	if (m_task)
+		m_task->abort();
+
+	// kill the process
 	{
-		m_task->Abort();
+		QMutexLocker locker(&m_processMutex);
+		if (m_process)
+		{
+			m_process->kill();
+			m_task->onChildProcessKilled();
+		}
 	}
-	if (m_process)
-	{
-		wxKill(m_process->GetPid(), wxSIGKILL);
-		m_task->OnChildProcessKilled();
-	}
+
+	// finally just wait for completion
+	waitForCompletion();
 }

@@ -1,4 +1,4 @@
-# Prerequisites
+\# Prerequisites
 *.d
 
 # Compiled Object files
@@ -37,4 +37,14 @@ obj
 
 # MSVC
 .vs
+*.vcxproj
+*.vcxproj.filters
+*.sln
 *.user
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+*.dir
+*_autogen

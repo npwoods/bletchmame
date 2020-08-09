@@ -11,6 +11,8 @@
 #ifndef JOB_H
 #define JOB_H
 
+#include <QProcess>
+
 #ifdef WIN32
 #include <windows.h>
 
@@ -26,7 +28,7 @@ public:
             CloseHandle(m_handle);
     }
 
-    void AddProcess(long process_id);
+    void AddProcess(Q_PID process_id);
 
 private:
     HANDLE          m_handle;
@@ -40,7 +42,7 @@ private:
 class NullJob
 {
 public:
-    void AddProcess(long process_id) { (void)process_id; }
+    void AddProcess(Q_PID process_id) { (void)process_id; }
 };
 
 

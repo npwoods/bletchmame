@@ -11,44 +11,41 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-// For compilers that support precompilation, includes "wx/wx.h".
-#include "wx/wxprec.h"
-#include <wx/process.h>
-#include <wx/txtstrm.h>
-#include <wx/msgqueue.h>
 #include <iostream>
 #include <thread>
-
-// for all others, include the necessary headers (this file is usually all you
-// need because it includes almost all "standard" wxWidgets headers)
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
-#endif
+#include <QSemaphore>
+#include <QMutex>
 
 #include "task.h"
 #include "job.h"
+
+QT_BEGIN_NAMESPACE
+class QProcess;
+QT_END_NAMESPACE
 
 
 //**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
-class MameClient
+class MameClient : QObject
 {
 public:
-	MameClient(wxEvtHandler &event_handler, const Preferences &prefs);
+	class Test;
+
+	MameClient(QObject &eventHandler, const Preferences &prefs);
 	~MameClient();
 
-	// launches a task
-	void Launch(Task::ptr &&task);
+	// launches a task - only safe to run when there is no active task
+	void launch(Task::ptr &&task);
 
 	// instructs the currently running task to stop, and ensures that
 	// the task's premature termination will not cause problems
-	void Abort();
+	void abort();
 
 	// called when a task's final event is received, and waits for the task
 	// to complete
-	void Reset();
+	void waitForCompletion();
 
 	template<class T> std::shared_ptr<T> GetCurrentTask()
 	{
@@ -64,13 +61,24 @@ public:
 	template<class T> bool IsTaskActive() const { return dynamic_cast<T *>(m_task.get()) != nullptr; }
 
 private:
-	wxEvtHandler &					m_event_handler;
-	const Preferences &				m_prefs;
-	Task::ptr						m_task;
-	std::shared_ptr<wxProcess>		m_process;
-	std::thread						m_thread;
-
 	static Job						s_job;
+
+	// variables configured at ctor
+	QObject &						m_eventHandler;
+	const Preferences &				m_prefs;
+	QSemaphore						m_taskStartSemaphore;
+	QMutex							m_processMutex;
+
+	// runtime variables administered from the main thread
+	Task::ptr						m_task;
+	std::thread						m_workerThread;
+
+	// runtime variables administered from the worker thread
+	std::unique_ptr<QProcess>		m_process;
+
+	// private methods
+	void taskThreadProc();
+	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
 };
 
 #endif // CLIENT_H

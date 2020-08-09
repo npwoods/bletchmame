@@ -6,43 +6,27 @@
 
 ***************************************************************************/
 
-#include <wx/dialog.h>
-#include <wx/button.h>
+#include <QSortFilterProxyModel>
 
 #include "dialogs/choosesw.h"
-#include "collectionlistview.h"
-#include "utility.h"
-#include "wxhelpers.h"
+#include "ui_choosesw.h"
+#include "softwarelistitemmodel.h"
+#include "tableviewmanager.h"
 
-
-//**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
-
-namespace
+static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
 {
-	// ======================> ChooseSoftlistPartDialog
-	class ChooseSoftlistPartDialog : public wxDialog
-	{
-	public:
-		ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const software_list_collection &software_col, const wxString &dev_interface);
+	{ "name",			85 },
+	{ "description",	220 },
+	{ "year",			50 },
+	{ "publisher",		190 },
+	{ nullptr }
+};
 
-		wxString Selection() const { return m_list_view->GetSelectedItem(); }
-
-		void UpdateColumnPrefs()
-		{
-			m_list_view->UpdateColumnPrefs();
-		}
-
-	private:
-		Preferences &							m_prefs;
-		wxTextCtrl *							m_search_box;
-		SoftwareListView *						m_list_view;
-		wxButton *								m_ok_button;
-
-		void OnSelectionChanged();
-		void OnSearchBoxTextChanged();
-	};
+const TableViewManager::Description ChooseSoftlistPartDialog::s_tableViewDesc =
+{
+	SOFTLIST_VIEW_DESC_NAME,
+	(int)SoftwareListItemModel::Column::Name,
+	s_softwareListTableViewColumns
 };
 
 
@@ -54,72 +38,43 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(wxWindow &parent, Preferences &prefs, const software_list_collection &software_col, const wxString &dev_interface)
-	: wxDialog(&parent, wxID_ANY, wxT("Choose Software List Part"), wxDefaultPosition, wxSize(600, 400), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
-	, m_prefs(prefs)
-	, m_search_box(nullptr)
-	, m_list_view(nullptr)
-	, m_ok_button(nullptr)
+ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(QWidget *parent, Preferences &prefs, const software_list_collection &software_col, const QString &dev_interface)
+	: QDialog(parent)
+	, m_itemModel(nullptr)
 {
-	int id = wxID_LAST + 1;
+	// set up UI
+	m_ui = std::make_unique<Ui::ChooseSoftlistPartDialog>();
+	m_ui->setupUi(this);
 
-	// create the search box
-	const wxString &search_box_text = prefs.GetSearchBoxText(SOFTLIST_VIEW_DESC_NAME);
-	m_search_box = new wxTextCtrl(this, id++, search_box_text);
+	// use the same model used for software lists
+	m_itemModel = new SoftwareListItemModel(this);
+	m_itemModel->load(software_col, true, dev_interface);
 
-	// create a list view
-	m_list_view = new SoftwareListView(*this, id++, prefs);
-	m_list_view->Load(software_col, true, dev_interface);
-	m_list_view->UpdateListView();
+	// set up a TableViewManager
+	TableViewManager &manager = *new TableViewManager(*m_ui->tableView, *m_itemModel, m_ui->searchBox, prefs, s_tableViewDesc);
 
-	// bind events
-	Bind(wxEVT_LIST_ITEM_SELECTED,	[this](auto &) { OnSelectionChanged();		}, m_list_view->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED,	[this](auto &) { EndDialog(wxID_OK);		}, m_list_view->GetId());
-	Bind(wxEVT_TEXT,				[this](auto &) { OnSearchBoxTextChanged();	}, m_search_box->GetId());
-
-	// specify the sizer
-	SpecifySizer(*this, { boxsizer_orientation::VERTICAL, 10, {
-		{ 0, wxRIGHT | wxLEFT | wxEXPAND,	*m_search_box },
-		{ 1, wxALL | wxEXPAND,				*m_list_view },
-		{ 0, wxALL | wxALIGN_RIGHT,			CreateButtonSizer(wxOK | wxCANCEL) }
-	} });
-
-	m_ok_button = dynamic_cast<wxButton *>(FindWindowById(wxID_OK, this));
-	OnSelectionChanged();
+	// finally set the model
+	m_ui->tableView->setModel(&manager.sortFilterProxyModel());
 }
 
 
 //-------------------------------------------------
-//  OnSelectionChanged
+//  dtor
 //-------------------------------------------------
 
-void ChooseSoftlistPartDialog::OnSelectionChanged()
+ChooseSoftlistPartDialog::~ChooseSoftlistPartDialog()
 {
-	bool has_selection = m_list_view->GetFirstSelected() >= 0;
-	if (m_ok_button)
-		m_ok_button->Enable(has_selection);
 }
 
 
 //-------------------------------------------------
-//  OnSearchBoxTextChanged
+//  selection
 //-------------------------------------------------
 
-void ChooseSoftlistPartDialog::OnSearchBoxTextChanged()
+QString ChooseSoftlistPartDialog::selection() const
 {
-	m_prefs.SetSearchBoxText(SOFTLIST_VIEW_DESC_NAME, m_search_box->GetValue());
-	m_list_view->UpdateListView();
-}
-
-
-//-------------------------------------------------
-//  show_choose_software_dialog
-//-------------------------------------------------
-
-wxString show_choose_software_dialog(wxWindow &parent, Preferences &prefs, const software_list_collection &software_col, const wxString &dev_interface)
-{
-	ChooseSoftlistPartDialog dialog(parent, prefs, software_col, dev_interface);
-	int rc = dialog.ShowModal();
-	dialog.UpdateColumnPrefs();
-	return rc == wxID_OK ? dialog.Selection() : wxString();
+	QModelIndexList selection = m_ui->tableView->selectionModel()->selectedIndexes();
+	QModelIndex actualIndex = dynamic_cast<QSortFilterProxyModel *>(m_ui->tableView->model())->mapToSource(selection[0]);
+	const software_list::software &sw = m_itemModel->getSoftwareByIndex(actualIndex.row());
+	return sw.m_name;
 }

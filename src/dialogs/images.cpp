@@ -1,76 +1,22 @@
 /***************************************************************************
 
-    dialogs/images.cpp
+    dialogs/images.h
 
-    Devices dialog
+    Images (File Manager) dialog
 
 ***************************************************************************/
 
-#include <wx/filename.h>
-#include <wx/dialog.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/textctrl.h>
-#include <wx/button.h>
-#include <wx/menu.h>
-#include <wx/filedlg.h>
+#include <QAction>
+#include <QFileDialog>
+#include <QGridLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMenu>
+#include <QPushButton>
 
-#include "dialogs/images.h"
+#include "images.h"
+#include "ui_images.h"
 #include "dialogs/choosesw.h"
-#include "listxmltask.h"
-#include "runmachinetask.h"
-#include "utility.h"
-
-
-//**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
-
-namespace
-{
-	class ImagesDialog : public wxDialog
-	{
-	public:
-		ImagesDialog(IImagesHost &host, bool has_cancel_button);
-
-	private:
-		enum
-		{
-			// user IDs
-			ID_GRID_CONTROLS = wxID_HIGHEST + 1,
-			ID_LAST
-		};
-
-		enum
-		{
-			IDOFFSET_STATIC,
-			IDOFFSET_TEXT,
-			IDOFFSET_BUTTON
-		};
-
-		static const int COLUMN_COUNT = 3;
-
-		IImagesHost &					m_host;
-		wxFlexGridSizer *				m_grid_sizer;
-		wxButton *						m_ok_button;
-		observable::unique_subscription	m_images_event_subscription;
-
-		template<typename TControl, typename... TArgs> TControl &AddControl(wxSizer &sizer, int flags, TArgs&&... args);
-
-		const wxString &PrettifyImageFileName(const software_list_collection &software_col, const wxString &tag, const wxString &file_name, wxString &buffer, bool full_path);
-		const software_list::software *FindSoftwareByName(const wxString &device_tag, const wxString &name);
-		const wxString *DeviceInterfaceFromTag(const wxString &tag);
-		software_list_collection BuildSoftwareListCollection() const;
-		bool ImageMenu(const wxButton &button, const wxString &tag, bool is_createable, bool is_unloadable);
-		bool CreateImage(const wxString &tag);
-		bool LoadImage(const wxString &tag);
-		bool LoadSoftwareListPart(const software_list_collection &software_col, const wxString &tag, const wxString &dev_interface);
-		bool UnloadImage(const wxString &tag);
-		wxString GetWildcardString(const wxString &tag, bool support_zip) const;
-		void UpdateImageGrid();
-		void UpdateWorkingDirectory(const wxString &path);
-	};
-};
 
 
 //**************************************************************************
@@ -81,40 +27,34 @@ namespace
 //  ctor
 //-------------------------------------------------
 
-ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
-	: wxDialog(nullptr, wxID_ANY, "Images", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
-	, m_host(host)
-	, m_grid_sizer(nullptr)
-	, m_ok_button(nullptr)
+ImagesDialog::ImagesDialog(QWidget &parent, IImagesHost &host, bool cancellable)
+    : QDialog(&parent)
+    , m_host(host)
 {
-	// host interactions
-	m_images_event_subscription = m_host.GetImages().subscribe([this] { UpdateImageGrid(); });
+    // set up UI
+    m_ui = std::make_unique<Ui::ImagesDialog>();
+    m_ui->setupUi(this);
 
-	// main grid
-	m_grid_sizer = new wxFlexGridSizer(COLUMN_COUNT);
-	m_grid_sizer->AddGrowableCol(1);
+    // we may or may not be cancellable
+    QDialogButtonBox::StandardButtons standardButtons = cancellable
+        ? QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::Cancel
+        : QDialogButtonBox::StandardButton::Ok;
+    m_ui->buttonBox->setStandardButtons(standardButtons);
 
-	// buttons
-	std::unique_ptr<wxBoxSizer> bottom_sizer = std::make_unique<wxBoxSizer>(wxHORIZONTAL);
-	bottom_sizer->Add(0, 0, 1, wxRIGHT, 350);
-	wxSizer *button_sizer = CreateButtonSizer(has_cancel_button ? (wxOK | wxCANCEL) : wxOK);
-	if (button_sizer)
-	{
-		m_ok_button = dynamic_cast<wxButton *>(FindWindow(wxID_OK));
-		bottom_sizer->Add(button_sizer, 0, wxALL);
-	}
+    // host interactions
+    m_imagesEventSubscription = m_host.GetImages().subscribe([this] { UpdateImageGrid(); });
 
-	// overall layout
-	std::unique_ptr<wxBoxSizer> main_sizer = std::make_unique<wxBoxSizer>(wxVERTICAL);
-	main_sizer->Add(m_grid_sizer, 1, wxALL | wxEXPAND);
-	main_sizer->Add(bottom_sizer.release(), 0, wxALL | wxALIGN_RIGHT, 10);
-	SetSizer(main_sizer.release());
+    // initial update of image grid
+    UpdateImageGrid();
+}
 
-	// initial update of image grid
-	UpdateImageGrid();
 
-	// now figure out how big we are
-	Fit();
+//-------------------------------------------------
+//  dtor
+//-------------------------------------------------
+
+ImagesDialog::~ImagesDialog()
+{
 }
 
 
@@ -124,93 +64,105 @@ ImagesDialog::ImagesDialog(IImagesHost &host, bool has_cancel_button)
 
 void ImagesDialog::UpdateImageGrid()
 {
-	wxString pretty_buffer;
-	bool ok_enabled = true;
+    bool okEnabled = true;
+    QString pretty_buffer;
 
-	// get the software list collection
-	software_list_collection software_col = BuildSoftwareListCollection();
+    // get the software list collection
+    software_list_collection software_col = BuildSoftwareListCollection();
 
-	// get the list of images
-	const std::vector<status::image> &images(m_host.GetImages().get());
+    // get the list of images
+    const std::vector<status::image> &images(m_host.GetImages().get());
 
-	// iterate through the vector of images
-	for (int i = 0; i < (int)images.size(); i++)
-	{
-		int id = ID_GRID_CONTROLS + (i * COLUMN_COUNT);
-		wxStaticText *static_text;
-		wxTextCtrl *text_ctrl;
-		wxButton *image_button;
+    // iterate through the vector of images, and update the grid
+    for (int i = 0; i < (int)images.size(); i++)
+    {
+        // update the label
+        QLabel &label = getOrCreateGridWidget<QLabel>(i, 0);
+        label.setText(images[i].m_instance_name);
+        label.setToolTip(images[i].m_tag);
+        
+        // if a required image is missing, turn the label red
+        bool isRequiredImageMissing = images[i].m_must_be_loaded && images[i].m_file_name.isEmpty();
+        label.setStyleSheet(isRequiredImageMissing ? "QLabel { color : #FF0000 }" : "");
+        okEnabled = okEnabled && !isRequiredImageMissing;
 
-		// identify the tag (and drop the first colon)
-		assert(!images[i].m_tag.empty());
+        // update the text
+        QLineEdit &lineEdit = getOrCreateGridWidget<QLineEdit>(i, 1, &ImagesDialog::setupGridLineEdit);
+        const QString &prettyName = PrettifyImageFileName(software_col, images[i].m_tag, images[i].m_file_name, pretty_buffer, true);
+        lineEdit.setText(prettyName);
 
-		// identify the label and file name
-		const wxString &label = images[i].m_instance_name;
-		const wxString &file_name = images[i].m_file_name;
-		const wxString &pretty_name = PrettifyImageFileName(software_col, images[i].m_tag, file_name, pretty_buffer, true);
+        // update the button
+        getOrCreateGridWidget<QPushButton>(i, 2, &ImagesDialog::setupGridButton);
+    }
 
-		// do we have to create new rows?
-		if (m_grid_sizer->GetRows() <= i)
-		{
-			// we do - add controls
-			static_text		= &AddControl<wxStaticText>	(*m_grid_sizer, wxALL,				id + IDOFFSET_STATIC, label);
-			text_ctrl		= &AddControl<wxTextCtrl>	(*m_grid_sizer, wxALL | wxEXPAND,	id + IDOFFSET_TEXT, pretty_name, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-			image_button	= &AddControl<wxButton>		(*m_grid_sizer, wxALL,				id + IDOFFSET_BUTTON, "...", wxDefaultPosition, wxSize(20, 20));
+    // clear out the rest
+    for (int row = m_ui->gridLayout->rowCount() - 1; row >= 0 && row >= images.size(); row--)
+    {
+        for (int col = 0; col < m_ui->gridLayout->columnCount(); col++)
+        {
+            QLayoutItem *layoutItem = m_ui->gridLayout->itemAtPosition(row, col);
+            if (layoutItem)
+                m_ui->gridLayout->removeItem(layoutItem);
+        }
+    }
 
-			static_text->SetToolTip(images[i].m_tag);
-
-			bool is_creatable = images[i].m_is_creatable;
-			bool is_unloadable = !images[i].m_file_name.empty();
-			Bind(wxEVT_BUTTON, [this, image_button, tag{images[i].m_tag}, is_creatable, is_unloadable](auto &) { ImageMenu(*image_button, tag, is_creatable, is_unloadable); }, image_button->GetId());
-		}
-		else
-		{
-			// reuse existing controls
-			static_text = dynamic_cast<wxStaticText *>(FindWindowById(id + IDOFFSET_STATIC));
-			text_ctrl = dynamic_cast<wxTextCtrl *>(FindWindowById(id + IDOFFSET_TEXT));
-			static_text->SetLabel(label);
-			text_ctrl->SetLabel(pretty_name);
-		}
-
-		// if this is an image that must be loaded, make it black and disable "ok"
-		const wxColour *static_text_color = wxBLACK;
-		if (images[i].m_must_be_loaded && images[i].m_file_name.IsEmpty())
-		{
-			static_text_color = wxRED;
-			ok_enabled = false;
-		}
-		if (static_text->GetForegroundColour() != *static_text_color)
-		{
-			// refreshing should not be necessary, but c'est la vie
-			static_text->SetForegroundColour(*static_text_color);
-			static_text->Refresh();
-		}
-	}
-
-	// remove extra controls
-	for (int i = ID_GRID_CONTROLS + images.size() * COLUMN_COUNT; i < ID_GRID_CONTROLS + m_grid_sizer->GetRows() * COLUMN_COUNT; i++)
-	{
-		FindWindowById(i)->Destroy();
-	}
-
-	// update the sizer's row count
-	m_grid_sizer->SetRows(images.size());
-
-	// update the "OK" button
-	m_ok_button->Enable(ok_enabled);
+    // set the ok button enabled property
+    m_ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(okEnabled);
 }
 
 
 //-------------------------------------------------
-//  AddControl
+//  getOrCreateGridWidget
 //-------------------------------------------------
 
-template<typename TControl, typename... TArgs>
-TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
+template<class T>
+T &ImagesDialog::getOrCreateGridWidget(int row, int column, void (ImagesDialog::*setupFunc)(T &, int))
 {
-	TControl *control = new TControl(this, std::forward<TArgs>(args)...);
-	sizer.Add(control, 0, flags, 4);
-	return *control;
+    // get the layout item and the widget, if present
+    QLayoutItem *layoutItem = m_ui->gridLayout->itemAtPosition(row, column);   
+    QWidget *widget = layoutItem
+        ? layoutItem->widget()
+        : nullptr;
+
+    // did we find the widget?
+    T *result;
+    if (widget)
+    {
+        // we did - cast it
+        result = dynamic_cast<T *>(widget);
+    }
+    else
+    {
+        // we did not - we have to create it
+        result = new T(this);
+        if (setupFunc)
+            ((*this).*setupFunc)(*result, row);
+        m_ui->gridLayout->addWidget(result, row, column);
+    }
+    return *result;
+}
+
+
+//-------------------------------------------------
+//  setupGridLineEdit
+//-------------------------------------------------
+
+void ImagesDialog::setupGridLineEdit(QLineEdit &lineEdit, int row)
+{
+    lineEdit.setReadOnly(true);
+}
+
+
+//-------------------------------------------------
+//  setupGridButton
+//-------------------------------------------------
+
+void ImagesDialog::setupGridButton(QPushButton &button, int row)
+{
+    // set up the button
+    button.setText("...");
+    button.setFixedWidth(30);
+    connect(&button, &QPushButton::clicked, this, [this, row, &button]() { ImageMenu(button, row); });
 }
 
 
@@ -218,36 +170,36 @@ TControl &ImagesDialog::AddControl(wxSizer &sizer, int flags, TArgs&&... args)
 //  PrettifyImageFileName
 //-------------------------------------------------
 
-const wxString &ImagesDialog::PrettifyImageFileName(const software_list_collection &software_col, const wxString &tag, const wxString &file_name, wxString &buffer, bool full_path)
+const QString &ImagesDialog::PrettifyImageFileName(const software_list_collection &software_col, const QString &tag, const QString &file_name, QString &buffer, bool full_path)
 {
-	const wxString *result = nullptr;
-	
-	// find the software
-	const wxString * dev_interface = DeviceInterfaceFromTag(tag);
-	const software_list::software * software = dev_interface
-		? software_col.find_software_by_name(file_name, *dev_interface)
-		: nullptr;
+    const QString *result = nullptr;
 
-	// did we find the software?
-	if (software)
-	{
-		// if so, the pretty name is the description
-		result = &software->m_description;
-	}
-	else if (full_path && !file_name.empty())
-	{
-		// we want to show the base name plus the extension
-		wxString file_basename, file_extension;
-		wxFileName::SplitPath(file_name, nullptr, &file_basename, &file_extension);
-		buffer = file_basename + wxT(".") + file_extension;
-		result = &buffer;
-	}
-	else
-	{
-		// we want to show the full filename; our job is easy
-		result = &file_name;
-	}
-	return *result;
+    // find the software
+    const QString *dev_interface = DeviceInterfaceFromTag(tag);
+    const software_list::software *software = dev_interface
+        ? software_col.find_software_by_name(file_name, *dev_interface)
+        : nullptr;
+
+    // did we find the software?
+    if (software)
+    {
+        // if so, the pretty name is the description
+        result = &software->m_description;
+    }
+    else if (full_path && !file_name.isEmpty())
+    {
+        // we want to show the base name plus the extension
+        QString file_basename, file_extension;
+        wxFileName::SplitPath(file_name, nullptr, &file_basename, &file_extension);
+        buffer = file_basename + "." + file_extension;
+        result = &buffer;
+    }
+    else
+    {
+        // we want to show the full filename; our job is easy
+        result = &file_name;
+    }
+    return *result;
 }
 
 
@@ -255,18 +207,18 @@ const wxString &ImagesDialog::PrettifyImageFileName(const software_list_collecti
 //  DeviceInterfaceFromTag
 //-------------------------------------------------
 
-const wxString *ImagesDialog::DeviceInterfaceFromTag(const wxString &tag)
+const QString *ImagesDialog::DeviceInterfaceFromTag(const QString &tag)
 {
-	// find the device
-	auto iter = std::find_if(
-		m_host.GetMachine().devices().cbegin(),
-		m_host.GetMachine().devices().end(),
-		[&tag](info::device dev) { return tag == dev.tag(); });
+    // find the device
+    auto iter = std::find_if(
+        m_host.GetMachine().devices().cbegin(),
+        m_host.GetMachine().devices().end(),
+        [&tag](info::device dev) { return tag == dev.tag(); });
 
-	// if we found a device, return the interface
-	return iter != m_host.GetMachine().devices().end()
-		? &(*iter).devinterface()
-		: nullptr;
+    // if we found a device, return the interface
+    return iter != m_host.GetMachine().devices().end()
+        ? &(*iter).devinterface()
+        : nullptr;
 }
 
 
@@ -276,9 +228,9 @@ const wxString *ImagesDialog::DeviceInterfaceFromTag(const wxString &tag)
 
 software_list_collection ImagesDialog::BuildSoftwareListCollection() const
 {
-	software_list_collection software_col;
-	software_col.load(m_host.GetPreferences(), m_host.GetMachine());
-	return software_col;
+    software_list_collection software_col;
+    software_col.load(m_host.GetPreferences(), m_host.GetMachine());
+    return software_col;
 }
 
 
@@ -286,81 +238,49 @@ software_list_collection ImagesDialog::BuildSoftwareListCollection() const
 //  ImageMenu
 //-------------------------------------------------
 
-bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool is_creatable, bool is_unloadable)
+bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
 {
-	enum
-	{
-		// popup menu IDs
-		ID_CREATE_IMAGE = ID_LAST + 1000,
-		ID_LOAD_IMAGE,
-		ID_LOAD_SOFTWARE_PART,
-		ID_UNLOAD,
-		ID_RECENT_FILES
-	};
+    // get info about the image
+    const status::image &image = m_host.GetImages().get()[row];
 
-	software_list_collection software_col = BuildSoftwareListCollection();
-	const wxString *dev_interface = DeviceInterfaceFromTag(tag);
+    software_list_collection software_col = BuildSoftwareListCollection();
+    const QString *dev_interface = DeviceInterfaceFromTag(image.m_tag);
 
-	// setup popup menu
-	MenuWithResult popup_menu;
-	if (is_creatable)
-		popup_menu.Append(ID_CREATE_IMAGE, "Create...");
-	popup_menu.Append(ID_LOAD_IMAGE, "Load Image...");
-	if (!software_col.software_lists().empty() && dev_interface)
-		popup_menu.Append(ID_LOAD_SOFTWARE_PART, "Load Software List Part...");
-	popup_menu.Append(ID_UNLOAD, "Unload");
-	popup_menu.Enable(ID_UNLOAD, is_unloadable);
+    // setup popup menu - first the create/load items
+    QMenu popupMenu(this);
+    if (image.m_is_creatable)
+        popupMenu.addAction("Create...",    [this, &image]() { CreateImage(image.m_tag); });
+    popupMenu.addAction("Load Image...",    [this, &image]() { LoadImage(image.m_tag); });
 
-	// recent files
-	const std::vector<wxString> &recent_files = m_host.GetRecentFiles(tag);
-	if (!recent_files.empty())
-	{
-		popup_menu.AppendSeparator();
+    // if we have a software list part, put that on there too
+    if (!software_col.software_lists().empty() && dev_interface)
+    {
+        popupMenu.addAction("Load Software List Part...", [this, &software_col, &image, dev_interface]()
+        {
+            LoadSoftwareListPart(software_col, image.m_tag, *dev_interface);
+        });
+    }
 
-		int id = ID_RECENT_FILES;
-		wxString pretty_buffer;
-		for (const wxString &recent_file : recent_files)
-		{
-			const wxString &pretty_recent_file = PrettifyImageFileName(software_col, tag, recent_file, pretty_buffer, false);
-			popup_menu.Append(id++, pretty_recent_file);
-		}
-	}
+    // unload
+    QAction &unloadAction = *popupMenu.addAction("Unload");
+    unloadAction.setEnabled(!image.m_file_name.isEmpty());
 
-	// display the popup menu
-	wxRect button_rectangle = button.GetRect();
-	if (!PopupMenu(&popup_menu, button_rectangle.GetLeft(), button_rectangle.GetBottom()))
-		return false;
+    // recent files
+    const std::vector<QString> &recent_files = m_host.GetRecentFiles(image.m_tag);
+    if (!recent_files.empty())
+    {
+        QString pretty_buffer;
+        popupMenu.addSeparator();
+        for (const QString &recent_file : recent_files)
+        {
+            const QString &pretty_recent_file = PrettifyImageFileName(software_col, image.m_tag, recent_file, pretty_buffer, false);
+            popupMenu.addAction(pretty_recent_file, [this, &image, &recent_file]() { m_host.LoadImage(image.m_tag, QString(recent_file)); });
+        }
+    }
 
-	// interpret the result
-	bool result = false;
-	switch (popup_menu.Result())
-	{
-	case ID_CREATE_IMAGE:
-		result = CreateImage(tag);
-		break;
-
-	case ID_LOAD_IMAGE:
-		result = LoadImage(tag);
-		break;
-
-	case ID_LOAD_SOFTWARE_PART:
-		result = LoadSoftwareListPart(software_col, tag, *dev_interface);
-		break;
-
-	case ID_UNLOAD:
-		result = UnloadImage(tag);
-		break;
-
-	default:
-		if (popup_menu.Result() >= ID_RECENT_FILES && popup_menu.Result() < ID_RECENT_FILES + recent_files.size())
-		{
-			m_host.LoadImage(tag, wxString(recent_files[popup_menu.Result() - ID_RECENT_FILES]));
-			result = true;
-		}
-		break;
-	}
-
-	return false;
+    // execute!
+    QPoint popupPos = globalPositionBelowWidget(button);
+    return popupMenu.exec(popupPos) ? true : false;
 }
 
 
@@ -368,58 +288,57 @@ bool ImagesDialog::ImageMenu(const wxButton &button, const wxString &tag, bool i
 //  CreateImage
 //-------------------------------------------------
 
-bool ImagesDialog::CreateImage(const wxString &tag)
+bool ImagesDialog::CreateImage(const QString &tag)
 {
-	// show the dialog
-	wxFileDialog dialog(
-		this,
-		wxFileSelectorPromptStr,
-		m_host.GetWorkingDirectory(),
-		wxEmptyString,
-		GetWildcardString(tag, false),
-		wxFD_SAVE);
-	if (dialog.ShowModal() != wxID_OK)
-		return false;
+    // show the fialog
+    QFileDialog dialog(
+        this,
+        "Create Image",
+        m_host.GetWorkingDirectory(),
+        GetWildcardString(tag, false));
+    dialog.setFileMode(QFileDialog::FileMode::AnyFile);
+    dialog.exec();
+    if (dialog.result() != QDialog::DialogCode::Accepted)
+        return false;
 
-	// get the result from the dialog
-	wxString path = dialog.GetPath();
+    // get the result from the dialog
+    QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
 
-	// update our host's working directory
-	UpdateWorkingDirectory(path);
+    // update our host's working directory
+    UpdateWorkingDirectory(path);
 
-	// and load the image
-	m_host.CreateImage(tag, std::move(path));
-	return true;
+    // and load the image
+    m_host.CreateImage(tag, std::move(path));
+    return true;
 }
-
 
 
 //-------------------------------------------------
 //  LoadImage
 //-------------------------------------------------
 
-bool ImagesDialog::LoadImage(const wxString &tag)
+bool ImagesDialog::LoadImage(const QString &tag)
 {
-	// show the dialog
-	wxFileDialog dialog(
-		this,
-		wxFileSelectorPromptStr,
-		m_host.GetWorkingDirectory(),
-		wxEmptyString,
-		GetWildcardString(tag, true),
-		wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-	if (dialog.ShowModal() != wxID_OK)
-		return false;
+    // show the fialog
+    QFileDialog dialog(
+        this,
+        "Load Image",
+        m_host.GetWorkingDirectory(),
+        GetWildcardString(tag, true));
+    dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
+    dialog.exec();
+    if (dialog.result() != QDialog::DialogCode::Accepted)
+        return false;
 
-	// get the result from the dialog
-	wxString path = dialog.GetPath();
+    // get the result from the dialog
+    QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
 
-	// update our host's working directory
-	UpdateWorkingDirectory(path);
+    // update our host's working directory
+    UpdateWorkingDirectory(path);
 
-	// and load the image
-	m_host.LoadImage(tag, std::move(path));
-	return true;
+    // and load the image
+    m_host.LoadImage(tag, std::move(path));
+    return true;
 }
 
 
@@ -427,14 +346,15 @@ bool ImagesDialog::LoadImage(const wxString &tag)
 //  LoadSoftwareListPart
 //-------------------------------------------------
 
-bool ImagesDialog::LoadSoftwareListPart(const software_list_collection &software_col, const wxString &tag, const wxString &dev_interface)
+bool ImagesDialog::LoadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface)
 {
-	wxString result = show_choose_software_dialog(*this, m_host.GetPreferences(), software_col, dev_interface);
-	if (!result.empty())
-	{
-		m_host.LoadImage(tag, std::move(result));
-	}
-	return !result.empty();
+    ChooseSoftlistPartDialog dialog(this, m_host.GetPreferences(), software_col, dev_interface);
+    dialog.exec();
+    if (dialog.result() != QDialog::DialogCode::Accepted)
+        return false;
+
+    m_host.LoadImage(tag, dialog.selection());
+    return true;
 }
 
 
@@ -442,10 +362,10 @@ bool ImagesDialog::LoadSoftwareListPart(const software_list_collection &software
 //  UnloadImage
 //-------------------------------------------------
 
-bool ImagesDialog::UnloadImage(const wxString &tag)
+bool ImagesDialog::UnloadImage(const QString &tag)
 {
-	m_host.UnloadImage(tag);
-	return false;
+    m_host.UnloadImage(tag);
+    return false;
 }
 
 
@@ -453,31 +373,30 @@ bool ImagesDialog::UnloadImage(const wxString &tag)
 //  GetWildcardString
 //-------------------------------------------------
 
-wxString ImagesDialog::GetWildcardString(const wxString &tag, bool support_zip) const
+QString ImagesDialog::GetWildcardString(const QString &tag, bool support_zip) const
 {
-	// get the list of extensions
-	std::vector<wxString> extensions = m_host.GetExtensions(tag);
+    // get the list of extensions
+    std::vector<QString> extensions = m_host.GetExtensions(tag);
 
-	// append zip if appropriate
-	if (support_zip)
-		extensions.push_back("zip");
+    // append zip if appropriate
+    if (support_zip)
+        extensions.push_back("zip");
 
-	// figure out the "general" wildcard part for all devices
-	wxString all_extensions = util::string_join(wxString(";"), extensions, [](wxString ext) { return wxString::Format("*.%s", ext); });
-	wxString result = wxString::Format("Device files (%s)|%s", all_extensions, all_extensions);
+    // figure out the "general" wildcard part for all devices
+    QString all_extensions = util::string_join(QString(";"), extensions, [](QString ext) { return QString("*.%1").arg(ext); });
+    QString result = QString("Device files (%1)").arg(all_extensions);
 
-	// now break out each extension
-	for (const wxString &ext : extensions)
-	{
-		result += wxString::Format("|%s files (*.%s)|*.%s",
-			ext.Upper(),
-			ext,
-			ext);
-	}
+    // now break out each extension
+    for (const QString &ext : extensions)
+    {
+        result += QString(";;%1 files (*.%2s)").arg(
+            ext.toUpper(),
+            ext);
+    }
 
-	// and all files
-	result += "|All files (*.*)|*.*";
-	return result;
+    // and all files
+    result += ";;All files (*.*)";
+    return result;
 }
 
 
@@ -485,31 +404,9 @@ wxString ImagesDialog::GetWildcardString(const wxString &tag, bool support_zip) 
 //  UpdateWorkingDirectory
 //-------------------------------------------------
 
-void ImagesDialog::UpdateWorkingDirectory(const wxString &path)
+void ImagesDialog::UpdateWorkingDirectory(const QString &path)
 {
-	wxString dir;
-	wxFileName::SplitPath(path, &dir, nullptr, nullptr);
-	m_host.SetWorkingDirectory(std::move(dir));
-}
-
-
-//-------------------------------------------------
-//  show_images_dialog
-//-------------------------------------------------
-
-void show_images_dialog(IImagesHost &host)
-{
-	ImagesDialog dialog(host, false);
-	dialog.ShowModal();
-}
-
-
-//-------------------------------------------------
-//  show_images_dialog_cancellable
-//-------------------------------------------------
-
-bool show_images_dialog_cancellable(IImagesHost &host)
-{
-	ImagesDialog dialog(host, true);
-	return dialog.ShowModal() == wxID_OK;
+    QString dir;
+    wxFileName::SplitPath(path, &dir, nullptr, nullptr);
+    m_host.SetWorkingDirectory(std::move(dir));
 }

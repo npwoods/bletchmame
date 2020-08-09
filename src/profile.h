@@ -11,18 +11,21 @@
 #ifndef PROFILE_H
 #define PROFILE_H
 
-#include <wx/string.h>
 #include <vector>
 
 #include "info.h"
 #include "softwarelist.h"
 
+QT_BEGIN_NAMESPACE
+class QTextStream;
+QT_END_NAMESPACE
+
 namespace profiles
 {
 	struct image
 	{
-		wxString		m_tag;
-		wxString		m_path;
+		QString		m_tag;
+		QString		m_path;
 
 		bool operator==(const image &that) const;
 		bool is_valid() const;
@@ -35,10 +38,10 @@ namespace profiles
 		profile &operator =(profile &&) = default;
 
 		// accessors
-		const wxString &name() const				{ return m_name; }
-		const wxString &path() const				{ return m_path; }
-		const wxString &machine() const				{ return m_machine; }
-		const wxString &software() const			{ return m_software; }
+		const QString &name() const					{ return m_name; }
+		const QString &path() const					{ return m_path; }
+		const QString &machine() const				{ return m_machine; }
+		const QString &software() const				{ return m_software; }
 		const std::vector<image> &images() const	{ return m_images; }
 		std::vector<image> &images()				{ return m_images; }
 		bool auto_save_states() const				{ return true; }
@@ -46,25 +49,25 @@ namespace profiles
 		// methods
 		bool is_valid() const;
 		void save() const;
-		void save_as(wxTextOutputStream &stream) const;
+		void save_as(QTextStream &stream) const;
 
-		wxString directory_path() const
+		QString directory_path() const
 		{
-			wxString result;
+			QString result;
 			wxFileName::SplitPath(path(), &result, nullptr, nullptr);
 			return result;
 		}
 
 		// statics
-		static std::vector<profile> scan_directories(const std::vector<wxString> &paths);
-		static void create(wxTextOutputStream &stream, const info::machine &machine, const software_list::software *software);
-		static std::optional<profile> load(wxString &&path);
-		static std::optional<profile> load(const wxString &path);
+		static std::vector<profile> scan_directories(const QStringList &paths);
+		static void create(QTextStream &stream, const info::machine &machine, const software_list::software *software);
+		static std::optional<profile> load(QString &&path);
+		static std::optional<profile> load(const QString &path);
 
 		// utility
-		static wxString change_path_save_state(const wxString &path);
-		static bool profile_file_rename(const wxString &old_path, const wxString &new_path);
-		static bool profile_file_remove(const wxString &path);
+		static QString change_path_save_state(const QString &path);
+		static bool profile_file_rename(const QString &old_path, const QString &new_path);
+		static bool profile_file_remove(const QString &path);
 
 		bool operator==(const profile &that) const;
 
@@ -73,10 +76,10 @@ namespace profiles
 		profile(const profile &) = delete;
 		profile &operator =(const profile &) = delete;
 
-		wxString			m_name;
-		wxString			m_path;
-		wxString			m_machine;
-		wxString			m_software;
+		QString				m_name;
+		QString				m_path;
+		QString				m_machine;
+		QString				m_software;
 		std::vector<image>	m_images;
 	};
 };

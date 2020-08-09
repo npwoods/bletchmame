@@ -6,81 +6,68 @@
 
 ***************************************************************************/
 
-#include <wx/dialog.h>
-#include <wx/textctrl.h>
-#include <wx/stattext.h>
-#include <wx/filename.h>
-#include <wx/combobox.h>
-#include <wx/button.h>
-#include <wx/statbox.h>
-#include <wx/listctrl.h>
-#include <wx/file.h>
-#include <wx/filedlg.h>
-#include <wx/dir.h>
-#include <wx/dirdlg.h>
+#include <QPushButton>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QStringListModel>
 
 #include "dialogs/paths.h"
+#include "ui_paths.h"
 #include "prefs.h"
 #include "utility.h"
-#include "virtuallistview.h"
-#include "wxhelpers.h"
-#include "validity.h"
 
 
 //**************************************************************************
-//  TYPE DEFINITIONS
+//  TYPES
 //**************************************************************************
 
-namespace
+class PathsDialog::PathListModel : public QAbstractListModel
 {
-	class PathsDialog : public wxDialog
+private:
+	struct Entry;
+
+public:
+	PathListModel(QObject &parent, std::function<QString(const QString &)> &&applySubstitutionsFunc);
+
+	// accessors
+	bool expandable() const { return m_expandable; }
+
+	// setting/getting full paths
+	void setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool supportsFiles, bool supportsDirectories);
+	QString paths() const;
+
+	// setting/getting individual paths
+	void setPath(int index, QString &&path);
+	const QString &path(int index) const;
+	int pathCount() const;
+	void insert(int index);
+	void erase(int index);
+
+	// virtuals
+	virtual int rowCount(const QModelIndex &parent) const;
+	virtual QVariant data(const QModelIndex &index, int role) const;
+	virtual bool setData(const QModelIndex &index, const QVariant &value, int role);
+	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
+
+private:
+	struct Entry
 	{
-	public:
-		PathsDialog(wxWindow &parent, Preferences &prefs);
+		Entry(QString &&path = "", bool isValid = true);
 
-		std::vector<Preferences::global_path_type> Persist();
-		static void ValidityChecks();
-
-	private:
-		enum
-		{
-			// user IDs
-			ID_NEW_DIR_ENTRY = wxID_HIGHEST + 1,
-			ID_LAST
-		};
-
-		static const size_t PATH_COUNT = (size_t)Preferences::global_path_type::COUNT;
-		static const std::array<wxString, PATH_COUNT> s_combo_box_strings;
-
-		Preferences &						m_prefs;
-		std::array<wxString, PATH_COUNT>	m_path_lists;
-		std::vector<wxString>				m_current_path_list;
-		std::vector<bool>					m_current_path_valid_list;
-		wxComboBox *						m_combo_box;
-		VirtualListView *					m_list_view;
-		wxListItemAttr						m_list_item_attr;
-
-		static std::array<wxString, PATH_COUNT> BuildComboBoxStrings();
-
-		void UpdateCurrentPathList();
-		void RefreshListView();
-		void CurrentPathListChanged();
-		bool IsMultiPath() const;
-		void EnsureDirectoryPathsHaveFinalPathSeparator(wxString &path) const;
-
-		bool IsSelectingPath() const;
-		Preferences::global_path_type GetCurrentPath() const;
-		bool BrowseForPath();
-		bool BrowseForPath(long item);
-		bool BrowseForPath(size_t item);
-		void OnListBeginLabelEdit(long item);
-		void OnListEndLabelEdit(long item);
-		void OnInsert();
-		void OnDelete();
-		void SetPathValue(size_t item, wxString &&value);
-		wxString GetListItemText(size_t item) const;
-		wxListItemAttr *GetListItemAttr(size_t item);
+		QString			m_path;
+		bool			m_isValid;
 	};
+
+	std::function<QString(const QString &)>	m_applySubstitutionsFunc;
+	bool									m_applySubstitutions;
+	bool									m_expandable;
+	bool									m_supportsFiles;
+	bool									m_supportsDirectories;
+	std::vector<Entry>						m_entries;
+
+	// private methods
+	bool validateAndCanonicalize(QString &path) const;
+	bool hasExpandEntry() const;
 };
 
 
@@ -88,14 +75,255 @@ namespace
 //  IMPLEMENTATION
 //**************************************************************************
 
-const std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::s_combo_box_strings = BuildComboBoxStrings();
+const QStringList PathsDialog::s_combo_box_strings = buildComboBoxStrings();
 
 
 //-------------------------------------------------
-//  IsFilePathType
+//  ctor
 //-------------------------------------------------
 
-static bool IsFilePathType(Preferences::global_path_type type)
+PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
+	: QDialog(&parent)
+	, m_prefs(prefs)
+	, m_listViewModelCurrentPath({ })
+{
+	m_ui = std::make_unique<Ui::PathsDialog>();
+	m_ui->setupUi(this);
+
+	// path data
+	for (size_t i = 0; i < PATH_COUNT; i++)
+		m_pathLists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
+
+	// list view
+	PathListModel &model = *new PathListModel(*this, [this](const QString &path) { return m_prefs.ApplySubstitutions(path); });
+	m_ui->listView->setModel(&model);
+
+	// combo box
+	QStringListModel &comboBoxModel = *new QStringListModel(s_combo_box_strings, this);
+	m_ui->comboBox->setModel(&comboBoxModel);
+
+	// listen to selection changes
+	connect(m_ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &, const QItemSelection &) { updateButtonsEnabled(); });
+	updateButtonsEnabled();
+}
+
+
+//-------------------------------------------------
+//  dtor
+//-------------------------------------------------
+
+PathsDialog::~PathsDialog()
+{
+}
+
+
+//-------------------------------------------------
+//  persist
+//-------------------------------------------------
+
+std::vector<Preferences::global_path_type> PathsDialog::persist()
+{
+	// first we want to make sure that m_pathLists is up to data
+	extractPathsFromListView();
+
+	// we want to return a vector identifying the paths that got changed
+	std::vector<Preferences::global_path_type> changedPaths;
+	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
+	{
+		QString &path = m_pathLists[static_cast<size_t>(type)];
+
+		// has this path changed?
+		if (path != m_prefs.GetGlobalPath(type))
+		{
+			// if so, record that it changed
+			m_prefs.SetGlobalPath(type, std::move(path));
+			changedPaths.push_back(type);
+		}
+	}
+	return changedPaths;
+}
+
+
+//-------------------------------------------------
+//  on_comboBox_currentIndexChanged
+//-------------------------------------------------
+
+void PathsDialog::on_comboBox_currentIndexChanged(int index)
+{
+	updateCurrentPathList();
+}
+
+
+//-------------------------------------------------
+//  on_browseButton_clicked
+//-------------------------------------------------
+
+void PathsDialog::on_browseButton_clicked()
+{
+	QModelIndexList selectedIndexes = m_ui->listView->selectionModel()->selectedIndexes();
+	int item = selectedIndexes.size() == 1
+		? selectedIndexes[0].row()
+		: listModel().pathCount();
+	browseForPath(item);
+}
+
+
+//-------------------------------------------------
+//  on_insertButton_clicked
+//-------------------------------------------------
+
+void PathsDialog::on_insertButton_clicked()
+{
+	// identify the correct item to edit
+	int item = m_ui->listView->currentIndex().row();
+
+	// if we're not appending, insert an item
+	if (item < listModel().pathCount())
+		listModel().insert(item);
+
+	// and tell the list view to start editing
+	QModelIndex index = listModel().index(item);
+	m_ui->listView->edit(index);
+}
+
+
+//-------------------------------------------------
+//  on_deleteButton_clicked
+//-------------------------------------------------
+
+void PathsDialog::on_deleteButton_clicked()
+{
+	listModel().erase(m_ui->listView->currentIndex().row());
+}
+
+
+//-------------------------------------------------
+//  on_listView_activated
+//-------------------------------------------------
+
+void PathsDialog::on_listView_activated(const QModelIndex &index)
+{
+	browseForPath(index.row());
+}
+
+
+//-------------------------------------------------
+//  updateButtonsEnabled
+//-------------------------------------------------
+
+void PathsDialog::updateButtonsEnabled()
+{	
+	std::optional<int> selectedItem = m_ui->listView->selectionModel()->hasSelection()
+		? m_ui->listView->selectionModel()->selectedRows()[0].row()
+		: std::optional<int>();
+	bool isSelectingPath = selectedItem.has_value() && selectedItem.value() < listModel().pathCount();
+
+	m_ui->insertButton->setEnabled(listModel().expandable());
+	m_ui->deleteButton->setEnabled(listModel().expandable() && isSelectingPath);
+}
+
+
+//-------------------------------------------------
+//  browseForPath
+//-------------------------------------------------
+
+bool PathsDialog::browseForPath(int index)
+{
+	// show the file dialog
+	QString path = browseForPathDialog(
+		*this,
+		getCurrentPath(),
+		index < listModel().pathCount() ? listModel().path(index) : "");
+	if (path.isEmpty())
+		return false;
+
+	// specify it
+	listModel().setPath(index, std::move(path));
+	return true;
+}
+
+
+//-------------------------------------------------
+//  extractPathsFromListView
+//-------------------------------------------------
+
+void PathsDialog::extractPathsFromListView()
+{
+	if (m_listViewModelCurrentPath.has_value())
+	{
+		// reflect changes on the m_current_path_list back into m_pathLists 
+		QString paths = listModel().paths();
+		m_pathLists[(int)m_listViewModelCurrentPath.value()] = std::move(paths);
+	}
+}
+
+
+//-------------------------------------------------
+//  updateCurrentPathList
+//-------------------------------------------------
+
+void PathsDialog::updateCurrentPathList()
+{
+	const Preferences::global_path_type currentPathType = getCurrentPath();
+	bool applySubstitutions = currentPathType != Preferences::global_path_type::EMU_EXECUTABLE;
+	Preferences::path_category category = Preferences::GetPathCategory(currentPathType);
+	bool isMultiple = category == Preferences::path_category::MULTIPLE_DIRECTORIES
+		|| category == Preferences::path_category::MULTIPLE_MIXED;
+	bool supportsFiles = isFilePathType(currentPathType);
+	bool supportsDirectories = isDirPathType(currentPathType);
+	
+	listModel().setPaths(
+		m_pathLists[(int)currentPathType],
+		applySubstitutions,
+		isMultiple,
+		supportsFiles,
+		supportsDirectories);
+
+	m_listViewModelCurrentPath = currentPathType;
+}
+
+
+//-------------------------------------------------
+//  buildComboBoxStrings
+//-------------------------------------------------
+
+QStringList PathsDialog::buildComboBoxStrings()
+{
+	std::array<QString, PATH_COUNT> paths;
+	paths[(size_t)Preferences::global_path_type::EMU_EXECUTABLE]	= "MAME Executable";
+	paths[(size_t)Preferences::global_path_type::ROMS]				= "ROMs";
+	paths[(size_t)Preferences::global_path_type::SAMPLES]			= "Samples";
+	paths[(size_t)Preferences::global_path_type::CONFIG]			= "Config Files";
+	paths[(size_t)Preferences::global_path_type::NVRAM]				= "NVRAM Files";
+	paths[(size_t)Preferences::global_path_type::HASH]				= "Hash Files";
+	paths[(size_t)Preferences::global_path_type::ARTWORK]			= "Artwork Files";
+	paths[(size_t)Preferences::global_path_type::ICONS]				= "Icons";
+	paths[(size_t)Preferences::global_path_type::PLUGINS]			= "Plugins";
+	paths[(size_t)Preferences::global_path_type::PROFILES]			= "Profiles";
+
+	QStringList result;
+	for (QString &str : paths)
+		result.push_back(std::move(str));
+	return result;
+}
+
+
+//-------------------------------------------------
+//  getCurrentPath
+//-------------------------------------------------
+
+Preferences::global_path_type PathsDialog::getCurrentPath() const
+{
+	int selection = m_ui->comboBox->currentIndex();
+	return static_cast<Preferences::global_path_type>(selection);
+}
+
+
+//-------------------------------------------------
+//  isFilePathType
+//-------------------------------------------------
+
+bool PathsDialog::isFilePathType(Preferences::global_path_type type)
 {
 	return type == Preferences::global_path_type::EMU_EXECUTABLE
 		|| type == Preferences::global_path_type::ICONS;
@@ -103,10 +331,10 @@ static bool IsFilePathType(Preferences::global_path_type type)
 
 
 //-------------------------------------------------
-//  IsDirPathType
+//  isDirPathType
 //-------------------------------------------------
 
-static bool IsDirPathType(Preferences::global_path_type type)
+bool PathsDialog::isDirPathType(Preferences::global_path_type type)
 {
 	return type == Preferences::global_path_type::ROMS
 		|| type == Preferences::global_path_type::SAMPLES
@@ -121,480 +349,332 @@ static bool IsDirPathType(Preferences::global_path_type type)
 
 
 //-------------------------------------------------
-//  ctor
+//  browseForPathDialog
 //-------------------------------------------------
 
-PathsDialog::PathsDialog(wxWindow &parent, Preferences &prefs)
-	: wxDialog(&parent, wxID_ANY, "Paths", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
-	, m_prefs(prefs)
-	, m_combo_box(nullptr)
-	, m_list_view(nullptr)
+QString PathsDialog::browseForPathDialog(QWidget &parent, Preferences::global_path_type type, const QString &default_path)
 {
-	int id = ID_LAST;
-
-	// path data
-	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_path_lists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
-
-	// Left column
-	wxStaticText *static_text_1 = new wxStaticText(this, id++, "Show Paths For:");
-	m_combo_box = new wxComboBox(
-		this,
-		id++,
-		wxEmptyString,
-		wxDefaultPosition,
-		wxDefaultSize,
-		s_combo_box_strings.size(),
-		s_combo_box_strings.data(),
-		wxCB_READONLY);
-	wxStaticText *static_text_2 = new wxStaticText(this, id++, "Directories:");
-	m_list_view = new VirtualListView(this, id++, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_EDIT_LABELS | wxLC_VIRTUAL);
-	m_list_view->SetOnGetItemText([this](long item, long)	{ return GetListItemText(static_cast<size_t>(item)); });
-	m_list_view->SetOnGetItemAttr([this](long item)			{ return GetListItemAttr(static_cast<size_t>(item)); });
-
-	// Right column
-	wxButton *ok_button		= new wxButton(this, wxID_OK,		"OK");
-	wxButton *cancel_button = new wxButton(this, wxID_CANCEL,	"Cancel");
-	wxButton *browse_button = new wxButton(this, id++,			"Browse");
-	wxButton *insert_button = new wxButton(this, id++,			"Insert");
-	wxButton *delete_button	= new wxButton(this, id++,			"Delete");
-
-	// Combo box
-	m_combo_box->Select(0);
-
-	// List view
-	m_list_view->ClearAll();
-	m_list_view->AppendColumn(wxEmptyString, wxLIST_FORMAT_LEFT, m_list_view->GetSize().GetWidth());
-	UpdateCurrentPathList();	
-
-	// Overall layout
-	SpecifySizerAndFit(*this, { boxsizer_orientation::HORIZONTAL, 5, {
-		// left columnh
-		{ 1, wxEXPAND,	boxsizer_orientation::VERTICAL, 4, {
-			{ 0, wxALL,				*static_text_1 },
-			{ 0, wxALL,				*m_combo_box },
-			{ 0, wxALL,				*static_text_2 },
-			{ 1, wxALL | wxEXPAND,	*m_list_view }
-		} },
-
-		// right column
-		{ 0, wxALIGN_TOP | wxTOP | wxBOTTOM, boxsizer_orientation::VERTICAL, 5, {
-			{ 0, wxALL, *ok_button },
-			{ 0, wxALL, *cancel_button },
-			{ 0, wxALL, *browse_button },
-			{ 0, wxALL, *insert_button },
-			{ 0, wxALL, *delete_button }
-		} }
-	}});
-
-	// bind events
-	Bind(wxEVT_COMBOBOX,				[this](auto &)		{ UpdateCurrentPathList(); });
-	Bind(wxEVT_BUTTON,					[this](auto &)		{ BrowseForPath();									}, browse_button->GetId());
-	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnInsert();										}, insert_button->GetId());
-	Bind(wxEVT_BUTTON,					[this](auto &)		{ OnDelete();										}, delete_button->GetId());
-	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath());						}, insert_button->GetId());
-	Bind(wxEVT_UPDATE_UI,				[this](auto &event) { event.Enable(IsMultiPath() && IsSelectingPath());	}, delete_button->GetId());
-	Bind(wxEVT_LIST_ITEM_ACTIVATED,		[this](auto &event) { BrowseForPath(event.GetIndex());					});
-	Bind(wxEVT_LIST_BEGIN_LABEL_EDIT,	[this](auto &event) { OnListBeginLabelEdit(event.GetIndex());			});
-	Bind(wxEVT_LIST_END_LABEL_EDIT,		[this](auto &event) { OnListEndLabelEdit(event.GetIndex());				});
-
-	// appease compiler
-	(void)ok_button;
-	(void)cancel_button;
-}
-
-
-//-------------------------------------------------
-//  Persist
-//-------------------------------------------------
-
-std::vector<Preferences::global_path_type> PathsDialog::Persist()
-{
-	std::vector<Preferences::global_path_type> changed_paths;
-	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
+	QString caption, filter;
+	switch (type)
 	{
-		wxString &path = m_path_lists[static_cast<size_t>(type)];
-
-		// has this path changed?
-		if (path != m_prefs.GetGlobalPath(type))
-		{
-			// if so, record that it changed
-			m_prefs.SetGlobalPath(type, std::move(path));
-			changed_paths.push_back(type);
-		}
-	}
-	return changed_paths;
-}
-
-
-//-------------------------------------------------
-//  BrowseForPath
-//-------------------------------------------------
-
-bool PathsDialog::BrowseForPath()
-{
-	long item = m_list_view->GetFocusedItem();
-	return BrowseForPath(static_cast<size_t>(item));
-}
-
-
-bool PathsDialog::BrowseForPath(long item)
-{
-	return BrowseForPath(static_cast<size_t>(item));
-}
-
-
-bool PathsDialog::BrowseForPath(size_t item)
-{
-	// should really be a sanity check
-	if (item > m_current_path_list.size())
-		return false;
-
-	// show the file dialog
-	wxString path = show_specify_single_path_dialog(
-		*this,
-		GetCurrentPath(),
-		item < m_current_path_list.size() ? m_current_path_list[item] : "");
-	if (path.IsEmpty())
-		return false;
-
-	// specify it
-	EnsureDirectoryPathsHaveFinalPathSeparator(path);
-	SetPathValue(item, std::move(path));
-	return true;
-}
-
-
-//-------------------------------------------------
-//  OnListBeginLabelEdit
-//-------------------------------------------------
-
-void PathsDialog::OnListBeginLabelEdit(long item)
-{
-	// is this the "extension" item?  if so we need to empty out the text
-	if (static_cast<size_t>(item) == m_current_path_list.size())
-	{
-		wxTextCtrl *edit_control = m_list_view->GetEditControl();
-		edit_control->ChangeValue("");
-	}
-}
-
-
-//-------------------------------------------------
-//  OnListEndLabelEdit
-//-------------------------------------------------
-
-void PathsDialog::OnListEndLabelEdit(long item)
-{
-	// get the value entered in
-	wxTextCtrl *edit_control = m_list_view->GetEditControl();
-	const wxString value = edit_control->GetValue();
-
-	// is this value not empty?  if so, we need to canonicalize
-	wxString canonicalized_value;
-	if (!value.IsEmpty())
-	{
-		// canonicalize it (for some reason, on Windows this seems to only canonicalize the
-		// leaf filename, so more to do)
-		wxFileName file_name(value);
-		canonicalized_value = file_name.GetLongPath();
-
-		// Directories should have a final path separator
-		EnsureDirectoryPathsHaveFinalPathSeparator(canonicalized_value);
-	}
-
-	// and specify it
-	SetPathValue(static_cast<size_t>(item), std::move(canonicalized_value));
-}
-
-
-//-------------------------------------------------
-//  SetPathValue
-//-------------------------------------------------
-
-void PathsDialog::SetPathValue(size_t item, wxString &&value)
-{
-	// sanity checks, and calling with 'item == m_current_path_list.size()' appends
-	assert(item >= 0);
-	assert(item <= m_current_path_list.size());
-
-	if (!value.IsEmpty())
-	{
-		// we have a value - modify it or append it if we're extending the list
-		if (item == m_current_path_list.size())
-			m_current_path_list.push_back(std::move(value));
-		else
-			m_current_path_list[item] = std::move(value);
-	}
-	else
-	{
-		// we do not have a value - delete it
-		if (item < m_current_path_list.size())
-			m_current_path_list.erase(m_current_path_list.begin() + item);
-	}
-	CurrentPathListChanged();
-}
-
-
-//-------------------------------------------------
-//  OnInsert
-//-------------------------------------------------
-
-void PathsDialog::OnInsert()
-{
-	long focused_item = m_list_view->GetFocusedItem();
-	long item_to_edit = focused_item >= 0
-		? focused_item
-		: m_list_view->GetItemCount() - 1;
-
-	m_current_path_list.insert(m_current_path_list.begin() + item_to_edit, wxEmptyString);
-	m_list_view->EditLabel(item_to_edit);
-	m_list_view->Refresh();
-}
-
-
-//-------------------------------------------------
-//  OnDelete
-//-------------------------------------------------
-
-void PathsDialog::OnDelete()
-{
-	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
-	if (item >= m_current_path_list.size())
-		return;
-
-	// delete it!
-	m_current_path_list.erase(m_current_path_list.begin() + item);
-	CurrentPathListChanged();
-}
-
-
-//-------------------------------------------------
-//  CurrentPathListChanged
-//-------------------------------------------------
-
-void PathsDialog::CurrentPathListChanged()
-{
-	// reflect changes on the m_current_path_list back into m_path_lists 
-	wxString path_list = util::string_join(wxString(";"), m_current_path_list);
-	m_path_lists[m_combo_box->GetSelection()] = std::move(path_list);
-	
-	// because the list view may have changed, we need to refresh it
-	RefreshListView();
-}
-
-
-//-------------------------------------------------
-//  GetListItemText
-//-------------------------------------------------
-
-wxString PathsDialog::GetListItemText(size_t item) const
-{
-	return item < m_current_path_list.size()
-		? m_current_path_list[item]
-		: "<               >";
-}
-
-
-//-------------------------------------------------
-//  GetListItemAttr
-//-------------------------------------------------
-
-wxListItemAttr *PathsDialog::GetListItemAttr(size_t item)
-{
-	bool is_valid = item >= m_current_path_valid_list.size() || m_current_path_valid_list[item];
-	m_list_item_attr.SetTextColour(is_valid ? *wxBLACK : *wxRED);
-	return &m_list_item_attr;
-}
-
-
-//-------------------------------------------------
-//  UpdateCurrentPathList
-//-------------------------------------------------
-
-void PathsDialog::UpdateCurrentPathList()
-{
-	int type = m_combo_box->GetSelection();
-
-	if (m_path_lists[type].IsEmpty())
-		m_current_path_list.clear();
-	else
-		m_current_path_list = util::string_split(m_path_lists[type], [](wchar_t ch) { return ch == ';'; });
-
-	RefreshListView();
-}
-
-
-//-------------------------------------------------
-//  RefreshListView
-//-------------------------------------------------
-
-void PathsDialog::RefreshListView()
-{
-	// basic info about the type of path we are
-	const Preferences::global_path_type current_path_type = GetCurrentPath();
-
-	// recalculate m_current_path_valid_list
-	m_current_path_valid_list.resize(m_current_path_list.size());
-	for (size_t i = 0; i < m_current_path_list.size(); i++)
-	{
-		// apply substitutions (e.g. - $(MAMEPATH) with actual MAME path), unless this is the executable of course
-		wxString current_path_buffer;
-		const wxString &current_path = current_path_type != Preferences::global_path_type::EMU_EXECUTABLE
-			? (current_path_buffer = m_prefs.ApplySubstitutions(m_current_path_list[i]), current_path_buffer)
-			: m_current_path_list[i];
-
-		// and perform the check
-		m_current_path_valid_list[i] = (IsDirPathType(current_path_type) && wxDir::Exists(current_path))
-			|| (IsFilePathType(current_path_type) && wxFile::Exists(current_path));
-	}
-
-	// update the item count and refresh all items
-	long item_count = m_current_path_list.size() + (IsMultiPath() ? 1 : 0);
-	m_list_view->SetItemCount(item_count);
-	m_list_view->RefreshItems(0, item_count - 1);
-}
-
-
-//-------------------------------------------------
-//  BuildComboBoxStrings
-//-------------------------------------------------
-
-std::array<wxString, PathsDialog::PATH_COUNT> PathsDialog::BuildComboBoxStrings()
-{
-	std::array<wxString, PATH_COUNT> result;
-	result[(size_t)Preferences::global_path_type::EMU_EXECUTABLE]	= "MAME Executable";
-	result[(size_t)Preferences::global_path_type::ROMS]			= "ROMs";
-	result[(size_t)Preferences::global_path_type::SAMPLES]			= "Samples";
-	result[(size_t)Preferences::global_path_type::CONFIG]			= "Config Files";
-	result[(size_t)Preferences::global_path_type::NVRAM]			= "NVRAM Files";
-	result[(size_t)Preferences::global_path_type::HASH]			= "Hash Files";
-	result[(size_t)Preferences::global_path_type::ARTWORK]			= "Artwork Files";
-	result[(size_t)Preferences::global_path_type::ICONS]			= "Icons";
-	result[(size_t)Preferences::global_path_type::PLUGINS]			= "Plugins";
-	result[(size_t)Preferences::global_path_type::PROFILES]		= "Profiles";
-
-	// check to make sure that all values are specified
-	for (const wxString &str : result)
-		assert(!str.empty());
-
-	return result;
-}
-
-
-//-------------------------------------------------
-//  IsMultiPath
-//-------------------------------------------------
-
-bool PathsDialog::IsMultiPath() const
-{
-	return Preferences::GetPathCategory(GetCurrentPath()) == Preferences::path_category::MULTIPLE_DIRECTORIES;
-}
-
-
-//-------------------------------------------------
-//  EnsureDirectoryPathsHaveFinalPathSeparator
-//-------------------------------------------------
-
-void PathsDialog::EnsureDirectoryPathsHaveFinalPathSeparator(wxString &path) const
-{
-	Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(
-		Preferences::GetPathCategory(GetCurrentPath()),
-		path);
-}
-
-
-//-------------------------------------------------
-//  GetCurrentPath
-//-------------------------------------------------
-
-Preferences::global_path_type PathsDialog::GetCurrentPath() const
-{
-	int selection = m_combo_box->GetSelection();
-	return static_cast<Preferences::global_path_type>(selection);
-}
-
-
-//-------------------------------------------------
-//  IsSelectingPath
-//-------------------------------------------------
-
-bool PathsDialog::IsSelectingPath() const
-{
-	size_t item = static_cast<size_t>(m_list_view->GetFocusedItem());
-	return item < m_current_path_list.size();
-}
-
-
-//-------------------------------------------------
-//  ValidityChecks
-//-------------------------------------------------
-
-void PathsDialog::ValidityChecks()
-{
-	BuildComboBoxStrings();
-
-	// ensure that all path types are either a file or dir
-	for (int i = 0; i < static_cast<int>(Preferences::global_path_type::COUNT); i++)
-	{
-		Preferences::global_path_type path_type = static_cast<Preferences::global_path_type>(i);
-		bool is_file_path_type = IsFilePathType(path_type);
-		bool is_dir_path_type = IsDirPathType(path_type);
-		assert(is_file_path_type || is_dir_path_type);
-		(void)is_file_path_type;
-		(void)is_dir_path_type;
-	}
-}
-
-
-//-------------------------------------------------
-//  show_specify_single_path_dialog
-//-------------------------------------------------
-
-wxString show_specify_single_path_dialog(wxWindow &parent, Preferences::global_path_type type, const wxString &default_path)
-{
-	wxString result;
-	if (type == Preferences::global_path_type::EMU_EXECUTABLE)
-	{
-		wxFileDialog dialog(&parent, "Specify MAME Path", "", default_path, "EXE files (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-		if (dialog.ShowModal() == wxID_OK)
-			result = dialog.GetPath();
-	}
-	else
-	{
-		wxDirDialog dialog(&parent, "Specify Path", default_path);
-		if (dialog.ShowModal() == wxID_OK)
-			result = dialog.GetPath();
-	}
-	return result;
-}
-
-
-//-------------------------------------------------
-//  show_paths_dialog
-//-------------------------------------------------
-
-std::vector<Preferences::global_path_type> show_paths_dialog(wxWindow &parent, Preferences &prefs)
-{
-	std::vector<Preferences::global_path_type> changed_paths;
+	case Preferences::global_path_type::EMU_EXECUTABLE:
+		caption = "Specify MAME Path";
+		filter = "EXE files (*.exe);*.exe";
+		break;
+
+	default:
+		caption = "Specify Path";
+		break;
+	};
+
+	// determine the FileMode
+	QFileDialog::FileMode fileMode = isDirPathType(type)
+		? QFileDialog::FileMode::Directory
+		: QFileDialog::FileMode::ExistingFile;
 
 	// show the dialog
-	PathsDialog dialog(parent, prefs);
-	bool result = dialog.ShowModal() == wxID_OK;
-
-	// if the user clicked "OK", persist the changes
-	if (result)
-		changed_paths = dialog.Persist();
-
-	return changed_paths;
+	QFileDialog dialog(&parent, caption, default_path, filter);
+	dialog.setFileMode(fileMode);
+	dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptOpen);
+	dialog.exec();
+	return dialog.result() == QDialog::DialogCode::Accepted
+		? dialog.selectedFiles().first()
+		: QString();
 }
 
 
 //-------------------------------------------------
-//  validity_checks
+//  listModel
 //-------------------------------------------------
 
-static validity_check validity_checks[] =
+PathsDialog::PathListModel &PathsDialog::listModel()
 {
-	PathsDialog::ValidityChecks
-};
+	return *dynamic_cast<PathListModel *>(m_ui->listView->model());
+}
+
+
+//-------------------------------------------------
+//  PathsDialog ctor
+//-------------------------------------------------
+
+PathsDialog::PathListModel::PathListModel(QObject &parent, std::function<QString(const QString &)> &&applySubstitutionsFunc)
+	: QAbstractListModel(&parent)
+	, m_applySubstitutionsFunc(std::move(applySubstitutionsFunc))
+{
+}
+
+
+//-------------------------------------------------
+//  PathListModel::setPaths
+//-------------------------------------------------
+
+void PathsDialog::PathListModel::setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool supportsFiles, bool supportsDirectories)
+{
+	beginResetModel();
+
+	m_applySubstitutions = applySubstitutions;
+	m_expandable = expandable;
+	m_supportsFiles = supportsFiles;
+	m_supportsDirectories = supportsDirectories;
+	m_entries.clear();
+	if (!paths.isEmpty())
+	{
+		for (const QString &nativePath : util::string_split(paths, [](auto ch) { return ch == ';'; }))
+		{
+			QString path = QDir::fromNativeSeparators(nativePath);
+			Entry &entry = m_entries.emplace_back();
+			entry.m_isValid = validateAndCanonicalize(path);
+			entry.m_path = std::move(path);
+		}
+	}
+
+	endResetModel();
+}
+
+
+//-------------------------------------------------
+//  PathListModel::paths
+//-------------------------------------------------
+
+QString PathsDialog::PathListModel::paths() const
+{
+	QString result;
+	{
+		bool isFirst = true;
+		QTextStream textStream(&result);
+		for (const Entry &entry : m_entries)
+		{
+			// ignore empty paths
+			if (!entry.m_path.isEmpty())
+			{
+				if (isFirst)
+					isFirst = false;
+				else
+					textStream << ';';
+				textStream << QDir::toNativeSeparators(entry.m_path);
+			}
+		}
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  PathListModel::setPath
+//-------------------------------------------------
+
+void PathsDialog::PathListModel::setPath(int index, QString &&path)
+{
+	// sanity check
+	int maxIndex = util::safe_static_cast<int>(m_entries.size()) + (hasExpandEntry() ? 1 : 0);
+	if (index < 0 || index >= maxIndex)
+		throw false;
+
+	if (path.isEmpty())
+	{
+		// setting an empty path clears it out
+		erase(index);
+	}
+	else
+	{
+		// we're updating or inserting something - tell Qt that something is changing
+		beginResetModel();
+
+		// are we appending?  if so create a new entry
+		if (index == m_entries.size())
+		{
+			assert(hasExpandEntry());
+			m_entries.insert(m_entries.end(), Entry("", true));
+		}
+
+		// set the path
+		m_entries[index].m_isValid = validateAndCanonicalize(path);
+		m_entries[index].m_path = std::move(path);
+
+		// we're done!
+		endResetModel();
+	}
+}
+
+
+//-------------------------------------------------
+//  PathListModel::path
+//-------------------------------------------------
+
+const QString &PathsDialog::PathListModel::path(int index) const
+{
+	assert(index >= 0 && index < m_entries.size());
+	return m_entries[index].m_path;
+}
+
+
+//-------------------------------------------------
+//  PathListModel::pathCount
+//-------------------------------------------------
+
+int PathsDialog::PathListModel::pathCount() const
+{
+	return util::safe_static_cast<int>(m_entries.size());
+}
+
+
+//-------------------------------------------------
+//  PathListModel::insert
+//-------------------------------------------------
+
+void PathsDialog::PathListModel::insert(int position)
+{
+	assert(position >= 0 && position <= m_entries.size());
+
+	beginResetModel();
+	m_entries.insert(m_entries.begin() + position, Entry("", true));
+	endResetModel();
+}
+
+
+//-------------------------------------------------
+//  PathListModel::erase
+//-------------------------------------------------
+
+void PathsDialog::PathListModel::erase(int position)
+{
+	assert(position >= 0 && position < m_entries.size());
+
+	beginResetModel();
+	m_entries.erase(m_entries.begin() + position);
+	endResetModel();
+}
+
+
+//-------------------------------------------------
+//  PathListModel::rowCount
+//-------------------------------------------------
+
+int PathsDialog::PathListModel::rowCount(const QModelIndex &parent) const
+{
+	return pathCount() + (hasExpandEntry() ? 1 : 0);
+}
+
+
+//-------------------------------------------------
+//  PathListModel::data
+//-------------------------------------------------
+
+QVariant PathsDialog::PathListModel::data(const QModelIndex &index, int role) const
+{
+	// identify the entry
+	const Entry *entry = index.row() < m_entries.size()
+		? &m_entries[index.row()]
+		: nullptr;
+
+	QVariant result;
+	switch (role)
+	{
+	case Qt::DisplayRole:
+		if (entry)
+			result = QDir::toNativeSeparators(entry->m_path);
+		else if (hasExpandEntry() && index.row() == m_entries.size())
+			result = "<               >";
+		break;
+
+	case Qt::ForegroundRole:
+		result = !entry || entry->m_isValid
+			? QColorConstants::Black
+			: QColorConstants::Red;
+		break;
+
+	case Qt::EditRole:
+		if (entry)
+			result = QDir::toNativeSeparators(entry->m_path);
+		break;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  PathListModel::setData
+//-------------------------------------------------
+
+bool PathsDialog::PathListModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+	bool success = false;
+
+	switch (role)
+	{
+	case Qt::EditRole:
+		// convert the variant data to the format we want it in
+		QString pathString = QDir::fromNativeSeparators(value.toString());
+
+		// and set it
+		setPath(index.row(), std::move(pathString));
+
+		// success!
+		success = true;
+		break;
+	}
+	return success;
+}
+
+
+//-------------------------------------------------
+//  PathListModel::flags
+//-------------------------------------------------
+
+Qt::ItemFlags PathsDialog::PathListModel::flags(const QModelIndex &index) const
+{
+	if (!index.isValid())
+		return Qt::ItemIsEnabled;
+
+	return QAbstractListModel::flags(index) | Qt::ItemIsEditable;
+}
+
+
+//-------------------------------------------------
+//  PathListModel::validateAndCanonicalize
+//-------------------------------------------------
+
+bool PathsDialog::PathListModel::validateAndCanonicalize(QString &path) const
+{
+	// apply substitutions (e.g. - $(MAMEPATH) with actual MAME path)
+	QString pathAfterSubstitutions = m_applySubstitutions
+		? m_applySubstitutionsFunc(path)
+		: path;
+
+	// check the file
+	bool isValid = false;
+	QFileInfo fileInfo(pathAfterSubstitutions);
+	if (fileInfo.isFile())
+	{
+		isValid = m_supportsFiles;
+	}
+	else if (fileInfo.isDir())
+	{
+		isValid = m_supportsDirectories;
+		if (!path.endsWith('/'))
+			path += '/';
+	}
+	return isValid;
+}
+
+
+//-------------------------------------------------
+//  PathListModel::hasExpandEntry
+//-------------------------------------------------
+
+bool PathsDialog::PathListModel::hasExpandEntry() const
+{
+	return m_entries.size() == 0
+		|| (m_expandable && !m_entries[m_entries.size() - 1].m_path.isEmpty());
+}
+
+
+//-------------------------------------------------
+//  PathListModel::Entry ctor
+//-------------------------------------------------
+
+PathsDialog::PathListModel::Entry::Entry(QString &&path, bool isValid)
+	: m_path(std::move(path))
+	, m_isValid(isValid)
+{
+}

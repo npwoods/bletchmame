@@ -1,0 +1,117 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# Defaults
+defaults:
+  run:
+    shell: bash
+    
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    runs-on: windows-latest
+    steps:
+
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Checkout Dependent Repository (libexpat)
+    - name: Checkout Dependent Repository (libexpat)
+      uses: actions/checkout@v2
+      with:
+        repository: libexpat/libexpat.git
+        ref: R_2_2_9
+        path: deps/libexpat
+
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.15.1'
+        arch: 'win64_mingw81'
+        dir: deps
+
+    # Build libexpat
+    - name: Build libexpat
+      run: |
+        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DEXPAT_SHARED_LIBS=OFF
+        cd deps/libexpat_build
+        mingw32-make -j 8
+
+    # Build BletchMAME
+    - name: Build BletchMAME
+      run: |
+        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
+        mingw32-make -j 8
+        strip ./BletchMAME.exe
+
+    # Run Acceptance Tests
+    - name: Run Acceptance Tests
+      run: ./BletchMAME_tests.exe
+
+    # Install PanDoc
+    - name: Install PanDoc
+      working-directory: deps
+      run: |
+        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc-2.10.1-windows-i386.zip
+        7z x pandoc-2.10.1-windows-i386.zip
+
+    # Generate readme.html
+    - name: Generate readme.html
+      run: deps/pandoc-2.10.1/pandoc.exe README.md -o readme.html
+
+    # Generate version.txt
+    - name: Generate version.txt
+      run: |
+        git describe --tags | python version.py | tee version.txt
+
+    # Build MSI - Candle
+    - name: Build MSI - Candle
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat version.txt` -dQTBIN=./deps/Qt/5.15.1/mingw81_64/bin -out bletchmame.wixobj
+        
+    # Build MSI - Light
+    - name: Build MSI - Light
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
+        
+    # Prepare Artifacts
+    - name: Prepare Artifacts
+      run: |
+        mkdir rel
+        cp version.txt rel/version_latest.txt
+        mv BletchMAME.msi rel/BletchMAME_latest.msi
+        7z a rel/BletchMAME_latest.zip BletchMAME.exe
+        7z a rel/BletchMAME_latest.zip readme.html
+        7z a rel/BletchMAME_latest.zip plugins
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Core.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Gui.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Widgets.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libgcc_s_seh-1.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libwinpthread-1.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libstdc++-6.dll
+
+    # Configure AWS Credentials
+    - name: Configure AWS Credentials
+      if: success() && github.ref == 'refs/heads/master'
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+      
+    # Deploy Artifacts to S3
+    - name: Deploy Artifacts to S3
+      if: success() && github.ref == 'refs/heads/master'
+      run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete

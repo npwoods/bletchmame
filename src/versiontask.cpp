@@ -6,7 +6,9 @@
 
 ***************************************************************************/
 
-#include <wx/txtstrm.h>
+#include <stdexcept>
+#include <QCoreApplication>
+#include <QThread>
 
 #include "versiontask.h"
 #include "task.h"
@@ -23,9 +25,9 @@ namespace
 	class VersionTask : public Task
 	{
 	protected:
-		virtual std::vector<wxString> GetArguments(const Preferences &) const;
-		virtual void Process(wxProcess &process, wxEvtHandler &handler) override;
-		virtual void Abort() override;
+		virtual QStringList getArguments(const Preferences &) const;
+		virtual void process(QProcess &process, QObject &handler) override;
+		virtual void abort() override;
 	};
 };
 
@@ -34,44 +36,49 @@ namespace
 //  IMPLEMENTATION
 //**************************************************************************
 
-wxDEFINE_EVENT(EVT_VERSION_RESULT, PayloadEvent<VersionResult>);
+QEvent::Type VersionResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+
+//-------------------------------------------------
+//  VersionResultEvent ctor
+//-------------------------------------------------
+
+VersionResultEvent::VersionResultEvent(QString &&version)
+	: QEvent(eventId())
+	, m_version(std::move(version))
+{	
+}
 
 
 //-------------------------------------------------
-//  GetArguments
+//  getArguments
 //-------------------------------------------------
 
-std::vector<wxString> VersionTask::GetArguments(const Preferences &) const
+QStringList VersionTask::getArguments(const Preferences &) const
 {
 	return { "-version" };
 }
 
 
 //-------------------------------------------------
-//  Abort
+//  abort
 //-------------------------------------------------
 
-void VersionTask::Abort()
+void VersionTask::abort()
 {
 	// do nothing
 }
 
 
 //-------------------------------------------------
-//  Process
+//  process
 //-------------------------------------------------
 
-void VersionTask::Process(wxProcess &process, wxEvtHandler &handler)
+void VersionTask::process(QProcess &process, QObject &handler)
 {
-	// read text
-	wxTextInputStream input(*process.GetInputStream());
-
 	// get the version
-	VersionResult result;
-	result.m_version = input.ReadLine();
-
-	// and send the results back
-	util::QueueEvent(handler, EVT_VERSION_RESULT, wxID_ANY, std::move(result));
+	auto version = QString::fromLocal8Bit(process.readLine());
+	auto evt = std::make_unique<VersionResultEvent>(std::move(version));
+	QCoreApplication::postEvent(&handler, evt.release());
 }
 
 
@@ -81,6 +88,6 @@ void VersionTask::Process(wxProcess &process, wxEvtHandler &handler)
 
 Task::ptr create_version_task()
 {
-	return std::make_unique<VersionTask>();
+	return std::make_shared<VersionTask>();
 }
 

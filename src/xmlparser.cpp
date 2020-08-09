@@ -2,18 +2,24 @@
 
     xmlparser.h
 
-    Simple XML parser class wrapping expat (wxXmlDocument is too heavyweight)
+    Simple XML parser class wrapping expat
 
 ***************************************************************************/
 
 #include <expat.h>
-#include <wx/stream.h>
-#include <wx/sstream.h>
-#include <wx/txtstrm.h>
-#include <wx/wfstream.h>
 
 #include "xmlparser.h"
-#include "validity.h"
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif // _MSC_VER
+
+
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+#define LOG_XML		0
 
 
 //**************************************************************************
@@ -75,12 +81,13 @@ static const util::enum_parser<bool> s_bool_parser =
 
 XmlParser::XmlParser()
 	: m_root(std::make_unique<Node>())
+	, m_skipping_depth(0)
 {
 	m_parser = XML_ParserCreate(nullptr);
 
 	XML_SetUserData(m_parser, (void *) this);
-	XML_SetElementHandler(m_parser, StartElementHandler, EndElementHandler);
-	XML_SetCharacterDataHandler(m_parser, CharacterDataHandler);
+	XML_SetElementHandler(m_parser, startElementHandler, endElementHandler);
+	XML_SetCharacterDataHandler(m_parser, characterDataHandler);
 }
 
 
@@ -98,12 +105,12 @@ XmlParser::~XmlParser()
 //  Parse
 //-------------------------------------------------
 
-bool XmlParser::Parse(wxInputStream &input)
+bool XmlParser::Parse(QDataStream &input)
 {
 	m_current_node = m_root;
 	m_skipping_depth = 0;
 
-	bool success = InternalParse(input);
+	bool success = internalParse(input);
 
 	m_current_node = nullptr;
 	m_skipping_depth = 0;
@@ -115,51 +122,68 @@ bool XmlParser::Parse(wxInputStream &input)
 //  Parse
 //-------------------------------------------------
 
-bool XmlParser::Parse(const wxString &file_name)
+bool XmlParser::Parse(const QString &file_name)
 {
-	wxFileInputStream input(file_name);
+	QFile file(file_name);
+	file.open(QFile::ReadOnly);
+	QDataStream file_stream(&file);
+	return Parse(file_stream);
+}
+
+
+//-------------------------------------------------
+//  ParseBytes
+//-------------------------------------------------
+
+bool XmlParser::ParseBytes(const void *ptr, size_t sz)
+{
+	QByteArray byte_array((const char *) ptr, (int)sz);
+	QDataStream input(byte_array);
 	return Parse(input);
 }
 
 
 //-------------------------------------------------
-//  ParseXml
+//  internalParse
 //-------------------------------------------------
 
-bool XmlParser::ParseXml(const wxString &xml_text)
-{
-	wxStringInputStream string_stream(xml_text);
-	return Parse(string_stream);
-}
-
-
-//-------------------------------------------------
-//  InternalParse
-//-------------------------------------------------
-
-bool XmlParser::InternalParse(wxInputStream &input)
+bool XmlParser::internalParse(QDataStream &input)
 {
 	bool done = false;
+	bool success = true;
 	char buffer[8192];
+
+	if (LOG_XML)
+		qDebug("XmlParser::internalParse(): beginning parse");
 
 	while (!done)
 	{
-		// read data
-		input.Read(buffer, sizeof(buffer));
+		// this seems to be necssary when reading from a QProcess
+		input.device()->waitForReadyRead(-1);
 
-		// figure out how much we actually read, and if we're done
-		int last_read = static_cast<int>(input.LastRead());
-		done = last_read == 0;
+		// read data
+		int lastRead = input.readRawData(buffer, sizeof(buffer));
+		if (LOG_XML)
+			qDebug("XmlParser::internalParse(): input.readRawData() returned %d", lastRead);
+
+		// figure out if we're done (note that with readRawData(), while the documentation states
+		// that '0' signifies end of input and a negative number signifies an error condition such
+		// as reading past the end of input, QProcess seems to (at least sometimes) return '-1'
+		// without returning '0'
+		done = lastRead <= 0;
 
 		// and feed this into expat
-		if (!XML_Parse(m_parser, buffer, last_read, done))
+		if (!XML_Parse(m_parser, buffer, done ? 0 : lastRead, done))
 		{
 			// an error happened; bail out
-			return false;		
+			success = false;		
+			done = true;
 		}
 	}
 
-	return true;
+	if (LOG_XML)
+		qDebug("XmlParser::internalParse(): ending parse (success=%s)", success ? "true" : "false");
+	return success;
 }
 
 
@@ -167,7 +191,7 @@ bool XmlParser::InternalParse(wxInputStream &input)
 //  ErrorMessage
 //-------------------------------------------------
 
-wxString XmlParser::ErrorMessage() const
+QString XmlParser::ErrorMessage() const
 {
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *message = XML_ErrorString(code);
@@ -176,10 +200,10 @@ wxString XmlParser::ErrorMessage() const
 
 
 //-------------------------------------------------
-//  GetNode
+//  getNode
 //-------------------------------------------------
 
-XmlParser::Node::ptr XmlParser::GetNode(const std::initializer_list<const char *> &elements)
+XmlParser::Node::ptr XmlParser::getNode(const std::initializer_list<const char *> &elements)
 {
 	Node::ptr node = m_root;
 
@@ -200,10 +224,10 @@ XmlParser::Node::ptr XmlParser::GetNode(const std::initializer_list<const char *
 
 
 //-------------------------------------------------
-//  StartElement
+//  startElement
 //-------------------------------------------------
 
-void XmlParser::StartElement(const char *element, const char **attributes)
+void XmlParser::startElement(const char *element, const char **attributes)
 {
 	// only try to find this node in our tables if we are not skipping
 	Node::ptr child;
@@ -263,10 +287,10 @@ void XmlParser::StartElement(const char *element, const char **attributes)
 
 
 //-------------------------------------------------
-//  EndElement
+//  endElement
 //-------------------------------------------------
 
-void XmlParser::EndElement(const char *)
+void XmlParser::endElement(const char *)
 {
 	if (m_skipping_depth)
 	{
@@ -286,13 +310,13 @@ void XmlParser::EndElement(const char *)
 
 
 //-------------------------------------------------
-//  CharacterData
+//  characterData
 //-------------------------------------------------
 
-void XmlParser::CharacterData(const char *s, int len)
+void XmlParser::characterData(const char *s, int len)
 {
-	wxString text = wxString::FromUTF8(s, len);
-	m_current_content.Append(std::move(text));
+	QString text = QString::fromUtf8(s, len);
+	m_current_content.append(std::move(text));
 }
 
 
@@ -300,13 +324,12 @@ void XmlParser::CharacterData(const char *s, int len)
 //  Escape
 //-------------------------------------------------
 
-std::string XmlParser::Escape(const wxString &str)
+std::string XmlParser::Escape(const QString &str)
 {
-	std::wstring wstr = str.ToStdWstring();
-
 	std::string result;
-	for (wchar_t ch : wstr)
+	for (QChar qch : str)
 	{
+		char16_t ch = qch.unicode();
 		switch (ch)
 		{
 		case '<':
@@ -335,35 +358,35 @@ std::string XmlParser::Escape(const wxString &str)
 //**************************************************************************
 
 //-------------------------------------------------
-//  StartElementHandler
+//  startElementHandler
 //-------------------------------------------------
 
-void XmlParser::StartElementHandler(void *user_data, const char *name, const char **attributes)
+void XmlParser::startElementHandler(void *user_data, const char *name, const char **attributes)
 {
 	XmlParser *parser = (XmlParser *)user_data;
-	parser->StartElement(name, attributes);
+	parser->startElement(name, attributes);
 }
 
 
 //-------------------------------------------------
-//  EndElementHandler
+//  endElementHandler
 //-------------------------------------------------
 
-void XmlParser::EndElementHandler(void *user_data, const char *name)
+void XmlParser::endElementHandler(void *user_data, const char *name)
 {
 	XmlParser *parser = (XmlParser *)user_data;
-	parser->EndElement(name);
+	parser->endElement(name);
 }
 
 
 //-------------------------------------------------
-//  CharacterDataHandler
+//  characterDataHandler
 //-------------------------------------------------
 
-void XmlParser::CharacterDataHandler(void *user_data, const char *s, int len)
+void XmlParser::characterDataHandler(void *user_data, const char *s, int len)
 {
 	XmlParser *parser = (XmlParser *)user_data;
-	parser->CharacterData(s, len);
+	parser->characterData(s, len);
 }
 
 
@@ -415,11 +438,11 @@ bool XmlParser::Attributes::Get(const char *attribute, float &value) const
 //  Attributes::Get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, wxString &value) const
+bool XmlParser::Attributes::Get(const char *attribute, QString &value) const
 {
 	const char *s = InternalGet(attribute, true);
 	if (s)
-		value = wxString::FromUTF8(s);
+		value = QString::fromUtf8(s);
 	else
 		value.clear();
 	return s != nullptr;
@@ -457,180 +480,3 @@ const char *XmlParser::Attributes::InternalGet(const char *attribute, bool retur
 
 	return return_null ? nullptr : "";
 }
-
-
-//**************************************************************************
-//  VALIDITY CHECKS
-//**************************************************************************
-
-//-------------------------------------------------
-//  test
-//-------------------------------------------------
-
-static void test()
-{
-	const bool INVALID_BOOL_VALUE = (bool)42;
-
-	XmlParser xml;
-	wxString charlie_value;
-	bool charlie_value_parsed	= INVALID_BOOL_VALUE;
-	int foxtrot_value			= 0;
-	bool foxtrot_value_parsed	= INVALID_BOOL_VALUE;
-	bool golf_value				= INVALID_BOOL_VALUE;
-	bool golf_value_parsed		= INVALID_BOOL_VALUE;
-	bool hotel_value			= INVALID_BOOL_VALUE;
-	bool hotel_value_parsed		= INVALID_BOOL_VALUE;
-	bool india_value			= INVALID_BOOL_VALUE;
-	bool india_value_parsed		= INVALID_BOOL_VALUE;
-	std::uint32_t julliet_value	= INVALID_BOOL_VALUE;
-	bool julliet_value_parsed	= INVALID_BOOL_VALUE;
-	float kilo_value			= INVALID_BOOL_VALUE;
-	bool kilo_value_parsed		= INVALID_BOOL_VALUE;
-	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
-	{
-		charlie_value_parsed	= attributes.Get("charlie", charlie_value);
-	});
-	xml.OnElementBegin({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
-	{
-		foxtrot_value_parsed	= attributes.Get("foxtrot", foxtrot_value);
-		golf_value_parsed		= attributes.Get("golf", golf_value);
-		hotel_value_parsed		= attributes.Get("hotel", hotel_value);
-		india_value_parsed		= attributes.Get("india", india_value);
-		julliet_value_parsed	= attributes.Get("julliet", julliet_value);
-		kilo_value_parsed		= attributes.Get("kilo", kilo_value);
-	});
-
-	bool result = xml.ParseXml(
-		"<alpha>"
-		"<bravo charlie=\"delta\"/>"
-		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\"/>/>"
-		"</alpha>");
-	assert(result);
-	assert(charlie_value == "delta");
-	assert(charlie_value_parsed);
-	assert(foxtrot_value == 42);
-	assert(foxtrot_value_parsed);
-	assert(!golf_value);
-	assert(!golf_value_parsed);
-	assert(hotel_value);
-	assert(hotel_value_parsed);
-	assert(!india_value);
-	assert(india_value_parsed);
-	assert(julliet_value == 2500000000);
-	assert(julliet_value_parsed);
-	assert(abs(kilo_value - 3.14159f) < 0.000000001);
-	assert(kilo_value_parsed);
-	(void)result;
-}
-
-
-//-------------------------------------------------
-//  unicode
-//-------------------------------------------------
-
-static void unicode()
-{
-	XmlParser xml;
-	wxString bravo_value;
-	wxString charlie_value;
-	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
-	{
-		bool result = attributes.Get("charlie", charlie_value);
-		assert(result);
-		(void)result;
-	});
-	xml.OnElementEnd({ "alpha", "bravo" }, [&](wxString &&value)
-	{
-		bravo_value = std::move(value);
-	});
-
-	bool result = xml.ParseXml("<alpha><bravo charlie=\"&#x6B7B;\">&#x60AA;</bravo></alpha>");
-	assert(result);
-	assert(bravo_value.ToStdWstring() == L"\u60AA");
-	assert(charlie_value.ToStdWstring() == L"\u6B7B");
-
-	(void)result;
-	(void)bravo_value;
-	(void)charlie_value;
-}
-
-
-//-------------------------------------------------
-//  skipping
-//-------------------------------------------------
-
-static void skipping()
-{
-	XmlParser xml;
-	int expected_invocations = 0;
-	int unexpected_invocations = 0;
-	xml.OnElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
-	{
-		bool skip_value;
-		attributes.Get("skip", skip_value);
-		return skip_value ? XmlParser::element_result::SKIP : XmlParser::element_result::OK;
-	});
-	xml.OnElementBegin({ "alpha", "bravo", "expected" }, [&](const XmlParser::Attributes &)
-	{
-		expected_invocations++;
-	});
-	xml.OnElementBegin({ "alpha", "bravo", "unexpected" }, [&](const XmlParser::Attributes &)
-	{
-		unexpected_invocations++;
-	});
-
-	bool result = xml.ParseXml(
-		"<alpha>"
-		"<bravo skip=\"no\"><expected/></bravo>"
-		"<bravo skip=\"yes\"><unexpected/></bravo>"
-		"</alpha>");
-	assert(result);
-	assert(expected_invocations == 1);
-	assert(unexpected_invocations == 0);
-	(void)result;
-}
-
-
-//-------------------------------------------------
-//  multiple
-//-------------------------------------------------
-
-static void multiple()
-{
-	XmlParser xml;
-	int total = 0;
-	xml.OnElementBegin({ { "alpha", "bravo" },
-						 { "alpha", "charlie" },
-						 { "alpha", "delta" }}, [&](const XmlParser::Attributes &attributes)
-	{
-		int value;
-		attributes.Get("value", value);
-		total += value;
-	});
-
-	bool result = xml.ParseXml(
-		"<alpha>"
-		"<bravo value=\"2\" />"
-		"<charlie value=\"3\" />"
-		"<delta value=\"5\" />"
-		"<echo value=\"-666\" />"
-		"</alpha>");
-	assert(result);
-	assert(total == 10);
-	(void)result;
-	(void)total;
-}
-
-
-//-------------------------------------------------
-//  validity_checks
-//-------------------------------------------------
-
-static validity_check validity_checks[] =
-{
-	test,
-	unicode,
-	skipping,
-	multiple
-};
-

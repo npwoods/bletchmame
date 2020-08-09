@@ -6,27 +6,24 @@
 
 ***************************************************************************/
 
-#include <wx/stdpaths.h>
-#include <wx/filename.h>
-#include <wx/wfstream.h>
-#include <wx/mstream.h>
-#include <wx/dir.h>
-#include <wx/utils.h> 
-
 #include <fstream>
 #include <functional>
+#include <locale>
+
+#include <QDir>
+#include <QCoreApplication>
+#include <QStandardPaths>
 
 #include "prefs.h"
 #include "utility.h"
 #include "xmlparser.h"
-#include "validity.h"
 
 
 //**************************************************************************
 //  LOCAL VARIABLES
 //**************************************************************************
 
-static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names =
+std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	Preferences::s_path_names =
 {
 	"emu",
 	"roms",
@@ -41,10 +38,10 @@ static std::array<const char *, static_cast<size_t>(Preferences::global_path_typ
 };
 
 
-static const util::enum_parser_bidirectional<ColumnPrefs::sort_type> s_column_sort_type_parser =
+static const util::enum_parser_bidirectional<Qt::SortOrder> s_column_sort_type_parser =
 {
-	{ "ascending", ColumnPrefs::sort_type::ASCENDING, },
-	{ "descending", ColumnPrefs::sort_type::DESCENDING }
+	{ "ascending", Qt::SortOrder::AscendingOrder, },
+	{ "descending", Qt::SortOrder::DescendingOrder }
 };
 
 
@@ -60,7 +57,7 @@ static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list
 //  IMPLEMENTATION
 //**************************************************************************
 
-static wxString GetDefaultPluginsDirectory();
+static QString GetDefaultPluginsDirectory();
 
 
 //-------------------------------------------------
@@ -78,9 +75,9 @@ static bool IsValidDimension(int dimension)
 //  GetListViewSelectionKey
 //-------------------------------------------------
 
-static wxString GetListViewSelectionKey(const char *view_type, const wxString &softlist)
+static QString GetListViewSelectionKey(const char *view_type, const QString &softlist)
 {
-	return wxString(view_type) + wxString(1, '\0') + softlist;
+	return QString(view_type) + QString(1, '\0') + softlist;
 }
 
 
@@ -88,14 +85,14 @@ static wxString GetListViewSelectionKey(const char *view_type, const wxString &s
 //  SplitListViewSelectionKey
 //-------------------------------------------------
 
-static std::tuple<const wxChar *, const wxChar *> SplitListViewSelectionKey(const wxString &key)
+static std::tuple<const QChar *, const QChar *> SplitListViewSelectionKey(const QString &key)
 {
 	// get the view type
-	const wxChar *view_type = key.c_str();
+	const QChar *view_type = key.constData();
 
 	// get the machine key, if present
-	std::size_t null_pos = key.find('\0');
-	const wxChar *machine = key.size() > null_pos + 1
+	int null_pos = key.indexOf((QChar)'\0');
+	const QChar *machine = key.size() > null_pos + 1
 		? view_type + null_pos + 1
 		: nullptr;
 
@@ -117,7 +114,7 @@ Preferences::Preferences()
 	SetGlobalPath(global_path_type::CONFIG, GetConfigDirectory(true));
 	SetGlobalPath(global_path_type::NVRAM, GetConfigDirectory(true));
 	SetGlobalPath(global_path_type::PLUGINS, GetDefaultPluginsDirectory());
-	SetGlobalPath(global_path_type::PROFILES, GetConfigDirectory(true) + "\\profiles");
+	SetGlobalPath(global_path_type::PROFILES, GetConfigDirectory(true) + QString("\\profiles"));
 
     Load();
 }
@@ -147,8 +144,11 @@ Preferences::path_category Preferences::GetPathCategory(global_path_type path_ty
 	case Preferences::global_path_type::ARTWORK:
 	case Preferences::global_path_type::PLUGINS:
 	case Preferences::global_path_type::PROFILES:
-	case Preferences::global_path_type::ICONS:
 		result = path_category::MULTIPLE_DIRECTORIES;
+		break;
+
+	case Preferences::global_path_type::ICONS:
+		result = path_category::MULTIPLE_MIXED;
 		break;
 
 	default:
@@ -186,11 +186,13 @@ Preferences::path_category Preferences::GetPathCategory(machine_path_type path_t
 //  EnsureDirectoryPathsHaveFinalPathSeparator
 //-------------------------------------------------
 
-void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, wxString &path)
+void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path)
 {
-	if (category != path_category::FILE && !path.empty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
+	bool isDirectory = category == path_category::SINGLE_DIRECTORY
+		|| category == path_category::MULTIPLE_DIRECTORIES;
+	if (isDirectory && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
 	{
-		path += wxFileName::GetPathSeparator();
+		path += QDir::separator();
 	}
 }
 
@@ -199,7 +201,7 @@ void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category categ
 //  GetMachineInfo
 //-------------------------------------------------
 
-const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &machine_name) const
+const Preferences::MachineInfo *Preferences::GetMachineInfo(const QString &machine_name) const
 {
 	const auto iter = m_machine_info.find(machine_name);
 	return iter != m_machine_info.end()
@@ -212,10 +214,16 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const wxString &mach
 //  SetGlobalPath
 //-------------------------------------------------
 
-void Preferences::SetGlobalPath(global_path_type type, wxString &&path)
+void Preferences::SetGlobalPath(global_path_type type, QString &&path)
 {
 	EnsureDirectoryPathsHaveFinalPathSeparator(GetPathCategory(type), path);
 	m_paths[static_cast<size_t>(type)] = std::move(path);
+}
+
+
+void Preferences::SetGlobalPath(global_path_type type, const QString &path)
+{
+	SetGlobalPath(type, QString(path));
 }
 
 
@@ -223,10 +231,19 @@ void Preferences::SetGlobalPath(global_path_type type, wxString &&path)
 //  GetSplitPaths
 //-------------------------------------------------
 
-std::vector<wxString> Preferences::GetSplitPaths(global_path_type type) const
+QStringList Preferences::GetSplitPaths(global_path_type type) const
 {
-	const wxString &paths_string = GetGlobalPath(type);
-	return util::string_split(paths_string, [](const wchar_t ch) { return ch == ';'; });
+	const QString &pathsString = GetGlobalPath(type);
+	QStringList paths = pathsString.split(';');
+	for (QString &path : paths)
+	{
+		// apply variable substituions
+		path = ApplySubstitutions(path);
+
+		// normalize path separators
+		path = QDir::fromNativeSeparators(path);
+	}
+	return paths;
 }
 
 
@@ -234,7 +251,7 @@ std::vector<wxString> Preferences::GetSplitPaths(global_path_type type) const
 //  GetGlobalPathWithSubstitutions
 //-------------------------------------------------
 
-wxString Preferences::GetGlobalPathWithSubstitutions(global_path_type type) const
+QString Preferences::GetGlobalPathWithSubstitutions(global_path_type type) const
 {
 	assert(GetPathCategory(type) != path_category::FILE);
 	return ApplySubstitutions(GetGlobalPath(type));
@@ -245,7 +262,7 @@ wxString Preferences::GetGlobalPathWithSubstitutions(global_path_type type) cons
 //  GetMachinePath
 //-------------------------------------------------
 
-const wxString &Preferences::GetMachinePath(const wxString &machine_name, machine_path_type path_type) const
+const QString &Preferences::GetMachinePath(const QString &machine_name, machine_path_type path_type) const
 {
 	// find the machine path entry
 	const MachineInfo *info = GetMachineInfo(machine_name);
@@ -268,9 +285,9 @@ const wxString &Preferences::GetMachinePath(const wxString &machine_name, machin
 //  GetListViewSelection
 //-------------------------------------------------
 
-const wxString &Preferences::GetListViewSelection(const char *view_type, const wxString &machine_name) const
+const QString &Preferences::GetListViewSelection(const char *view_type, const QString &machine_name) const
 {
-	wxString key = GetListViewSelectionKey(view_type, machine_name);
+	QString key = GetListViewSelectionKey(view_type, machine_name);
 	auto iter = m_list_view_selection.find(key);
 	return iter != m_list_view_selection.end()
 		? iter->second
@@ -282,9 +299,9 @@ const wxString &Preferences::GetListViewSelection(const char *view_type, const w
 //  SetListViewSelection
 //-------------------------------------------------
 
-void Preferences::SetListViewSelection(const char *view_type, const wxString &machine_name, wxString &&selection)
+void Preferences::SetListViewSelection(const char *view_type, const QString &machine_name, QString &&selection)
 {
-	wxString key = GetListViewSelectionKey(view_type, machine_name);
+	QString key = GetListViewSelectionKey(view_type, machine_name);
 	m_list_view_selection[key] = std::move(selection);
 }
 
@@ -293,7 +310,7 @@ void Preferences::SetListViewSelection(const char *view_type, const wxString &ma
 //  SetMachinePath
 //-------------------------------------------------
 
-void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type path_type, wxString &&path)
+void Preferences::SetMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path)
 {
 	// ensure that if we have a path, it has a path separator at the end
 	EnsureDirectoryPathsHaveFinalPathSeparator(GetPathCategory(path_type), path);
@@ -316,15 +333,15 @@ void Preferences::SetMachinePath(const wxString &machine_name, machine_path_type
 //  GetRecentDeviceFiles
 //-------------------------------------------------
 
-std::vector<wxString> &Preferences::GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type)
+std::vector<QString> &Preferences::GetRecentDeviceFiles(const QString &machine_name, const QString &device_type)
 {
 	return m_machine_info[machine_name].m_recent_device_files[device_type];
 }
 
 
-const std::vector<wxString> &Preferences::GetRecentDeviceFiles(const wxString &machine_name, const wxString &device_type) const
+const std::vector<QString> &Preferences::GetRecentDeviceFiles(const QString &machine_name, const QString &device_type) const
 {
-	static const std::vector<wxString> empty_vector;
+	static const std::vector<QString> empty_vector;
 	const MachineInfo *info = GetMachineInfo(machine_name);
 	if (!info)
 		return empty_vector;
@@ -345,14 +362,20 @@ bool Preferences::Load()
 {
 	using namespace std::placeholders;
 
-	wxString file_name = GetFileName(false);
+	QString file_name = GetFileName(false);
 
 	// first check to see if the file exists
-	if (!wxFileExists(file_name))
-		return false;
-
-	wxFileInputStream input(file_name);
-	return Load(input);
+	bool success = false;
+	if (wxFileExists(file_name))
+	{
+		QFile file(file_name);
+		if (file.open(QFile::ReadOnly))
+		{
+			QDataStream file_stream(&file);
+			success = Load(file_stream);
+		}
+	}
+	return success;
 }
 
 
@@ -360,13 +383,13 @@ bool Preferences::Load()
 //  Load
 //-------------------------------------------------
 
-bool Preferences::Load(wxInputStream &input)
+bool Preferences::Load(QDataStream &input)
 {
 	XmlParser xml;
 	global_path_type type = global_path_type::COUNT;
-	wxString current_machine_name;
-	wxString current_device_type;
-	wxString *current_list_view_parameter = nullptr;
+	QString current_machine_name;
+	QString current_device_type;
+	QString *current_list_view_parameter = nullptr;
 
 	// clear out state
 	m_machine_info.clear();
@@ -384,7 +407,7 @@ bool Preferences::Load(wxInputStream &input)
 	});
 	xml.OnElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
-		wxString type_string;
+		QString type_string;
 		if (attributes.Get("type", type_string))
 		{
 			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), type_string);
@@ -393,13 +416,13 @@ bool Preferences::Load(wxInputStream &input)
 				: global_path_type::COUNT;
 		}
 	});
-	xml.OnElementEnd({ "preferences", "path" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
 		if (type < global_path_type::COUNT)
 			SetGlobalPath(type, std::move(content));
 		type = global_path_type::COUNT;
 	});
-	xml.OnElementEnd({ "preferences", "mameextraarguments" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
 	{
 		SetMameExtraArguments(std::move(content));
 	});
@@ -408,9 +431,9 @@ bool Preferences::Load(wxInputStream &input)
 		int width, height;
 		if (attributes.Get("width", width) && attributes.Get("height", height) && IsValidDimension(width) && IsValidDimension(height))
 		{
-			wxSize size;
-			size.SetWidth(width);
-			size.SetHeight(height);
+			QSize size;
+			size.setWidth(width);
+			size.setHeight(height);
 			SetSize(size);
 		}
 	});
@@ -421,19 +444,19 @@ bool Preferences::Load(wxInputStream &input)
 		if (attributes.Get("view", list_view))
 		{
 			attributes.Get("softlist", softlist);
-			wxString key = GetListViewSelectionKey(list_view.c_str(), softlist);
+			QString key = GetListViewSelectionKey(list_view.c_str(), QString::fromStdString(softlist));
 			current_list_view_parameter = &m_list_view_selection[key];
 		}
 	});
 	xml.OnElementBegin({ "preferences", "searchboxtext" }, [&](const XmlParser::Attributes &attributes)
 	{
-		wxString list_view;
+		QString list_view;
 		if (!attributes.Get("view", list_view))
 			list_view = "machine";
 		current_list_view_parameter = &m_list_view_filter[list_view];
 	});
 	xml.OnElementEnd({{ "preferences", "selection" },
-					  { "preferences", "searchboxtext" }}, [&](wxString &&content)
+					  { "preferences", "searchboxtext" }}, [&](QString &&content)
 	{
 		assert(current_list_view_parameter);
 		*current_list_view_parameter = std::move(content);
@@ -455,7 +478,7 @@ bool Preferences::Load(wxInputStream &input)
 		if (!attributes.Get("name", current_machine_name))
 			return XmlParser::element_result::SKIP;
 
-		wxString path;
+		QString path;
 		if (attributes.Get("working_directory", path))
 			SetMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(path));
 		if (attributes.Get("last_save_state", path))
@@ -468,7 +491,7 @@ bool Preferences::Load(wxInputStream &input)
 			? XmlParser::element_result::OK
 			: XmlParser::element_result::SKIP;
 	});
-	xml.OnElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](wxString &&content)
+	xml.OnElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](QString &&content)
 	{
 		GetRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
 	});
@@ -484,8 +507,8 @@ bool Preferences::Load(wxInputStream &input)
 
 void Preferences::Save()
 {
-	wxString file_name = GetFileName(true);
-	std::ofstream output(file_name.ToStdString(), std::ios_base::out);
+	QString file_name = GetFileName(true);
+	std::ofstream output(file_name.toStdString(), std::ios_base::out);
 	Save(output);
 }
 
@@ -502,30 +525,30 @@ void Preferences::Save(std::ostream &output)
 
 	output << "\t<!-- Paths -->" << std::endl;
 	for (size_t i = 0; i < m_paths.size(); i++)
-		output << "\t<path type=\"" << s_path_names[i] << "\">" << GetGlobalPath(static_cast<global_path_type>(i)) << "</path>" << std::endl;
+		output << "\t<path type=\"" << s_path_names[i] << "\">" << util::to_utf8_string(GetGlobalPath(static_cast<global_path_type>(i))) << "</path>" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Miscellaneous -->" << std::endl;
-	if (!m_mame_extra_arguments.IsEmpty())
-		output << "\t<mameextraarguments>" << m_mame_extra_arguments << "</mameextraarguments>" << std::endl;
-	output << "\t<size width=\"" << m_size.GetWidth() << "\" height=\"" << m_size.GetHeight() << "\"/>" << std::endl;
+	if (!m_mame_extra_arguments.isEmpty())
+		output << "\t<mameextraarguments>" << util::to_utf8_string(m_mame_extra_arguments) << "</mameextraarguments>" << std::endl;
+	output << "\t<size width=\"" << m_size.width() << "\" height=\"" << m_size.height() << "\"/>" << std::endl;
 
 	for (const auto &pair : m_list_view_selection)
 	{
-		if (!pair.second.empty())
+		if (!pair.second.isEmpty())
 		{
 			auto [view_type, softlist] = SplitListViewSelectionKey(pair.first);
-			output << "\t<selection view=\"" << wxString(view_type);
+			output << "\t<selection view=\"" << util::to_utf8_string(QString(view_type));
 			if (softlist)
-				output << "\" softlist=\"" + wxString(softlist);
+				output << "\" softlist=\"" + util::to_utf8_string(QString(softlist));
 			output << "\">" << XmlParser::Escape(pair.second) << "</selection>" << std::endl;
 		}
 	}
 
 	for (const auto &[view_type, text] : m_list_view_filter)
 	{
-		if (!text.empty())
-			output << "\t<searchboxtext view=\"" << view_type << "\">" << text << "</searchboxtext>" << std::endl;
+		if (!text.isEmpty())
+			output << "\t<searchboxtext view=\"" << view_type.toStdString() << "\">" << text.toStdString() << "</searchboxtext>" << std::endl;
 	}
 
 	// column width/order
@@ -548,13 +571,13 @@ void Preferences::Save(std::ostream &output)
 	output << "\t<!-- Machines -->" << std::endl;
 	for (const auto &[machine_name, info] : m_machine_info)
 	{
-		if (!machine_name.empty() && (!info.m_working_directory.empty() || !info.m_last_save_state.empty() || !info.m_recent_device_files.empty()))
+		if (!machine_name.isEmpty() && (!info.m_working_directory.isEmpty() || !info.m_last_save_state.isEmpty() || !info.m_recent_device_files.empty()))
 		{
 			output << "\t<machine name=\"" << XmlParser::Escape(machine_name) << "\"";
 			
-			if (!info.m_working_directory.empty())
+			if (!info.m_working_directory.isEmpty())
 				output << " working_directory=\"" << XmlParser::Escape(info.m_working_directory) << "\"";
-			if (!info.m_last_save_state.empty())
+			if (!info.m_last_save_state.isEmpty())
 				output << " last_save_state=\"" << XmlParser::Escape(info.m_last_save_state) << "\"";
 
 			if (info.m_recent_device_files.empty())
@@ -567,8 +590,8 @@ void Preferences::Save(std::ostream &output)
 				for (const auto &[device_type, recents] : info.m_recent_device_files)
 				{
 					output << "\t\t<device type=\"" << XmlParser::Escape(device_type) << "\">" << std::endl;
-					for (const wxString &recent : recents)
-						output << "\t\t\t<recentfile>" << recent.ToStdWstring() << "</recentfile>" << std::endl;
+					for (const QString &recent : recents)
+						output << "\t\t\t<recentfile>" << recent.toStdString() << "</recentfile>" << std::endl;
 					output << "\t\t</device>" << std::endl;
 				}
 				output << "\t</machine>" << std::endl;
@@ -585,10 +608,9 @@ void Preferences::Save(std::ostream &output)
 //  InternalApplySubstitutions
 //-------------------------------------------------
 
-template<typename TStr, typename TFunc>
-static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
+QString Preferences::InternalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func)
 {
-	wxString result;
+	QString result;
 	result.reserve(src.size() + 100);
 
 	enum class parse_state
@@ -598,12 +620,12 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 		IN_VARIABLE_NAME
 	};
 	parse_state state = parse_state::NORMAL;
-	typename TStr::const_iterator var_begin_iter = src.cbegin();
+	QString::const_iterator var_begin_iter = src.cbegin();
 
-	for (typename TStr::const_iterator iter = src.cbegin(); iter < src.cend(); iter++)
+	for (QString::const_iterator iter = src.cbegin(); iter < src.cend(); iter++)
 	{
 		bool handled = false;
-		wchar_t ch = *iter;
+		ushort ch = iter->unicode();
 		switch (ch)
 		{
 		case '$':
@@ -626,8 +648,8 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 		case ')':
 			if (state == parse_state::IN_VARIABLE_NAME)
 			{
-				wxString var_name(var_begin_iter, iter);
-				TStr var_value = func(var_name);
+				QString var_name(&*var_begin_iter, iter - var_begin_iter);
+				QString var_value = func(var_name);
 				result += var_value;
 				state = parse_state::NORMAL;
 				handled = true;
@@ -647,23 +669,21 @@ static TStr InternalApplySubstitutions(const TStr &src, TFunc func)
 //  ApplySubstitutions
 //-------------------------------------------------
 
-wxString Preferences::ApplySubstitutions(const wxString &path) const
+QString Preferences::ApplySubstitutions(const QString &path) const
 {
-
-	return InternalApplySubstitutions(path, [this](const wxString &var_name)
+	return InternalApplySubstitutions(path, [this](const QString &var_name)
 	{
-		wxString result;
-		if (var_name == wxT("MAMEPATH"))
+		QString result;
+		if (var_name == "MAMEPATH")
 		{
-			const wxString &path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+			const QString &path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 			wxFileName::SplitPath(path, &result, nullptr, nullptr);
 		}
-		else if (var_name == wxT("BLETCHMAMEPATH"))
+		else if (var_name == "BLETCHMAMEPATH")
 		{
-			wxFileName filename(wxStandardPaths::Get().GetExecutablePath());
-			result = filename.GetPath();
+			result = QCoreApplication::applicationDirPath();
 		}
-		return result;
+		return QDir::toNativeSeparators(result);
 	});
 }
 
@@ -672,25 +692,24 @@ wxString Preferences::ApplySubstitutions(const wxString &path) const
 //  GetMameXmlDatabasePath
 //-------------------------------------------------
 
-wxString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
+QString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
 {
 	// get the configuration directory
-	wxString config_dir = GetConfigDirectory(ensure_directory_exists);
-	if (config_dir.IsEmpty())
+	QString config_dir = GetConfigDirectory(ensure_directory_exists);
+	if (config_dir.isEmpty())
 		return "";
 
 	// get the MAME path
-	const wxString &mame_path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-	if (mame_path.IsEmpty())
+	const QString &mame_path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	if (mame_path.isEmpty())
 		return "";
 
 	// parse out the MAME filename
-	wxString mame_filename;
+	QString mame_filename;
 	wxFileName::SplitPath(mame_path, nullptr, &mame_filename, nullptr);
 
 	// get the full name
-	wxFileName db_filename(config_dir, mame_filename, "infodb");
-	return db_filename.GetFullPath();
+	return QDir(config_dir).filePath(mame_filename + ".infodb");
 }
 
 
@@ -698,11 +717,10 @@ wxString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
 //  GetFileName
 //-------------------------------------------------
 
-wxString Preferences::GetFileName(bool ensure_directory_exists)
+QString Preferences::GetFileName(bool ensure_directory_exists)
 {
-	wxString directory = GetConfigDirectory(ensure_directory_exists);
-	wxFileName file_name(directory, "BletchMAME.xml");
-	return file_name.GetFullPath();
+	QString directory = GetConfigDirectory(ensure_directory_exists);
+	return QDir(directory).filePath("BletchMAME.xml");
 }
 
 
@@ -711,17 +729,20 @@ wxString Preferences::GetFileName(bool ensure_directory_exists)
 //	directory, and optionally ensuring it exists
 //-------------------------------------------------
 
-wxString Preferences::GetConfigDirectory(bool ensure_directory_exists)
+QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 {
 	// this is currently a thin wrapper on GetUserDataDir(), but hypothetically
 	// we might want a command line option to override this directory
-	wxString directory = wxStandardPaths::Get().GetUserDataDir();
+	QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 
 	// if appropriate, ensure the directory exists
-	if (ensure_directory_exists && !wxDir::Exists(directory))
-		wxDir::Make(directory);
-
-	return directory;
+	if (ensure_directory_exists)
+	{
+		QDir dir(directory);
+		if (!dir.exists())
+			dir.makeAbsolute();
+	}
+	return QDir::toNativeSeparators(directory);
 }
 
 
@@ -729,126 +750,7 @@ wxString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 //  GetDefaultPluginsDirectory
 //-------------------------------------------------
 
-static wxString GetDefaultPluginsDirectory()
+static QString GetDefaultPluginsDirectory()
 {
-	wxString path_separator(wxFileName::GetPathSeparator());
-	wxString plugins(wxT("plugins"));
-
-	return wxString("$(BLETCHMAMEPATH)") + path_separator + plugins
-		+ wxString(";") + wxString("$(MAMEPATH)") + path_separator + plugins;
+	return QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
 }
-
-
-//**************************************************************************
-//  VALIDITY CHECKS
-//**************************************************************************
-
-//-------------------------------------------------
-//  general
-//-------------------------------------------------
-
-static void general()
-{
-	const char *xml =
-		"<preferences menu_bar_shown=\"1\">"
-			"<path type=\"emu\">C:\\mame64.exe</path>"
-			"<path type=\"roms\">C:\\roms</path>"
-			"<path type=\"samples\">C:\\samples</path>"
-			"<path type=\"config\">C:\\cfg</path>"
-			"<path type=\"nvram\">C:\\nvram</path>"
-
-			"<size width=\"1230\" height=\"765\"/>"
-			"<selectedmachine>nes</selectedmachine>"
-			"<column id=\"name\" width=\"84\" order=\"0\" />"
-			"<column id=\"description\" width=\"165\" order=\"1\" />"
-			"<column id=\"year\" width=\"50\" order=\"2\" />"
-			"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
-
-			"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" last_save_state=\"C:\\MyLastState.sta\" />"
-		"</preferences>";
-
-	wxMemoryInputStream input(xml, strlen(xml));
-	Preferences prefs;
-	prefs.Load(input);
-
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)	== "C:\\mame64.exe");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)				== "C:\\roms\\");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)			== "C:\\samples\\");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)			== "C:\\cfg\\");
-	assert(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)			== "C:\\nvram\\");
-
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== "C:\\MyEchoGames\\");
-	assert(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== "C:\\MyLastState.sta");
-	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== "");
-	assert(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)		== "");
-}
-
-
-//-------------------------------------------------
-//  path_names
-//-------------------------------------------------
-
-static void path_names()
-{
-	auto iter = std::find(s_path_names.begin(), s_path_names.end(), nullptr);
-	assert(iter == s_path_names.end());
-	(void)iter;
-}
-
-
-//-------------------------------------------------
-//  global_get_path_category
-//-------------------------------------------------
-
-static void global_get_path_category()
-{
-	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
-		Preferences::GetPathCategory(type);
-}
-
-
-//-------------------------------------------------
-//  machine_get_path_category
-//-------------------------------------------------
-
-static void machine_get_path_category()
-{
-	for (Preferences::machine_path_type type : util::all_enums<Preferences::machine_path_type>())
-		Preferences::GetPathCategory(type);
-}
-
-
-//-------------------------------------------------
-//  substitutions
-//-------------------------------------------------
-
-static void substitutions(const wxChar *input, const wxChar *expected)
-{
-	auto func = [](const wxString &var_name)
-	{
-		return var_name == wxT("VARNAME")
-			? wxT("vardata")
-			: wxString();
-	};
-
-	wxString actual = InternalApplySubstitutions(wxString(input), func);
-	assert(actual == expected);
-	(void)actual;
-	(void)expected;
-}
-
-
-//-------------------------------------------------
-//  validity_checks
-//-------------------------------------------------
-
-static validity_check validity_checks[] =
-{
-	general,
-	path_names,
-	global_get_path_category,
-	machine_get_path_category,
-	[]() { substitutions(wxT("C:\\foo"),				wxT("C:\\foo")); },
-	[]() { substitutions(wxT("C:\\foo (with parens)"),	wxT("C:\\foo (with parens)")); },
-	[]() { substitutions(wxT("C:\\$(VARNAME)\\foo"),	wxT("C:\\vardata\\foo")); }
-};

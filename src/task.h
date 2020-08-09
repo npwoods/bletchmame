@@ -11,9 +11,11 @@
 #ifndef TASK_H
 #define TASK_H
 
-#include <wx/process.h>
-#include <wx/event.h>
 #include <memory>
+#include <vector>
+
+#include <QString>
+#include <QProcess>
 
 class Preferences;
 class MameClient;
@@ -53,19 +55,19 @@ public:
 
 protected:
 	// called on the main thread to trigger a shutdown (e.g. - BletchMAME is closed)
-	virtual void Abort() = 0;
+	virtual void abort() = 0;
 
 	// retrieves the arguments to be used at the command line
-	virtual std::vector<wxString> GetArguments(const Preferences &prefs) const = 0;
+	virtual QStringList getArguments(const Preferences &prefs) const = 0;
 
 	// called on a child thread tasked with ownership of a MAME child process
-	virtual void Process(wxProcess &process, wxEvtHandler &handler) = 0;
+	virtual void process(QProcess &process, QObject &handler) = 0;
 
 	// called on the main thread when the child process has been completed
-	virtual void OnChildProcessCompleted(emu_error status);
+	virtual void onChildProcessCompleted(emu_error status);
 
 	// called on the main thread when the child process has been killed
-	virtual void OnChildProcessKilled();
+	virtual void onChildProcessKilled();
 };
 
 

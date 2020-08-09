@@ -6,13 +6,10 @@
 
 ***************************************************************************/
 
-#include <wx/icon.h>
-#include <wx/zipstrm.h>
-#include <wx/wfstream.h>
-#include <wx/dir.h>
-
 #include "iconloader.h"
 #include "prefs.h"
+#include "quazip/quazip.h"
+#include "quazip/quazipfile.h"
 
 
 //**************************************************************************
@@ -24,65 +21,69 @@
 
 
 //**************************************************************************
-//  LOCAL CLASSES
+//  TYPE DEFINITIONS
 //**************************************************************************
 
-namespace
+// ======================> IconLoader::IconFinder
+class IconLoader::IconFinder
 {
-	class NonOwningInputStream : public wxInputStream
+public:
+	IconFinder() = default;
+	IconFinder(const IconFinder &) = delete;
+	IconFinder(IconFinder &&) = delete;
+
+	virtual ~IconFinder()
 	{
-	public:
-		NonOwningInputStream(wxInputStream &inner)
-			: m_inner(inner)
-		{
-		}
+	}
 
-	protected:
-		virtual size_t OnSysRead(void *buffer, size_t size) override
-		{
-			m_inner.Read(buffer, size);
-			return m_inner.LastRead();
-		}
-
-	private:
-		wxInputStream &m_inner;
-	};
+	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) = 0;
 };
 
 
-// ======================> IconLoader::DirIconPathEntry
-class IconLoader::DirIconPathEntry : public IconLoader::IconPathEntry
+// ======================> IconLoader::DirectoryIconFinder
+class IconLoader::DirectoryIconFinder : public IconLoader::IconFinder
 {
 public:
-	DirIconPathEntry(const wxString &path);
-	DirIconPathEntry(const ZipIconPathEntry &) = delete;
-	DirIconPathEntry(ZipIconPathEntry &&) = delete;
+	DirectoryIconFinder(QString &&path)
+		: m_path(std::move(path))
+	{
+	}
 
-	virtual std::unique_ptr<wxInputStream> OpenFile(const wxString &filename) override;
+	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) override
+	{
+		return std::make_unique<QFile>(m_path + "/" + filename);
+	}
 
 private:
-	wxString		m_path;
+	QString		m_path;
 };
 
-
-// ======================> IconLoader::ZipIconPathEntry
-class IconLoader::ZipIconPathEntry : public IconLoader::IconPathEntry
+// ======================> IconLoader::DirectoryIconFinder
+class IconLoader::ZipIconFinder : public IconLoader::IconFinder
 {
 public:
-	typedef std::unique_ptr<ZipIconPathEntry> ptr;
+	ZipIconFinder(const QString &path)
+		: m_zip(path)
+	{
+	}
 
-	// ctors
-	ZipIconPathEntry(const wxString &zip_filename);
-	ZipIconPathEntry(const ZipIconPathEntry &) = delete;
-	ZipIconPathEntry(ZipIconPathEntry &&) = delete;
+	bool openZip()
+	{
+		return m_zip.open(QuaZip::Mode::mdUnzip);
+	}
 
-	size_t EntryCount() const;
-	virtual std::unique_ptr<wxInputStream> OpenFile(const wxString &filename) override;
+	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) override
+	{
+		// find the file
+		if (!m_zip.setCurrentFile(filename))
+			return { };
+
+		// and return a QuaZipFile
+		return std::make_unique<QuaZipFile>(&m_zip);
+	}
 
 private:
-	wxFileInputStream							m_file_stream;
-	wxZipInputStream							m_zip_stream;
-	std::unordered_map<wxString, wxZipEntry>	m_entries;
+	QuaZip	m_zip;
 };
 
 
@@ -96,101 +97,109 @@ private:
 
 IconLoader::IconLoader(Preferences &prefs)
 	: m_prefs(prefs)
-	, m_image_list(ICON_SIZE_X, ICON_SIZE_Y)
+	, m_blankIcon(ICON_SIZE_X, ICON_SIZE_Y)
 {
-	RefreshIcons();
+	refreshIcons();
 }
 
 
 //-------------------------------------------------
-//  RefreshIcons
+//  dtor
 //-------------------------------------------------
 
-void IconLoader::RefreshIcons()
+IconLoader::~IconLoader()
+{
+}
+
+
+//-------------------------------------------------
+//  refreshIcons
+//-------------------------------------------------
+
+void IconLoader::refreshIcons()
 {
 	// clear ourselves out
-	m_image_list.RemoveAll();
 	m_icon_map.clear();
-	m_path_entries.clear();
+	m_finders.clear();
 
 	// loop through all icon paths
-	std::vector<wxString> paths = m_prefs.GetSplitPaths(Preferences::global_path_type::ICONS);
-	for (const wxString &path : paths)
+	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::ICONS);
+	for (QString &path : paths)
 	{
 		// try to create an appropiate path entry
-		IconPathEntry::ptr path_entry;
-		if (wxDir::Exists(path))
-			path_entry = CreateDirIconPathEntry(path);
-		else if (wxFile::Exists(path))
-			path_entry = CreateZipIconPathEntry(path);
+		std::unique_ptr<IconFinder> iconFinder;
+		QFileInfo fi(path);
+		if (fi.isDir())
+		{
+			iconFinder = std::make_unique<DirectoryIconFinder>(std::move(path));
+		}
+		else if (fi.isFile())
+		{
+			auto zipIconFinder = std::make_unique<ZipIconFinder>(path);
+			if (zipIconFinder->openZip())
+				iconFinder = std::move(zipIconFinder);
+		}
 
 		// if successful, add it
-		if (path_entry)
-			m_path_entries.push_back(std::move(path_entry));
+		if (iconFinder)
+			m_finders.push_back(std::move(iconFinder));
 	}
 }
 
 
 //-------------------------------------------------
-//  CreateDirIconPathEntry
+//  getIcon
 //-------------------------------------------------
 
-IconLoader::IconPathEntry::ptr IconLoader::CreateDirIconPathEntry(const wxString &directory_name)
+const QPixmap &IconLoader::getIcon(const info::machine &machine)
 {
-	return std::make_unique<DirIconPathEntry>(directory_name);
+	const QPixmap *result = getIconByName(machine.name());
+	if (!result && !machine.clone_of().isEmpty())
+		result = getIconByName(machine.clone_of());	
+	return result ? *result : m_blankIcon;
 }
 
 
 //-------------------------------------------------
-//  CreateZipIconPathEntry
+//  getIconByName
 //-------------------------------------------------
 
-IconLoader::IconPathEntry::ptr IconLoader::CreateZipIconPathEntry(const wxString &zip_file_name)
+const QPixmap *IconLoader::getIconByName(const QString &icon_name)
 {
-	// open up the zip file
-	ZipIconPathEntry::ptr result = std::make_unique<ZipIconPathEntry>(zip_file_name);
-	if (result->EntryCount() <= 0)
-		result.reset();
-
-	// return it
-	return result;
-}
-
-
-//-------------------------------------------------
-//  GetIcon
-//-------------------------------------------------
-
-int IconLoader::GetIcon(const wxString &icon_name)
-{
-	int result = -1;
+	// look up the result in the icon map
 	auto iter = m_icon_map.find(icon_name);
-	if (iter != m_icon_map.end())
-	{
-		// we've previously loaded (or tried to load) this icon; use our old result
-		result = iter->second;
-	}
-	else
+
+	// did we come up empty?
+	if (iter == m_icon_map.end())
 	{
 		// we have not tried to load this icon - first determine the real file name
-		wxString icon_file_name = icon_name + wxT(".ico");
+		QString icon_file_name = icon_name + ".ico";
 
 		// and try to load it from each ZIP file
-		for (const auto &path_entry : m_path_entries)
+		for (const auto &finder : m_finders)
 		{
-			std::unique_ptr<wxInputStream> stream = path_entry->OpenFile(icon_file_name);
-			if (stream)
+			// try to get a stream and open it
+			std::unique_ptr<QIODevice> stream = finder->getIconStream(icon_file_name);
+			if (stream && stream->open(QIODevice::ReadOnly))
 			{
+				// read the bytes
+				QByteArray byteArray = stream->readAll();
+
 				// we've found an entry - try to load the icon; note that while this can
 				// fail, we want to memoize the failure
-				result = LoadIcon(std::move(icon_file_name), *stream);
+				std::optional<QPixmap> icon = LoadIcon(std::move(icon_file_name), byteArray);
 
 				// record the result in the icon map
-				m_icon_map.emplace(icon_name, result);
+				iter = m_icon_map.emplace(icon_name, std::move(icon)).first;
 				break;
 			}
 		}
 	}
+
+	// if we found (or added) something, return it
+	const QPixmap *result = (iter != m_icon_map.end() && iter->second.has_value())
+		? &*iter->second
+		: nullptr;
 	return result;
 }
 
@@ -199,107 +208,11 @@ int IconLoader::GetIcon(const wxString &icon_name)
 //  LoadIcon
 //-------------------------------------------------
 
-int IconLoader::LoadIcon(wxString &&icon_name, wxInputStream &stream)
+std::optional<QPixmap> IconLoader::LoadIcon(QString &&icon_name, const QByteArray &byteArray)
 {
 	// load the icon into a file
-	wxImage image;
-	if (!image.LoadFile(stream, wxBITMAP_TYPE_ICO))
-		return -1;
-
-	// rescale it
-	wxImage rescaled_image = image.Rescale(ICON_SIZE_X, ICON_SIZE_Y);
-	
-	// and add it to the image list
-	int icon_number = m_image_list.Add(rescaled_image);
-	if (icon_number < 0)
-		return -1;
-
-	// we have an icon!  add it to the map
-	m_icon_map.emplace(std::move(icon_name), icon_number);
-	return icon_number;
-}
-
-
-//-------------------------------------------------
-//  DirIconPathEntry ctor
-//-------------------------------------------------
-
-IconLoader::DirIconPathEntry::DirIconPathEntry(const wxString &path)
-	: m_path(path)
-{
-}
-
-
-//-------------------------------------------------
-//  DirIconPathEntry::OpenFile
-//-------------------------------------------------
-
-std::unique_ptr<wxInputStream> IconLoader::DirIconPathEntry::OpenFile(const wxString &filename)
-{
-	std::unique_ptr<wxInputStream> result;
-
-	// does the file exist?
-	wxString full_filename = m_path + wxT("\\") + filename;
-	if (wxFile::Exists(full_filename))
-	{
-		// if so, open it
-		result = std::make_unique<wxFileInputStream>(full_filename);
-
-		// but close it if it is bad
-		if (!result->IsOk())
-			result.reset();
-	}
-	return result;
-}
-
-
-//-------------------------------------------------
-//  ZipIconPathEntry ctor
-//-------------------------------------------------
-
-IconLoader::ZipIconPathEntry::ZipIconPathEntry(const wxString &zip_filename)
-	: m_file_stream(zip_filename)
-	, m_zip_stream(m_file_stream)
-{
-	if (m_file_stream.IsOk() && m_zip_stream.IsOk())
-	{
-		wxZipEntry *entry;
-		while ((entry = m_zip_stream.GetNextEntry()) != nullptr)
-		{
-			if (!entry->IsDir()
-				&& entry->GetName().EndsWith(wxT(".ico"))
-				&& entry->GetSize() > 0
-				&& entry->GetSize() < 1000000)
-			{
-				m_entries.emplace(entry->GetName(), *entry);
-			}
-		}
-	}
-}
-
-
-//-------------------------------------------------
-//  ZipIconPathEntry::EntryCount
-//-------------------------------------------------
-
-size_t IconLoader::ZipIconPathEntry::EntryCount() const
-{
-	return m_entries.size();
-}
-
-
-//-------------------------------------------------
-//  ZipIconPathEntry::OpenFile
-//-------------------------------------------------
-
-std::unique_ptr<wxInputStream> IconLoader::ZipIconPathEntry::OpenFile(const wxString &filename)
-{
-	// find the entry
-	auto iter = m_entries.find(filename);
-
-	// if we found it, try to open it
-	std::unique_ptr<wxInputStream> result;
-	if (iter != m_entries.end() && m_zip_stream.OpenEntry(iter->second))
-		result = std::make_unique<NonOwningInputStream>(m_zip_stream);
-	return result;
+	QPixmap image;
+	return image.loadFromData(byteArray)
+		? image.scaled(ICON_SIZE_X, ICON_SIZE_Y)
+		: std::optional<QPixmap>();
 }

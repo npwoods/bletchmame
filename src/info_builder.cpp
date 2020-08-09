@@ -6,12 +6,8 @@
 
 ***************************************************************************/
 
-#include <wx/wfstream.h>
-#include <wx/mstream.h>
-
 #include "info_builder.h"
 #include "xmlparser.h"
-#include "validity.h"
 
 
 //**************************************************************************
@@ -58,7 +54,7 @@ static std::uint32_t to_uint32(T &&value)
 //  process_xml()
 //-------------------------------------------------
 
-bool info::database_builder::process_xml(wxInputStream &input, wxString &error_message)
+bool info::database_builder::process_xml(QDataStream &input, QString &error_message)
 {
 	// sanity check; ensure we're fresh
 	assert(m_machines.empty());
@@ -119,15 +115,15 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		machine.m_manufacturer_strindex = 0;
 		return XmlParser::element_result::OK;
 	});
-	xml.OnElementEnd({ "mame", "machine", "description" }, [this](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
 	});
-	xml.OnElementEnd({ "mame", "machine", "year" }, [this](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "year" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_year_strindex = m_strings.get(content);
 	});
-	xml.OnElementEnd({ "mame", "machine", "manufacturer" }, [this](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "manufacturer" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
 	});
@@ -197,7 +193,7 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 			current_device_extensions.append(",");
 		}
 	});
-	xml.OnElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](wxString &&)
+	xml.OnElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](QString &&)
 	{
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
@@ -222,10 +218,11 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 		ram_option.m_value						= 0;
 		util::last(m_machines).m_ram_options_count++;
 	});
-	xml.OnElementEnd({ "mame", "machine", "ramoption" }, [this](wxString &&content)
+	xml.OnElementEnd({ "mame", "machine", "ramoption" }, [this](QString &&content)
 	{
-		unsigned long val;
-		util::last(m_ram_options).m_value = content.ToULong(&val) ? val : 0;
+		bool ok;
+		unsigned long val = content.toULong(&ok);
+		util::last(m_ram_options).m_value = ok ? val : 0;
 	});
 
 	// parse!
@@ -270,20 +267,26 @@ bool info::database_builder::process_xml(wxInputStream &input, wxString &error_m
 
 
 //-------------------------------------------------
-//  emit()
+//  emit_info
 //-------------------------------------------------
 
-void info::database_builder::emit(wxOutputStream &output) const
+void info::database_builder::emit_info(QDataStream &output) const
 {
-	output.Write(&m_salted_header, sizeof(m_salted_header));
-	output.Write(m_machines.data(),					m_machines.size()					* sizeof(m_machines[0]));
-	output.Write(m_devices.data(),					m_devices.size()					* sizeof(m_devices[0]));
-	output.Write(m_configurations.data(),			m_configurations.size()				* sizeof(m_configurations[0]));
-	output.Write(m_configuration_settings.data(),	m_configuration_settings.size()		* sizeof(m_configuration_settings[0]));
-	output.Write(m_configuration_conditions.data(),	m_configuration_conditions.size()	* sizeof(m_configuration_conditions[0]));
-	output.Write(m_software_lists.data(),			m_software_lists.size()				* sizeof(m_software_lists[0]));
-	output.Write(m_ram_options.data(),				m_ram_options.size()				* sizeof(m_ram_options[0]));
-	output.Write(m_strings.data().data(),			m_strings.data().size()				* sizeof(m_strings.data()[0]));
+	auto writeRawData = [&output](const void *data, size_t size)
+	{
+		// Qt's stream classes are odd - why don't they take void*/size_t?
+		output.writeRawData((const char *)data, util::safe_static_cast<int>(size));
+	};
+
+	writeRawData(&m_salted_header, sizeof(m_salted_header));
+	writeRawData(m_machines.data(),					m_machines.size()					* sizeof(m_machines[0]));
+	writeRawData(m_devices.data(),					m_devices.size()					* sizeof(m_devices[0]));
+	writeRawData(m_configurations.data(),			m_configurations.size()				* sizeof(m_configurations[0]));
+	writeRawData(m_configuration_settings.data(),	m_configuration_settings.size()		* sizeof(m_configuration_settings[0]));
+	writeRawData(m_configuration_conditions.data(),	m_configuration_conditions.size()	* sizeof(m_configuration_conditions[0]));
+	writeRawData(m_software_lists.data(),			m_software_lists.size()				* sizeof(m_software_lists[0]));
+	writeRawData(m_ram_options.data(),				m_ram_options.size()				* sizeof(m_ram_options[0]));
+	writeRawData(m_strings.data().data(),			m_strings.data().size()				* sizeof(m_strings.data()[0]));
 }
 
 
@@ -330,9 +333,9 @@ std::uint32_t info::database_builder::string_table::get(const std::string &s)
 }
 
 
-std::uint32_t info::database_builder::string_table::get(const wxString &s)
+std::uint32_t info::database_builder::string_table::get(const QString &s)
 {
-	return get(std::string(s.ToUTF8()));
+	return get(s.toStdString());
 }
 
 
@@ -344,109 +347,3 @@ const std::vector<char> &info::database_builder::string_table::data() const
 {
 	return m_data;
 }
-
-
-//**************************************************************************
-//  VALIDITY CHECKS
-//**************************************************************************
-
-//-------------------------------------------------
-//  read_sample_listxml
-//-------------------------------------------------
-
-static bool read_sample_listxml(wxOutputStream &output)
-{
-	std::optional<std::string_view> asset = load_test_asset("listxml");
-	if (asset.has_value())
-	{
-		wxMemoryInputStream input(asset.value().data(), asset.value().size());
-
-		// process the sample -listxml output
-		info::database_builder builder;
-		wxString error_message;
-		bool success = builder.process_xml(input, error_message);
-		if (!success || !error_message.empty())
-			throw false;
-
-		// and emit the results into the memory stream
-		builder.emit(output);
-	}
-	return asset.has_value();
-}
-
-
-//-------------------------------------------------
-//  test
-//-------------------------------------------------
-
-static void test()
-{
-	// build the sample database
-	wxMemoryOutputStream mem_output_stream;
-	if (!read_sample_listxml(mem_output_stream))
-		return;
-
-	// and process it, validating we've done so successfully
-	wxMemoryInputStream mem_input_stream(mem_output_stream);
-	info::database db;
-	bool db_changed = false;
-	db.set_on_changed([&db_changed]() { db_changed = true; });
-	bool success = db.load(mem_input_stream);
-	assert(success);
-	assert(db_changed);
-	(void)success;
-
-	// spelunk through the resulting db
-	int setting_count = 0, software_list_count = 0, ram_option_count = 0;
-	for (info::machine machine : db.machines())
-	{
-		// basic machine properties
-		const wxString &name = machine.name();
-		const wxString &description = machine.description();
-		assert(!name.empty());
-		assert(!description.empty());
-		(void)name;
-		(void)description;
-
-		for (info::device dev : machine.devices())
-		{
-			const wxString &type = dev.type();
-			const wxString &tag = dev.tag();
-			const wxString &instance_name = dev.instance_name();
-			const wxString &extensions = dev.extensions();
-			assert(!type.empty());
-			assert(!tag.empty());
-			assert(!instance_name.empty());
-			assert(!extensions.empty());
-			(void)type;
-			(void)tag;
-			(void)instance_name;
-			(void)extensions;
-		}
-
-		for (info::configuration cfg : machine.configurations())
-		{
-			for (info::configuration_setting setting : cfg.settings())
-				setting_count++;
-		}
-
-		for (info::software_list swlist : machine.software_lists())
-			software_list_count++;
-
-		for (info::ram_option ramopt : machine.ram_options())
-			ram_option_count++;
-	}
-	assert(setting_count > 0);
-	assert(software_list_count > 0);
-	assert(ram_option_count > 0);
-}
-
-
-//-------------------------------------------------
-//  validity_checks
-//-------------------------------------------------
-
-static validity_check validity_checks[] =
-{
-	test,
-};

@@ -11,7 +11,7 @@
 #ifndef BINDATA_H
 #define BINDATA_H
 
-#include <wx/string.h>
+#include <QString>
 
 
 //**************************************************************************
@@ -28,7 +28,7 @@ namespace bindata
 	class entry
 	{
 	public:
-		using view = view<TDatabase, TPublic, TBinary>;
+		using view = bindata::view<TDatabase, TPublic, TBinary>;
 
 	protected:
 		entry(const TDatabase &db, const TBinary &inner)
@@ -39,7 +39,7 @@ namespace bindata
 
 		const TDatabase &db() const { return m_db; }
 		const TBinary &inner() const { return m_inner; }
-		const wxString &get_string(std::uint32_t strindex) const { return db().get_string(strindex); }
+		const QString &get_string(std::uint32_t strindex) const { return db().get_string(strindex); }
 
 	private:
 		const TDatabase &	m_db;
@@ -103,7 +103,7 @@ namespace bindata
 
 			using iterator_category = std::random_access_iterator_tag;
 			using value_type = TPublic;
-			using difference_type = ssize_t;
+			using difference_type = ptrdiff_t;
 			using pointer = TPublic * ;
 			using reference = TPublic & ;
 
@@ -134,10 +134,10 @@ namespace bindata
 				m_position++;
 			}
 
-			ssize_t operator-(const iterator &that)
+			ptrdiff_t operator-(const iterator &that)
 			{
 				asset_compatible_iterator(that);
-				return ((ssize_t)m_position) - ((ssize_t)that.m_position);
+				return ((ptrdiff_t)m_position) - ((ptrdiff_t)that.m_position);
 			}
 
 		private:

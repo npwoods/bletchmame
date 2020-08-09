@@ -11,9 +11,27 @@
 #ifndef DIALOGS_LOADING_H
 #define DIALOGS_LOADING_H
 
-#include <wx/window.h>
+#include <QDialog>
 #include <functional>
 
-bool show_loading_mame_info_dialog(wxWindow &parent, const std::function<bool()> &poll_completion_check);
+QT_BEGIN_NAMESPACE
+namespace Ui { class LoadingDialog; }
+QT_END_NAMESPACE
+
+
+// ======================> LoadingDialog
+class LoadingDialog : public QDialog
+{
+	Q_OBJECT
+public:
+	LoadingDialog(QWidget &parent, std::function<bool()> &&pollCompletionCheck);
+	~LoadingDialog();
+
+private:
+	std::unique_ptr<Ui::LoadingDialog>				m_ui;
+	std::function<bool()>							m_pollCompletionCheck;
+
+	void poll();
+};
 
 #endif // DIALOGS_LOADING_H

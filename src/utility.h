@@ -11,10 +11,14 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-#include <wx/event.h>
 #include <unordered_map>
 #include <optional>
 #include <functional>
+#include <stdexcept>
+#include <wctype.h>
+
+#include <QFileInfo>
+#include <QWidget>
 
 
 //**************************************************************************
@@ -69,27 +73,6 @@ namespace std
 			return !strcmp(s1, s2);
 		}
 	};
-
-#if !wxUSE_STD_STRING
-	template<> class hash<wxString>
-	{
-	public:
-		std::size_t operator()(const wxString &s) const
-		{
-			const wxChar *ptr = s.c_str();
-			return util::string_hash(ptr, s.size());
-		}
-	};
-
-	template<> class equal_to<const char *>
-	{
-	public:
-		bool operator()(const wxString &s1, const wxString &s2) const
-		{
-			return s1 == s2;
-		}
-	};
-#endif // wxUSE_STD_STRING
 }
 
 
@@ -240,12 +223,7 @@ public:
 //  STRING & CONTAINER UTILITIES
 //**************************************************************************
 
-extern const wxString g_empty_string;
-
-#ifdef WIN32
-#define strcasecmp	_stricmp
-#define wcscasecmp	_wcsicmp
-#endif // WIN32
+extern const QString g_empty_string;
 
 
 //-------------------------------------------------
@@ -264,7 +242,7 @@ std::vector<TStr> string_split(const TStr &str, TFunc &&is_delim)
 		{
 			if (word_begin < iter)
 			{
-				TStr word(word_begin, iter);
+				TStr word(&*word_begin, iter - word_begin);
 				results.emplace_back(std::move(word));
 			}
 
@@ -276,7 +254,7 @@ std::vector<TStr> string_split(const TStr &str, TFunc &&is_delim)
 	// squeeze off that final word, if necessary
 	if (word_begin < str.cend())
 	{
-		TStr word(word_begin, str.cend());
+		TStr word(&*word_begin, str.cend() - word_begin);
 		results.emplace_back(std::move(word));
 	}
 
@@ -310,41 +288,6 @@ template<typename TStr, typename TColl>
 TStr string_join(const TStr &delim, const TColl &collection)
 {
 	return string_join(delim, collection, [](const TStr &s) { return s; });
-}
-
-//-------------------------------------------------
-//  string_icontains
-//-------------------------------------------------
-
-template<typename TStr>
-inline bool string_icontains(const TStr &str, const TStr &target)
-{
-	auto iter = std::search(str.begin(), str.end(), target.begin(), target.end(), [](auto ch1, auto ch2)
-	{
-		// TODO - this does not handle UTF-8
-		return sizeof(ch1) > 0
-			? towlower(static_cast<wchar_t>(ch1)) == towlower(static_cast<wchar_t>(ch2))
-			: tolower(static_cast<char>(ch1)) == tolower(static_cast<char>(ch2));
-	});
-	return iter < str.end();
-}
-
-	
-//-------------------------------------------------
-//  string_icompare
-//-------------------------------------------------
-
-template<typename TStr>
-inline int string_icompare(const TStr &a, const TStr &b)
-{
-	int rc;
-	if (sizeof(wxChar) == sizeof(wchar_t))
-		rc = wcscasecmp((const wchar_t *) a.c_str(), (const wchar_t *)b.c_str());
-	else if (sizeof(wxChar) == sizeof(char))
-		rc = strcasecmp((const char *)a.c_str(), (const char *)b.c_str());
-	else
-		throw false;
-	return rc;
 }
 
 
@@ -384,34 +327,62 @@ TStruct salt(const TStruct &original, const TSalt &salt_value)
 }
 
 
+//-------------------------------------------------
+//  to_utf8_string
+//-------------------------------------------------
+
+inline std::string to_utf8_string(const QString &str)
+{
+	auto byte_array = str.toUtf8();
+	return std::string(byte_array.constData(), byte_array.size());
+}
+
+
+//-------------------------------------------------
+//  safe_static_cast
+//-------------------------------------------------
+
+template<class T> T safe_static_cast(size_t sz)
+{
+	auto result = static_cast<T>(sz);
+	if (sz != result)
+		throw std::overflow_error("Overflow");
+	return result;
+}
+
+
 //**************************************************************************
 //  COMMAND LINE
 //**************************************************************************
 
-wxString build_command_line(const wxString &executable, const std::vector<wxString> &argv);
+QString build_command_line(const QString &executable, const std::vector<QString> &argv);
 
-
-//**************************************************************************
-//  EVENTS
-//**************************************************************************
-
-template<typename TEvent, typename... TArgs>
-void PostEvent(wxEvtHandler &dest, const wxEventTypeTag<TEvent> &event_type, TArgs&&... args)
-{
-	wxEvent *event = new TEvent(event_type, std::forward<TArgs>(args)...);
-	wxPostEvent(&dest, *event);
-}
-
-
-template<typename TEvent, typename... TArgs>
-void QueueEvent(wxEvtHandler &dest, const wxEventTypeTag<TEvent> &event_type, TArgs&&... args)
-{
-	wxEvent *event = new TEvent(event_type, std::forward<TArgs>(args)...);
-	dest.QueueEvent(event);
-}
 
 //**************************************************************************
 
 }; // namespace util
+
+//**************************************************************************
+//  WXWIDGETS IMPERSONATION
+//**************************************************************************
+
+inline bool wxFileExists(const QString &path)
+{
+	QFileInfo check_file(path);
+	return check_file.exists() && check_file.isFile();
+}
+
+
+class wxFileName
+{
+public:
+	static bool IsPathSeparator(QChar ch);
+	static void SplitPath(const QString &fullpath, QString *path, QString *name, QString *ext);
+};
+
+
+// useful for popup menus
+QPoint globalPositionBelowWidget(const QWidget &widget);
+
 
 #endif // UTILITY_H

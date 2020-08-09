@@ -23,20 +23,20 @@ Task::~Task()
 
 
 //-------------------------------------------------
-//  OnChildProcessCompleted
+//  onChildProcessCompleted
 //-------------------------------------------------
 
-void Task::OnChildProcessCompleted(emu_error)
+void Task::onChildProcessCompleted(emu_error)
 {
 	// by default, do nothing
 }
 
 
 //-------------------------------------------------
-//  OnChildProcessKilled
+//  onChildProcessKilled
 //-------------------------------------------------
 
-void Task::OnChildProcessKilled()
+void Task::onChildProcessKilled()
 {
 	// by default, do nothing
 }
