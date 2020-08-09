@@ -18,7 +18,7 @@
 class TestFixtureBase
 {
 public:
-    virtual std::unique_ptr<QObject> createTestObject() const = 0;
+    // virtual std::unique_ptr<QObject> createTestObject() const = 0;
 
 protected:
     TestFixtureBase();
@@ -29,10 +29,10 @@ template<typename T>
 class TestFixture : public TestFixtureBase
 {
 public:
-    virtual std::unique_ptr<QObject> createTestObject() const override
-    {
-        return std::make_unique<T>();
-    }
+    // virtual std::unique_ptr<QObject> createTestObject() const override
+    // {
+        // return std::make_unique<T>();
+    // }
 };
 
 #endif // TEST_H
