@@ -117,7 +117,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
 # BletchMAME executable                                                     #
 #############################################################################
 
-add_executable(BletchMAME src/main.cpp)
+add_executable(BletchMAME WIN32 src/main.cpp)
 target_include_directories(BletchMAME PRIVATE src lib)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES})
 
