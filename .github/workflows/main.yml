@@ -25,10 +25,6 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-    # Install PanDoc
-    - name: Install PanDoc
-      run: choco install pandoc
-      
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -76,5 +72,5 @@ jobs:
     # Build MSI
     - name: Build MSI
       run: |
-        candle -v bletchmame.wxs -dVERSION=`cat obj/mingw_win64/release/version.txt` -out bletchmame.wixobj
-        light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
+        /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`git describe --tags` -out bletchmame.wixobj
+        /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
