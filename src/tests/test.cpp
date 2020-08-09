@@ -22,7 +22,7 @@ static std::list<std::reference_wrapper<TestFixtureBase>> s_testFixtures;
 
 TestFixtureBase::TestFixtureBase()
 {
-    s_testFixtures.push_back(*this);
+    // s_testFixtures.push_back(*this);
 }
 
 
