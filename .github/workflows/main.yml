@@ -102,11 +102,6 @@ jobs:
         7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libwinpthread-1.dll
         7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libstdc++-6.dll
 
-  deploy:
-    needs: build
-    runs-on: windows-latest
-    steps:
-
     # Configure AWS Credentials
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
