@@ -6,6 +6,10 @@
 
 ***************************************************************************/
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include <iostream>
 #include "test.h"
 
@@ -68,7 +72,8 @@ int main(int argc, char *argv[])
     if (anyFailed)
     {
         std::cout << "TEST FAILURES OCCURRED" << std::endl;
-        exit(-1);
+        ::ExitProcess(1);
+        exit(1);
     }
     std::cout << "All tests succeeded" << std::endl;
     return 0;
