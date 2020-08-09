@@ -9,7 +9,7 @@
 #include <iostream>
 #include "test.h"
 
-static TestFixtureBase *s_testFixtureList = nullptr;
+std::list<std::reference_wrapper<const TestFixtureBase>> TestFixtureBase::s_testFixtures;
 
 
 //**************************************************************************
@@ -22,8 +22,17 @@ static TestFixtureBase *s_testFixtureList = nullptr;
 
 TestFixtureBase::TestFixtureBase()
 {
-    m_next = s_testFixtureList;
-    s_testFixtureList = this;
+    s_testFixtures.push_front(*this);
+}
+
+
+//-------------------------------------------------
+//  TestFixtureBase::testFixtures
+//-------------------------------------------------
+
+const std::list<std::reference_wrapper<const TestFixtureBase>> &TestFixtureBase::testFixtures()
+{
+    return s_testFixtures;
 }
 
 
@@ -34,14 +43,11 @@ TestFixtureBase::TestFixtureBase()
 int main(int argc, char *argv[])
 {
     std::cout << "BletchMAME Test Harness" << std::endl;
-    std::cout << "??? total test(s)" << std::endl;
+    std::cout << TestFixtureBase::testFixtures().size() << " total test(s)" << std::endl;
 
     bool anyFailed = false;
-    for (TestFixtureBase *testFixture = s_testFixtureList; testFixture; testFixture = testFixture->next())
-//    for (const TestFixtureBase &testFixture : s_testFixtures)
+    for (const TestFixtureBase &testFixture : TestFixtureBase::testFixtures())
     {
-        printf("testFixture=%p\n", testFixture);
-
         // auto testObject = testFixture.createTestObject();
         // if (QTest::qExec(testObject.get(), argc, argv) != 0)
             // anyFailed = true;

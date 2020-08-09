@@ -18,14 +18,18 @@
 class TestFixtureBase
 {
 public:
+    // virtuals
     virtual std::unique_ptr<QObject> createTestObject() const = 0;
-    TestFixtureBase *next() { return m_next; }
+
+    // accessor
+    static const std::list<std::reference_wrapper<const TestFixtureBase>> &testFixtures();
 
 protected:
+    // ctor
     TestFixtureBase();
 
 private:
-    TestFixtureBase *m_next;
+    static std::list<std::reference_wrapper<const TestFixtureBase>> s_testFixtures;
 };
 
 
