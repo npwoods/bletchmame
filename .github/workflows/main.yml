@@ -39,9 +39,8 @@ jobs:
 
     # Install PanDoc
     - name: Install PanDoc
+      working-directory: deps
       run: |
-        mkdir deps
-        cd deps
         curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc.zip
         7z e pandoc.zip
         ls -l
