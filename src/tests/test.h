@@ -19,9 +19,13 @@ class TestFixtureBase
 {
 public:
     // virtual std::unique_ptr<QObject> createTestObject() const = 0;
+    TestFixtureBase *next() { return m_next; }
 
 protected:
     TestFixtureBase();
+
+private:
+    TestFixtureBase *m_next;
 };
 
 

@@ -9,7 +9,7 @@
 #include <iostream>
 #include "test.h"
 
-static std::list<std::reference_wrapper<TestFixtureBase>> s_testFixtures;
+static TestFixtureBase *s_testFixtureList = nullptr;
 
 
 //**************************************************************************
@@ -22,7 +22,8 @@ static std::list<std::reference_wrapper<TestFixtureBase>> s_testFixtures;
 
 TestFixtureBase::TestFixtureBase()
 {
-    // s_testFixtures.push_back(*this);
+    m_next = s_testFixtureList;
+    s_testFixtureList = this;
 }
 
 
@@ -33,11 +34,14 @@ TestFixtureBase::TestFixtureBase()
 int main(int argc, char *argv[])
 {
     std::cout << "BletchMAME Test Harness" << std::endl;
-    std::cout << s_testFixtures.size() << " total test(s)" << std::endl;
+    std::cout << "??? total test(s)" << std::endl;
 
     bool anyFailed = false;
-    for (const TestFixtureBase &testFixture : s_testFixtures)
+    for (TestFixtureBase *testFixture = s_testFixtureList; testFixture; testFixture = testFixture->next())
+//    for (const TestFixtureBase &testFixture : s_testFixtures)
     {
+        printf("testFixture=%p\n", testFixture);
+
         // auto testObject = testFixture.createTestObject();
         // if (QTest::qExec(testObject.get(), argc, argv) != 0)
             // anyFailed = true;
