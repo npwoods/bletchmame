@@ -58,6 +58,9 @@ jobs:
       run: |
         cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
         mingw32-make -j 8
+        strip ./BletchMAME.exe
+        ls -la
+        ls -la Qt5
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests

@@ -23,6 +23,15 @@
       <Component Id="readme.html" Guid="326b1d99-f61a-4ba9-b5a6-794a49a8e246" Win64="yes">
         <File Id="readme.html" Source="readme.html" KeyPath="yes" Checksum="yes"/>
       </Component>
+      <Component Id="Qt5Core.dll" Guid="fa58993c-6909-4255-8e0c-a48e2b778ef2" Win64="yes">
+        <File Id="Qt5Core.dll" Source="Qt5Core.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="Qt5Gui.dll" Guid="453155ac-1bcd-44c8-8df6-fda6ee17cf05" Win64="yes">
+        <File Id="Qt5Gui.dll" Source="Qt5Gui.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="Qt5Widgets.dll" Guid="9ce2fb83-081e-43e3-9eea-e2df115406e6" Win64="yes">
+        <File Id="Qt5Widgets.dll" Source="Qt5Widgets.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
     </DirectoryRef>
     <DirectoryRef Id="WorkerUiDirectory">
       <Component Id="plugin.json" Guid="f493b04f-bf32-4616-8ee8-8ea9d20842bd" Win64="yes">
