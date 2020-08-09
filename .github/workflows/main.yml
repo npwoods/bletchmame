@@ -61,4 +61,9 @@ jobs:
     - name: Run Acceptance Tests
       run: |
         ./BletchMAME_tests.exe
-        exit $?
+        echo "Exit code $?"
+        if [ $? -ne 0 ]
+        then
+            exit 1
+        fi
+
