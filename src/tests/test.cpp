@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
     if (anyFailed)
     {
         std::cout << "TEST FAILURES OCCURRED" << std::endl;
-        *((long *) (size_t)rand()) = 0xDEADBEEF;
         exit(-1);
     }
     std::cout << "All tests succeeded" << std::endl;
