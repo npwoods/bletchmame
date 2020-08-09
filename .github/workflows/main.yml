@@ -25,6 +25,14 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
+    # Install PanDoc
+    - name: Install PanDoc
+      working-directory: deps
+      run: |
+        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc.zip
+        7z e pandoc.zip
+        ls -l
+
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -69,8 +77,12 @@ jobs:
     - name: Generate readme.html
       run: pandoc README.md -o readme.html
 
+    # Generate version.txt
+    - name: Generate version.txt
+      run: git describe --tags | python version.py | tee version.txt
+
     # Build MSI
     - name: Build MSI
       run: |
-        /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`git describe --tags` -out bletchmame.wixobj
+        /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat version.txt` -out bletchmame.wixobj
         /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
