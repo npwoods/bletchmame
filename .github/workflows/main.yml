@@ -45,7 +45,7 @@ jobs:
       with:
         version: '5.15.1'
         arch: 'win64_mingw81'
-        dir: deps/Qt
+        dir: deps
 
     # Build libexpat
     - name: Build libexpat
@@ -60,12 +60,6 @@ jobs:
         cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
         mingw32-make -j 8
         strip ./BletchMAME.exe
-        echo "SHOWING PATH"
-        echo $PATH
-        echo "SHOWING Qt5_Dir"
-        echo $Qt5_DIR
-        echo "SHOWING deps"
-        ls -la deps
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
@@ -87,11 +81,13 @@ jobs:
       run: |
         git describe --tags | python version.py | tee version.txt
 
-    # Build MSI
-    - name: Build MSI
-      run: |
-        /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat version.txt` -out bletchmame.wixobj
-        /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
+    # Build MSI - Candle
+    - name: Build MSI - Candle
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat version.txt` -dQTBIN=./deps/Qt/5.15.1/mingw81_64/bin -out bletchmame.wixobj
+        
+    # Build MSI - Light
+    - name: Build MSI - Light
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
         
     # Prepare Artifacts
     - name: Prepare Artifacts

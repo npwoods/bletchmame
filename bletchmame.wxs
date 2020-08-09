@@ -24,13 +24,13 @@
         <File Id="readme.html" Source="readme.html" KeyPath="yes" Checksum="yes"/>
       </Component>
       <Component Id="Qt5Core.dll" Guid="fa58993c-6909-4255-8e0c-a48e2b778ef2" Win64="yes">
-        <File Id="Qt5Core.dll" Source="$(var.QTDLLS)\Qt5Core.dll" KeyPath="yes" Checksum="yes"/>
+        <File Id="Qt5Core.dll" Source="$(var.QTBIN)\Qt5Core.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
       <Component Id="Qt5Gui.dll" Guid="453155ac-1bcd-44c8-8df6-fda6ee17cf05" Win64="yes">
-        <File Id="Qt5Gui.dll" Source="$(var.QTDLLS)\Qt5Gui.dll" KeyPath="yes" Checksum="yes"/>
+        <File Id="Qt5Gui.dll" Source="$(var.QTBIN)\Qt5Gui.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
       <Component Id="Qt5Widgets.dll" Guid="9ce2fb83-081e-43e3-9eea-e2df115406e6" Win64="yes">
-        <File Id="Qt5Widgets.dll" Source="$(var.QTDLLS)\Qt5Widgets.dll" KeyPath="yes" Checksum="yes"/>
+        <File Id="Qt5Widgets.dll" Source="$(var.QTBIN)\Qt5Widgets.dll" KeyPath="yes" Checksum="yes"/>
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="WorkerUiDirectory">
