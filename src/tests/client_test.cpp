@@ -40,5 +40,5 @@ void MameClient::Test::appendExtraArguments()
 }
 
 
-static TestFixture<MameClient::Test> fixture;
+// static TestFixture<MameClient::Test> fixture;
 #include "client_test.moc"

@@ -52,5 +52,5 @@ void InputsDialog::Test::getSeqTextFromTokens()
 }
 
 
-static TestFixture<InputsDialog::Test> fixture;
+// static TestFixture<InputsDialog::Test> fixture;
 #include "inputs_test.moc"

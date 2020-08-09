@@ -118,5 +118,5 @@ void Test::general()
 }
 
 
-static TestFixture<Test> fixture;
+// static TestFixture<Test> fixture;
 #include "info_builder_test.moc"

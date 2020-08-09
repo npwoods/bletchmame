@@ -104,5 +104,5 @@ void Test::return_value_substitutor()
 	QVERIFY(func_called);
 }
 
-static TestFixture<Test> fixture;
+// static TestFixture<Test> fixture;
 #include "utility_test.moc"

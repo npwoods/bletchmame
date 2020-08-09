@@ -131,5 +131,5 @@ void Preferences::Test::substitutions2() { substitutions("C:\\foo (with parens)"
 void Preferences::Test::substitutions3() { substitutions("C:\\$(VARNAME)\\foo", "C:\\vardata\\foo"); }
 
 
-static TestFixture<Preferences::Test> fixture;
+// static TestFixture<Preferences::Test> fixture;
 #include "prefs_test.moc"
