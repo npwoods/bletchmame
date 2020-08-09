@@ -98,6 +98,9 @@ jobs:
         7z a rel/BletchMAME_latest.zip BletchMAME.exe
         7z a rel/BletchMAME_latest.zip readme.html
         7z a rel/BletchMAME_latest.zip plugins
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Core.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Gui.dll
+        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Widgets.dll
 
     # Configure AWS Credentials
     - name: Configure AWS Credentials
