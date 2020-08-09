@@ -39,7 +39,7 @@ void InputsDialog::Test::getSeqTextFromTokens()
 
 	auto test = [&codes](const QString &tokens, const QString &expectedResult)
 	{
-		QString actualResult = InputsDialog::GetSeqTextFromTokens("BLAH", codes);
+		QString actualResult = InputsDialog::GetSeqTextFromTokens(tokens, codes);
 		QVERIFY(actualResult == expectedResult);
 	};
 

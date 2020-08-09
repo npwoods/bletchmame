@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
     if (anyFailed)
     {
-        std::cout << "TEST FAILURES OCCURRED" << std::endl;
+        std::cout << "TEST FAILURES OCCURRED - CRASHING" << std::endl;
 
         // the monstrosity below is a consequence of seemingly not being able to
         // report errors with exit codes under GitHub actions; for some reason exit
