@@ -50,7 +50,6 @@ jobs:
         cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DEXPAT_SHARED_LIBS=OFF
         cd deps/libexpat_build
         mingw32-make -j 8
-        ls -l
 
     # Build BletchMAME
     - name: Build BletchMAME
