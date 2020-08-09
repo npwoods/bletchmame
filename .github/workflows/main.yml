@@ -6,9 +6,9 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches: [ master, qt_port ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, qt_port ]
+    branches: [ master ]
 
 # Defaults
 defaults:
