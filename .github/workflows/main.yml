@@ -25,14 +25,6 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-    # Install PanDoc
-    - name: Install PanDoc
-      working-directory: deps
-      run: |
-        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc.zip
-        7z e pandoc.zip
-        ls -l
-
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -44,6 +36,15 @@ jobs:
         repository: libexpat/libexpat.git
         ref: R_2_2_9
         path: deps/libexpat
+
+    # Install PanDoc
+    - name: Install PanDoc
+      run: |
+        mkdir deps
+        cd deps
+        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc.zip
+        7z e pandoc.zip
+        ls -l
 
     # Install Qt
     - name: Install Qt
