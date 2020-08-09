@@ -45,6 +45,7 @@ jobs:
       with:
         version: '5.15.1'
         arch: 'win64_mingw81'
+        dir: deps/Qt
 
     # Build libexpat
     - name: Build libexpat
@@ -59,8 +60,12 @@ jobs:
         cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
         mingw32-make -j 8
         strip ./BletchMAME.exe
-        ls -la
-        ls -la Qt5
+        echo "SHOWING PATH"
+        echo $PATH
+        echo "SHOWING Qt5_Dir"
+        echo $Qt5_DIR
+        echo "SHOWING deps"
+        ls -la deps
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
