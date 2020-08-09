@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" UpgradeCode="a0f6babb-15f5-48f9-a000-665f644a7019" Version="$(var.VERSION)" Language="1033" Name="BletchMAME" Manufacturer="BletchMAME">
+    <Package InstallerVersion="300" Compressed="yes" Platform="x64"/>
+    <Media Id="1" Cabinet="myapplication.cab" EmbedCab="yes" />
+    
+    <!-- Step 1: Define the directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="BletchMAME">
+          <Directory Id="PLUGINSDIRECTORY" Name="plugins">
+            <Directory Id="WorkerUiDirectory" Name="worker_ui"/>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    
+    <!-- Step 2: Add files to your installer package -->
+    <DirectoryRef Id="APPLICATIONROOTDIRECTORY">
+      <Component Id="BletchMAME.exe" Guid="1cd267f9-1e1d-4205-9289-b857f6c842ea" Win64="yes">
+        <File Id="BletchMAME.exe" Source="BletchMAME.exe" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="readme.html" Guid="326b1d99-f61a-4ba9-b5a6-794a49a8e246" Win64="yes">
+        <File Id="readme.html" Source="readme.html" KeyPath="yes" Checksum="yes"/>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="WorkerUiDirectory">
+      <Component Id="plugin.json" Guid="f493b04f-bf32-4616-8ee8-8ea9d20842bd" Win64="yes">
+        <File Id="plugin.json" Source="plugins\worker_ui\plugin.json" KeyPath="yes"/>
+      </Component>
+      <Component Id="init.lua" Guid="81eaf2b9-68a4-482c-9563-65cfe37de768" Win64="yes">
+        <File Id="init.lua" Source="plugins\worker_ui\init.lua" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+    
+    <!-- Step 3: Tell WiX to install the files -->    
+    <Feature Id="FrontEnd" Title="BletchMAME Front End" Level="1" ConfigurableDirectory="APPLICATIONROOTDIRECTORY">
+      <ComponentRef Id="BletchMAME.exe" />
+    </Feature>
+    <Feature Id="WorkerUiPlugin" Title="Worker UI LUA Plugin" Level="1" ConfigurableDirectory="PLUGINSDIRECTORY">
+      <ComponentRef Id="plugin.json" />
+      <ComponentRef Id="init.lua" />
+    </Feature>
+    <Feature Id="ReadMeFile" Title="Read Me File" Level="1" ConfigurableDirectory="APPLICATIONROOTDIRECTORY">
+      <ComponentRef Id="readme.html" />
+    </Feature>
+    
+    <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
+    <UIRef Id="WixUI_Mondo" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+    
+    <!--
+      <Icon Id="BletchMAME.ico" SourceFile="src\bletchmame.ico" />
+    -->    
+  </Product>
+</Wix>
