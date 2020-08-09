@@ -59,11 +59,4 @@ jobs:
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
-      run: |
-        ./BletchMAME_tests.exe
-        echo "Exit code $?"
-        if [ $? -ne 0 ]
-        then
-            exit 1
-        fi
-
+      run: ./BletchMAME_tests.exe

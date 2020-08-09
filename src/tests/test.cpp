@@ -64,5 +64,10 @@ int main(int argc, char *argv[])
         if (QTest::qExec(testObject.get(), argc, argv) != 0)
             anyFailed = true;
     }
-    return anyFailed ? -1 : 0;
+
+    if (anyFailed)
+        std::cout << "TEST FAILURES OCCURRED";
+    else
+        std::cout << "All tests succeeded";
+    return anyFailed ? 1 : 0;
 }
