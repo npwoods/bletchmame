@@ -25,14 +25,6 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-    # Configure AWS Credentials
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-      
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -103,6 +95,14 @@ jobs:
         7z a rel/BletchMAME_latest.zip readme.html
         7z a rel/BletchMAME_latest.zip plugins
 
+    # Configure AWS Credentials
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+      
     # Deploy Artifacts to S3
     - name: Deploy Artifacts to S3
       run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete
