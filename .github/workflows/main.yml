@@ -61,4 +61,4 @@ jobs:
     # Run Acceptance Tests
     - name: Run Acceptance Tests
       run: |
-        ./BletchMAME_tests.exe
+        ./BletchMAME_tests.exe && exit 1

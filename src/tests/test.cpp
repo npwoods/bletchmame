@@ -55,7 +55,7 @@ int TestFixtureBase::testFixtureCount()
 int main(int argc, char *argv[])
 {
     std::cout << "BletchMAME Test Harness" << std::endl;
-    std::cout << TestFixtureBase::testFixtureCount() << " total test(s)" << std::endl;
+    std::cout << TestFixtureBase::testFixtureCount() << " total test fixture(s)" << std::endl;
 
     bool anyFailed = false;
     for (const TestFixtureBase &testFixture : TestFixtureBase::testFixtures())
