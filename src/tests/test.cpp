@@ -9,7 +9,7 @@
 #include <iostream>
 #include "test.h"
 
-static std::list<std::function<std::unique_ptr<QObject>()>> s_testFuncs;
+static std::list<std::reference_wrapper<TestFixtureBase>> s_testFixtures;
 
 
 //**************************************************************************
@@ -17,12 +17,12 @@ static std::list<std::function<std::unique_ptr<QObject>()>> s_testFuncs;
 //**************************************************************************
 
 //-------------------------------------------------
-//  accumulateTest
+//  TestFixtureBase ctor
 //-------------------------------------------------
 
-void TestFixtureBase::accumulateTest(std::function<std::unique_ptr<QObject>()> &&func)
+TestFixtureBase::TestFixtureBase()
 {
-    s_testFuncs.push_back(std::move(func));
+    s_testFixtures.push_back(*this);
 }
 
 
@@ -33,13 +33,13 @@ void TestFixtureBase::accumulateTest(std::function<std::unique_ptr<QObject>()> &
 int main(int argc, char *argv[])
 {
     std::cout << "BletchMAME Test Harness" << std::endl;
-    std::cout << s_testFuncs.size() << " total test(s)" << std::endl;
+    std::cout << s_testFixtures.size() << " total test(s)" << std::endl;
 
     bool anyFailed = false;
-    for (const auto &func : s_testFuncs)
+    for (const TestFixtureBase &testFixture : s_testFixtures)
     {
-        auto test = func();
-        if (QTest::qExec(test.get(), argc, argv) != 0)
+        auto testObject = testFixture.createTestObject();
+        if (QTest::qExec(testObject.get(), argc, argv) != 0)
             anyFailed = true;
     }
     return anyFailed ? -1 : 0;

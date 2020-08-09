@@ -17,8 +17,11 @@
 
 class TestFixtureBase
 {
+public:
+    virtual std::unique_ptr<QObject> createTestObject() const = 0;
+
 protected:
-    static void accumulateTest(std::function<std::unique_ptr<QObject>()> &&func);
+    TestFixtureBase();
 };
 
 
@@ -26,9 +29,9 @@ template<typename T>
 class TestFixture : public TestFixtureBase
 {
 public:
-    TestFixture()
+    virtual std::unique_ptr<QObject> createTestObject() const override
     {
-        accumulateTest([] { return std::make_unique<T>(); });
+        return std::make_unique<T>();
     }
 };
 
