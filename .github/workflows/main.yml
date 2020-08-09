@@ -37,14 +37,11 @@ jobs:
         ref: R_2_2_9
         path: deps/libexpat
 
-    # Install PanDoc
-    - name: Install PanDoc
-      working-directory: deps
+    # Generate version.txt
+    - name: Generate version.txt
       run: |
-        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc-2.10.1-windows-i386.zip
-        7z x pandoc-2.10.1-windows-i386.zip
-        ls -l
-        ls -l pandoc-2.10.1
+        ls -la
+        git describe --tags | python version.py | tee version.txt
 
     # Install Qt
     - name: Install Qt
@@ -72,15 +69,14 @@ jobs:
 
     # Install PanDoc
     - name: Install PanDoc
-      run: choco install pandoc      
+      working-directory: deps
+      run: |
+        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc-2.10.1-windows-i386.zip
+        7z x pandoc-2.10.1-windows-i386.zip
 
     # Generate readme.html
     - name: Generate readme.html
-      run: pandoc README.md -o readme.html
-
-    # Generate version.txt
-    - name: Generate version.txt
-      run: git describe --tags | python version.py | tee version.txt
+      run: deps/pandoc-2.10.1/pandoc.exe README.md -o readme.html
 
     # Build MSI
     - name: Build MSI
