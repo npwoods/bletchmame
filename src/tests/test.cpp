@@ -28,10 +28,23 @@ TestFixtureBase::TestFixtureBase()
 //  TestFixtureBase::testFixtures
 //-------------------------------------------------
 
-std::list<std::reference_wrapper<const TestFixtureBase>> &TestFixtureBase::testFixtures()
+std::forward_list<std::reference_wrapper<const TestFixtureBase>> &TestFixtureBase::testFixtures()
 {
-    static std::list<std::reference_wrapper<const TestFixtureBase>> s_testFixtures;
+    static std::forward_list<std::reference_wrapper<const TestFixtureBase>> s_testFixtures;
     return s_testFixtures;
+}
+
+
+//-------------------------------------------------
+//  TestFixtureBase::testFixtureCount
+//-------------------------------------------------
+
+int TestFixtureBase::testFixtureCount()
+{
+    int count = 0;
+    for (auto iter = testFixtures().begin(); iter != testFixtures().end(); iter++)
+        count++;
+    return count;
 }
 
 
@@ -42,7 +55,7 @@ std::list<std::reference_wrapper<const TestFixtureBase>> &TestFixtureBase::testF
 int main(int argc, char *argv[])
 {
     std::cout << "BletchMAME Test Harness" << std::endl;
-    std::cout << TestFixtureBase::testFixtures().size() << " total test(s)" << std::endl;
+    std::cout << TestFixtureBase::testFixtureCount() << " total test(s)" << std::endl;
 
     bool anyFailed = false;
     for (const TestFixtureBase &testFixture : TestFixtureBase::testFixtures())

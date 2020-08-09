@@ -33,5 +33,5 @@ void RunMachineTask::Test::buildCommand()
 }
 
 
-// static TestFixture<RunMachineTask::Test> fixture;
+static TestFixture<RunMachineTask::Test> fixture;
 #include "runmachinetask_test.moc"

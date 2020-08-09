@@ -57,5 +57,5 @@ void PathsDialog::Test::fileAndDirTypes()
 }
 
 
-// static TestFixture<PathsDialog::Test> fixture;
+static TestFixture<PathsDialog::Test> fixture;
 #include "paths_test.moc"

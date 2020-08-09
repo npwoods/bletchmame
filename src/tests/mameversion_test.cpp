@@ -40,5 +40,5 @@ void MameVersion::Test::general(const char *version_string, int expected_major, 
 }
 
 
-// static TestFixture<MameVersion::Test> fixture;
+static TestFixture<MameVersion::Test> fixture;
 #include "mameversion_test.moc"

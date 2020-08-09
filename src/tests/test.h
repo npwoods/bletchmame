@@ -13,6 +13,7 @@
 
 #include <QTest>
 
+#include <forward_list>
 #include <functional>
 
 class TestFixtureBase
@@ -21,8 +22,9 @@ public:
     // virtuals
     virtual std::unique_ptr<QObject> createTestObject() const = 0;
 
-    // accessor
-    static std::list<std::reference_wrapper<const TestFixtureBase>> &testFixtures();
+    // accessors
+    static std::forward_list<std::reference_wrapper<const TestFixtureBase>> &testFixtures();
+    static int testFixtureCount();
 
 protected:
     // ctor

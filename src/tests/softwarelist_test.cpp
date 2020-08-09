@@ -55,5 +55,5 @@ void software_list::test::general()
 }
 
 
-// static TestFixture<software_list::test> fixture;
+static TestFixture<software_list::test> fixture;
 #include "softwarelist_test.moc"
