@@ -37,7 +37,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MSYS Makefiles" -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test
+        cmake . -G "MSYS Makefiles" -DCMAKE_PREFIX_PATH=/mingw64/qt5-static/lib/cmake
         make -j 8
         strip ./BletchMAME.exe
 
