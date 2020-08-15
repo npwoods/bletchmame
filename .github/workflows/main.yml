@@ -10,16 +10,14 @@ on:
   pull_request:
     branches: [ master ]
 
-# Defaults
-defaults:
-  run:
-    shell: msys {0}
-    
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -32,7 +30,9 @@ jobs:
     - name: Install MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        install: 'mingw-w64-x86_64-qt5-static'
+        msystem: MINGW64
+        update: true
+        install: git mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5-static
 
     # Build BletchMAME
     - name: Build BletchMAME
