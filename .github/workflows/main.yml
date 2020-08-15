@@ -13,7 +13,7 @@ on:
 # Defaults
 defaults:
   run:
-    shell: bash
+    shell: msys {0}
     
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -37,6 +37,9 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
+        ls -l /mingw64/qt5-static/lib
+        ls -l /mingw64/qt5-static/lib/cmake
+        ls -l /mingw64/qt5-static/lib/cmake/Qt5
         cmake . -G "MSYS Makefiles" -DQt5_DIR=/mingw64/qt5-static/lib/cmake/Qt5 -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test
         make -j 8
         strip ./BletchMAME.exe
