@@ -28,8 +28,8 @@ jobs:
       with:
         fetch-depth: 0
 
-    # Install MSYS
-    - name: Install MSYS
+    # Install MSYS2
+    - name: Install MSYS2
       uses: msys2/setup-msys2@v2
       with:
         install: 'mingw-w64-x86_64-qt5-static'
@@ -37,7 +37,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MSYS Makefiles"
+        cmake . -G "MSYS Makefiles" -DQt5Test_DIR=c:/msys64/mingw64/qt5-static/lib/cmake/Qt5Test
         make -j 8
         strip ./BletchMAME.exe
 
