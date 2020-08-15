@@ -54,6 +54,9 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
+        ls -l /mingw64/qt5-static/lib
+        ls -l /mingw64/qt5-static/lib/cmake
+        ls -l /mingw64/qt5-static/lib/cmake/Qt5
         cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
         mingw32-make -j 8
         strip ./BletchMAME.exe
