@@ -6,7 +6,7 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches: [ master, msys ]
   pull_request:
     branches: [ master ]
 
@@ -28,34 +28,17 @@ jobs:
       with:
         fetch-depth: 0
 
-    # Checkout Dependent Repository (libexpat)
-    - name: Checkout Dependent Repository (libexpat)
-      uses: actions/checkout@v2
+    # Install MSYS
+    - name: Install MSYS
+      uses: uses: msys2/setup-msys2@v2
       with:
-        repository: libexpat/libexpat.git
-        ref: R_2_2_9
-        path: deps/libexpat
-
-    # Install Qt
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: '5.15.1'
-        arch: 'win64_mingw81'
-        dir: deps
-
-    # Build libexpat
-    - name: Build libexpat
-      run: |
-        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DEXPAT_SHARED_LIBS=OFF
-        cd deps/libexpat_build
-        mingw32-make -j 8
+        install: 'mingw-w64-x86_64-qt5-static'
 
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
-        mingw32-make -j 8
+        cmake . -G "MSYS Makefiles"
+        make -j 8
         strip ./BletchMAME.exe
 
     # Run Acceptance Tests

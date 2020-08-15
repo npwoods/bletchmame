@@ -33,7 +33,7 @@
 #include <string.h>
 #include <time.h>
 
-#include <QtZlib/zlib.h>
+#include <zlib.h>
 #if (ZLIB_VERNUM < 0x1270)
 typedef uLongf z_crc_t;
 #endif
@@ -1463,7 +1463,7 @@ extern int ZEXPORT zipWriteInFileInZip (zipFile file,const void* buf,unsigned in
     if (zi->in_opened_file_inzip == 0)
         return ZIP_PARAMERROR;
 
-    zi->ci.crc32 = crc32(zi->ci.crc32,(const z_Bytef*)buf,(uInt)len);
+    zi->ci.crc32 = crc32(zi->ci.crc32,(const Bytef*)buf,(uInt)len);
 
 #ifdef HAVE_BZIP2
     if(zi->ci.method == Z_BZIP2ED && (!zi->ci.raw))
