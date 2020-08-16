@@ -16,6 +16,11 @@ include(FindEXPAT)
 find_package(EXPAT REQUIRED)
 include_directories(${EXPAT_INCLUDE_DIRS})
 
+# Expat
+include(FindZLIB)
+find_package(ZLIB REQUIRED)
+include_directories(${ZLIB_INCLUDE_DIRS})
+
 # Qt
 find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt5Test REQUIRED)
@@ -119,7 +124,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
 
 add_executable(BletchMAME WIN32 src/main.cpp)
 target_include_directories(BletchMAME PRIVATE src lib)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES})
 
 
 #############################################################################
@@ -142,7 +147,7 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES})
 
 
 #############################################################################
