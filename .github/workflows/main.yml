@@ -32,7 +32,7 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: git mingw-w64-x86_64-toolchain mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
+        install: git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
     # Build BletchMAME
     - name: Build BletchMAME
@@ -40,7 +40,7 @@ jobs:
         ls -l /mingw64/qt5-static/lib
         ls -l /mingw64/qt5-static/lib/cmake
         ls -l /mingw64/qt5-static/lib/cmake/Qt5
-        which make
+        which make || echo foo
         cmake . -G "MSYS Makefiles" -DQt5_DIR=/mingw64/qt5-static/lib/cmake/Qt5 -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test -DCMAKE_MAKE_PROGRAM=make
         make -j 8
         strip ./BletchMAME.exe
