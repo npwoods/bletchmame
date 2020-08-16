@@ -10,16 +10,14 @@ on:
   pull_request:
     branches: [ master ]
 
-# Defaults
-defaults:
-  run:
-    shell: bash
-    
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -28,34 +26,23 @@ jobs:
       with:
         fetch-depth: 0
 
-    # Checkout Dependent Repository (libexpat)
-    - name: Checkout Dependent Repository (libexpat)
-      uses: actions/checkout@v2
+    # Install MSYS2
+    - name: Install MSYS2
+      uses: msys2/setup-msys2@v2
       with:
-        repository: libexpat/libexpat.git
-        ref: R_2_2_9
-        path: deps/libexpat
-
-    # Install Qt
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: '5.15.1'
-        arch: 'win64_mingw81'
-        dir: deps
-
-    # Build libexpat
-    - name: Build libexpat
-      run: |
-        cmake deps/libexpat/expat -G "MinGW Makefiles" -B deps/libexpat_build -DEXPAT_SHARED_LIBS=OFF
-        cd deps/libexpat_build
-        mingw32-make -j 8
+        msystem: MINGW64
+        update: true
+        install: git make p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MinGW Makefiles" -DEXPAT_LIBRARY=./deps/libexpat_build/libexpat.a -DEXPAT_INCLUDE_DIR=./deps/libexpat/expat/lib
-        mingw32-make -j 8
+        ls -l /mingw64/qt5-static/lib
+        ls -l /mingw64/qt5-static/lib/cmake
+        ls -l /mingw64/qt5-static/lib/cmake/Qt5
+        which make || echo foo
+        cmake . -G "MSYS Makefiles" -DQt5_DIR=/mingw64/qt5-static/lib/cmake/Qt5 -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test -DCMAKE_MAKE_PROGRAM=make
+        make -j 8
         strip ./BletchMAME.exe
 
     # Run Acceptance Tests
@@ -64,10 +51,10 @@ jobs:
 
     # Install PanDoc
     - name: Install PanDoc
-      working-directory: deps
       run: |
-        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > pandoc-2.10.1-windows-i386.zip
-        7z x pandoc-2.10.1-windows-i386.zip
+        test -d deps || mkdir deps
+        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > deps/pandoc-2.10.1-windows-i386.zip
+        7z x deps/pandoc-2.10.1-windows-i386.zip -odeps
 
     # Generate readme.html
     - name: Generate readme.html
@@ -95,12 +82,6 @@ jobs:
         7z a rel/BletchMAME_latest.zip BletchMAME.exe
         7z a rel/BletchMAME_latest.zip readme.html
         7z a rel/BletchMAME_latest.zip plugins
-        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Core.dll
-        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Gui.dll
-        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/Qt5Widgets.dll
-        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libgcc_s_seh-1.dll
-        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libwinpthread-1.dll
-        7z a rel/BletchMAME_latest.zip ./deps/Qt/5.15.1/mingw81_64/bin/libstdc++-6.dll
 
     # Configure AWS Credentials
     - name: Configure AWS Credentials

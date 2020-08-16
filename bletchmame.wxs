@@ -20,24 +20,6 @@
       <Component Id="BletchMAME.exe" Guid="1cd267f9-1e1d-4205-9289-b857f6c842ea" Win64="yes">
         <File Id="BletchMAME.exe" Source="BletchMAME.exe" KeyPath="yes" Checksum="yes"/>
       </Component>
-      <Component Id="Qt5Core.dll" Guid="fa58993c-6909-4255-8e0c-a48e2b778ef2" Win64="yes">
-        <File Id="Qt5Core.dll" Source="$(var.QTBIN)\Qt5Core.dll" KeyPath="yes" Checksum="yes"/>
-      </Component>
-      <Component Id="Qt5Gui.dll" Guid="453155ac-1bcd-44c8-8df6-fda6ee17cf05" Win64="yes">
-        <File Id="Qt5Gui.dll" Source="$(var.QTBIN)\Qt5Gui.dll" KeyPath="yes" Checksum="yes"/>
-      </Component>
-      <Component Id="Qt5Widgets.dll" Guid="9ce2fb83-081e-43e3-9eea-e2df115406e6" Win64="yes">
-        <File Id="Qt5Widgets.dll" Source="$(var.QTBIN)\Qt5Widgets.dll" KeyPath="yes" Checksum="yes"/>
-      </Component>
-      <Component Id="libstdcxx_6.dll" Guid="6b926b8f-9eb8-4410-82df-9a9d2c735425" Win64="yes">
-        <File Id="libstdcxx_6.dll" Source="$(var.QTBIN)\libstdc++-6.dll" KeyPath="yes" Checksum="yes"/>
-      </Component>
-      <Component Id="libgcc_s_seh_1.dll" Guid="a839e9a1-4a23-4ec1-9f4b-d398d2500088" Win64="yes">
-        <File Id="libgcc_s_seh_1.dll" Source="$(var.QTBIN)\libgcc_s_seh-1.dll" KeyPath="yes" Checksum="yes"/>
-      </Component>
-      <Component Id="libwinpthread_1.dll" Guid="3291fe62-3964-4dd8-9877-1040e72f5d2a" Win64="yes">
-        <File Id="libwinpthread_1.dll" Source="$(var.QTBIN)\libwinpthread-1.dll" KeyPath="yes" Checksum="yes"/>
-      </Component>
       <Component Id="readme.html" Guid="326b1d99-f61a-4ba9-b5a6-794a49a8e246" Win64="yes">
         <File Id="readme.html" Source="readme.html" KeyPath="yes" Checksum="yes"/>
       </Component>
@@ -54,12 +36,6 @@
     <!-- Step 3: Tell WiX to install the files -->    
     <Feature Id="FrontEnd" Title="BletchMAME Front End" Level="1" ConfigurableDirectory="APPLICATIONROOTDIRECTORY">
       <ComponentRef Id="BletchMAME.exe" />
-      <ComponentRef Id="Qt5Core.dll" />
-      <ComponentRef Id="Qt5Gui.dll" />
-      <ComponentRef Id="Qt5Widgets.dll" />
-      <ComponentRef Id="libstdcxx_6.dll" />
-      <ComponentRef Id="libgcc_s_seh_1.dll" />
-      <ComponentRef Id="libwinpthread_1.dll" />
     </Feature>
     <Feature Id="WorkerUiPlugin" Title="Worker UI LUA Plugin" Level="1" ConfigurableDirectory="PLUGINSDIRECTORY">
       <ComponentRef Id="plugin.json" />
