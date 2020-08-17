@@ -10,20 +10,8 @@
 
 #include "about.h"
 #include "ui_about.h"
+#include "buildversion.h"
 #include "mameversion.h"
-
-
-//**************************************************************************
-//  VERSION INFO
-//**************************************************************************
-
-#if HAS_VERSION_GEN_CPP
-#include "version.gen.cpp"
-#else
-static const char buildVersion[] = "";
-static const char buildRevision[] = "";
-static const char buildDateTime[] = "";
-#endif
 
 
 //**************************************************************************
@@ -93,12 +81,12 @@ QString AboutDialog::getPrettyMameVersion(const QString &mameVersion)
 
 void AboutDialog::getExtraText(QTextStream &stream, const QString &prettyMameVersion)
 {
-    if (buildVersion[0])
-        stream << buildVersion << "\n";
-    if (buildRevision[0])
-        stream << buildRevision << "\n";
-    if (buildDateTime[0])
-        stream << buildDateTime << "\n";
+    if (BuildVersion::s_instance.has_value())
+    {
+        stream << BuildVersion::s_instance->version() << "\n"
+            << BuildVersion::s_instance->revision() << "\n"
+            << BuildVersion::s_instance->dateTime() << "\n";
+    }
 
     stream << "\n";
     if (!prettyMameVersion.isEmpty())

@@ -31,12 +31,12 @@ find_package(Qt5Test REQUIRED)
 enable_testing(true)
 
 # Is version.gen.cpp available?
-if (HAS_VERSION_GEN_CPP)
-MESSAGE(STATUS "version.gen.cpp AVAILABLE")
-add_definitions(-DHAS_VERSION_GEN_CPP=1)
+if (HAS_BUILDVERSION_GEN_CPP)
+MESSAGE(STATUS "buildversion.gen.cpp AVAILABLE")
+add_definitions(-DHAS_BUILDVERSION_GEN_CPP=1)
 else()
-MESSAGE(STATUS "version.gen.cpp UNAVAILABLE")
-add_definitions(-DHAS_VERSION_GEN_CPP=0)
+MESSAGE(STATUS "buildversion.gen.cpp UNAVAILABLE")
+add_definitions(-DHAS_BUILDVERSION_GEN_CPP=0)
 endif()
 
 
@@ -45,6 +45,8 @@ endif()
 #############################################################################
 
 add_library(BletchMAME_core
+	src/buildversion.cpp
+	src/buildversion.h
 	src/client.cpp
 	src/client.h
 	src/iconloader.cpp
