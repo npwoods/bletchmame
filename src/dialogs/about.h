@@ -13,6 +13,7 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class AboutDialog; }
+class QTextStream;
 QT_END_NAMESPACE
 
 class AboutDialog : public QDialog
@@ -20,11 +21,14 @@ class AboutDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit AboutDialog(QWidget *parent = nullptr);
+    explicit AboutDialog(QWidget *parent, const QString &mameVersion);
     ~AboutDialog();
 
 private:
-    Ui::AboutDialog *ui;
+    std::unique_ptr<Ui::AboutDialog>    m_ui;
+
+    static QString getPrettyMameVersion(const QString &mameVersion);
+    void getExtraText(QTextStream &stream, const QString &prettyMameVersion);
 };
 
 #endif // DIALOGS_ABOUT_H

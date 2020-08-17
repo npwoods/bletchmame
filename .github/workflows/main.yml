@@ -34,10 +34,22 @@ jobs:
         update: true
         install: git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
+    # Generate version.txt
+    - name: Generate version.txt
+      run: |
+        git describe --tags | python version.py | tee version.txt
+
+    # Generate src/version.gen.cpp
+    - name: Generate src/version.gen.cpp
+      run: |
+        sh >src/version.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat version.txt 2>NUL)\"\;'
+        sh >>src/version.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
+        sh >>src/version.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
+
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MSYS Makefiles" -DQt5_DIR=/mingw64/qt5-static/lib/cmake/Qt5 -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test -DCMAKE_MAKE_PROGRAM=make
+        cmake . -G "MSYS Makefiles" -DQt5_DIR=/mingw64/qt5-static/lib/cmake/Qt5 -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test -DCMAKE_MAKE_PROGRAM=make -DHAS_VERSION_GEN_CPP=1
         make -j 8
         strip ./BletchMAME.exe
 
@@ -56,11 +68,6 @@ jobs:
     # Generate readme.html
     - name: Generate readme.html
       run: deps/pandoc-2.10.1/pandoc.exe README.md -o readme.html
-
-    # Generate version.txt
-    - name: Generate version.txt
-      run: |
-        git describe --tags | python version.py | tee version.txt
 
     # Build MSI - Candle
     - name: Build MSI - Candle
