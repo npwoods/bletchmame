@@ -71,7 +71,7 @@ jobs:
 
     # Build MSI - Candle
     - name: Build MSI - Candle
-      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat version.txt` -dQTBIN=./deps/Qt/5.15.1/mingw81_64/bin -out bletchmame.wixobj
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat buildversion.txt` -dQTBIN=./deps/Qt/5.15.1/mingw81_64/bin -out bletchmame.wixobj
         
     # Build MSI - Light
     - name: Build MSI - Light
