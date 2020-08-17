@@ -42,9 +42,9 @@ jobs:
     # Generate src/version.gen.cpp
     - name: Generate src/version.gen.cpp
       run: |
-      	sh >src/version.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat version.txt 2>NUL)\"\;'
-	    sh >>src/version.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
-	    sh >>src/version.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
+        sh >src/version.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat version.txt 2>NUL)\"\;'
+        sh >>src/version.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
+        sh >>src/version.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
 
     # Build BletchMAME
     - name: Build BletchMAME
