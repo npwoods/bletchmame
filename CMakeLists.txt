@@ -30,6 +30,15 @@ find_package(Qt5Test REQUIRED)
 # Yes, we're unit testing
 enable_testing(true)
 
+# Is version.gen.cpp available?
+if (HAS_VERSION_GEN_CPP)
+MESSAGE(STATUS "version.gen.cpp AVAILABLE")
+add_definitions(-DHAS_VERSION_GEN_CPP=1)
+else()
+MESSAGE(STATUS "version.gen.cpp UNAVAILABLE")
+add_definitions(-DHAS_VERSION_GEN_CPP=0)
+endif()
+
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #

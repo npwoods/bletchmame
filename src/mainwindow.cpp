@@ -48,22 +48,6 @@ const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
 
 
 //**************************************************************************
-//  VERSION INFO
-//**************************************************************************
-
-#ifdef _MSC_VER
-// we're not supporing build numbers for MSVC builds
-static const char build_version[] = "MSVC";
-static const char build_revision[] = "MSVC";
-static const char build_date_time[] = "MSVC";
-#else
-extern const char build_version[];
-extern const char build_revision[];
-extern const char build_date_time[];
-#endif
-
-
-//**************************************************************************
 //  TYPE DEFINITIONS
 //**************************************************************************
 
@@ -1182,7 +1166,7 @@ void MainWindow::on_actionPaths_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-	AboutDialog dlg;
+	AboutDialog dlg(this, m_info_db.version());
 	dlg.exec();
 }
 
