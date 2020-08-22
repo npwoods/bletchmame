@@ -43,11 +43,31 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         m_proxyModel->setFilterFixedString(text);
 
         // make the search box functional
-        auto callback = [this, lineEdit, descName{ desc.m_name }]()
+        auto callback = [this, lineEdit, &tableView, descName{ desc.m_name }]()
         {
+            // keep the currentIndex for posterity
+            const QModelIndex currentProxyIndex = tableView.selectionModel()->hasSelection()
+                ? tableView.currentIndex()
+                : QModelIndex();
+            const QModelIndex currentSourceIndex = currentProxyIndex.isValid()
+                ? m_proxyModel->mapToSource(currentProxyIndex)
+                : QModelIndex();
+
+            // change the filter
             QString text = lineEdit->text();
             m_prefs.SetSearchBoxText(descName, QString(text));
             m_proxyModel->setFilterFixedString(text);
+
+            // ensure that whatever was selected stays visible
+            const QModelIndex newCurrentProxyIndex = currentSourceIndex.isValid()
+                ? m_proxyModel->mapFromSource(currentSourceIndex)
+                : QModelIndex();
+            if (newCurrentProxyIndex.isValid())
+            {
+                tableView.scrollTo(newCurrentProxyIndex);
+                tableView.selectRow(newCurrentProxyIndex.row());
+                tableView.scrollTo(newCurrentProxyIndex);
+            }
         };
         connect(lineEdit, &QLineEdit::textEdited, this, callback);
     }
