@@ -51,10 +51,7 @@ ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(QWidget *parent, Preferences 
 	m_itemModel->load(software_col, true, dev_interface);
 
 	// set up a TableViewManager
-	TableViewManager &manager = *new TableViewManager(*m_ui->tableView, *m_itemModel, m_ui->searchBox, prefs, s_tableViewDesc);
-
-	// finally set the model
-	m_ui->tableView->setModel(&manager.sortFilterProxyModel());
+	TableViewManager::setup(*m_ui->tableView, *m_itemModel, m_ui->searchBox, prefs, s_tableViewDesc);
 }
 
 

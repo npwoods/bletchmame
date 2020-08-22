@@ -41,14 +41,8 @@ public:
         const ColumnDesc *  m_columns;
     };
 
-    // ctor
-    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc);
-
-    // accessors
-    QSortFilterProxyModel &sortFilterProxyModel() { return *m_proxyModel; }
-
-    // methods
-    void applyColumnPrefs();
+    // static methods
+    static TableViewManager &setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc);
 
 private:
     Preferences &           m_prefs;
@@ -57,8 +51,14 @@ private:
     QSortFilterProxyModel * m_proxyModel;
     bool                    m_currentlyApplyingColumnPrefs;
 
+    // ctor
+    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc);
+
+    // methods
     const QTableView &parentAsTableView() const;
+    void applyColumnPrefs();
     void persistColumnPrefs();
+    void applySelectedValue();
 };
 
 #endif // TABLEVIEWMANAGER_H

@@ -594,26 +594,29 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// set up machines view
 	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db, m_icon_loader);
-	setupTableView(
+	TableViewManager::setup(
 		*m_ui->machinesTableView,
-		m_ui->machinesSearchBox,
 		machineListItemModel,
+		m_ui->machinesSearchBox,
+		m_prefs,
 		s_machineListTableViewDesc);
 
 	// set up software list view
 	m_softwareListItemModel = new SoftwareListItemModel(this);
-	setupTableView(
+	TableViewManager::setup(
 		*m_ui->softwareTableView,
-		m_ui->softwareSearchBox,
 		*m_softwareListItemModel,
+		m_ui->softwareSearchBox,
+		m_prefs,
 		ChooseSoftlistPartDialog::s_tableViewDesc);
 
 	// set up the profile list view
 	m_profileListItemModel = new ProfileListItemModel(this, m_prefs, m_info_db, m_icon_loader);
-	setupTableView(
+	TableViewManager::setup(
 		*m_ui->profilesTableView,
-		nullptr,
 		*m_profileListItemModel,
+		nullptr,
+		m_prefs,
 		s_profileListTableViewDesc);
 	m_profileListItemModel->refresh(true, true);
 
@@ -1865,23 +1868,6 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 
 	m_client.waitForCompletion();
 	return true;
-}
-
-
-//-------------------------------------------------
-//  setupTableView
-//-------------------------------------------------
-
-void MainWindow::setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc)
-{
-	// set up a TableViewManager
-	TableViewManager &manager = *new TableViewManager(tableView, itemModel, lineEdit, m_prefs, desc);
-
-	// finally set the model
-	tableView.setModel(&manager.sortFilterProxyModel());
-
-	// and read the prefs
-	manager.applyColumnPrefs();
 }
 
 
