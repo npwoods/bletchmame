@@ -46,7 +46,7 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         auto callback = [this, lineEdit, descName{ desc.m_name }]()
         {
             QString text = lineEdit->text();
-            m_prefs.SetSearchBoxText(descName, std::move(text));
+            m_prefs.SetSearchBoxText(descName, QString(text));
             m_proxyModel->setFilterFixedString(text);
         };
         connect(lineEdit, &QLineEdit::textEdited, this, callback);
