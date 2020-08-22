@@ -1879,6 +1879,9 @@ void MainWindow::setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbs
 
 	// finally set the model
 	tableView.setModel(&manager.sortFilterProxyModel());
+
+	// and read the prefs
+	manager.applyColumnPrefs();
 }
 
 
