@@ -1983,7 +1983,7 @@ void MainWindow::WatchForImageMount(const QString &tag)
 		current_value = image->m_file_name;
 
 	// start watching
-	m_watch_subscription = m_state->images().subscribe([this, current_value{std::move(current_value)}, tag{std::move(tag)}]
+	m_watch_subscription = m_state->images().subscribe([this, current_value{std::move(current_value)}, tag]
 	{
 		// did the value change?
 		const status::image *image = m_state->find_image(tag);
