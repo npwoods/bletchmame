@@ -47,11 +47,15 @@ public:
     // accessors
     QSortFilterProxyModel &sortFilterProxyModel() { return *m_proxyModel; }
 
+    // methods
+    void applyColumnPrefs();
+
 private:
     Preferences &           m_prefs;
     const Description &     m_desc;
     int                     m_columnCount;
     QSortFilterProxyModel * m_proxyModel;
+    bool                    m_currentlyApplyingColumnPrefs;
 
     const QTableView &parentAsTableView() const;
     void persistColumnPrefs();

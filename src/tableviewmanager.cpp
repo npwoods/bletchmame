@@ -25,6 +25,7 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
     , m_desc(desc)
     , m_columnCount(-1)
     , m_proxyModel(nullptr)
+    , m_currentlyApplyingColumnPrefs(false)
 {
     // create a proxy model for sorting
     m_proxyModel = new QSortFilterProxyModel((QObject *)&tableView);
@@ -72,13 +73,74 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         connect(lineEdit, &QLineEdit::textEdited, this, callback);
     }
 
-    // get the preferences
-    const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.GetColumnPrefs(m_desc.m_name);
-
     // count the number of columns
     m_columnCount = 0;
     while (m_desc.m_columns[m_columnCount].m_id)
         m_columnCount++;
+
+    // configure the header
+    tableView.horizontalHeader()->setSectionsMovable(true);
+
+    // handle selection
+    connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this, &itemModel](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+    {
+		QModelIndexList selectedIndexes = newSelection.indexes();
+		if (!selectedIndexes.empty())
+		{
+            int selectedRow = m_proxyModel->mapToSource(selectedIndexes[0]).row();
+            QModelIndex selectedIndex = itemModel.index(selectedRow, m_desc.m_keyColumnIndex);
+            QString selectedValue = itemModel.data(selectedIndex).toString();
+            m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
+		}
+	});
+
+    // handle resizing
+	connect(tableView.horizontalHeader(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
+	{
+        if (!m_currentlyApplyingColumnPrefs)
+            persistColumnPrefs();
+	});
+
+	// handle reordering
+    connect(tableView.horizontalHeader(), &QHeaderView::sectionMoved, this, [this](int logicalIndex, int oldVisualIndex, int newVisualIndex)
+    {
+        if (!m_currentlyApplyingColumnPrefs)
+            persistColumnPrefs();
+    });
+
+    // handle when sort order changes
+    connect(tableView.horizontalHeader(), &QHeaderView::sortIndicatorChanged, this, [this](int logicalIndex, Qt::SortOrder order)
+    {
+        if (!m_currentlyApplyingColumnPrefs)
+            persistColumnPrefs();
+    });
+}
+
+
+//-------------------------------------------------
+//  parentAsTableView
+//-------------------------------------------------
+
+const QTableView &TableViewManager::parentAsTableView() const
+{
+    return *dynamic_cast<const QTableView *>(QObject::parent());
+}
+
+
+//-------------------------------------------------
+//  applyColumnPrefs
+//-------------------------------------------------
+
+void TableViewManager::applyColumnPrefs()
+{
+    // we are applying column prefs - we don't want to trample on ourselves
+    m_currentlyApplyingColumnPrefs = true;
+
+    // identify the QTableView
+    QTableView &tableView = *dynamic_cast<QTableView *>(parent());
+
+    // get the preferences
+    const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.GetColumnPrefs(m_desc.m_name);
 
     // unpack them
     int sortLogicalColumn = 0;
@@ -92,9 +154,6 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         int width = iter != columnPrefs.end() ? iter->second.m_width : m_desc.m_columns[logicalColumn].m_defaultWidth;
         int order = iter != columnPrefs.end() ? iter->second.m_order : logicalColumn;
 
-        // resize the column
-        tableView.horizontalHeader()->resizeSection(logicalColumn, width);
-
         // track the sort
         if (iter != columnPrefs.end() && iter->second.m_sort.has_value())
         {
@@ -102,12 +161,14 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
             sortType = iter->second.m_sort.value();
         }
 
+        // resize the column
+        tableView.horizontalHeader()->resizeSection(logicalColumn, width);
+
         // track the order
         logicalColumnOrdering[logicalColumn] = order;
     }
 
-    // configure the header
-    tableView.horizontalHeader()->setSectionsMovable(true);
+    // specify the sort indicator
     tableView.horizontalHeader()->setSortIndicator(sortLogicalColumn, sortType);
 
     // reorder columns appropriately
@@ -131,46 +192,8 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         }
     }
 
-    // handle selection
-	connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this, &itemModel](const QItemSelection &newSelection, const QItemSelection &oldSelection)
-	{
-		QModelIndexList selectedIndexes = newSelection.indexes();
-		if (!selectedIndexes.empty())
-		{
-            int selectedRow = m_proxyModel->mapToSource(selectedIndexes[0]).row();
-            QModelIndex selectedIndex = itemModel.index(selectedRow, m_desc.m_keyColumnIndex);
-            QString selectedValue = itemModel.data(selectedIndex).toString();
-            m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
-		}
-	});
-
-    // handle resizing
-	connect(tableView.horizontalHeader(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
-	{
-        persistColumnPrefs();
-	});
-
-	// handle reordering
-    connect(tableView.horizontalHeader(), &QHeaderView::sectionMoved, this, [this](int logicalIndex, int oldVisualIndex, int newVisualIndex)
-    {
-        persistColumnPrefs();
-    });
-
-    // handle when sort order changes
-    connect(tableView.horizontalHeader(), &QHeaderView::sortIndicatorChanged, this, [this](int logicalIndex, Qt::SortOrder order)
-    {
-        persistColumnPrefs();
-    });
-}
-
-
-//-------------------------------------------------
-//  parentAsTableView
-//-------------------------------------------------
-
-const QTableView &TableViewManager::parentAsTableView() const
-{
-    return *dynamic_cast<const QTableView *>(QObject::parent());
+    // we're done
+    m_currentlyApplyingColumnPrefs = false;
 }
 
 
