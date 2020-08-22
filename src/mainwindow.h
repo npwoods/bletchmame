@@ -221,6 +221,7 @@ private:
 	void ChangeThrottleRate(int adjustment);
 	void ChangeSound(bool sound_enabled);
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
+	void ensureProperFocus();
 };
 
 #endif // MAINWINDOW_H

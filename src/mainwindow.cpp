@@ -1017,6 +1017,7 @@ void MainWindow::on_actionFullScreen_triggered()
 		showFullScreen();
 	else
 		showNormal();
+	ensureProperFocus();
 
 	// and update the menu item
 	m_ui->actionFullScreen->setChecked(newFullScreen);
@@ -1336,20 +1337,7 @@ bool MainWindow::event(QEvent *event)
 	}
 	else if (event->type() == QEvent::WindowActivate)
 	{
-#ifdef WIN32
-		// Windows specific hack - for some reason, the act of moving the focus away
-		// from the application (even it is for a dialog) seems to cause the rootWidget
-		// to lose focus.  Setting the Qt focusPolicy property doesn't seem to help
-		//
-		// In absence of a better way to handle this, we have some Windows specific
-		// code below.  Eventually this code should be retired once there is an understanding
-		// of the proper Qt techniques to apply here
-		if (AttachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
-		{
-			if (::GetFocus() == (HWND)winId())
-				::SetFocus((HWND)m_ui->rootWidget->winId());
-		}
-#endif
+		ensureProperFocus();
 	}
 
 	// if we have a result, we've handled the event; otherwise we have to pass it on
@@ -2413,6 +2401,29 @@ QString MainWindow::getTitleBarText()
 	return titleTextFormat.arg(
 		QCoreApplication::applicationName(),
 		machineDesc);
+}
+
+
+//-------------------------------------------------
+//  ensureProperFocus
+//-------------------------------------------------
+
+void MainWindow::ensureProperFocus()
+{
+#ifdef WIN32
+	// Windows specific hack - for some reason, the act of moving the focus away
+	// from the application (even it is for a dialog) seems to cause the rootWidget
+	// to lose focus.  Setting the Qt focusPolicy property doesn't seem to help
+	//
+	// In absence of a better way to handle this, we have some Windows specific
+	// code below.  Eventually this code should be retired once there is an understanding
+	// of the proper Qt techniques to apply here
+	if (AttachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
+	{
+		if (::GetFocus() == (HWND)winId())
+			::SetFocus((HWND)m_ui->rootWidget->winId());
+	}
+#endif
 }
 
 
