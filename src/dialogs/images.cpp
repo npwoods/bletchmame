@@ -186,12 +186,17 @@ const QString &ImagesDialog::PrettifyImageFileName(const software_list_collectio
         // if so, the pretty name is the description
         result = &software->m_description;
     }
-    else if (full_path && !file_name.isEmpty())
+    else if (!full_path && !file_name.isEmpty())
     {
         // we want to show the base name plus the extension
-        QString file_basename, file_extension;
-        wxFileName::SplitPath(file_name, nullptr, &file_basename, &file_extension);
-        buffer = file_basename + "." + file_extension;
+        QString normalizedFileName = QDir::fromNativeSeparators(file_name);
+        QFileInfo fileInfo(normalizedFileName);
+        buffer = fileInfo.baseName();
+        if (!fileInfo.suffix().isEmpty())
+        {
+            buffer += ".";
+            buffer += fileInfo.suffix();
+        }
         result = &buffer;
     }
     else
