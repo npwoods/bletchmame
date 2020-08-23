@@ -39,11 +39,19 @@ void Preferences::Test::general()
 {
 	const char *xml =
 		"<preferences menu_bar_shown=\"1\">"
+#ifdef Q_OS_WIN32
 		"<path type=\"emu\">C:\\mame64.exe</path>"
 		"<path type=\"roms\">C:\\roms</path>"
 		"<path type=\"samples\">C:\\samples</path>"
 		"<path type=\"config\">C:\\cfg</path>"
 		"<path type=\"nvram\">C:\\nvram</path>"
+#else
+                "<path type=\"emu\">/mame64</path>"
+                "<path type=\"roms\">/roms</path>"
+                "<path type=\"samples\">/samples</path>"
+                "<path type=\"config\">/cfg</path>"
+                "<path type=\"nvram\">/nvram</path>"
+#endif
 
 		"<size width=\"1230\" height=\"765\"/>"
 		"<selectedmachine>nes</selectedmachine>"
@@ -52,7 +60,11 @@ void Preferences::Test::general()
 		"<column id=\"year\" width=\"50\" order=\"2\" />"
 		"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
 
+#ifdef Q_OS_WIN32
 		"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" last_save_state=\"C:\\MyLastState.sta\" />"
+#else
+		"<machine name=\"echo\" working_directory=\"/MyEchoGames\" last_save_state=\"/MyLastState.sta\" />"
+#endif
 		"</preferences>";
 
 	QByteArray byte_array(xml, util::safe_static_cast<int>(strlen(xml)));
@@ -60,6 +72,7 @@ void Preferences::Test::general()
 	Preferences prefs;
 	prefs.Load(input);
 
+#ifdef Q_OS_WIN32
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE) == "C:\\mame64.exe");
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::ROMS) == "C:\\roms\\");
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES) == "C:\\samples\\");
@@ -68,6 +81,16 @@ void Preferences::Test::general()
 
 	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY) == "C:\\MyEchoGames\\");
 	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE) == "C:\\MyLastState.sta");
+#else
+        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE) == "/mame64");
+        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::ROMS) == "/roms/");
+        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES) == "/samples/");
+        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG) == "/cfg/");
+        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM) == "/nvram/");
+
+        QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY) == "/MyEchoGames/");
+        QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE) == "/MyLastState.sta");
+#endif
 	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY) == "");
 	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE) == "");
 }
