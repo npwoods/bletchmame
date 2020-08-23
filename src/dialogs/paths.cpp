@@ -359,7 +359,9 @@ QString PathsDialog::browseForPathDialog(QWidget &parent, Preferences::global_pa
 	{
 	case Preferences::global_path_type::EMU_EXECUTABLE:
 		caption = "Specify MAME Path";
+#ifdef Q_OS_WIN32
 		filter = "EXE files (*.exe);*.exe";
+#endif
 		break;
 
 	default:
