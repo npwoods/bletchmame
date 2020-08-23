@@ -8,6 +8,12 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.0 (2020-Aug-23)
+	- Overhaul of BletchMAME application
+	- Transitioned from wxWidgets to Qt
+	- Adopted CMake
+	- Unit tests now executed as part of build pipeline
+
 - 1.9 (2020-May-20)
 	- Added the ability to record AVI/MNG movies (requires MAME 0.221)
 	- Fixed a bug that would choose odd default file name when saving screenshots
