@@ -740,7 +740,7 @@ QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 	{
 		QDir dir(directory);
 		if (!dir.exists())
-			dir.makeAbsolute();
+			dir.mkpath(".");
 	}
 	return QDir::toNativeSeparators(directory);
 }
