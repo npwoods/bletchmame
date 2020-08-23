@@ -15,6 +15,7 @@
 
 #include <forward_list>
 #include <functional>
+#include <memory>
 
 class TestFixtureBase
 {

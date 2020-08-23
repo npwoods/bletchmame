@@ -11,6 +11,7 @@
 #ifndef DIALOGS_CHOOSESW_H
 #define DIALOGS_CHOOSESW_H
 
+#include <memory>
 #include <QDialog>
 
 #include "softwarelist.h"

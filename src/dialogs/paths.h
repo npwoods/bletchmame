@@ -14,6 +14,7 @@
 #include <QDialog>
 #include <QWidget>
 #include <QString>
+#include <memory>
 #include <vector>
 
 #include "prefs.h"
