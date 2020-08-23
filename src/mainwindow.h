@@ -186,7 +186,6 @@ private:
 	void showInputsDialog(status::input::input_class input_class);
 	void showSwitchesDialog(status::input::input_class input_class);
 	bool isMameVersionAtLeast(const MameVersion &version) const;
-	void setupTableView(QTableView &tableView, QLineEdit *lineEdit, QAbstractItemModel &itemModel, const TableViewManager::Description &desc);
 	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
 	virtual void SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func);
 	void WatchForImageMount(const QString &tag);

@@ -46,29 +46,13 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         // make the search box functional
         auto callback = [this, lineEdit, &tableView, descName{ desc.m_name }]()
         {
-            // keep the currentIndex for posterity
-            const QModelIndex currentProxyIndex = tableView.selectionModel()->hasSelection()
-                ? tableView.currentIndex()
-                : QModelIndex();
-            const QModelIndex currentSourceIndex = currentProxyIndex.isValid()
-                ? m_proxyModel->mapToSource(currentProxyIndex)
-                : QModelIndex();
-
             // change the filter
             QString text = lineEdit->text();
             m_prefs.SetSearchBoxText(descName, QString(text));
             m_proxyModel->setFilterFixedString(text);
 
             // ensure that whatever was selected stays visible
-            const QModelIndex newCurrentProxyIndex = currentSourceIndex.isValid()
-                ? m_proxyModel->mapFromSource(currentSourceIndex)
-                : QModelIndex();
-            if (newCurrentProxyIndex.isValid())
-            {
-                tableView.scrollTo(newCurrentProxyIndex);
-                tableView.selectRow(newCurrentProxyIndex.row());
-                tableView.scrollTo(newCurrentProxyIndex);
-            }
+            applySelectedValue();
         };
         connect(lineEdit, &QLineEdit::textEdited, this, callback);
     }
@@ -80,6 +64,9 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
 
     // configure the header
     tableView.horizontalHeader()->setSectionsMovable(true);
+
+    // set the model
+    tableView.setModel(m_proxyModel);
 
     // handle selection
     connect(tableView.selectionModel(), &QItemSelectionModel::selectionChanged, this, [this, &itemModel](const QItemSelection &newSelection, const QItemSelection &oldSelection)
@@ -93,6 +80,12 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
             m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
 		}
 	});
+
+    // handle refreshing the selection
+    connect(&itemModel, &QAbstractItemModel::modelReset, this, [this]()
+    {
+        applySelectedValue();
+    });
 
     // handle resizing
 	connect(tableView.horizontalHeader(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
@@ -114,6 +107,23 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         if (!m_currentlyApplyingColumnPrefs)
             persistColumnPrefs();
     });
+}
+
+
+//-------------------------------------------------
+//  setup
+//-------------------------------------------------
+
+TableViewManager &TableViewManager::setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc)
+{
+    // set up a TableViewManager
+    TableViewManager &manager = *new TableViewManager(tableView, itemModel, lineEdit, prefs, desc);
+
+    // and read the prefs
+    manager.applyColumnPrefs();
+
+    // and return
+    return manager;
 }
 
 
@@ -223,4 +233,45 @@ void TableViewManager::persistColumnPrefs()
 
 	// and save it
 	m_prefs.SetColumnPrefs(m_desc.m_name, std::move(col_prefs));
+}
+
+
+//-------------------------------------------------
+//  applySelectedValue
+//-------------------------------------------------
+
+void TableViewManager::applySelectedValue()
+{
+    QTableView &tableView = *dynamic_cast<QTableView *>(parent());
+    QAbstractItemModel &itemModel = *m_proxyModel->sourceModel();
+
+    const QString &selectedValue = m_prefs.GetListViewSelection(m_desc.m_name, util::g_empty_string);
+    QModelIndex selectedIndex;
+
+    if (!selectedValue.isEmpty())
+    {
+        QModelIndexList matches = itemModel.match(itemModel.index(0, 0), Qt::DisplayRole, selectedValue, 9999);
+        for (const QModelIndex &match : matches)
+        {
+            if (match.column() == m_desc.m_keyColumnIndex)
+            {
+                selectedIndex = m_proxyModel->mapFromSource(match);
+                break;
+            }
+        }
+    }
+
+    // we've figured out what we want to select (if anything), do it!
+    if (selectedIndex.isValid())
+    {
+        // not sure why we have to call scrollTo() twice, but it doesn't
+        // seem to always register without it
+        tableView.scrollTo(selectedIndex);
+        tableView.selectRow(selectedIndex.row());
+        tableView.scrollTo(selectedIndex);
+    }
+    else
+    {
+        tableView.clearSelection();
+    }
 }
