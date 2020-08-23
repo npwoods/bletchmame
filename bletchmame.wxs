@@ -45,11 +45,23 @@
       <ComponentRef Id="readme.html" />
     </Feature>
     
+	<!-- Step 4: UX of the installer -->
     <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
     <UIRef Id="WixUI_Mondo" />
     <UIRef Id="WixUI_ErrorProgressText" />
-    
-    <!--
+	<Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch BletchMAME" />
+	<UI>
+      <Publish Dialog="ExitDialog"
+		 Control="Finish"
+		 Event="DoAction"
+		 Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+	</UI>
+	  
+	<!-- Step 5: User can launch BletchMAME at the end -->
+	<Property Id="WixShellExecTarget" Value="[#BletchMAME.exe]" />
+	<CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+
+	  <!--
       <Icon Id="BletchMAME.ico" SourceFile="src\bletchmame.ico" />
     -->    
   </Product>

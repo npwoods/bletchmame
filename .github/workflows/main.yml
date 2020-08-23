@@ -75,7 +75,7 @@ jobs:
         
     # Build MSI - Light
     - name: Build MSI - Light
-      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension bletchmame.wixobj -out BletchMAME.msi
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/light -v -ext WixUIExtension -ext WixUtilExtension bletchmame.wixobj -out BletchMAME.msi
         
     # Prepare Artifacts
     - name: Prepare Artifacts
