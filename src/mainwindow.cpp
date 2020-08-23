@@ -1513,11 +1513,15 @@ info::machine MainWindow::GetRunningMachine() const
 
 bool MainWindow::AttachToRootPanel() const
 {
+#ifdef Q_OS_WIN32
 	// Targetting subwindows with -attach_window was introduced in between MAME 0.217 and MAME 0.218
 	const MameVersion REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW = MameVersion(0, 217, true);
 
 	// Are we the required version?
 	return isMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
+#else
+	return false;
+#endif
 }
 
 
