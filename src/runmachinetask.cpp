@@ -86,10 +86,10 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		"dinput",
 		"-lightgunprovider",
 		"dinput",
-#ifdef Q_OS_WIN32
+#if HAS_ATTACH_WINDOW
 		"-attach_window",
 		m_attachWindowParameter,
-#endif
+#endif // HAS_ATTACH_WINDOW
 		"-skip_gameinfo",
 		"-nomouse",
 		"-debug",
