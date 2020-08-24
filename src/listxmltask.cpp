@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <exception>
 #include <QCoreApplication>
+#include <QDir>
 
 #include "listxmltask.h"
 #include "xmlparser.h"
@@ -23,37 +24,7 @@
 
 namespace
 {
-	// ======================> ListXmlTask
-	class ListXmlTask : public Task
-	{
-	public:
-		ListXmlTask(QString &&output_filename);
 
-	protected:
-		virtual QStringList getArguments(const Preferences &) const;
-		virtual void process(QProcess &process, QObject &handler) override;
-		virtual void abort() override;
-
-	private:
-		QString			m_output_filename;
-		volatile bool	m_aborted;
-
-		void internalProcess(QProcess &process);
-	};
-
-	// ======================> list_xml_exception
-	class list_xml_exception : public std::exception
-	{
-	public:
-		list_xml_exception(ListXmlResultEvent::Status status, QString &&message = QString())
-			: m_status(status)
-			, m_message(message)
-		{
-		}
-
-		ListXmlResultEvent::Status	m_status;
-		QString						m_message;
-	};
 };
 
 
@@ -128,7 +99,7 @@ void ListXmlTask::process(QProcess &process, QObject &handler)
 //  InternalProcess
 //-------------------------------------------------
 
-void ListXmlTask::internalProcess(QProcess &process)
+void ListXmlTask::internalProcess(QIODevice &process)
 {
 	info::database_builder builder;
 
@@ -145,6 +116,11 @@ void ListXmlTask::internalProcess(QProcess &process)
 	// now check for a parse error (which should be very unlikely)
 	if (!success)
 		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Error parsing XML from MAME -listxml: %1").arg(error_message));
+
+	// try creating the directory if its not present
+	QDir dir = QFileInfo(m_output_filename).dir();
+	if (!dir.exists())
+		QDir().mkpath(dir.absolutePath());
 
 	// we finally have all of the info accumulated; now we can get to business with writing
 	// to the actual file
@@ -174,10 +150,11 @@ ListXmlResultEvent::ListXmlResultEvent(Status status, QString &&errorMessage)
 
 
 //-------------------------------------------------
-//  create_list_xml_task
+//  list_xml_exception ctor
 //-------------------------------------------------
 
-Task::ptr create_list_xml_task(QString &&dest)
+ListXmlTask::list_xml_exception::list_xml_exception(ListXmlResultEvent::Status status, QString &&message)
+	: m_status(status)
+	, m_message(message)
 {
-	return std::make_shared<ListXmlTask>(std::move(dest));
 }
