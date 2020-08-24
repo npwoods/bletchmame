@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- TBD
+	- Various changes to build on Linux [Davide Cavalca]
+
 - 2.0 (2020-Aug-23)
 	- Overhaul of BletchMAME application
 	- Transitioned from wxWidgets to Qt

@@ -38,6 +38,13 @@
 // the name of the worker_ui plugin
 #define WORKER_UI_PLUGIN_NAME	"worker_ui"
 
+// does this platform use -attach_window?
+#ifdef Q_OS_WIN32
+#define HAS_ATTACH_WINDOW	1
+#else // !Q_OS_WIN32
+#define HAS_ATTACH_WINDOW	0
+#endif // Q_OS_WIN32
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
