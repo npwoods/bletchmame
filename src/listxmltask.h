@@ -56,9 +56,38 @@ private:
 
 
 //**************************************************************************
-//  FUNCTION PROTOTYPES
+//  TYPE DEFINITIONS
 //**************************************************************************
 
-Task::ptr create_list_xml_task(QString &&dest);
+// ======================> ListXmlTask
+class ListXmlTask : public Task
+{
+public:
+	class Test;
+
+	// ctor
+	ListXmlTask(QString &&output_filename);
+
+protected:
+	virtual QStringList getArguments(const Preferences &) const;
+	virtual void process(QProcess &process, QObject &handler) override;
+	virtual void abort() override;
+
+private:
+	// ======================> list_xml_exception
+	class list_xml_exception : public std::exception
+	{
+	public:
+		list_xml_exception(ListXmlResultEvent::Status status, QString &&message = QString());
+
+		ListXmlResultEvent::Status	m_status;
+		QString						m_message;
+	};
+
+	QString			m_output_filename;
+	volatile bool	m_aborted;
+
+	void internalProcess(QIODevice &process);
+};
 
 #endif // LISTXMLTASK_H

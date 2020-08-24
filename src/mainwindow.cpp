@@ -1465,7 +1465,7 @@ bool MainWindow::refreshMameInfoDatabase()
 
 	// list XML
 	QString db_path = m_prefs.GetMameXmlDatabasePath();
-	m_client.launch(create_list_xml_task(std::move(db_path)));
+	m_client.launch(std::make_shared<ListXmlTask>(std::move(db_path)));
 
 	// and show the dialog
 	{
