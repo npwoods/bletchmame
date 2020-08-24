@@ -114,7 +114,7 @@ Preferences::Preferences()
 	SetGlobalPath(global_path_type::CONFIG, GetConfigDirectory(true));
 	SetGlobalPath(global_path_type::NVRAM, GetConfigDirectory(true));
 	SetGlobalPath(global_path_type::PLUGINS, GetDefaultPluginsDirectory());
-	SetGlobalPath(global_path_type::PROFILES, GetConfigDirectory(true) + QString("\\profiles"));
+	SetGlobalPath(global_path_type::PROFILES, GetConfigDirectory(true) + QDir::separator() + QString("profiles"));
 
     Load();
 }
@@ -740,7 +740,7 @@ QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 	{
 		QDir dir(directory);
 		if (!dir.exists())
-			dir.makeAbsolute();
+			dir.mkpath(".");
 	}
 	return QDir::toNativeSeparators(directory);
 }

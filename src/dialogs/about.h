@@ -10,6 +10,7 @@
 #define DIALOGS_ABOUT_H
 
 #include <QDialog>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class AboutDialog; }
