@@ -17,7 +17,6 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     runs-on: ubuntu-latest
-    defaults:
     steps:
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
