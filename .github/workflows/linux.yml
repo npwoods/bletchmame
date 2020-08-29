@@ -1,0 +1,55 @@
+##################################
+# BletchMAME Linux Github Action #
+##################################
+
+name: Linux
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 5.15.0
+      
+    # Generate buildversion.txt
+    - name: Generate buildversion.txt
+      run: |
+        git describe --tags | python version.py | tee buildversion.txt
+
+    # Generate src/buildversion.gen.cpp
+    - name: Generate src/buildversion.gen.cpp
+      run: |
+        sh >src/buildversion.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat buildversion.txt 2>NUL)\"\;'
+        sh >>src/buildversion.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
+        sh >>src/buildversion.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
+
+    # Build BletchMAME
+    - name: Build BletchMAME
+      run: |
+        cmake . -DHAS_BUILDVERSION_GEN_CPP=1
+        make -j 8
+        strip ./BletchMAME
+
+    # Run Acceptance Tests
+    - name: Run Acceptance Tests
+      run: ./BletchMAME_tests
