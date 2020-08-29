@@ -8,7 +8,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- TBD
+- 2.1 (2020-Aug-29)
+	- Better handling of scenarios when the preferences directory does not exist
 	- Various changes to build on Linux [Davide Cavalca]
 
 - 2.0 (2020-Aug-23)
