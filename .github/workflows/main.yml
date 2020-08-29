@@ -62,8 +62,8 @@ jobs:
       shell: bash
       run: |
         test -d deps || mkdir deps
-        curl -L "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-i386.zip" > deps/pandoc-2.10.1-windows-i386.zip
-        7z x deps/pandoc-2.10.1-windows-i386.zip -odeps
+        curl -L -f "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-x86_64.zip" > deps/pandoc-2.10.1-windows-x86_64.zip
+        7z x deps/pandoc-2.10.1-windows-x86_64.zip -odeps
 
     # Generate readme.html
     - name: Generate readme.html
