@@ -25,6 +25,10 @@ jobs:
       with:
         fetch-depth: 0
 
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      
     # Generate buildversion.txt
     - name: Generate buildversion.txt
       run: |
