@@ -31,10 +31,10 @@ class XmlParser
 public:
 	class Test;
 
-	enum class element_result
+	enum class ElementResult
 	{
-		OK,
-		SKIP
+		Ok,
+		Skip
 	};
 
 	class Attributes
@@ -43,63 +43,63 @@ public:
 		Attributes() = delete;
 		~Attributes() = delete;
 
-		bool Get(const char *attribute, int &value) const;
-		bool Get(const char *attribute, std::uint32_t &value) const;
-		bool Get(const char *attribute, bool &value) const;
-		bool Get(const char *attribute, float &value) const;
-		bool Get(const char *attribute, QString &value) const;
-		bool Get(const char *attribute, std::string &value) const;
+		bool get(const char *attribute, int &value) const;
+		bool get(const char *attribute, std::uint32_t &value) const;
+		bool get(const char *attribute, bool &value) const;
+		bool get(const char *attribute, float &value) const;
+		bool get(const char *attribute, QString &value) const;
+		bool get(const char *attribute, std::string &value) const;
 
 		template<typename T>
-		bool Get(const char *attribute, T &value, T &&default_value) const
+		bool get(const char *attribute, T &value, T &&default_value) const
 		{
-			bool result = Get(attribute, value);
+			bool result = get(attribute, value);
 			if (!result)
 				value = std::move(default_value);
 			return result;
 		}
 
 		template<typename T, typename TFunc>
-		bool Get(const char *attribute, T &value, TFunc func) const
+		bool get(const char *attribute, T &value, TFunc func) const
 		{
 			std::string text;
-			bool result = Get(attribute, text) && func(text, value);
+			bool result = get(attribute, text) && func(text, value);
 			if (!result)
 				value = T();
 			return result;
 		}
 
 		template<typename T>
-		void Get(const char *attribute, std::optional<T> &value) const
+		void get(const char *attribute, std::optional<T> &value) const
 		{
 			T temp_value;
-			bool result = Get(attribute, temp_value);
+			bool result = get(attribute, temp_value);
 			value = result
 				? std::move(temp_value)
 				: std::optional<T>();
 		}
 
 	private:
-		const char *InternalGet(const char *attribute, bool return_null = false) const;
+		const char *internalGet(const char *attribute, bool return_null = false) const;
 	};
 
 	// ctor/dtor
 	XmlParser();
 	~XmlParser();
 
-	typedef std::function<element_result (const Attributes &node) > OnBeginElementCallback;
+	typedef std::function<ElementResult (const Attributes &node) > OnBeginElementCallback;
 	template<typename TFunc>
-	void OnElementBegin(const std::initializer_list<const char *> &elements, TFunc &&func)
+	void onElementBegin(const std::initializer_list<const char *> &elements, TFunc &&func)
 	{
 		// we don't want to force callers to specify a return value in the TFunc (usually a
-		// lambda) because most of the time it would just return element_result::OK
+		// lambda) because most of the time it would just return ElementResult::Ok
 		//
-		// therefore, we are creating a proxy that will supply element_result::OK as a return
+		// therefore, we are creating a proxy that will supply ElementResult::Ok as a return
 		// value if it is not specified
 		Attributes *x = nullptr;
 		typedef typename std::conditional<
 			std::is_void<decltype(func(*x))>::value,
-			util::return_value_substitutor<TFunc, element_result, element_result::OK>,
+			util::return_value_substitutor<TFunc, ElementResult, ElementResult::Ok>,
 			TFunc>::type proxy_type;
 		auto proxy = proxy_type(std::move(func));
 
@@ -108,35 +108,35 @@ public:
 	}
 
 	template<typename TFunc>
-	void OnElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func)
+	void onElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func)
 	{
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
 		{
 			TFunc func_duplicate(func);
-			OnElementBegin(*iter, std::move(func_duplicate));
+			onElementBegin(*iter, std::move(func_duplicate));
 		}
 	}
 
 	typedef std::function<void(QString &&content)> OnEndElementCallback;
-	void OnElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
+	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
 		getNode(elements)->m_end_func = std::move(func);
 	}
-	void OnElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func)
+	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func)
 	{
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
 		{
 			OnEndElementCallback func_duplicate(func);
-			OnElementEnd(*iter, std::move(func_duplicate));
+			onElementEnd(*iter, std::move(func_duplicate));
 		}
 	}
 
-	bool Parse(QDataStream &input);
-	bool Parse(const QString &file_name);
-	bool ParseBytes(const void *ptr, size_t sz);
-	QString ErrorMessage() const;
+	bool parse(QDataStream &input);
+	bool parse(const QString &file_name);
+	bool parseBytes(const void *ptr, size_t sz);
+	QString errorMessage() const;
 
-	static std::string Escape(const QString &str);
+	static std::string escape(const QString &str);
 
 private:
 	struct Node

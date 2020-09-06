@@ -23,49 +23,49 @@ bool software_list::load(QDataStream &stream, QString &error_message)
 {
 	XmlParser xml;
 	std::string current_device_extensions;
-	xml.OnElementBegin({ "softwarelist" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("name", m_name);
-		attributes.Get("description", m_description);
+		attributes.get("name", m_name);
+		attributes.get("description", m_description);
 	});
-	xml.OnElementBegin({ "softwarelist", "software" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "softwarelist", "software" }, [this](const XmlParser::Attributes &attributes)
 	{
 		software &s = m_software.emplace_back();
-		attributes.Get("name", s.m_name);
+		attributes.get("name", s.m_name);
 		s.m_parts.reserve(16);
 	});
-	xml.OnElementEnd({ "softwarelist", "software" }, [this](QString &&)
+	xml.onElementEnd({ "softwarelist", "software" }, [this](QString &&)
 	{
 		util::last(m_software).m_parts.shrink_to_fit();
 	});
-	xml.OnElementEnd({ "softwarelist", "software", "description" }, [this](QString &&content)
+	xml.onElementEnd({ "softwarelist", "software", "description" }, [this](QString &&content)
 	{
 		util::last(m_software).m_description = std::move(content);
 	});
-	xml.OnElementEnd({ "softwarelist", "software", "year" }, [this](QString &&content)
+	xml.onElementEnd({ "softwarelist", "software", "year" }, [this](QString &&content)
 	{
 		util::last(m_software).m_year = std::move(content);
 	});
-	xml.OnElementEnd({ "softwarelist", "software", "publisher" }, [this](QString &&content)
+	xml.onElementEnd({ "softwarelist", "software", "publisher" }, [this](QString &&content)
 	{
 		util::last(m_software).m_publisher = std::move(content);
 	});
-	xml.OnElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
 	{
 		part &p = util::last(m_software).m_parts.emplace_back();
-		attributes.Get("name", p.m_name);
-		attributes.Get("interface", p.m_interface);
+		attributes.get("name", p.m_name);
+		attributes.get("interface", p.m_interface);
 	});
 
 	// parse the XML, but be bold and try to reserve lots of space
 	m_software.reserve(4000);
-	bool success = xml.Parse(stream);
+	bool success = xml.parse(stream);
 	m_software.shrink_to_fit();
 
 	// did we succeed?
 	if (!success)
 	{
-		error_message = xml.ErrorMessage();
+		error_message = xml.errorMessage();
 		return false;
 	}
 

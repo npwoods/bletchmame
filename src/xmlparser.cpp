@@ -105,7 +105,7 @@ XmlParser::~XmlParser()
 //  Parse
 //-------------------------------------------------
 
-bool XmlParser::Parse(QDataStream &input)
+bool XmlParser::parse(QDataStream &input)
 {
 	m_current_node = m_root;
 	m_skipping_depth = 0;
@@ -119,27 +119,27 @@ bool XmlParser::Parse(QDataStream &input)
 
 
 //-------------------------------------------------
-//  Parse
+//  parse
 //-------------------------------------------------
 
-bool XmlParser::Parse(const QString &file_name)
+bool XmlParser::parse(const QString &file_name)
 {
 	QFile file(file_name);
 	file.open(QFile::ReadOnly);
 	QDataStream file_stream(&file);
-	return Parse(file_stream);
+	return parse(file_stream);
 }
 
 
 //-------------------------------------------------
-//  ParseBytes
+//  parseBytes
 //-------------------------------------------------
 
-bool XmlParser::ParseBytes(const void *ptr, size_t sz)
+bool XmlParser::parseBytes(const void *ptr, size_t sz)
 {
 	QByteArray byte_array((const char *) ptr, (int)sz);
 	QDataStream input(byte_array);
-	return Parse(input);
+	return parse(input);
 }
 
 
@@ -191,7 +191,7 @@ bool XmlParser::internalParse(QDataStream &input)
 //  ErrorMessage
 //-------------------------------------------------
 
-QString XmlParser::ErrorMessage() const
+QString XmlParser::errorMessage() const
 {
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *message = XML_ErrorString(code);
@@ -239,7 +239,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 	}
 
 	// figure out how to handle this element
-	element_result result;
+	ElementResult result;
 	if (child)
 	{
 		// we do - traverse down the tree
@@ -255,23 +255,23 @@ void XmlParser::startElement(const char *element, const char **attributes)
 		else
 		{
 			// we don't; we treat this as a normal node
-			result = element_result::OK;
+			result = ElementResult::Ok;
 		}
 	}
 	else
 	{
 		// we don't - we start skipping
-		result = element_result::SKIP;
+		result = ElementResult::Skip;
 	}
 
 	// do the dirty work
 	switch (result)
 	{
-	case element_result::OK:
+	case ElementResult::Ok:
 		// do nothing
 		break;
 
-	case element_result::SKIP:
+	case ElementResult::Skip:
 		// we're skipping this element; treat it the same as an unknown element
 		m_skipping_depth++;
 		break;
@@ -321,10 +321,10 @@ void XmlParser::characterData(const char *s, int len)
 
 
 //-------------------------------------------------
-//  Escape
+//  escape
 //-------------------------------------------------
 
-std::string XmlParser::Escape(const QString &str)
+std::string XmlParser::escape(const QString &str)
 {
 	std::string result;
 	for (QChar qch : str)
@@ -395,52 +395,52 @@ void XmlParser::characterDataHandler(void *user_data, const char *s, int len)
 //**************************************************************************
 
 //-------------------------------------------------
-//  Attributes::Get
+//  Attributes::get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, int &value) const
+bool XmlParser::Attributes::get(const char *attribute, int &value) const
 {
-	return Get(attribute, value, s_int_parser);
+	return get(attribute, value, s_int_parser);
 }
 
 
 //-------------------------------------------------
-//  Attributes::Get
+//  Attributes::get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, std::uint32_t &value) const
+bool XmlParser::Attributes::get(const char *attribute, std::uint32_t &value) const
 {
-	return Get(attribute, value, s_uint_parser);
+	return get(attribute, value, s_uint_parser);
 }
 
 
 //-------------------------------------------------
-//  Attributes::Get
+//  Attributes::get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, bool &value) const
+bool XmlParser::Attributes::get(const char *attribute, bool &value) const
 {
-	return Get(attribute, value, s_bool_parser);
+	return get(attribute, value, s_bool_parser);
 }
 
 
 //-------------------------------------------------
-//  Attributes::Get
+//  Attributes::get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, float &value) const
+bool XmlParser::Attributes::get(const char *attribute, float &value) const
 {
-	return Get(attribute, value, s_float_parser);
+	return get(attribute, value, s_float_parser);
 }
 
 
 //-------------------------------------------------
-//  Attributes::Get
+//  Attributes::get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, QString &value) const
+bool XmlParser::Attributes::get(const char *attribute, QString &value) const
 {
-	const char *s = InternalGet(attribute, true);
+	const char *s = internalGet(attribute, true);
 	if (s)
 		value = QString::fromUtf8(s);
 	else
@@ -450,12 +450,12 @@ bool XmlParser::Attributes::Get(const char *attribute, QString &value) const
 
 
 //-------------------------------------------------
-//  Attributes::Get
+//  Attributes::get
 //-------------------------------------------------
 
-bool XmlParser::Attributes::Get(const char *attribute, std::string &value) const
+bool XmlParser::Attributes::get(const char *attribute, std::string &value) const
 {
-	const char *s = InternalGet(attribute, true);
+	const char *s = internalGet(attribute, true);
 	if (s)
 		value = s;
 	else
@@ -465,10 +465,10 @@ bool XmlParser::Attributes::Get(const char *attribute, std::string &value) const
 
 
 //-------------------------------------------------
-//  Attributes::InternalGet
+//  Attributes::internalGet
 //-------------------------------------------------
 
-const char *XmlParser::Attributes::InternalGet(const char *attribute, bool return_null) const
+const char *XmlParser::Attributes::internalGet(const char *attribute, bool return_null) const
 {
 	const char **actual_attribute = reinterpret_cast<const char **>(const_cast<Attributes *>(this));
 
