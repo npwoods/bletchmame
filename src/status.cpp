@@ -194,7 +194,7 @@ status::update status::update::read(QDataStream &input_stream)
 	});
 	xml.onElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.get("attenuation",		result.m_sound_attenuation);
+		attributes.get("attenuation",			result.m_sound_attenuation);
 	});
 	xml.onElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{
@@ -203,14 +203,14 @@ status::update status::update::read(QDataStream &input_stream)
 	xml.onElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
 		image &image = result.m_images.value().emplace_back();
-		attributes.get("tag",				image.m_tag);
-		attributes.get("instance_name",		image.m_instance_name);
-		attributes.get("is_readable",		image.m_is_readable, false);
-		attributes.get("is_writeable",		image.m_is_writeable, false);
-		attributes.get("is_creatable",		image.m_is_creatable, false);
-		attributes.get("must_be_loaded",	image.m_must_be_loaded, false);
-		attributes.get("filename",			image.m_file_name);
-		attributes.get("display",			image.m_display);
+		attributes.get("tag",					image.m_tag);
+		attributes.get("instance_name",			image.m_instance_name);
+		attributes.get("is_readable",			image.m_is_readable, false);
+		attributes.get("is_writeable",			image.m_is_writeable, false);
+		attributes.get("is_creatable",			image.m_is_creatable, false);
+		attributes.get("must_be_loaded",		image.m_must_be_loaded, false);
+		attributes.get("filename",				image.m_file_name);
+		attributes.get("display",				image.m_display);
 		normalize_tag(image.m_tag);
 	});
 	xml.onElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
@@ -235,8 +235,8 @@ status::update status::update::read(QDataStream &input_stream)
 	xml.onElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_seq &seq = util::last(result.m_inputs.value()).m_seqs.emplace_back();
-		attributes.get("type",				seq.m_type, s_inputseq_type_parser);
-		attributes.get("tokens",			seq.m_tokens);
+		attributes.get("type",					seq.m_type, s_inputseq_type_parser);
+		attributes.get("tokens",				seq.m_tokens);
 	});
 	xml.onElementBegin({ "status", "input_devices" }, [&](const XmlParser::Attributes &)
 	{
@@ -245,23 +245,23 @@ status::update status::update::read(QDataStream &input_stream)
 	xml.onElementBegin({ "status", "input_devices", "class" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_class &input_class = result.m_input_classes.value().emplace_back();
-		attributes.get("name",				input_class.m_name);
-		attributes.get("enabled",			input_class.m_enabled);
-		attributes.get("multi",				input_class.m_multi);
+		attributes.get("name",					input_class.m_name);
+		attributes.get("enabled",				input_class.m_enabled);
+		attributes.get("multi",					input_class.m_multi);
 	});
 	xml.onElementBegin({ "status", "input_devices", "class", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_device &input_device = result.m_input_classes.value().back().m_devices.emplace_back();
-		attributes.get("name",				input_device.m_name);
-		attributes.get("id",				input_device.m_id);
-		attributes.get("devindex",			input_device.m_index);
+		attributes.get("name",					input_device.m_name);
+		attributes.get("id",					input_device.m_id);
+		attributes.get("devindex",				input_device.m_index);
 	});
 	xml.onElementBegin({ "status", "input_devices", "class", "device", "item" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_device_item &item = result.m_input_classes.value().back().m_devices.back().m_items.emplace_back();
-		attributes.get("name",				item.m_name);
-		attributes.get("token",				item.m_token);
-		attributes.get("code",				item.m_code);
+		attributes.get("name",					item.m_name);
+		attributes.get("token",					item.m_token);
+		attributes.get("code",					item.m_code);
 	});
 
 	// parse the XML
