@@ -128,19 +128,19 @@ std::optional<profiles::profile> profiles::profile::load(QString &&path)
 
 	// and parse the XML
 	XmlParser xml;
-	xml.OnElementBegin({ "profile" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "profile" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("machine", result.m_machine);
-		attributes.Get("software", result.m_software);
+		attributes.get("machine", result.m_machine);
+		attributes.get("software", result.m_software);
 	});
-	xml.OnElementBegin({ "profile", "image" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "profile", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
 		image &i = result.m_images.emplace_back();
-		attributes.Get("tag",	i.m_tag);
-		attributes.Get("path",	i.m_path);
+		attributes.get("tag",	i.m_tag);
+		attributes.get("path",	i.m_path);
 	});
 
-	return xml.Parse(result.m_path) && result.is_valid()
+	return xml.parse(result.m_path) && result.is_valid()
 		? std::optional<profiles::profile>(std::move(result))
 		: std::optional<profiles::profile>();
 }

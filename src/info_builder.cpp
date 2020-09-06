@@ -85,23 +85,23 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	// parse the -listxml output
 	XmlParser xml;
 	std::string current_device_extensions;
-	xml.OnElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
 	{
 		std::string build;
-		header.m_build_strindex = attributes.Get("build", build) ? m_strings.get(build) : 0;		
+		header.m_build_strindex = attributes.get("build", build) ? m_strings.get(build) : 0;		
 	});
-	xml.OnElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
 		bool runnable;
-		if (attributes.Get("runnable", runnable) && !runnable)
-			return XmlParser::element_result::SKIP;
+		if (attributes.get("runnable", runnable) && !runnable)
+			return XmlParser::ElementResult::Skip;
 
 		std::string data;
 		info::binaries::machine &machine = m_machines.emplace_back();
-		machine.m_name_strindex			= attributes.Get("name", data) ? m_strings.get(data) : 0;
-		machine.m_sourcefile_strindex	= attributes.Get("sourcefile", data) ? m_strings.get(data) : 0;
-		machine.m_clone_of_strindex		= attributes.Get("cloneof", data) ? m_strings.get(data) : 0;
-		machine.m_rom_of_strindex		= attributes.Get("romof", data) ? m_strings.get(data) : 0;
+		machine.m_name_strindex			= attributes.get("name", data) ? m_strings.get(data) : 0;
+		machine.m_sourcefile_strindex	= attributes.get("sourcefile", data) ? m_strings.get(data) : 0;
+		machine.m_clone_of_strindex		= attributes.get("cloneof", data) ? m_strings.get(data) : 0;
+		machine.m_rom_of_strindex		= attributes.get("romof", data) ? m_strings.get(data) : 0;
 		machine.m_configurations_index	= to_uint32(m_configurations.size());
 		machine.m_configurations_count	= 0;
 		machine.m_software_lists_index	= to_uint32(m_software_lists.size());
@@ -113,64 +113,64 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 		machine.m_description_strindex	= 0;
 		machine.m_year_strindex			= 0;
 		machine.m_manufacturer_strindex = 0;
-		return XmlParser::element_result::OK;
+		return XmlParser::ElementResult::Ok;
 	});
-	xml.OnElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
 	});
-	xml.OnElementEnd({ "mame", "machine", "year" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "year" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_year_strindex = m_strings.get(content);
 	});
-	xml.OnElementEnd({ "mame", "machine", "manufacturer" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
 	});
-	xml.OnElementBegin({ { "mame", "machine", "configuration" },
+	xml.onElementBegin({ { "mame", "machine", "configuration" },
 						 { "mame", "machine", "dipswitch" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration &configuration = m_configurations.emplace_back();
-		configuration.m_name_strindex					= attributes.Get("name", data) ? m_strings.get(data) : 0;
-		configuration.m_tag_strindex					= attributes.Get("tag", data) ? m_strings.get(data) : 0;
+		configuration.m_name_strindex					= attributes.get("name", data) ? m_strings.get(data) : 0;
+		configuration.m_tag_strindex					= attributes.get("tag", data) ? m_strings.get(data) : 0;
 		configuration.m_configuration_settings_index	= to_uint32(m_configuration_settings.size());
 		configuration.m_configuration_settings_count	= 0;
-		attributes.Get("mask", configuration.m_mask);
+		attributes.get("mask", configuration.m_mask);
 	
 		util::last(m_machines).m_configurations_count++;
 	});
-	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting" },
+	xml.onElementBegin({ { "mame", "machine", "configuration", "confsetting" },
 						 { "mame", "machine", "dipswitch", "dipvalue" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration_setting &configuration_setting = m_configuration_settings.emplace_back();
-		configuration_setting.m_name_strindex		= attributes.Get("name", data) ? m_strings.get(data) : 0;
+		configuration_setting.m_name_strindex		= attributes.get("name", data) ? m_strings.get(data) : 0;
 		configuration_setting.m_conditions_index	= to_uint32(m_configuration_conditions.size());
-		attributes.Get("value", configuration_setting.m_value);
+		attributes.get("value", configuration_setting.m_value);
 
 		util::last(m_configurations).m_configuration_settings_count++;
 	});
-	xml.OnElementBegin({ { "mame", "machine", "configuration", "confsetting", "condition" },
+	xml.onElementBegin({ { "mame", "machine", "configuration", "confsetting", "condition" },
 						 { "mame", "machine", "dipswitch", "dipvalue", "condition" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = m_configuration_conditions.emplace_back();
 		configuration_condition::relation_t relation;
-		configuration_condition.m_tag_strindex			= attributes.Get("tag", data) ? m_strings.get(data) : 0;
-		configuration_condition.m_relation				= (uint8_t)(attributes.Get("relation", relation, s_relation_parser) ? relation : info::configuration_condition::relation_t::UNKNOWN);
-		attributes.Get("mask", configuration_condition.m_mask);
-		attributes.Get("value", configuration_condition.m_value);
+		configuration_condition.m_tag_strindex			= attributes.get("tag", data) ? m_strings.get(data) : 0;
+		configuration_condition.m_relation				= (uint8_t)(attributes.get("relation", relation, s_relation_parser) ? relation : info::configuration_condition::relation_t::UNKNOWN);
+		attributes.get("mask", configuration_condition.m_mask);
+		attributes.get("value", configuration_condition.m_value);
 	});
-	xml.OnElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		bool mandatory;
 		info::binaries::device &device = m_devices.emplace_back();
-		device.m_type_strindex			= attributes.Get("type", data) ? m_strings.get(data) : 0;
-		device.m_tag_strindex			= attributes.Get("tag", data) ? m_strings.get(data) : 0;
-		device.m_interface_strindex		= attributes.Get("interface", data) ? m_strings.get(data) : 0;
-		device.m_mandatory				= attributes.Get("mandatory", mandatory) && mandatory ? 1 : 0;
+		device.m_type_strindex			= attributes.get("type", data) ? m_strings.get(data) : 0;
+		device.m_tag_strindex			= attributes.get("tag", data) ? m_strings.get(data) : 0;
+		device.m_interface_strindex		= attributes.get("interface", data) ? m_strings.get(data) : 0;
+		device.m_mandatory				= attributes.get("mandatory", mandatory) && mandatory ? 1 : 0;
 		device.m_instance_name_strindex	= 0;
 		device.m_extensions_strindex	= 0;
 
@@ -178,47 +178,47 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 
 		util::last(m_machines).m_devices_count++;
 	});
-	xml.OnElementBegin({ "mame", "machine", "device", "instance" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "device", "instance" }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
-		if (attributes.Get("name", data))
+		if (attributes.get("name", data))
 			util::last(m_devices).m_instance_name_strindex = m_strings.get(data);
 	});
-	xml.OnElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
 		std::string name;
-		if (attributes.Get("name", name))
+		if (attributes.get("name", name))
 		{
 			current_device_extensions.append(name);
 			current_device_extensions.append(",");
 		}
 	});
-	xml.OnElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](QString &&)
+	xml.onElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](QString &&)
 	{
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
 	});
-	xml.OnElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		info::software_list::status_type status;
 		info::binaries::software_list &software_list = m_software_lists.emplace_back();
-		software_list.m_name_strindex			= attributes.Get("name", data) ? m_strings.get(data) : 0;
-		software_list.m_filter_strindex			= attributes.Get("filter", data) ? m_strings.get(data) : 0;
-		software_list.m_status					= (uint8_t) (attributes.Get("status", status, s_status_parser) ? status : info::software_list::status_type::ORIGINAL);
+		software_list.m_name_strindex			= attributes.get("name", data) ? m_strings.get(data) : 0;
+		software_list.m_filter_strindex			= attributes.get("filter", data) ? m_strings.get(data) : 0;
+		software_list.m_status					= (uint8_t) (attributes.get("status", status, s_status_parser) ? status : info::software_list::status_type::ORIGINAL);
 		util::last(m_machines).m_software_lists_count++;
 	});
-	xml.OnElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
 		bool b;
 		info::binaries::ram_option &ram_option = m_ram_options.emplace_back();
-		ram_option.m_name_strindex				= attributes.Get("name", data) ? m_strings.get(data) : 0;
-		ram_option.m_is_default					= attributes.Get("default", b) && b;
+		ram_option.m_name_strindex				= attributes.get("name", data) ? m_strings.get(data) : 0;
+		ram_option.m_is_default					= attributes.get("default", b) && b;
 		ram_option.m_value						= 0;
 		util::last(m_machines).m_ram_options_count++;
 	});
-	xml.OnElementEnd({ "mame", "machine", "ramoption" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "ramoption" }, [this](QString &&content)
 	{
 		bool ok;
 		unsigned long val = content.toULong(&ok);
@@ -229,7 +229,7 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	bool success;
 	try
 	{
-		success = xml.Parse(input);
+		success = xml.parse(input);
 	}
 	catch (std::exception &ex)
 	{
@@ -241,7 +241,7 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	{
 		// now check for XML parsing errors; this is likely the result of somebody aborting the DB rebuild, but
 		// it is the caller's responsibility to handle that situation
-		error_message = xml.ErrorMessage();
+		error_message = xml.errorMessage();
 		return false;
 	}
 

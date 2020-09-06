@@ -174,102 +174,102 @@ status::update status::update::read(QDataStream &input_stream)
 	status::update result;
 
 	XmlParser xml;
-	xml.OnElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("phase",					result.m_phase, s_machine_phase_parser);
-		attributes.Get("paused",				result.m_paused);
-		attributes.Get("polling_input_seq",		result.m_polling_input_seq);
-		attributes.Get("has_input_using_mouse",	result.m_has_input_using_mouse);
-		attributes.Get("startup_text",			result.m_startup_text);
-		attributes.Get("debugger_present",		result.m_debugger_present);
+		attributes.get("phase",					result.m_phase, s_machine_phase_parser);
+		attributes.get("paused",				result.m_paused);
+		attributes.get("polling_input_seq",		result.m_polling_input_seq);
+		attributes.get("has_input_using_mouse",	result.m_has_input_using_mouse);
+		attributes.get("startup_text",			result.m_startup_text);
+		attributes.get("debugger_present",		result.m_debugger_present);
 	});
-	xml.OnElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("speed_percent",			result.m_speed_percent);
-		attributes.Get("frameskip",				result.m_frameskip);
-		attributes.Get("effective_frameskip",	result.m_effective_frameskip);
-		attributes.Get("throttled",				result.m_throttled);
-		attributes.Get("throttle_rate",			result.m_throttle_rate);
-		attributes.Get("is_recording",			result.m_is_recording);
+		attributes.get("speed_percent",			result.m_speed_percent);
+		attributes.get("frameskip",				result.m_frameskip);
+		attributes.get("effective_frameskip",	result.m_effective_frameskip);
+		attributes.get("throttled",				result.m_throttled);
+		attributes.get("throttle_rate",			result.m_throttle_rate);
+		attributes.get("is_recording",			result.m_is_recording);
 	});
-	xml.OnElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.Get("attenuation",		result.m_sound_attenuation);
+		attributes.get("attenuation",			result.m_sound_attenuation);
 	});
-	xml.OnElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
+	xml.onElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_images.emplace();
 	});
-	xml.OnElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
 		image &image = result.m_images.value().emplace_back();
-		attributes.Get("tag",				image.m_tag);
-		attributes.Get("instance_name",		image.m_instance_name);
-		attributes.Get("is_readable",		image.m_is_readable, false);
-		attributes.Get("is_writeable",		image.m_is_writeable, false);
-		attributes.Get("is_creatable",		image.m_is_creatable, false);
-		attributes.Get("must_be_loaded",	image.m_must_be_loaded, false);
-		attributes.Get("filename",			image.m_file_name);
-		attributes.Get("display",			image.m_display);
+		attributes.get("tag",					image.m_tag);
+		attributes.get("instance_name",			image.m_instance_name);
+		attributes.get("is_readable",			image.m_is_readable, false);
+		attributes.get("is_writeable",			image.m_is_writeable, false);
+		attributes.get("is_creatable",			image.m_is_creatable, false);
+		attributes.get("must_be_loaded",		image.m_must_be_loaded, false);
+		attributes.get("filename",				image.m_file_name);
+		attributes.get("display",				image.m_display);
 		normalize_tag(image.m_tag);
 	});
-	xml.OnElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
+	xml.onElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_inputs.emplace();
 	});
-	xml.OnElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input &input = result.m_inputs.value().emplace_back();
-		attributes.Get("port_tag",				input.m_port_tag);
-		attributes.Get("name",					input.m_name);
-		attributes.Get("mask",					input.m_mask);
-		attributes.Get("class",					input.m_class, s_input_class_parser);
-		attributes.Get("group",					input.m_group);
-		attributes.Get("player",				input.m_player);
-		attributes.Get("type",					input.m_type);
-		attributes.Get("is_analog",				input.m_is_analog);
-		attributes.Get("first_keyboard_code",	input.m_first_keyboard_code);
-		attributes.Get("value",					input.m_value);
+		attributes.get("port_tag",				input.m_port_tag);
+		attributes.get("name",					input.m_name);
+		attributes.get("mask",					input.m_mask);
+		attributes.get("class",					input.m_class, s_input_class_parser);
+		attributes.get("group",					input.m_group);
+		attributes.get("player",				input.m_player);
+		attributes.get("type",					input.m_type);
+		attributes.get("is_analog",				input.m_is_analog);
+		attributes.get("first_keyboard_code",	input.m_first_keyboard_code);
+		attributes.get("value",					input.m_value);
 		normalize_tag(input.m_port_tag);
 	});
-	xml.OnElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_seq &seq = util::last(result.m_inputs.value()).m_seqs.emplace_back();
-		attributes.Get("type",				seq.m_type, s_inputseq_type_parser);
-		attributes.Get("tokens",			seq.m_tokens);
+		attributes.get("type",					seq.m_type, s_inputseq_type_parser);
+		attributes.get("tokens",				seq.m_tokens);
 	});
-	xml.OnElementBegin({ "status", "input_devices" }, [&](const XmlParser::Attributes &)
+	xml.onElementBegin({ "status", "input_devices" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_input_classes.emplace();
 	});
-	xml.OnElementBegin({ "status", "input_devices", "class" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "input_devices", "class" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_class &input_class = result.m_input_classes.value().emplace_back();
-		attributes.Get("name",				input_class.m_name);
-		attributes.Get("enabled",			input_class.m_enabled);
-		attributes.Get("multi",				input_class.m_multi);
+		attributes.get("name",					input_class.m_name);
+		attributes.get("enabled",				input_class.m_enabled);
+		attributes.get("multi",					input_class.m_multi);
 	});
-	xml.OnElementBegin({ "status", "input_devices", "class", "device" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "input_devices", "class", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_device &input_device = result.m_input_classes.value().back().m_devices.emplace_back();
-		attributes.Get("name",				input_device.m_name);
-		attributes.Get("id",				input_device.m_id);
-		attributes.Get("devindex",			input_device.m_index);
+		attributes.get("name",					input_device.m_name);
+		attributes.get("id",					input_device.m_id);
+		attributes.get("devindex",				input_device.m_index);
 	});
-	xml.OnElementBegin({ "status", "input_devices", "class", "device", "item" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "input_devices", "class", "device", "item" }, [&](const XmlParser::Attributes &attributes)
 	{
 		input_device_item &item = result.m_input_classes.value().back().m_devices.back().m_items.emplace_back();
-		attributes.Get("name",				item.m_name);
-		attributes.Get("token",				item.m_token);
-		attributes.Get("code",				item.m_code);
+		attributes.get("name",					item.m_name);
+		attributes.get("token",					item.m_token);
+		attributes.get("code",					item.m_code);
 	});
 
 	// parse the XML
-	result.m_success = xml.Parse(input_stream);
+	result.m_success = xml.parse(input_stream);
 
 	// this should not happen unless there is a bug
 	if (!result.m_success)
-		result.m_parse_error = xml.ErrorMessage();
+		result.m_parse_error = xml.errorMessage();
 
 	// sort the results
 	if (result.m_images)
