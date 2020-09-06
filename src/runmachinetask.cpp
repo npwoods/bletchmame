@@ -402,11 +402,6 @@ status::update RunMachineTask::readStatus(QProcess &process)
 		QString line = reallyReadLineFromProcess(process);
 		buffer.append(line.toUtf8());
 
-		{
-			auto x = QString::fromUtf8(buffer).toStdString();
-			auto y = x;
-		}
-
 		if (line.isEmpty() || line.startsWith("</"))
 			done = true;
 	}
