@@ -30,6 +30,7 @@
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
+#include "dialogs/cheats.h"
 #include "dialogs/choosesw.h"
 #include "dialogs/console.h"
 #include "dialogs/images.h"
@@ -261,6 +262,34 @@ public:
 	virtual void SetInputValue(const QString &port_tag, ioport_value mask, ioport_value value) override
 	{
 		m_host.Issue({ "set_input_value", port_tag, QString::number(mask), QString::number(value) });
+	}
+
+private:
+	MainWindow &m_host;
+};
+
+
+// ======================> CheatsHost
+
+class MainWindow::CheatsHost : public ICheatsHost
+{
+public:
+	CheatsHost(MainWindow &host)
+		: m_host(host)
+	{
+	}
+
+	virtual observable::value<std::vector<status::cheat>> &getCheats() override
+	{
+		return m_host.m_state->cheats();
+	}
+
+	virtual void setCheatState(const QString &id, bool enabled, std::optional<std::uint64_t> parameter) override
+	{
+		if (parameter)
+			m_host.Issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(parameter.value()) });
+		else
+			m_host.Issue({ "set_cheat_state", id, enabled ? "1" : "0" });
 	}
 
 private:
@@ -648,6 +677,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
 	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
 	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		&status::state::sound_attenuation,	[this]() { return m_state->sound_attenuation().get() != SOUND_ATTENUATION_OFF; });
+	setupPropSyncAspect(*m_ui->actionCheats,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::cheats,				[this]() { return m_state->cheats().get().size() > 0; });
 	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
 	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONTROLLER); });
 	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::KEYBOARD); });
@@ -1035,6 +1065,19 @@ void MainWindow::on_actionToggleSound_triggered()
 {
 	bool isEnabled = m_ui->actionToggleSound->isEnabled();
 	ChangeSound(!isEnabled);
+}
+
+
+//-------------------------------------------------
+//  on_actionCheats_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionCheats_triggered()
+{
+	Pauser pauser(*this);
+	CheatsHost host(*this);
+	CheatsDialog dialog(this, host);
+	dialog.exec();
 }
 
 

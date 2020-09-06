@@ -79,6 +79,8 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK),
 		"-pluginspath",
 		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS),
+		"-cheatpath",
+		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS),
 		"-window",
 		"-keyboardprovider",
 		"dinput",

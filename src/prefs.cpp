@@ -34,7 +34,8 @@ std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUN
 	"artwork",
 	"icons",
 	"plugins",
-	"profiles"
+	"profiles",
+	"cheats"
 };
 
 
@@ -144,6 +145,7 @@ Preferences::path_category Preferences::GetPathCategory(global_path_type path_ty
 	case Preferences::global_path_type::ARTWORK:
 	case Preferences::global_path_type::PLUGINS:
 	case Preferences::global_path_type::PROFILES:
+	case Preferences::global_path_type::CHEATS:
 		result = path_category::MULTIPLE_DIRECTORIES;
 		break;
 

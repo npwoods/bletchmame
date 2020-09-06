@@ -132,6 +132,38 @@ bool status::input_class::operator==(const status::input_class &that) const
 
 
 //-------------------------------------------------
+//  cheat_parameter::operator==
+//-------------------------------------------------
+
+bool status::cheat_parameter::operator==(const status::cheat_parameter &that) const
+{
+	return m_value == that.m_value
+		&& m_minimum == that.m_minimum
+		&& m_maximum == that.m_maximum
+		&& m_step == that.m_step
+		&& m_items == that.m_items;
+}
+
+
+//-------------------------------------------------
+//  cheat::operator==
+//-------------------------------------------------
+
+bool status::cheat::operator==(const status::cheat &that) const
+{
+	return m_id == that.m_id
+		&& m_enabled == that.m_enabled
+		&& m_has_run_script == that.m_has_run_script
+		&& m_has_on_script == that.m_has_on_script
+		&& m_has_off_script == that.m_has_off_script
+		&& m_has_change_script == that.m_has_change_script
+		&& m_description == that.m_description
+		&& m_comment == that.m_comment
+		&& m_parameter == that.m_parameter;
+}
+
+
+//-------------------------------------------------
 //	normalize_tag - drop the initial colon, if
 //	present
 //-------------------------------------------------
@@ -263,6 +295,41 @@ status::update status::update::read(QDataStream &input_stream)
 		attributes.get("token",					item.m_token);
 		attributes.get("code",					item.m_code);
 	});
+	xml.onElementBegin({ "status", "cheats" }, [&](const XmlParser::Attributes &attributes)
+	{
+		result.m_cheats.emplace();
+	});
+	xml.onElementBegin({ "status", "cheats", "cheat" }, [&](const XmlParser::Attributes &attributes)
+	{
+		cheat &cheat = result.m_cheats.value().emplace_back();
+		attributes.get("id",					cheat.m_id);
+		attributes.get("enabled",				cheat.m_enabled);
+		attributes.get("has_run_script",		cheat.m_has_run_script);
+		attributes.get("has_on_script",			cheat.m_has_on_script);
+		attributes.get("has_off_script",		cheat.m_has_off_script);
+		attributes.get("has_change_script",		cheat.m_has_change_script);
+		attributes.get("description",			cheat.m_description);
+		attributes.get("comment",				cheat.m_comment);
+	});
+	xml.onElementBegin({ "status", "cheats", "cheat", "parameter" }, [&](const XmlParser::Attributes &attributes)
+	{
+		cheat &cheat = util::last(result.m_cheats.value());
+		cheat_parameter &param = cheat.m_parameter.emplace();
+		attributes.get("value",					param.m_value);
+		attributes.get("minimum",				param.m_minimum);
+		attributes.get("maximum",				param.m_maximum);
+		attributes.get("step",					param.m_step);
+	});
+	xml.onElementBegin({ "status", "cheats", "cheat", "parameter", "item" }, [&](const XmlParser::Attributes &attributes)
+	{
+		cheat &cheat = util::last(result.m_cheats.value());
+		cheat_parameter &param = cheat.m_parameter.value();
+		std::uint64_t value;
+		QString text;
+		attributes.get("value",					value);
+		attributes.get("text",					text);
+		param.m_items[value] = text;
+	});
 
 	// parse the XML
 	result.m_success = xml.parse(input_stream);
@@ -331,6 +398,7 @@ void status::state::update(status::update &&that)
 	take(m_images,					that.m_images);
 	take(m_inputs,					that.m_inputs);
 	take(m_input_classes,			that.m_input_classes);
+	take(m_cheats,					that.m_cheats);
 }
 
 

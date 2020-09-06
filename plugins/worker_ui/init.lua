@@ -263,6 +263,46 @@ function emit_status(light, out)
 	emit("\t\tattenuation=\"" .. tostring(manager:machine():sound().attenuation) .. "\"");
 	emit("\t/>");
 
+	-- <cheats> (cheat manager)
+	if (_G.emu.plugin.cheat) then
+		emit("\t<cheats>");
+		for id,desc in pairs(_G.emu.plugin.cheat:list()) do
+			local cheat = _G.emu.plugin.cheat.get(id)
+			emit(string.format("\t\t<cheat id=\"%s\" enabled=\"%s\" description=\"%s\"",
+				tostring(id),
+				string_from_bool(cheat.enabled),
+				xml_encode(desc)))
+			if (cheat.script) then
+				emit(string.format("\t\t\thas_run_script=\"%s\" has_on_script=\"%s\" has_off_script=\"%s\" has_change_script=\"%s\"",
+					string_from_bool(cheat.script.run),
+					string_from_bool(cheat.script.on),
+					string_from_bool(cheat.script.off),
+					string_from_bool(cheat.script.change)))
+			end
+			if (cheat.comment) then
+				emit(string.format("\t\t\tcomment=\"%s\"", xml_encode(cheat.comment)))
+			end
+			emit("\t\t\t>")
+			if cheat.parameter then
+				emit(string.format("\t\t\t<parameter value=\"%s\" minimum=\"%s\" maximum=\"%s\" step=\"%s\">",
+					cheat.parameter.value,
+					cheat.parameter.min,
+					cheat.parameter.max,
+					cheat.parameter.step))
+				if cheat.parameter.item then
+					for item_value,item_obj in pairs(cheat.parameter.item) do
+						emit(string.format("\t\t\t\t<item value=\"%s\" text=\"%s\"/>",
+							tostring(item_value),
+							xml_encode(item_obj.text)))
+					end
+				end
+				emit("\t\t\t</parameter>")
+			end
+			emit("\t\t</cheat>")
+		end
+		emit("\t</cheats>");
+	end
+
 	if (not light or manager:machine().paused or is_polling_input_seq()) then
 		-- <images>
 		emit("\t<images>")
@@ -687,10 +727,33 @@ function command_set_mouse_enabled(args)
 	print("@OK ### Mouse enabled set to " .. tostring(toboolean(args[2])))
 end
 
--- SHOW_PROFILER Command
+-- SHOW_PROFILER command
 function command_show_profiler(args)
 	manager:ui().show_profiler = toboolean(args[2])
 	print("@OK STATUS ### Show profiler set to " .. tostring(manager:ui().show_profiler))
+	emit_status()
+end
+
+-- SET_CHEAT_STATE command
+function command_set_cheat_state(args)
+	local cheat_id = tonumber(args[2])
+	local cheat = _G.emu.plugin.cheat.get(cheat_id)
+	if not cheat then
+		print("@ERROR ### Can't find cheat '" .. tostring(cheat_id) .. "'")
+		return
+	end
+
+	-- set the enabled value
+	local enabled = toboolean(args[3])
+	cheat:set_enabled(enabled)
+
+	-- set the parameter value
+	if args[4] then
+		local parameter = tonumber(args[4])
+		cheat:set_value(parameter)
+	end
+
+	print("@OK STATUS ### Set cheat '" .. tostring(cheat_id) .. "' enabled to '" .. tostring(enabled) .. "'")
 	emit_status()
 end
 
@@ -760,6 +823,7 @@ local commands =
 	["set_input_value"]				= command_set_input_value,
 	["set_mouse_enabled"]			= command_set_mouse_enabled,
 	["show_profiler"]				= command_show_profiler,
+	["set_cheat_state"]				= command_set_cheat_state,
 	["dump_status"]					= command_dump_status
 }
 
@@ -888,6 +952,18 @@ function startplugin()
 			end
 		end
 	end)
+
+	-- activate the cheat plugin, if present (and not started separately)
+	local cheatentry = manager:plugins()["cheat"]
+	local cheatplugin
+	if cheatentry and not cheatentry.start then -- don't try to start it twice
+		local stat, res = pcall(require, cheatentry.name)
+		if stat then
+			cheatplugin = res
+			cheatplugin.startplugin()
+			if cheatplugin.set_folder~=nil then cheatplugin.set_folder(cheatentry.directory) end
+		end
+	end
 end
 
 function exports.startplugin()
