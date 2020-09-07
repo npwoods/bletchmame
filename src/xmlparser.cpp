@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include <expat.h>
+#include <inttypes.h>
 
 #include "xmlparser.h"
 
@@ -56,6 +57,7 @@ namespace
 
 static const scanf_parser<int> s_int_parser("%d");
 static const scanf_parser<unsigned int> s_uint_parser("%u");
+static const scanf_parser<std::uint64_t> s_ulong_parser("%" SCNu64);
 static const scanf_parser<float> s_float_parser("%f");
 
 static const util::enum_parser<bool> s_bool_parser =
@@ -411,6 +413,16 @@ bool XmlParser::Attributes::get(const char *attribute, int &value) const
 bool XmlParser::Attributes::get(const char *attribute, std::uint32_t &value) const
 {
 	return get(attribute, value, s_uint_parser);
+}
+
+
+//-------------------------------------------------
+//  Attributes::get
+//-------------------------------------------------
+
+bool XmlParser::Attributes::get(const char *attribute, std::uint64_t &value) const
+{
+	return get(attribute, value, s_ulong_parser);
 }
 
 
