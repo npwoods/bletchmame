@@ -48,6 +48,8 @@ void XmlParser::Test::test()
 	bool julliet_value_parsed = INVALID_BOOL_VALUE;
 	float kilo_value = INVALID_BOOL_VALUE;
 	bool kilo_value_parsed = INVALID_BOOL_VALUE;
+	std::uint64_t lima_value = 0;
+	bool lima_value_parsed = INVALID_BOOL_VALUE;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		charlie_value_parsed = attributes.get("charlie", charlie_value);
@@ -60,12 +62,13 @@ void XmlParser::Test::test()
 		india_value_parsed = attributes.get("india", india_value);
 		julliet_value_parsed = attributes.get("julliet", julliet_value);
 		kilo_value_parsed = attributes.get("kilo", kilo_value);
+		lima_value_parsed = attributes.get("lima", lima_value);
 	});
 
 	const char *xml_text =
 		"<alpha>"
 		"<bravo charlie=\"delta\"/>"
-		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\"/>/>"
+		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\" lima=\"72455405295\"/>/>"
 		"</alpha>";
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 
@@ -84,6 +87,8 @@ void XmlParser::Test::test()
 	QVERIFY(julliet_value_parsed);
 	QVERIFY(abs(kilo_value - 3.14159f) < 0.000000001);
 	QVERIFY(kilo_value_parsed);
+	QVERIFY(lima_value == 0x10DEADBEEF);
+	QVERIFY(lima_value_parsed);
 }
 
 

@@ -45,6 +45,7 @@ public:
 
 		bool get(const char *attribute, int &value) const;
 		bool get(const char *attribute, std::uint32_t &value) const;
+		bool get(const char *attribute, std::uint64_t &value) const;
 		bool get(const char *attribute, bool &value) const;
 		bool get(const char *attribute, float &value) const;
 		bool get(const char *attribute, QString &value) const;
