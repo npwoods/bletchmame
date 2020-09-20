@@ -345,7 +345,8 @@ bool PathsDialog::isDirPathType(Preferences::global_path_type type)
 		|| type == Preferences::global_path_type::ARTWORK
 		|| type == Preferences::global_path_type::ICONS
 		|| type == Preferences::global_path_type::PLUGINS
-		|| type == Preferences::global_path_type::PROFILES;
+		|| type == Preferences::global_path_type::PROFILES
+		|| type == Preferences::global_path_type::CHEATS;
 }
 
 
