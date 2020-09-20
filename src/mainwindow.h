@@ -72,6 +72,7 @@ private slots:
 	void on_actionWarpMode_triggered();
 	void on_actionFullScreen_triggered();
 	void on_actionToggleSound_triggered();
+	void on_actionCheats_triggered();
 	void on_actionConsole_triggered();
 	void on_actionJoysticksAndControllers_triggered();
 	void on_actionKeyboard_triggered();
@@ -107,6 +108,7 @@ private:
 	class ImagesHost;
 	class InputsHost;
 	class SwitchesHost;
+	class CheatsHost;
 
 	class Aspect
 	{

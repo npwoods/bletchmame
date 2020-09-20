@@ -175,6 +175,42 @@ namespace status
 	};
 
 
+	// ======================> cheat_parameter
+	struct cheat_parameter
+	{
+		cheat_parameter() = default;
+		cheat_parameter(const cheat_parameter &) = SHOULD_BE_DELETE;
+		cheat_parameter(cheat_parameter &&) = default;
+
+		std::uint64_t						m_value;
+		std::uint64_t						m_minimum;
+		std::uint64_t						m_maximum;
+		std::uint64_t						m_step;
+		std::map<std::uint64_t, QString>	m_items;
+
+		bool operator==(const cheat_parameter &that) const;
+	};
+
+	// ======================> cheat
+	struct cheat
+	{
+		cheat() = default;
+		cheat(const cheat &) = SHOULD_BE_DELETE;
+		cheat(cheat &&) = default;
+
+		QString							m_id;
+		bool							m_enabled;
+		bool							m_has_run_script;
+		bool							m_has_on_script;
+		bool							m_has_off_script;
+		bool							m_has_change_script;
+		QString							m_description;
+		QString							m_comment;
+		std::optional<cheat_parameter>	m_parameter;
+
+		bool operator==(const cheat &that) const;
+	};
+
 	// ======================> update
 	struct update
 	{
@@ -204,6 +240,7 @@ namespace status
 		std::optional<std::vector<image>>			m_images;
 		std::optional<std::vector<input>>			m_inputs;
 		std::optional<std::vector<input_class>>		m_input_classes;
+		std::optional<std::vector<cheat>>			m_cheats;
 
 		static update read(QDataStream &input);
 	};
@@ -239,6 +276,7 @@ namespace status
 		observable::value<float> &						throttle_rate()				{ return m_throttle_rate; }
 		bool											is_recording() const		{ return m_is_recording; }
 		observable::value<int> &						sound_attenuation()			{ return m_sound_attenuation; }
+		observable::value<std::vector<cheat>> &			cheats()					{ return m_cheats; }
 
 		// higher level methods
 		const image *find_image(const QString &tag) const;
@@ -261,6 +299,8 @@ namespace status
 		observable::value<float>						m_throttle_rate;
 		bool											m_is_recording;
 		observable::value<int>							m_sound_attenuation;
+		observable::value<bool>							m_cheats_enabled;
+		observable::value<std::vector<cheat>>			m_cheats;
 
 		template<typename TStateField, typename TUpdateField>
 		bool take(TStateField &state_field, std::optional<TUpdateField> &update_field);

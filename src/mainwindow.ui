@@ -170,6 +170,7 @@
     <addaction name="menuFrameSkip"/>
     <addaction name="actionFullScreen"/>
     <addaction name="actionToggleSound"/>
+    <addaction name="actionCheats"/>
     <addaction name="separator"/>
     <addaction name="actionConsole"/>
    </widget>
@@ -471,6 +472,14 @@
    </property>
    <property name="shortcut">
     <string>F10</string>
+   </property>
+  </action>
+  <action name="actionCheats">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Cheats...</string>
    </property>
   </action>
  </widget>

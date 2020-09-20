@@ -97,6 +97,9 @@ add_library(BletchMAME_core
 	src/dialogs/about.cpp
 	src/dialogs/about.h
 	src/dialogs/about.ui
+	src/dialogs/cheats.cpp
+	src/dialogs/cheats.h
+	src/dialogs/cheats.ui
 	src/dialogs/choosesw.cpp
 	src/dialogs/choosesw.h
 	src/dialogs/choosesw.ui

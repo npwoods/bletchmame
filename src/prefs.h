@@ -47,6 +47,7 @@ public:
 		ICONS,
 		PLUGINS,
 		PROFILES,
+		CHEATS,
 
 		COUNT
 	};
