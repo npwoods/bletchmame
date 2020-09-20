@@ -29,7 +29,7 @@ namespace
     class CheatWidgeterHost
     {
     public:
-        const int TOTAL_COLUMNS = 2;
+        static const int TOTAL_COLUMNS = 2;
 
         CheatWidgeterHost(QWidget *widgetParent, ICheatsHost &cheatsHost, QGridLayout &layout, int row)
             : m_widgetParent(widgetParent)
