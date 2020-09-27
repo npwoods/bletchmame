@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <stdexcept>
 #include <QProcess>
 #include <QThread>
 #include "mamerunner.h"
@@ -107,5 +108,5 @@ void runAndExcerciseMame(int argc, char *argv[])
 
     // wait for exit
     if (!process.waitForFinished())
-        throw std::exception("waitForFinished() returned false");
+        throw std::logic_error("waitForFinished() returned false");
 }
