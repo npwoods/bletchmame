@@ -58,7 +58,7 @@ static MameWorkerController::Response receiveResponseEnsureSuccess(MameWorkerCon
 {
     MameWorkerController::Response response = controller.receiveResponse();
     if (response.m_type != MameWorkerController::Response::Type::Ok)
-        throw std::exception("Received invalid response from MAME");
+        throw std::logic_error("Received invalid response from MAME");
     return response;
 }
 
