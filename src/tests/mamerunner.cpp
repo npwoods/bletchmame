@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <iostream>
 #include <stdexcept>
 #include <QProcess>
 #include <QThread>
@@ -64,18 +65,15 @@ static MameWorkerController::Response receiveResponseEnsureSuccess(MameWorkerCon
 
 
 //-------------------------------------------------
-//  runAndExcerciseMame
+//  internalRunAndExcerciseMame
 //-------------------------------------------------
 
-void runAndExcerciseMame(int argc, char *argv[])
+static void internalRunAndExcerciseMame(const QString &program, const QStringList &arguments)
 {
-    // identify the program
-    QString program = argv[0];
-
-    // identify the arguments
-    QStringList arguments;
-    for (int i = 1; i < argc; i++)
-        arguments << argv[i];
+    // check to see if the program file exists
+    QFileInfo fileInfo(program);
+    if (!fileInfo.isFile())
+        throw std::logic_error(QString("MAME program '%1' not found").arg(program).toLocal8Bit().constData());
 
     // start the process
     QProcess process;
@@ -109,4 +107,33 @@ void runAndExcerciseMame(int argc, char *argv[])
     // wait for exit
     if (!process.waitForFinished())
         throw std::logic_error("waitForFinished() returned false");
+}
+
+
+//-------------------------------------------------
+//  runAndExcerciseMame
+//-------------------------------------------------
+
+int runAndExcerciseMame(int argc, char *argv[])
+{
+    // identify the program
+    QString program = argv[0];
+
+    // identify the arguments
+    QStringList arguments;
+    for (int i = 1; i < argc; i++)
+        arguments << argv[i];
+
+    int result;
+    try
+    {
+        internalRunAndExcerciseMame(program, arguments);
+        result = 0;
+    }
+    catch (std::exception &ex)
+    {
+        std::cout << "EXCEPTION: " << ex.what() << std::endl;
+        result = 1;
+    }
+    return result;
 }

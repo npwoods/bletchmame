@@ -85,16 +85,7 @@ int main(int argc, char *argv[])
     // we support different types of tests
     if (argc >= 2 && !strcmp(argv[1], "--runmame"))
     {
-        try
-        {
-            runAndExcerciseMame(argc - 2, argv + 2);
-            result = 0;
-        }
-        catch (std::exception &ex)
-        {
-            std::cout << "EXCEPTION: " << ex.what();
-            result = 1;
-        }
+        result = runAndExcerciseMame(argc - 2, argv + 2);
     }
     else
     {
