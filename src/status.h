@@ -243,6 +243,8 @@ namespace status
 		std::optional<std::vector<cheat>>			m_cheats;
 
 		static update read(QDataStream &input);
+
+		update &operator=(update &&that) = default;
 	};
 
 
