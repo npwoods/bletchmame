@@ -84,6 +84,9 @@ static void internalRunAndExcerciseMame(const QString &program, const QStringLis
     process.setReadChannel(QProcess::StandardOutput);
     process.start(program, arguments);
 
+    // report the process starting
+    std::cout << QString("Started MAME: %1 %2").arg(program, arguments.join(" ")).toStdString() << std::endl;
+
     // start controlling MAME
     MameWorkerController controller(process, chatter);
 
