@@ -241,21 +241,11 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 		// alas, we have an error starting MAME
 		success = false;
 
-		// try various strategies to get the best error message possible
-		if (!response.m_text.isEmpty())
-		{
-			// we got an error message from the LUA worker_ui plug-in; display it
-			errorMessage = std::move(response.m_text);
-		}
-		else
-		{
-			// we did not get an error message from the LUA worker_ui plug-in; capture
-			// MAME's standard output and present it (not ideal, but better than nothing)
-			QByteArray errorOutput = process.readAllStandardError();
-			errorMessage = errorOutput.length() > 0
-				? QString("Error starting MAME:\r\n\r\n%1").arg(QString::fromUtf8(errorOutput))
-				: QString("Error starting MAME");
-		}
+		// try various strategies to get the best error message possible (perferring
+		// one returned by the plugin)
+		errorMessage = !response.m_text.isEmpty()
+			? std::move(response.m_text)
+			: controller.scrapeMameStartupError();
 	}
 	else
 	{

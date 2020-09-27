@@ -55,11 +55,15 @@ static void chatter(MameWorkerController::ChatterType chatterType, const QString
 //  receiveResponseEnsureSuccess
 //-------------------------------------------------
 
-static MameWorkerController::Response receiveResponseEnsureSuccess(MameWorkerController &controller)
+static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerController &controller, const char *command)
 {
+    // issue the command
+    controller.issueCommand(command);
+
+    // and get a response
     MameWorkerController::Response response = controller.receiveResponse();
     if (response.m_type != MameWorkerController::Response::Type::Ok)
-        throw std::logic_error("Received invalid response from MAME");
+        throw std::logic_error(QString("Received invalid response from MAME: %1").arg(response.m_text).toLocal8Bit());
     return response;
 }
 
@@ -84,25 +88,28 @@ static void internalRunAndExcerciseMame(const QString &program, const QStringLis
     MameWorkerController controller(process, chatter);
 
     // read the initial response
-    receiveResponseEnsureSuccess(controller);
+    MameWorkerController::Response response = controller.receiveResponse();
+    if (response.m_type != MameWorkerController::Response::Type::Ok)
+    {
+        QString errorMessage = !response.m_text.isEmpty()
+            ? std::move(response.m_text)
+            : controller.scrapeMameStartupError();
+        throw std::logic_error(errorMessage.toLocal8Bit());
+    }
 
     // turn off throttling
-    controller.issueCommand("THROTTLED 0\n");
-    receiveResponseEnsureSuccess(controller);
+    issueCommandAndReceiveResponse(controller, "THROTTLED 0\n");
 
     // resume!
-    controller.issueCommand("RESUME\n");
-    receiveResponseEnsureSuccess(controller);
+    issueCommandAndReceiveResponse(controller, "RESUME\n");
 
     // sleep and ping
     QThread::sleep(5);
-    controller.issueCommand("PING\n");
-    receiveResponseEnsureSuccess(controller);
+    issueCommandAndReceiveResponse(controller, "PING\n");
 
     // sleep and exit
     QThread::sleep(5);
-    controller.issueCommand("EXIT\n");
-    receiveResponseEnsureSuccess(controller);
+    issueCommandAndReceiveResponse(controller, "EXIT\n");
 
     // wait for exit
     if (!process.waitForFinished())
