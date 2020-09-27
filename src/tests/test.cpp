@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include "test.h"
+#include "mamerunner.h"
 
 
 //**************************************************************************
@@ -49,12 +50,11 @@ int TestFixtureBase::testFixtureCount()
 
 
 //-------------------------------------------------
-//  main
+//  runTestFixtures
 //-------------------------------------------------
 
-int main(int argc, char *argv[])
+static int runTestFixtures(int argc, char *argv[])
 {
-    std::cout << "BletchMAME Test Harness" << std::endl;
     std::cout << TestFixtureBase::testFixtureCount() << " total test fixture(s)" << std::endl;
 
     bool anyFailed = false;
@@ -66,9 +66,44 @@ int main(int argc, char *argv[])
     }
 
     if (anyFailed)
-    {
         std::cout << "TEST FAILURES OCCURRED - CRASHING" << std::endl;
+    else
+        std::cout << "All tests succeeded" << std::endl;
+    return anyFailed ? 1 : 0;
+}
 
+
+//-------------------------------------------------
+//  main
+//-------------------------------------------------
+
+int main(int argc, char *argv[])
+{
+    int result;
+    std::cout << "BletchMAME Test Harness" << std::endl;
+
+    // we support different types of tests
+    if (argc >= 2 && !strcmp(argv[1], "--runmame"))
+    {
+        try
+        {
+            runAndExcerciseMame(argc - 2, argv + 2);
+            result = 0;
+        }
+        catch (std::exception &ex)
+        {
+            std::cout << "EXCEPTION: " << ex.what();
+            result = 1;
+        }
+    }
+    else
+    {
+        result = runTestFixtures(argc, argv);
+    }
+
+    // did we have any failures?
+    if (result != 0)
+    {
         // the monstrosity below is a consequence of seemingly not being able to
         // report errors with exit codes under GitHub actions; for some reason exit
         // codes are not working but the code below does trigger a failure
@@ -77,8 +112,7 @@ int main(int argc, char *argv[])
         {
             *((long *)i++) = 0xDEADBEEF;
         } while (rand() != rand());
-        exit(1);
     }
-    std::cout << "All tests succeeded" << std::endl;
-    return 0;
+
+    return result;
 }
