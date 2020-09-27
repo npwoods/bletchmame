@@ -67,6 +67,8 @@ add_library(BletchMAME_core
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui
+	src/mameworkercontroller.cpp
+	src/mameworkercontroller.h
 	src/mameversion.cpp
 	src/mameversion.h
 	src/messagequeue.h

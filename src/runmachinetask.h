@@ -17,7 +17,7 @@
 #include "task.h"
 #include "messagequeue.h"
 #include "info.h"
-#include "status.h"
+#include "mameworkercontroller.h"
 
 
 //**************************************************************************
@@ -89,22 +89,16 @@ private:
 class ChatterEvent : public QEvent
 {
 public:
-	enum class ChatterType
-	{
-		COMMAND_LINE,
-		RESPONSE
-	};
+	ChatterEvent(MameWorkerController::ChatterType type, const QString &text);
 
-	ChatterEvent(ChatterType type, QString &&text);
-
-	static QEvent::Type eventId()	{ return s_eventId; }
-	ChatterType type() const		{ return m_type; }
-	const QString &text() const		{ return m_text; }
+	static QEvent::Type eventId()					{ return s_eventId; }
+	MameWorkerController::ChatterType type() const	{ return m_type; }
+	const QString &text() const						{ return m_text; }
 
 private:
-	static QEvent::Type		s_eventId;
-	ChatterType				m_type;
-	QString					m_text;
+	static QEvent::Type					s_eventId;
+	MameWorkerController::ChatterType	m_type;
+	QString								m_text;
 };
 
 
@@ -144,20 +138,6 @@ private:
 		emu_error					m_status;
     };
 
-	struct Response
-	{
-		enum class type
-		{
-			UNKNOWN,
-			OK,
-			END_OF_FILE,
-			ERR
-		};
-
-		type						m_type;
-		QString						m_text;
-	};
-
 	info::machine					m_machine;
 	QString							m_software;
 	QString							m_attachWindowParameter;
@@ -168,10 +148,7 @@ private:
 	static QString getAttachWindowParameter(const QWidget &targetWindow);
 
 	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
-	void postChatter(QObject &handler, ChatterEvent::ChatterType type, QString &&text);
-	Response receiveResponse(QObject &handler, QProcess &process);
-	static status::update readStatus(QProcess &process);
-	static QString reallyReadLineFromProcess(QProcess &process);
+	static MameWorkerController::Response receiveResponseAndHandleUpdates(MameWorkerController &controller, QObject &handler);
 };
 
 

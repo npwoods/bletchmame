@@ -86,11 +86,14 @@ void ConsoleDialog::onChatter(const ChatterEvent &evt)
 	QColor color;
 	switch (evt.type())
 	{
-	case ChatterEvent::ChatterType::COMMAND_LINE:
+	case MameWorkerController::ChatterType::Command:
 		color = QColorConstants::Blue;
 		break;
-	case ChatterEvent::ChatterType::RESPONSE:
-		color = evt.text().startsWith("OK") ? QColorConstants::Black : QColorConstants::Red;
+	case MameWorkerController::ChatterType::GoodResponse:
+		color = QColorConstants::Black;
+		break;
+	case MameWorkerController::ChatterType::ErrorResponse:
+		color = QColorConstants::Red;
 		break;
 	default:
 		throw false;
@@ -113,6 +116,6 @@ void ConsoleDialog::onChatter(const ChatterEvent &evt)
 bool ConsoleDialog::isChatterPing(const ChatterEvent &evt)
 {
 	// hack, but good enough for now
-	return (evt.type() == ChatterEvent::ChatterType::COMMAND_LINE && evt.text() == "ping")
-		|| (evt.type() == ChatterEvent::ChatterType::RESPONSE && evt.text().contains("pong"));
+	return (evt.type() == MameWorkerController::ChatterType::Command && evt.text() == "ping")
+		|| (evt.type() == MameWorkerController::ChatterType::GoodResponse && evt.text().contains("pong"));
 }
