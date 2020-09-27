@@ -61,6 +61,7 @@ jobs:
 
     # Run worker_ui Acceptance Testing
     - name: Run worker_ui Acceptance Testing
+      shell: bash
       run: |
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
