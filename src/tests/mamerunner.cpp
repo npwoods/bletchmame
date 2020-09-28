@@ -56,9 +56,9 @@ static const char *getAnsiColorCodeForChatterType(MameWorkerController::ChatterT
 
 static void chatter(MameWorkerController::ChatterType chatterType, const QString &text)
 {
-    printf("%s%s\n",
-        (HAS_COLOR ? getAnsiColorCodeForChatterType(chatterType) : ""),
-        text.trimmed().toLocal8Bit().constData());
+    if (HAS_COLOR)
+        std::cout << getAnsiColorCodeForChatterType(chatterType);
+    std::cout << text.trimmed().toLocal8Bit().constData() << std::endl;
 }
 
 
