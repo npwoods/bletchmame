@@ -52,6 +52,7 @@ public:
 	// methods
 	Response receiveResponse();
 	void issueCommand(const QString &command);
+	QString scrapeMameStartupError();
 
 private:
     QProcess &											m_process;
