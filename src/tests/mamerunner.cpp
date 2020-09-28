@@ -14,6 +14,17 @@
 #include "mameworkercontroller.h"
 
 
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+#define HAS_COLOR   0
+
+
+//**************************************************************************
+//  IMPLEMENTATION
+//**************************************************************************
+
 //-------------------------------------------------
 //  getAnsiColorCodeForChatterType
 //-------------------------------------------------
@@ -46,7 +57,7 @@ static const char *getAnsiColorCodeForChatterType(MameWorkerController::ChatterT
 static void chatter(MameWorkerController::ChatterType chatterType, const QString &text)
 {
     printf("%s%s\n",
-        getAnsiColorCodeForChatterType(chatterType),
+        (HAS_COLOR ? getAnsiColorCodeForChatterType(chatterType) : ""),
         text.trimmed().toLocal8Bit().constData());
 }
 
