@@ -264,7 +264,7 @@ function emit_status(light, out)
 	emit("\t/>");
 
 	-- <cheats> (cheat manager)
-	if (_G.emu.plugin.cheat) then
+	if (_G and _G.emu and  _G.emu.plugin and _G.emu.plugin.cheat) then
 		emit("\t<cheats>");
 		for id,desc in pairs(_G.emu.plugin.cheat:list()) do
 			local cheat = _G.emu.plugin.cheat.get(id)
