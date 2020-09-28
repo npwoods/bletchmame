@@ -185,3 +185,18 @@ void MameWorkerController::callChatterCallback(ChatterType chatterType, const QS
 	if (m_chatterCallback)
 		m_chatterCallback(chatterType, text);
 }
+
+
+//-------------------------------------------------
+//  scrapeMameStartupError - used when we do not get
+//	an error message from the LUA worker_ui plug-in
+//-------------------------------------------------
+
+QString MameWorkerController::scrapeMameStartupError()
+{
+	// capture MAME's standard output and present it (not ideal, but better than nothing)
+	QByteArray errorOutput = m_process.readAllStandardError();
+	return errorOutput.length() > 0
+		? QString("Error starting MAME:\r\n\r\n%1").arg(QString::fromUtf8(errorOutput))
+		: QString("Error starting MAME");
+}
