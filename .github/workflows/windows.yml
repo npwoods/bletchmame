@@ -55,9 +55,20 @@ jobs:
         make -j 8
         strip ./BletchMAME.exe
 
-    # Run Acceptance Tests
-    - name: Run Acceptance Tests
+    # Run Unit Tests
+    - name: Run Unit Tests
       run: ./BletchMAME_tests.exe
+
+    # Run worker_ui Acceptance Testing
+    - name: Run worker_ui Acceptance Testing
+      shell: bash
+      run: |
+        test -d deps || mkdir deps
+        test -d deps/roms || mkdir deps/roms
+        curl -L "https://github.com/mamedev/mame/releases/download/mame0224/mame0224b_64bit.exe" > deps/mame0224b_64bit.exe
+        curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
+        7z x deps/mame0224b_64bit.exe -odeps/mame0224
+        ./BletchMAME_tests.exe --runmame deps/mame0224/mame64.exe alienar -rompath deps/roms -skip_gameinfo -sound none -video none -pluginspath "deps/mame0224/plugins;plugins" -plugin worker_ui
 
     # Install PanDoc
     - name: Install PanDoc
