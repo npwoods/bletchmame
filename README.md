@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.2 (TBD)
+- 2.2 (2020-Oct-3)
 	- Support for cheats starting with MAME 0.225
 	- The worker_ui plugin is now tested automatically as a part of the CI/CD pipeline
 
