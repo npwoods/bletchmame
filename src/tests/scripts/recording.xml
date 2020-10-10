@@ -1,0 +1,7 @@
+<script>
+	<command>THROTTLED 0</command>
+	<command>RESUME</command>
+	<command>BEGIN_RECORDING recording.mng mng</command>
+	<sleep seconds="5"/>
+	<command>EXIT</command>
+</script>

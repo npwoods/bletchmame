@@ -8,10 +8,13 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <QDir>
 #include <QProcess>
 #include <QThread>
+
 #include "mamerunner.h"
 #include "mameworkercontroller.h"
+#include "xmlparser.h"
 
 
 //**************************************************************************
@@ -83,12 +86,15 @@ static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerC
 //  internalRunAndExcerciseMame
 //-------------------------------------------------
 
-static void internalRunAndExcerciseMame(const QString &program, const QStringList &arguments)
+static void internalRunAndExcerciseMame(const QString &scriptFileName, const QString &program, const QStringList &arguments)
 {
     // check to see if the program file exists
     QFileInfo fileInfo(program);
     if (!fileInfo.isFile())
         throw std::logic_error(QString("MAME program '%1' not found").arg(program).toLocal8Bit().constData());
+
+    // identify the script we're running
+    std::cout << QString("Running script: %1").arg(scriptFileName).toStdString() << std::endl;
 
     // start the process
     QProcess process;
@@ -111,19 +117,26 @@ static void internalRunAndExcerciseMame(const QString &program, const QStringLis
         throw std::logic_error(errorMessage.toLocal8Bit());
     }
 
-    // turn off throttling
-    issueCommandAndReceiveResponse(controller, "THROTTLED 0\n");
+    // get ready to parse
+    XmlParser xml;
+    xml.onElementEnd({ "script", "command" }, [&controller](QString &&text)
+    {
+        // normalize the text
+        text = text.trimmed() + "\n";
 
-    // resume!
-    issueCommandAndReceiveResponse(controller, "RESUME\n");
+        // issue the command
+        issueCommandAndReceiveResponse(controller, text.toLocal8Bit());
+    });
+    xml.onElementBegin({ "script", "sleep" }, [&controller](const XmlParser::Attributes &attributes)
+    {
+        float seconds = 0.0;
+        attributes.get("seconds", seconds);
+        QThread::msleep((unsigned long)(seconds * 1000));
+    });
 
-    // sleep and ping
-    QThread::sleep(5);
-    issueCommandAndReceiveResponse(controller, "PING\n");
-
-    // sleep and exit
-    QThread::sleep(5);
-    issueCommandAndReceiveResponse(controller, "EXIT\n");
+    // load the script
+    if (!xml.parse(scriptFileName))
+        throw std::logic_error(QString("Could not load script '%1'").arg(scriptFileName).toLocal8Bit().constData());
 
     // wait for exit
     if (!process.waitForFinished())
@@ -137,18 +150,39 @@ static void internalRunAndExcerciseMame(const QString &program, const QStringLis
 
 int runAndExcerciseMame(int argc, char *argv[])
 {
+    int currentArg = 0;
+
+    // identify the scripts
+    QFileInfoList scripts;
+    QString scriptOrDirectory = argv[currentArg++];
+    QFileInfo fi(scriptOrDirectory);
+    if (fi.isFile())
+    {
+        scripts << std::move(fi);
+    }
+    else if (fi.isDir())
+    {
+        QDir scriptDir(scriptOrDirectory);
+        scripts = scriptDir.entryInfoList(QStringList() << "*.xml", QDir::Files);
+    }
+    if (scripts.isEmpty())
+        throw std::logic_error("No scripts");
+
     // identify the program
-    QString program = argv[0];
+    QString program = argv[currentArg++];
 
     // identify the arguments
     QStringList arguments;
-    for (int i = 1; i < argc; i++)
-        arguments << argv[i];
+    while(currentArg < argc)
+        arguments << argv[currentArg++];
 
     int result;
     try
     {
-        internalRunAndExcerciseMame(program, arguments);
+        for (const QFileInfo &script : scripts)
+        {
+            internalRunAndExcerciseMame(script.absoluteFilePath(), program, arguments);
+        }
         result = 0;
     }
     catch (std::exception &ex)
