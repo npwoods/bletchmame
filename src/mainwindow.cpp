@@ -906,7 +906,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
 	{
 		QString message = QString("Recording movies requires MAME %1 or newer to function")
-			.arg(REQUIRED_MAME_VERSION_TOGGLE_MOVIE.NextCleanVersion().ToString());
+			.arg(REQUIRED_MAME_VERSION_TOGGLE_MOVIE.nextCleanVersion().toString());
 		messageBox(message);
 		return;
 	}
@@ -1856,7 +1856,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 
 bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 {
-	return MameVersion(m_mame_version).IsAtLeast(version);
+	return MameVersion(m_mame_version).isAtLeast(version);
 }
 
 
@@ -1872,8 +1872,8 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION))
 	{
 		QString message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
-			QString::number(REQUIRED_MAME_VERSION.Major()),
-			QString::number(REQUIRED_MAME_VERSION.Minor()));
+			QString::number(REQUIRED_MAME_VERSION.major()),
+			QString::number(REQUIRED_MAME_VERSION.minor()));
 		messageBox(message);
 	}
 

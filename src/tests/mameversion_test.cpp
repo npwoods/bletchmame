@@ -34,9 +34,9 @@ private:
 void MameVersion::Test::general(const char *version_string, int expected_major, int expected_minor, bool expected_dirty)
 {
     auto version = MameVersion(version_string);
-    QVERIFY(version.Major() == expected_major);
-    QVERIFY(version.Minor() == expected_minor);
-    QVERIFY(version.Dirty() == expected_dirty);
+    QVERIFY(version.major() == expected_major);
+    QVERIFY(version.minor() == expected_minor);
+    QVERIFY(version.dirty() == expected_dirty);
 }
 
 

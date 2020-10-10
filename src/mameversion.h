@@ -13,6 +13,8 @@
 
 #include <QString>
 
+// ======================> MameVersion
+
 class MameVersion
 {
 public:
@@ -21,7 +23,7 @@ public:
 	// ctor
 	MameVersion(const QString &version)
 	{
-		Parse(version, m_major, m_minor, m_dirty);
+		parse(version, m_major, m_minor, m_dirty);
 	}
 
 	MameVersion(int major, int minor, bool dirty)
@@ -32,36 +34,36 @@ public:
 	}
 
 	// accessors
-	int Major() const	{ return m_major; }
-	int Minor() const	{ return m_minor; }
-	bool Dirty() const	{ return m_dirty; }
+	int major() const	{ return m_major; }
+	int minor() const	{ return m_minor; }
+	bool dirty() const	{ return m_dirty; }
 
-	bool IsAtLeast(const MameVersion &that) const
+	bool isAtLeast(const MameVersion &that) const
 	{
 		bool result;
-		if (Major() > that.Major())
+		if (major() > that.major())
 			result = true;
-		else if (Major() < that.Major())
+		else if (major() < that.major())
 			result = false;
-		else if (Minor() > that.Minor())
+		else if (minor() > that.minor())
 			result = true;
-		else if (Minor() < that.Minor())
+		else if (minor() < that.minor())
 			result = false;
 		else
-			result = Dirty() || !that.Dirty();
+			result = dirty() || !that.dirty();
 		return result;		
 	}
 
-	MameVersion NextCleanVersion() const
+	MameVersion nextCleanVersion() const
 	{
-		return MameVersion(Major(), Minor() + (Dirty() ? 1 : 0), false);
+		return MameVersion(major(), minor() + (dirty() ? 1 : 0), false);
 	}
 
-	QString ToString() const
+	QString toString() const
 	{
-		return QString(Dirty() ? "%1.%2 (dirty)" : "%1.%2").arg(
-			QString::number(Major()),
-			QString::number(Minor()));
+		return QString(dirty() ? "%1.%2 (dirty)" : "%1.%2").arg(
+			QString::number(major()),
+			QString::number(minor()));
 	}
 
 private:
@@ -69,7 +71,7 @@ private:
 	int m_minor;
 	bool m_dirty;
 
-	static void Parse(const QString &version_string, int &major, int &minor, bool &dirty);
+	static void parse(const QString &versionString, int &major, int &minor, bool &dirty);
 };
 
 #endif // MAMEVERSION_H

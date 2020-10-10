@@ -13,6 +13,7 @@
 #include <QThread>
 
 #include "mamerunner.h"
+#include "mameversion.h"
 #include "mameworkercontroller.h"
 #include "xmlparser.h"
 
@@ -83,6 +84,43 @@ static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerC
 
 
 //-------------------------------------------------
+//  getScriptRequiredMameVersion
+//-------------------------------------------------
+
+static std::optional<MameVersion> getScriptRequiredMameVersion(const QString &scriptFileName)
+{
+    std::optional<MameVersion> result;
+    XmlParser xml;
+    xml.onElementBegin({ "script" }, [&result](const XmlParser::Attributes &attributes)
+    {
+        QString requiredVersionString;
+        if (attributes.get("requiredVersion", requiredVersionString))
+            result = MameVersion(requiredVersionString);
+    });
+
+    if (!xml.parse(scriptFileName))
+        throw std::logic_error(QString("Could not load script '%1'").arg(scriptFileName).toLocal8Bit().constData());
+    return result;
+}
+
+
+//-------------------------------------------------
+//  getMameVersion
+//-------------------------------------------------
+
+static MameVersion getMameVersion(const QString &program)
+{
+    QProcess process;
+    process.setReadChannel(QProcess::StandardOutput);
+    process.start(program, QStringList() << "-version");
+    process.waitForFinished();
+    QByteArray output = process.readAllStandardOutput();
+    QString versionString = QString::fromUtf8(output);
+    return MameVersion(versionString);
+}
+
+
+//-------------------------------------------------
 //  internalRunAndExcerciseMame
 //-------------------------------------------------
 
@@ -95,6 +133,18 @@ static void internalRunAndExcerciseMame(const QString &scriptFileName, const QSt
 
     // identify the script we're running
     std::cout << QString("Running script: %1").arg(scriptFileName).toStdString() << std::endl;
+
+    // version check
+    std::optional<MameVersion> requiredMameVersion = getScriptRequiredMameVersion(scriptFileName);
+    if (requiredMameVersion)
+    {
+        MameVersion mameVersion = getMameVersion(program);
+        if (!mameVersion.isAtLeast(*requiredMameVersion))
+        {
+            std::cout << QString("Script requires MAME %1 (this is MAME %2)").arg(requiredMameVersion->toString(), mameVersion.toString()).toStdString() << std::endl;
+            return;
+        }
+    }
 
     // start the process
     QProcess process;
