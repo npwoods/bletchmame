@@ -1,0 +1,7 @@
+<script>
+	<command>THROTTLED 0</command>
+	<command>RESUME</command>
+	<sleep seconds="5"/>
+	<command>SAVE_SNAPSHOT 0 snap.png</command>
+	<command>EXIT</command>
+</script>
