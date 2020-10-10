@@ -18,12 +18,12 @@
 //**************************************************************************
 
 //-------------------------------------------------
-//  Parse
+//  parse
 //-------------------------------------------------
 
-void MameVersion::Parse(const QString &version_string, int &major, int &minor, bool &dirty)
+void MameVersion::parse(const QString &versionString, int &major, int &minor, bool &dirty)
 {
-	if (sscanf(version_string.toStdString().c_str(), "%d.%d", &major, &minor) != 2)
+	if (sscanf(versionString.toStdString().c_str(), "%d.%d", &major, &minor) != 2)
 	{
 		// can't parse the string
 		major = 0;
@@ -33,11 +33,11 @@ void MameVersion::Parse(const QString &version_string, int &major, int &minor, b
 	else
 	{
 		// we parsed the string; now check if we are dirty
-		QString non_dirty_version_string = QString("%1.%2 (mame%3%4)").arg(
+		QString non_dirty_versionString = QString("%1.%2 (mame%3%4)").arg(
 			QString::number(major),
 			QString::number(minor),
 			QString::number(major),
 			QString::number(minor));
-		dirty = version_string != non_dirty_version_string;
+		dirty = versionString != non_dirty_versionString;
 	}
 }
