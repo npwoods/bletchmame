@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.3 (TBD)
+	- Fixed a bug that could cause image widgets to not be properly cleaned up if they got removed by a slot change
 
 - 2.2 (2020-Oct-3)
 	- Support for cheats (requires MAME 0.225)
