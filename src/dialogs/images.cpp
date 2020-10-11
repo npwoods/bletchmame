@@ -101,8 +101,8 @@ void ImagesDialog::UpdateImageGrid()
         for (int col = 0; col < m_ui->gridLayout->columnCount(); col++)
         {
             QLayoutItem *layoutItem = m_ui->gridLayout->itemAtPosition(row, col);
-            if (layoutItem)
-                m_ui->gridLayout->removeItem(layoutItem);
+            if (layoutItem && layoutItem->widget())
+                delete layoutItem->widget();
         }
     }
 
