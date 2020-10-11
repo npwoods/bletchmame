@@ -94,39 +94,39 @@ public:
 	{
 	}
 
-	virtual info::machine GetMachine()
+	virtual info::machine getMachine()
 	{
 		return m_host.GetRunningMachine();
 	}
 
-	virtual Preferences &GetPreferences()
+	virtual Preferences &getPreferences()
 	{
 		return m_host.m_prefs;
 	}
 
-	virtual observable::value<std::vector<status::image>> &GetImages()
+	virtual observable::value<std::vector<status::image>> &getImages()
 	{
 		return m_host.m_state->images();
 	}
 
-	virtual const QString &GetWorkingDirectory() const
+	virtual const QString &getWorkingDirectory() const
 	{
-		return m_host.m_prefs.GetMachinePath(GetMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
+		return m_host.m_prefs.GetMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
 	}
 
-	virtual void SetWorkingDirectory(QString &&dir)
+	virtual void setWorkingDirectory(QString &&dir)
 	{
-		m_host.m_prefs.SetMachinePath(GetMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
+		m_host.m_prefs.SetMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
 	}
 
-	virtual const std::vector<QString> &GetRecentFiles(const QString &tag) const
+	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
 	{
 		info::machine machine = m_host.GetRunningMachine();
 		const QString &device_type = GetDeviceType(machine, tag);
 		return m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
 	}
 
-	virtual std::vector<QString> GetExtensions(const QString &tag) const
+	virtual std::vector<QString> getExtensions(const QString &tag) const
 	{
 		// find the device declaration
 		auto devices = m_host.GetRunningMachine().devices();
@@ -141,19 +141,19 @@ public:
 		return util::string_split((*iter).extensions(), [](auto ch) { return ch == ','; });
 	}
 
-	virtual void CreateImage(const QString &tag, QString &&path)
+	virtual void createImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
 		m_host.Issue({ "create", tag, std::move(path) });
 	}
 
-	virtual void LoadImage(const QString &tag, QString &&path)
+	virtual void loadImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
 		m_host.Issue({ "load", tag, std::move(path) });
 	}
 
-	virtual void UnloadImage(const QString &tag)
+	virtual void unloadImage(const QString &tag)
 	{
 		m_host.Issue({ "unload", tag });
 	}
@@ -161,7 +161,7 @@ public:
 private:
 	MainWindow &m_host;
 
-	const QString &GetMachineName() const
+	const QString &getMachineName() const
 	{
 		return m_host.GetRunningMachine().name();
 	}
