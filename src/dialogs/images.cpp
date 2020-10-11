@@ -42,10 +42,10 @@ ImagesDialog::ImagesDialog(QWidget &parent, IImagesHost &host, bool cancellable)
     m_ui->buttonBox->setStandardButtons(standardButtons);
 
     // host interactions
-    m_imagesEventSubscription = m_host.GetImages().subscribe([this] { UpdateImageGrid(); });
+    m_imagesEventSubscription = m_host.getImages().subscribe([this] { updateImageGrid(); });
 
     // initial update of image grid
-    UpdateImageGrid();
+    updateImageGrid();
 }
 
 
@@ -59,19 +59,19 @@ ImagesDialog::~ImagesDialog()
 
 
 //-------------------------------------------------
-//  UpdateImageGrid
+//  updateImageGrid
 //-------------------------------------------------
 
-void ImagesDialog::UpdateImageGrid()
+void ImagesDialog::updateImageGrid()
 {
     bool okEnabled = true;
     QString pretty_buffer;
 
     // get the software list collection
-    software_list_collection software_col = BuildSoftwareListCollection();
+    software_list_collection software_col = buildSoftwareListCollection();
 
     // get the list of images
-    const std::vector<status::image> &images(m_host.GetImages().get());
+    const std::vector<status::image> &images(m_host.getImages().get());
 
     // iterate through the vector of images, and update the grid
     for (int i = 0; i < (int)images.size(); i++)
@@ -88,7 +88,7 @@ void ImagesDialog::UpdateImageGrid()
 
         // update the text
         QLineEdit &lineEdit = getOrCreateGridWidget<QLineEdit>(i, 1, &ImagesDialog::setupGridLineEdit);
-        const QString &prettyName = PrettifyImageFileName(software_col, images[i].m_tag, images[i].m_file_name, pretty_buffer, true);
+        const QString &prettyName = prettifyImageFileName(software_col, images[i].m_tag, images[i].m_file_name, pretty_buffer, true);
         lineEdit.setText(prettyName);
 
         // update the button
@@ -162,20 +162,20 @@ void ImagesDialog::setupGridButton(QPushButton &button, int row)
     // set up the button
     button.setText("...");
     button.setFixedWidth(30);
-    connect(&button, &QPushButton::clicked, this, [this, row, &button]() { ImageMenu(button, row); });
+    connect(&button, &QPushButton::clicked, this, [this, row, &button]() { imageMenu(button, row); });
 }
 
 
 //-------------------------------------------------
-//  PrettifyImageFileName
+//  prettifyImageFileName
 //-------------------------------------------------
 
-const QString &ImagesDialog::PrettifyImageFileName(const software_list_collection &software_col, const QString &tag, const QString &file_name, QString &buffer, bool full_path)
+const QString &ImagesDialog::prettifyImageFileName(const software_list_collection &software_col, const QString &tag, const QString &file_name, QString &buffer, bool full_path)
 {
     const QString *result = nullptr;
 
     // find the software
-    const QString *dev_interface = DeviceInterfaceFromTag(tag);
+    const QString *dev_interface = deviceInterfaceFromTag(tag);
     const software_list::software *software = dev_interface
         ? software_col.find_software_by_name(file_name, *dev_interface)
         : nullptr;
@@ -209,60 +209,60 @@ const QString &ImagesDialog::PrettifyImageFileName(const software_list_collectio
 
 
 //-------------------------------------------------
-//  DeviceInterfaceFromTag
+//  deviceInterfaceFromTag
 //-------------------------------------------------
 
-const QString *ImagesDialog::DeviceInterfaceFromTag(const QString &tag)
+const QString *ImagesDialog::deviceInterfaceFromTag(const QString &tag)
 {
     // find the device
     auto iter = std::find_if(
-        m_host.GetMachine().devices().cbegin(),
-        m_host.GetMachine().devices().end(),
+        m_host.getMachine().devices().cbegin(),
+        m_host.getMachine().devices().end(),
         [&tag](info::device dev) { return tag == dev.tag(); });
 
     // if we found a device, return the interface
-    return iter != m_host.GetMachine().devices().end()
+    return iter != m_host.getMachine().devices().end()
         ? &(*iter).devinterface()
         : nullptr;
 }
 
 
 //-------------------------------------------------
-//  BuildSoftwareListCollection
+//  buildSoftwareListCollection
 //-------------------------------------------------
 
-software_list_collection ImagesDialog::BuildSoftwareListCollection() const
+software_list_collection ImagesDialog::buildSoftwareListCollection() const
 {
     software_list_collection software_col;
-    software_col.load(m_host.GetPreferences(), m_host.GetMachine());
+    software_col.load(m_host.getPreferences(), m_host.getMachine());
     return software_col;
 }
 
 
 //-------------------------------------------------
-//  ImageMenu
+//  imageMenu
 //-------------------------------------------------
 
-bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
+bool ImagesDialog::imageMenu(const QPushButton &button, int row)
 {
     // get info about the image
-    const status::image &image = m_host.GetImages().get()[row];
+    const status::image &image = m_host.getImages().get()[row];
 
-    software_list_collection software_col = BuildSoftwareListCollection();
-    const QString *dev_interface = DeviceInterfaceFromTag(image.m_tag);
+    software_list_collection software_col = buildSoftwareListCollection();
+    const QString *dev_interface = deviceInterfaceFromTag(image.m_tag);
 
     // setup popup menu - first the create/load items
     QMenu popupMenu(this);
     if (image.m_is_creatable)
-        popupMenu.addAction("Create...",    [this, &image]() { CreateImage(image.m_tag); });
-    popupMenu.addAction("Load Image...",    [this, &image]() { LoadImage(image.m_tag); });
+        popupMenu.addAction("Create...",    [this, &image]() { createImage(image.m_tag); });
+    popupMenu.addAction("Load Image...",    [this, &image]() { loadImage(image.m_tag); });
 
     // if we have a software list part, put that on there too
     if (!software_col.software_lists().empty() && dev_interface)
     {
         popupMenu.addAction("Load Software List Part...", [this, &software_col, &image, dev_interface]()
         {
-            LoadSoftwareListPart(software_col, image.m_tag, *dev_interface);
+            loadSoftwareListPart(software_col, image.m_tag, *dev_interface);
         });
     }
 
@@ -271,15 +271,15 @@ bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
     unloadAction.setEnabled(!image.m_file_name.isEmpty());
 
     // recent files
-    const std::vector<QString> &recent_files = m_host.GetRecentFiles(image.m_tag);
+    const std::vector<QString> &recent_files = m_host.getRecentFiles(image.m_tag);
     if (!recent_files.empty())
     {
         QString pretty_buffer;
         popupMenu.addSeparator();
         for (const QString &recent_file : recent_files)
         {
-            const QString &pretty_recent_file = PrettifyImageFileName(software_col, image.m_tag, recent_file, pretty_buffer, false);
-            popupMenu.addAction(pretty_recent_file, [this, &image, &recent_file]() { m_host.LoadImage(image.m_tag, QString(recent_file)); });
+            const QString &pretty_recent_file = prettifyImageFileName(software_col, image.m_tag, recent_file, pretty_buffer, false);
+            popupMenu.addAction(pretty_recent_file, [this, &image, &recent_file]() { m_host.loadImage(image.m_tag, QString(recent_file)); });
         }
     }
 
@@ -290,17 +290,17 @@ bool ImagesDialog::ImageMenu(const QPushButton &button, int row)
 
 
 //-------------------------------------------------
-//  CreateImage
+//  createImage
 //-------------------------------------------------
 
-bool ImagesDialog::CreateImage(const QString &tag)
+bool ImagesDialog::createImage(const QString &tag)
 {
     // show the fialog
     QFileDialog dialog(
         this,
         "Create Image",
-        m_host.GetWorkingDirectory(),
-        GetWildcardString(tag, false));
+        m_host.getWorkingDirectory(),
+        getWildcardString(tag, false));
     dialog.setFileMode(QFileDialog::FileMode::AnyFile);
     dialog.exec();
     if (dialog.result() != QDialog::DialogCode::Accepted)
@@ -310,26 +310,26 @@ bool ImagesDialog::CreateImage(const QString &tag)
     QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
 
     // update our host's working directory
-    UpdateWorkingDirectory(path);
+    updateWorkingDirectory(path);
 
     // and load the image
-    m_host.CreateImage(tag, std::move(path));
+    m_host.createImage(tag, std::move(path));
     return true;
 }
 
 
 //-------------------------------------------------
-//  LoadImage
+//  loadImage
 //-------------------------------------------------
 
-bool ImagesDialog::LoadImage(const QString &tag)
+bool ImagesDialog::loadImage(const QString &tag)
 {
     // show the fialog
     QFileDialog dialog(
         this,
         "Load Image",
-        m_host.GetWorkingDirectory(),
-        GetWildcardString(tag, true));
+        m_host.getWorkingDirectory(),
+        getWildcardString(tag, true));
     dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
     dialog.exec();
     if (dialog.result() != QDialog::DialogCode::Accepted)
@@ -339,49 +339,49 @@ bool ImagesDialog::LoadImage(const QString &tag)
     QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
 
     // update our host's working directory
-    UpdateWorkingDirectory(path);
+    updateWorkingDirectory(path);
 
     // and load the image
-    m_host.LoadImage(tag, std::move(path));
+    m_host.loadImage(tag, std::move(path));
     return true;
 }
 
 
 //-------------------------------------------------
-//  LoadSoftwareListPart
+//  loadSoftwareListPart
 //-------------------------------------------------
 
-bool ImagesDialog::LoadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface)
+bool ImagesDialog::loadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface)
 {
-    ChooseSoftlistPartDialog dialog(this, m_host.GetPreferences(), software_col, dev_interface);
+    ChooseSoftlistPartDialog dialog(this, m_host.getPreferences(), software_col, dev_interface);
     dialog.exec();
     if (dialog.result() != QDialog::DialogCode::Accepted)
         return false;
 
-    m_host.LoadImage(tag, dialog.selection());
+    m_host.loadImage(tag, dialog.selection());
     return true;
 }
 
 
 //-------------------------------------------------
-//  UnloadImage
+//  unloadImage
 //-------------------------------------------------
 
-bool ImagesDialog::UnloadImage(const QString &tag)
+bool ImagesDialog::unloadImage(const QString &tag)
 {
-    m_host.UnloadImage(tag);
+    m_host.unloadImage(tag);
     return false;
 }
 
 
 //-------------------------------------------------
-//  GetWildcardString
+//  getWildcardString
 //-------------------------------------------------
 
-QString ImagesDialog::GetWildcardString(const QString &tag, bool support_zip) const
+QString ImagesDialog::getWildcardString(const QString &tag, bool support_zip) const
 {
     // get the list of extensions
-    std::vector<QString> extensions = m_host.GetExtensions(tag);
+    std::vector<QString> extensions = m_host.getExtensions(tag);
 
     // append zip if appropriate
     if (support_zip)
@@ -406,12 +406,12 @@ QString ImagesDialog::GetWildcardString(const QString &tag, bool support_zip) co
 
 
 //-------------------------------------------------
-//  UpdateWorkingDirectory
+//  updateWorkingDirectory
 //-------------------------------------------------
 
-void ImagesDialog::UpdateWorkingDirectory(const QString &path)
+void ImagesDialog::updateWorkingDirectory(const QString &path)
 {
     QString dir;
     wxFileName::SplitPath(path, &dir, nullptr, nullptr);
-    m_host.SetWorkingDirectory(std::move(dir));
+    m_host.setWorkingDirectory(std::move(dir));
 }

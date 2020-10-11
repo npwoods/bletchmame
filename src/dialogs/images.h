@@ -38,16 +38,16 @@ class Preferences;
 class IImagesHost
 {
 public:
-	virtual Preferences &GetPreferences() = 0;
-	virtual info::machine GetMachine() = 0;
-	virtual observable::value<std::vector<status::image>> &GetImages() = 0;
-	virtual const QString &GetWorkingDirectory() const = 0;
-	virtual void SetWorkingDirectory(QString &&dir) = 0;
-	virtual const std::vector<QString> &GetRecentFiles(const QString &tag) const = 0;
-	virtual std::vector<QString> GetExtensions(const QString &tag) const = 0;
-	virtual void CreateImage(const QString &tag, QString &&path) = 0;
-	virtual void LoadImage(const QString &tag, QString &&path) = 0;
-	virtual void UnloadImage(const QString &tag) = 0;
+	virtual Preferences &getPreferences() = 0;
+	virtual info::machine getMachine() = 0;
+	virtual observable::value<std::vector<status::image>> &getImages() = 0;
+	virtual const QString &getWorkingDirectory() const = 0;
+	virtual void setWorkingDirectory(QString &&dir) = 0;
+	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const = 0;
+	virtual std::vector<QString> getExtensions(const QString &tag) const = 0;
+	virtual void createImage(const QString &tag, QString &&path) = 0;
+	virtual void loadImage(const QString &tag, QString &&path) = 0;
+	virtual void unloadImage(const QString &tag) = 0;
 };
 
 
@@ -65,17 +65,17 @@ private:
 	std::unique_ptr<Ui::ImagesDialog>	m_ui;
 	observable::unique_subscription		m_imagesEventSubscription;
 
-	void UpdateImageGrid();
-	const QString &PrettifyImageFileName(const software_list_collection &software_col, const QString &tag, const QString &file_name, QString &buffer, bool full_path);
-	const QString *DeviceInterfaceFromTag(const QString &tag);
-	software_list_collection BuildSoftwareListCollection() const;
-	bool ImageMenu(const QPushButton &button, int row);
-	bool CreateImage(const QString &tag);
-	bool LoadImage(const QString &tag);
-	bool LoadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface);
-	bool UnloadImage(const QString &tag);
-	QString GetWildcardString(const QString &tag, bool support_zip) const;
-	void UpdateWorkingDirectory(const QString &path);
+	void updateImageGrid();
+	const QString &prettifyImageFileName(const software_list_collection &software_col, const QString &tag, const QString &file_name, QString &buffer, bool full_path);
+	const QString *deviceInterfaceFromTag(const QString &tag);
+	software_list_collection buildSoftwareListCollection() const;
+	bool imageMenu(const QPushButton &button, int row);
+	bool createImage(const QString &tag);
+	bool loadImage(const QString &tag);
+	bool loadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface);
+	bool unloadImage(const QString &tag);
+	QString getWildcardString(const QString &tag, bool support_zip) const;
+	void updateWorkingDirectory(const QString &path);
 
 	template<class T>
 	T &getOrCreateGridWidget(int row, int column, void (ImagesDialog::*setupFunc)(T &, int) = nullptr);
