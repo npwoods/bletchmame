@@ -15,6 +15,7 @@
 #include <memory>
 #include <observable/observable.hpp>
 #include <QDialog>
+#include <QStyle>
 
 #include "status.h"
 #include "softwarelist.h"
@@ -48,6 +49,7 @@ public:
 	virtual void createImage(const QString &tag, QString &&path) = 0;
 	virtual void loadImage(const QString &tag, QString &&path) = 0;
 	virtual void unloadImage(const QString &tag) = 0;
+	virtual bool startedWithHashPaths() const = 0;
 };
 
 
@@ -82,6 +84,7 @@ private:
 
 	void setupGridLineEdit(QLineEdit &lineEdit, int row);
 	void setupGridButton(QPushButton &button, int row);
+	void setupAdvisoryMessage(QStyle::StandardPixmap icon, const QString &text);
 };
 
 

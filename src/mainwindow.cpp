@@ -158,6 +158,11 @@ public:
 		m_host.Issue({ "unload", tag });
 	}
 
+	virtual bool startedWithHashPaths() const
+	{
+		return m_host.m_client.GetCurrentTask<RunMachineTask>()->startedWithHashPaths();
+	}
+
 private:
 	MainWindow &m_host;
 

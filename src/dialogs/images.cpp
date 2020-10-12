@@ -1,12 +1,13 @@
 /***************************************************************************
 
-    dialogs/images.h
+    dialogs/images.cpp
 
     Images (File Manager) dialog
 
 ***************************************************************************/
 
 #include <QAction>
+#include <QBitmap>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QLabel>
@@ -43,6 +44,10 @@ ImagesDialog::ImagesDialog(QWidget &parent, IImagesHost &host, bool cancellable)
 
     // host interactions
     m_imagesEventSubscription = m_host.getImages().subscribe([this] { updateImageGrid(); });
+
+    // warnings
+    if (!host.startedWithHashPaths())
+        setupAdvisoryMessage(QStyle::SP_MessageBoxWarning, "No hash paths were configured prior to start of emulation.  Software lists will not be functional.");
 
     // initial update of image grid
     updateImageGrid();
@@ -414,4 +419,29 @@ void ImagesDialog::updateWorkingDirectory(const QString &path)
     QString dir;
     wxFileName::SplitPath(path, &dir, nullptr, nullptr);
     m_host.setWorkingDirectory(std::move(dir));
+}
+
+
+//-------------------------------------------------
+//  setupAdvisoryMessage
+//-------------------------------------------------
+
+void ImagesDialog::setupAdvisoryMessage(QStyle::StandardPixmap icon, const QString &text)
+{
+    int row = m_ui->warningsGridLayout->rowCount();
+
+    // icon pixmap
+    QSize size(32, 32);
+    QPixmap iconPixmap = QApplication::style()->standardIcon(icon).pixmap(size);
+    QLabel &iconLabel = *new QLabel(this);
+    iconLabel.setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
+    iconLabel.setPixmap(iconPixmap);
+    iconLabel.setMask(iconPixmap.mask());
+    m_ui->warningsGridLayout->addWidget(&iconLabel, row, 0);
+
+    // label
+    QLabel &label = *new QLabel(this);
+    label.setText(text);
+    label.setWordWrap(true);
+    m_ui->warningsGridLayout->addWidget(&label, row, 1);
 }
