@@ -115,6 +115,7 @@ public:
 	void issueFullCommandLine(QString &&full_command);
 	const info::machine &getMachine() const { return m_machine; }
 	void setChatterEnabled(bool enabled) { m_chatterEnabled = enabled; }
+	bool startedWithHashPaths() const { return m_startedWithHashPaths; }
 
 protected:
 	virtual QStringList getArguments(const Preferences &prefs) const override;
@@ -143,6 +144,7 @@ private:
 	QString							m_attachWindowParameter;
 	MessageQueue<Message>		    m_messageQueue;
 	volatile bool					m_chatterEnabled;
+	mutable bool					m_startedWithHashPaths;
 
 	static QString buildCommand(const std::vector<QString> &args);
 	static QString getAttachWindowParameter(const QWidget &targetWindow);

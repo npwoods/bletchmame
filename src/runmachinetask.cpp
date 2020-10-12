@@ -9,6 +9,7 @@
 #include <QTextStream>
 #include <QWidget>
 #include <QCoreApplication>
+#include <QDir>
 #include <thread>
 
 #include "listxmltask.h"
@@ -47,6 +48,7 @@ RunMachineTask::RunMachineTask(info::machine machine, QString &&software, QWidge
 	, m_software(software)
     , m_attachWindowParameter(getAttachWindowParameter(targetWindow))
 	, m_chatterEnabled(false)
+	, m_startedWithHashPaths(false)
 {
 }
 
@@ -57,6 +59,17 @@ RunMachineTask::RunMachineTask(info::machine machine, QString &&software, QWidge
 
 QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 {
+	// somewhat of a hack - record whether we started with hash paths
+	m_startedWithHashPaths = false;
+	for (const QString &path : prefs.GetSplitPaths(Preferences::global_path_type::HASH))
+	{
+		if (QDir(path).exists())
+		{
+			m_startedWithHashPaths = true;
+			break;
+		}
+	}
+
 	QStringList results = { getMachine().name() };
 	if (!m_software.isEmpty())
 		results.push_back(m_software);
