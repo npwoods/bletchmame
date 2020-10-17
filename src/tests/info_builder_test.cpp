@@ -21,7 +21,7 @@ namespace
         void general();
 
 	private:
-		void readSampleListXml(QDataStream &output);
+		void readSampleListXml(QIODevice &output);
     };
 }
 
@@ -34,7 +34,7 @@ namespace
 //  readSampleListXml
 //-------------------------------------------------
 
-void Test::readSampleListXml(QDataStream &output)
+void Test::readSampleListXml(QIODevice &output)
 {
 	// get the test asset
 	QFile testAsset(":/resources/listxml.xml");
@@ -63,8 +63,7 @@ void Test::general()
 	{
 		QBuffer buffer(&byteArray);
 		buffer.open(QIODevice::WriteOnly);
-		QDataStream bufferStream(&buffer);
-		readSampleListXml(bufferStream);
+		readSampleListXml(buffer);
 	}
 	QVERIFY(byteArray.size() > 0);
 

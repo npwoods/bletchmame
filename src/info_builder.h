@@ -28,7 +28,7 @@ namespace info
 
 		// methods
 		bool process_xml(QDataStream &input, QString &error_message);
-		void emit_info(QDataStream &stream) const;
+		void emit_info(QIODevice &stream) const;
 
 	private:
 		// ======================> string_table
