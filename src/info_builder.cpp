@@ -51,6 +51,17 @@ static std::uint32_t to_uint32(T &&value)
 
 
 //-------------------------------------------------
+//  writeVectorData
+//-------------------------------------------------
+
+template<typename T>
+static void writeVectorData(QIODevice &stream, const std::vector<T> &vector)
+{
+	stream.write((const char *)vector.data(), vector.size() * sizeof(T));
+}
+
+
+//-------------------------------------------------
 //  process_xml()
 //-------------------------------------------------
 
@@ -270,23 +281,17 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 //  emit_info
 //-------------------------------------------------
 
-void info::database_builder::emit_info(QDataStream &output) const
+void info::database_builder::emit_info(QIODevice &output) const
 {
-	auto writeRawData = [&output](const void *data, size_t size)
-	{
-		// Qt's stream classes are odd - why don't they take void*/size_t?
-		output.writeRawData((const char *)data, util::safe_static_cast<int>(size));
-	};
-
-	writeRawData(&m_salted_header, sizeof(m_salted_header));
-	writeRawData(m_machines.data(),					m_machines.size()					* sizeof(m_machines[0]));
-	writeRawData(m_devices.data(),					m_devices.size()					* sizeof(m_devices[0]));
-	writeRawData(m_configurations.data(),			m_configurations.size()				* sizeof(m_configurations[0]));
-	writeRawData(m_configuration_settings.data(),	m_configuration_settings.size()		* sizeof(m_configuration_settings[0]));
-	writeRawData(m_configuration_conditions.data(),	m_configuration_conditions.size()	* sizeof(m_configuration_conditions[0]));
-	writeRawData(m_software_lists.data(),			m_software_lists.size()				* sizeof(m_software_lists[0]));
-	writeRawData(m_ram_options.data(),				m_ram_options.size()				* sizeof(m_ram_options[0]));
-	writeRawData(m_strings.data().data(),			m_strings.data().size()				* sizeof(m_strings.data()[0]));
+	output.write((const char *) &m_salted_header, sizeof(m_salted_header));
+	writeVectorData(output, m_machines);
+	writeVectorData(output, m_devices);
+	writeVectorData(output, m_configurations);
+	writeVectorData(output, m_configuration_settings);
+	writeVectorData(output, m_configuration_conditions);
+	writeVectorData(output, m_software_lists);
+	writeVectorData(output, m_ram_options);
+	writeVectorData(output, m_strings.data());
 }
 
 

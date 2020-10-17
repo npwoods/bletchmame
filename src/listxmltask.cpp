@@ -128,12 +128,8 @@ void ListXmlTask::internalProcess(QIODevice &process)
 	if (!file.open(QIODevice::WriteOnly))
 		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
 
-	QDataStream output(&file);
-	if (output.status() != QDataStream::Status::Ok)
-		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
-
 	// emit the data
-	builder.emit_info(output);
+	builder.emit_info(file);
 }
 
 
