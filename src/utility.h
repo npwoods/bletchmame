@@ -384,5 +384,9 @@ public:
 // useful for popup menus
 QPoint globalPositionBelowWidget(const QWidget &widget);
 
+// remove extra items in a grid layout
+class QGridLayout;
+void truncateGridLayout(QGridLayout &gridLayout, int rows);
+
 
 #endif // UTILITY_H

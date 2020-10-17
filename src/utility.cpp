@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <QDir>
+#include <QGridLayout>
 
 #include "utility.h"
 
@@ -54,4 +55,22 @@ QPoint globalPositionBelowWidget(const QWidget &widget)
 	QPoint localPos(0, widget.height());
 	QPoint globalPos = widget.mapToGlobal(localPos);
 	return globalPos;
+}
+
+
+//-------------------------------------------------
+//  truncateGridLayout
+//-------------------------------------------------
+
+void truncateGridLayout(QGridLayout &gridLayout, int rows)
+{
+	for (int row = gridLayout.rowCount() - 1; row >= 0 && row >= rows; row--)
+	{
+		for (int col = 0; col < gridLayout.columnCount(); col++)
+		{
+			QLayoutItem *layoutItem = gridLayout.itemAtPosition(row, col);
+			if (layoutItem && layoutItem->widget())
+				delete layoutItem->widget();
+		}
+	}
 }

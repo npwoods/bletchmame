@@ -101,15 +101,7 @@ void ImagesDialog::updateImageGrid()
     }
 
     // clear out the rest
-    for (int row = m_ui->gridLayout->rowCount() - 1; row >= 0 && row >= images.size(); row--)
-    {
-        for (int col = 0; col < m_ui->gridLayout->columnCount(); col++)
-        {
-            QLayoutItem *layoutItem = m_ui->gridLayout->itemAtPosition(row, col);
-            if (layoutItem && layoutItem->widget())
-                delete layoutItem->widget();
-        }
-    }
+    truncateGridLayout(*m_ui->gridLayout, (int)images.size());
 
     // set the ok button enabled property
     m_ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(okEnabled);
