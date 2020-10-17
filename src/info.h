@@ -269,10 +269,10 @@ namespace info
 
 		// properties
 		const QString &name() const			{ return get_string(inner().m_name_strindex); }
-		const QString &sourcefile() const		{ return get_string(inner().m_sourcefile_strindex); }
+		const QString &sourcefile() const	{ return get_string(inner().m_sourcefile_strindex); }
 		const QString &clone_of() const		{ return get_string(inner().m_clone_of_strindex); }
-		const QString &rom_of() const			{ return get_string(inner().m_rom_of_strindex); }
-		const QString &description() const		{ return get_string(inner().m_description_strindex); }
+		const QString &rom_of() const		{ return get_string(inner().m_rom_of_strindex); }
+		const QString &description() const	{ return get_string(inner().m_description_strindex); }
 		const QString &year() const			{ return get_string(inner().m_year_strindex); }
 		const QString &manufacturer() const	{ return get_string(inner().m_manufacturer_strindex); }
 
@@ -345,7 +345,7 @@ namespace info
 		std::uint32_t										m_ram_options_count;
 		size_t												m_string_table_offset;
 		mutable std::unordered_map<std::uint32_t, QString>	m_loaded_strings;
-		const QString *									m_version;
+		const QString *										m_version;
 		std::function<void()>								m_on_changed;
 
 		// private functions
@@ -355,8 +355,8 @@ namespace info
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
 	inline configuration::view			machine::configurations() const	{ return db().configurations().subview(inner().m_configurations_index, inner().m_configurations_count); }
 	inline configuration_setting::view	configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }
-	inline software_list::view			machine::software_lists() const			{ return db().software_lists().subview(inner().m_software_lists_index, inner().m_software_lists_count); }
-	inline ram_option::view				machine::ram_options() const			{ return db().ram_options().subview(inner().m_ram_options_index, inner().m_ram_options_count); }
+	inline software_list::view			machine::software_lists() const	{ return db().software_lists().subview(inner().m_software_lists_index, inner().m_software_lists_count); }
+	inline ram_option::view				machine::ram_options() const	{ return db().ram_options().subview(inner().m_ram_options_index, inner().m_ram_options_count); }
 };
 
 
