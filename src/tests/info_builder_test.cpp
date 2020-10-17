@@ -71,10 +71,10 @@ void Test::general()
 
 	// and process it, validating we've done so successfully
 	info::database db;
-	bool db_changed = false;
-	db.set_on_changed([&db_changed]() { db_changed = true; });
+	bool dbChanged = false;
+	db.setOnChanged([&dbChanged]() { dbChanged = true; });
 	QVERIFY(db.load(buffer));
-	QVERIFY(db_changed);
+	QVERIFY(dbChanged);
 
 	// verify that we're at the end of the buffer
 	QVERIFY(buffer.pos() == buffer.size());
