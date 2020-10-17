@@ -58,24 +58,26 @@ void Test::readSampleListXml(QIODevice &output)
 
 void Test::general()
 {
+	// set up a buffer
+	QBuffer buffer;
+	QVERIFY(buffer.open(QIODevice::OpenModeFlag::ReadWrite));
+
 	// build the sample database
-	QByteArray byteArray;
-	{
-		QBuffer buffer(&byteArray);
-		buffer.open(QIODevice::WriteOnly);
-		readSampleListXml(buffer);
-	}
-	QVERIFY(byteArray.size() > 0);
+	readSampleListXml(buffer);
+	QVERIFY(buffer.size() > 0);
+
+	// seek back to start
+	QVERIFY(buffer.seek(0));
 
 	// and process it, validating we've done so successfully
-	QDataStream input(byteArray);
-
 	info::database db;
 	bool db_changed = false;
 	db.set_on_changed([&db_changed]() { db_changed = true; });
-	bool success = db.load(input);
-	QVERIFY(success);
+	QVERIFY(db.load(buffer));
 	QVERIFY(db_changed);
+
+	// verify that we're at the end of the buffer
+	QVERIFY(buffer.pos() == buffer.size());
 
 	// spelunk through the resulting db
 	int setting_count = 0, software_list_count = 0, ram_option_count = 0;

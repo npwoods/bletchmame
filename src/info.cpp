@@ -36,19 +36,19 @@ static bool unaligned_check(const void *ptr, T value)
 //  load_data
 //-------------------------------------------------
 
-static std::vector<std::uint8_t> load_data(QDataStream &input, info::binaries::header &header)
+static std::vector<std::uint8_t> load_data(QIODevice &input, info::binaries::header &header)
 {
 	// get the file size and read the header
-	size_t size = util::safe_static_cast<size_t>(input.device()->bytesAvailable());
+	size_t size = util::safe_static_cast<size_t>(input.bytesAvailable());
 	if (size <= sizeof(header))
 		return {};
-	if (input.readRawData((char *) &header, sizeof(header)) != sizeof(header))
+	if (input.read((char *) &header, sizeof(header)) != sizeof(header))
 		return {};
 
 	// read the data
 	std::vector<std::uint8_t> data;
 	data.resize(size - sizeof(header));
-	if (input.readRawData((char *) data.data(), (int)data.size()) != data.size())
+	if (input.read((char *) data.data(), (int)data.size()) != data.size())
 		return {};
 
 	// success! return it
@@ -84,12 +84,11 @@ bool info::database::load(const QString &file_name, const QString &expected_vers
 		return false;
 
 	// open up the file
-	QDataStream input(&file);
-	return load(input, expected_version);
+	return load(file, expected_version);
 }
 
 
-bool info::database::load(QDataStream &input, const QString &expected_version)
+bool info::database::load(QIODevice &input, const QString &expected_version)
 {
 	// try to load the data
 	binaries::header salted_hdr;
