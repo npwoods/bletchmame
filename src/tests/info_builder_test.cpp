@@ -80,7 +80,7 @@ void Test::general()
 	QVERIFY(buffer.pos() == buffer.size());
 
 	// spelunk through the resulting db
-	int setting_count = 0, software_list_count = 0, ram_option_count = 0;
+	int settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
 	for (info::machine machine : db.machines())
 	{
 		// basic machine properties
@@ -104,18 +104,18 @@ void Test::general()
 		for (info::configuration cfg : machine.configurations())
 		{
 			for (info::configuration_setting setting : cfg.settings())
-				setting_count++;
+				settingCount++;
 		}
 
 		for (info::software_list swlist : machine.software_lists())
-			software_list_count++;
+			softwareListCount++;
 
 		for (info::ram_option ramopt : machine.ram_options())
-			ram_option_count++;
+			ramOptionCount++;
 	}
-	QVERIFY(setting_count > 0);
-	QVERIFY(software_list_count > 0);
-	QVERIFY(ram_option_count > 0);
+	QVERIFY(settingCount > 0);
+	QVERIFY(softwareListCount > 0);
+	QVERIFY(ramOptionCount > 0);
 }
 
 
