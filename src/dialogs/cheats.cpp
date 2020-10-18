@@ -369,6 +369,7 @@ void CheatsDialog::updateCheats()
     }
 
     // be nice here
+    truncateGridLayout(*m_ui->gridLayout, row);
     m_cheatWidgeters.resize(row);
     m_cheatWidgeters.shrink_to_fit();
 }

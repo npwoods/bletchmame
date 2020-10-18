@@ -166,7 +166,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	m_version = &get_string(hdr.m_build_strindex);
 
 	// signal that we've changed and we're done
-	on_changed();
+	onChanged();
 	return true;
 }
 
@@ -194,7 +194,7 @@ void info::database::reset()
 	m_string_table_offset = 0;
 	m_loaded_strings.clear();
 	m_version = &util::g_empty_string;
-	on_changed();
+	onChanged();
 }
 
 
@@ -202,10 +202,10 @@ void info::database::reset()
 //  database::on_changed
 //-------------------------------------------------
 
-void info::database::on_changed()
+void info::database::onChanged()
 {
-	if (m_on_changed)
-		m_on_changed();
+	if (m_onChanged)
+		m_onChanged();
 }
 
 

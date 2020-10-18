@@ -313,7 +313,7 @@ namespace info
 		void reset();
 		std::optional<machine> find_machine(const QString &machine_name) const;
 		const QString &version() const			{ return *m_version; }
-		void set_on_changed(std::function<void()> &&on_changed) { m_on_changed = std::move(on_changed); }
+		void setOnChanged(std::function<void()> &&onChanged) { m_onChanged = std::move(onChanged); }
 
 		// views
 		auto machines() const					{ return machine::view(*this, 0, m_machines_count); }
@@ -346,10 +346,10 @@ namespace info
 		size_t												m_string_table_offset;
 		mutable std::unordered_map<std::uint32_t, QString>	m_loaded_strings;
 		const QString *										m_version;
-		std::function<void()>								m_on_changed;
+		std::function<void()>								m_onChanged;
 
 		// private functions
-		void on_changed();
+		void onChanged();
 	};
 
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }

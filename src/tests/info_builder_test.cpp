@@ -71,16 +71,16 @@ void Test::general()
 
 	// and process it, validating we've done so successfully
 	info::database db;
-	bool db_changed = false;
-	db.set_on_changed([&db_changed]() { db_changed = true; });
+	bool dbChanged = false;
+	db.setOnChanged([&dbChanged]() { dbChanged = true; });
 	QVERIFY(db.load(buffer));
-	QVERIFY(db_changed);
+	QVERIFY(dbChanged);
 
 	// verify that we're at the end of the buffer
 	QVERIFY(buffer.pos() == buffer.size());
 
 	// spelunk through the resulting db
-	int setting_count = 0, software_list_count = 0, ram_option_count = 0;
+	int settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
 	for (info::machine machine : db.machines())
 	{
 		// basic machine properties
@@ -104,18 +104,18 @@ void Test::general()
 		for (info::configuration cfg : machine.configurations())
 		{
 			for (info::configuration_setting setting : cfg.settings())
-				setting_count++;
+				settingCount++;
 		}
 
 		for (info::software_list swlist : machine.software_lists())
-			software_list_count++;
+			softwareListCount++;
 
 		for (info::ram_option ramopt : machine.ram_options())
-			ram_option_count++;
+			ramOptionCount++;
 	}
-	QVERIFY(setting_count > 0);
-	QVERIFY(software_list_count > 0);
-	QVERIFY(ram_option_count > 0);
+	QVERIFY(settingCount > 0);
+	QVERIFY(softwareListCount > 0);
+	QVERIFY(ramOptionCount > 0);
 }
 
 
