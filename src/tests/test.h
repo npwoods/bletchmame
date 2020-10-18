@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 
+// ======================> TestFixtureBase
 class TestFixtureBase
 {
 public:
@@ -33,6 +34,7 @@ protected:
 };
 
 
+// ======================> TestFixture
 template<typename T>
 class TestFixture : public TestFixtureBase
 {
@@ -42,5 +44,9 @@ public:
         return std::make_unique<T>();
     }
 };
+
+
+// helper functions
+QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml.xml");
 
 #endif // TEST_H

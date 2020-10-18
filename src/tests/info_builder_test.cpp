@@ -19,9 +19,6 @@ namespace
 
     private slots:
         void general();
-
-	private:
-		void readSampleListXml(QIODevice &output);
     };
 }
 
@@ -31,24 +28,45 @@ namespace
 //**************************************************************************
 
 //-------------------------------------------------
-//  readSampleListXml
+//  buildInfoDatabase
 //-------------------------------------------------
 
-void Test::readSampleListXml(QIODevice &output)
+static QByteArray buildInfoDatabase(QIODevice &stream, QString &errorMessage)
 {
-	// get the test asset
-	QFile testAsset(":/resources/listxml.xml");
-	QVERIFY(testAsset.open(QFile::ReadOnly));
-	QDataStream input(&testAsset);
-
-	// process the sample -listxml output
+	// process the results
 	info::database_builder builder;
-	QString error_message;
-	bool success = builder.process_xml(input, error_message);
-	QVERIFY(success && error_message.isEmpty());
+	bool success = builder.process_xml(stream, errorMessage);
 
-	// and emit the results into the memory stream
-	builder.emit_info(output);
+	// get the stream
+	QByteArray result;
+	if (success)
+	{
+		QBuffer buffer(&result);
+		if (!buffer.open(QIODevice::WriteOnly))
+			throw false;
+		builder.emit_info(buffer);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  buildInfoDatabase
+//-------------------------------------------------
+
+QByteArray buildInfoDatabase(const QString &fileName)
+{
+	// open the file
+	QFile file(fileName);
+	if (!file.open(QFile::ReadOnly))
+		return QByteArray();
+
+	// process the file
+	QString errorMessage;
+	QByteArray result = buildInfoDatabase(file, errorMessage);
+	return errorMessage.isEmpty()
+		? result
+		: QByteArray();
 }
 
 
@@ -58,64 +76,8 @@ void Test::readSampleListXml(QIODevice &output)
 
 void Test::general()
 {
-	// set up a buffer
-	QBuffer buffer;
-	QVERIFY(buffer.open(QIODevice::OpenModeFlag::ReadWrite));
-
-	// build the sample database
-	readSampleListXml(buffer);
-	QVERIFY(buffer.size() > 0);
-
-	// seek back to start
-	QVERIFY(buffer.seek(0));
-
-	// and process it, validating we've done so successfully
-	info::database db;
-	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
-	QVERIFY(db.load(buffer));
-	QVERIFY(dbChanged);
-
-	// verify that we're at the end of the buffer
-	QVERIFY(buffer.pos() == buffer.size());
-
-	// spelunk through the resulting db
-	int settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
-	for (info::machine machine : db.machines())
-	{
-		// basic machine properties
-		const QString &name = machine.name();
-		const QString &description = machine.description();
-		QVERIFY(!name.isEmpty());
-		QVERIFY(!description.isEmpty());
-
-		for (info::device dev : machine.devices())
-		{
-			const QString &type = dev.type();
-			const QString &tag = dev.tag();
-			const QString &instance_name = dev.instance_name();
-			const QString &extensions = dev.extensions();
-			QVERIFY(!type.isEmpty());
-			QVERIFY(!tag.isEmpty());
-			QVERIFY(!instance_name.isEmpty());
-			QVERIFY(!extensions.isEmpty());
-		}
-
-		for (info::configuration cfg : machine.configurations())
-		{
-			for (info::configuration_setting setting : cfg.settings())
-				settingCount++;
-		}
-
-		for (info::software_list swlist : machine.software_lists())
-			softwareListCount++;
-
-		for (info::ram_option ramopt : machine.ram_options())
-			ramOptionCount++;
-	}
-	QVERIFY(settingCount > 0);
-	QVERIFY(softwareListCount > 0);
-	QVERIFY(ramOptionCount > 0);
+	QByteArray byteArray = buildInfoDatabase();
+	QVERIFY(byteArray.size() > 0);
 }
 
 

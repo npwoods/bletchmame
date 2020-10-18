@@ -158,6 +158,7 @@ add_executable(BletchMAME_tests
 	src/tests/mamerunner.cpp
 	src/tests/mamerunner.h
 	src/tests/client_test.cpp
+	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/listxmltask_test.cpp
 	src/tests/mameversion_test.cpp
