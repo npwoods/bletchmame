@@ -57,18 +57,15 @@ static std::vector<std::uint8_t> load_data(QIODevice &input, info::binaries::hea
 
 
 //-------------------------------------------------
-//  get_string_from_data - needs to be separate so
-//	we can do version check on "uncommitted" data
+//  getPosition
 //-------------------------------------------------
 
-static const char *get_string_from_data(const std::vector<std::uint8_t> &data, size_t string_table_offset, std::uint32_t offset)
+template<class T>
+bindata::view_position getPosition(size_t &cursor, std::uint32_t count)
 {
-	// sanity check
-	if (offset >= data.size() || (string_table_offset + offset) >= data.size())
-		return "";	// should not happen with a valid info DB
-
-	// needs to be separate so we can call it on "uncommitted" data
-	return reinterpret_cast<const char *>(&data.data()[string_table_offset + offset]);
+	std::uint32_t offset = util::safe_static_cast<std::uint32_t>(cursor);
+	cursor += sizeof(T) * count;
+	return bindata::view_position(offset, count);
 }
 
 
@@ -88,12 +85,18 @@ bool info::database::load(const QString &file_name, const QString &expected_vers
 }
 
 
+//-------------------------------------------------
+//  database::load
+//-------------------------------------------------
+
 bool info::database::load(QIODevice &input, const QString &expected_version)
 {
+	info::database::State newState;
+
 	// try to load the data
 	binaries::header salted_hdr;
-	std::vector<std::uint8_t> data = load_data(input, salted_hdr);
-	if (data.empty())
+	newState.m_data = load_data(input, salted_hdr);
+	if (newState.m_data.empty())
 		return false;
 
 	// unsalt the header
@@ -112,57 +115,41 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 		return false;
 	}
 
-	// offsets
-	size_t devices_offset					= 0									+ (hdr.m_machines_count					* sizeof(binaries::machine));
-	size_t configurations_offset			= devices_offset					+ (hdr.m_devices_count					* sizeof(binaries::device));
-	size_t configuration_settings_offset	= configurations_offset				+ (hdr.m_configurations_count			* sizeof(binaries::configuration));
-	size_t configuration_conditions_offset	= configuration_settings_offset		+ (hdr.m_configuration_settings_count	* sizeof(binaries::configuration_setting));
-	size_t software_lists_offset			= configuration_conditions_offset	+ (hdr.m_configuration_conditions_count * sizeof(binaries::configuration_condition));
-	size_t ram_options_offset				= software_lists_offset				+ (hdr.m_software_lists_count			* sizeof(binaries::software_list));
-	size_t string_table_offset				= ram_options_offset				+ (hdr.m_ram_options_count				* sizeof(binaries::ram_option));
+	// positions
+	size_t cursor = 0;
+	newState.m_machines_position					= getPosition<binaries::machine>(cursor, hdr.m_machines_count);
+	newState.m_devices_position						= getPosition<binaries::device>(cursor, hdr.m_devices_count);
+	newState.m_configurations_position				= getPosition<binaries::configuration>(cursor, hdr.m_configurations_count);
+	newState.m_configuration_settings_position		= getPosition<binaries::configuration_setting>(cursor, hdr.m_configuration_settings_count);
+	newState.m_configuration_conditions_position	= getPosition<binaries::configuration_condition>(cursor, hdr.m_configuration_conditions_count);
+	newState.m_software_lists_position				= getPosition<binaries::software_list>(cursor, hdr.m_software_lists_count);
+	newState.m_ram_options_position					= getPosition<binaries::ram_option>(cursor, hdr.m_ram_options_count);
+	newState.m_string_table_offset					= cursor;
 
 	// sanity check the string table
-	if (data.size() < string_table_offset + 1)
+	if (newState.m_data.size() < newState.m_string_table_offset + 1)
 		return false;
-	if (data[string_table_offset] != '\0')
+	if (newState.m_data[newState.m_string_table_offset] != '\0')
 		return false;
-	if (!unaligned_check(&data[string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
+	if (!unaligned_check(&newState.m_data[newState.m_string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
 		return false;
-	if (data[data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
+	if (newState.m_data[newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
 		return false;
-	if (!unaligned_check(&data[data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END)], binaries::MAGIC_STRINGTABLE_END))
+	if (!unaligned_check(&newState.m_data[newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END)], binaries::MAGIC_STRINGTABLE_END))
 		return false;
 
 	// version check if appropriate
-	if (!expected_version.isEmpty() && expected_version != get_string_from_data(data, string_table_offset, hdr.m_build_strindex))
+	if (!expected_version.isEmpty() && expected_version != getStringFromData(newState, hdr.m_build_strindex))
 		return false;
 
 	// finally things look good - first shrink the data array to drop the ending magic bytes
-	data.resize(data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END));
+	newState.m_data.resize(newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END));
 
-	// ...move the data itself
-	m_data = std::move(data);
+	// ...set the state
+	m_state = std::move(newState);
 
-	// ...and the tables
-	m_machines_count = hdr.m_machines_count;
-	m_devices_offset = util::safe_static_cast<std::uint32_t>(devices_offset);
-	m_devices_count = hdr.m_devices_count;
-	m_configurations_offset = util::safe_static_cast<std::uint32_t>(configurations_offset);
-	m_configurations_count = hdr.m_configurations_count;
-	m_configuration_settings_offset = util::safe_static_cast<std::uint32_t>(configuration_settings_offset);
-	m_configuration_settings_count = hdr.m_configuration_settings_count;
-	m_configuration_conditions_offset = util::safe_static_cast<std::uint32_t>(configuration_conditions_offset);
-	m_configuration_conditions_count = hdr.m_configuration_conditions_count;
-	m_software_lists_offset = util::safe_static_cast<std::uint32_t>(software_lists_offset);
-	m_software_lists_count = hdr.m_software_lists_count;
-	m_ram_options_offset = util::safe_static_cast<std::uint32_t>(ram_options_offset);
-	m_ram_options_count = hdr.m_ram_options_count;
-
-	// ...and set up string table info
+	// ...and set up other incidental state
 	m_loaded_strings.clear();
-	m_string_table_offset = string_table_offset;
-
-	// ...and last but not least set up the version
 	m_version = &get_string(hdr.m_build_strindex);
 
 	// signal that we've changed and we're done
@@ -177,21 +164,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 
 void info::database::reset()
 {
-	m_data.resize(0);
-	m_machines_count = 0;
-	m_devices_offset = 0;
-	m_devices_count = 0;
-	m_configurations_offset = 0;
-	m_configurations_count = 0;
-	m_configuration_settings_offset = 0;
-	m_configuration_settings_count = 0;
-	m_configuration_conditions_offset = 0;
-	m_configuration_conditions_count = 0;
-	m_software_lists_offset = 0;
-	m_software_lists_count = 0;
-	m_ram_options_offset = 0;
-	m_ram_options_count = 0;
-	m_string_table_offset = 0;
+	m_state = State();
 	m_loaded_strings.clear();
 	m_version = &util::g_empty_string;
 	onChanged();
@@ -215,16 +188,32 @@ void info::database::onChanged()
 
 const QString &info::database::get_string(std::uint32_t offset) const
 {
-	if (m_string_table_offset + offset >= m_data.size())
+	if ((size_t)m_state.m_string_table_offset + offset >= m_state.m_data.size())
 		throw false;
 
 	auto iter = m_loaded_strings.find(offset);
 	if (iter != m_loaded_strings.end())
 		return iter->second;
 
-	const char *string = get_string_from_data(m_data, m_string_table_offset, util::safe_static_cast<std::uint32_t>(offset));
+	const char *string = getStringFromData(m_state, util::safe_static_cast<std::uint32_t>(offset));
 	m_loaded_strings.emplace(offset, QString::fromUtf8(string));
 	return m_loaded_strings.find(offset)->second;
+}
+
+
+//-------------------------------------------------
+//  database::getStringFromData - raw string
+//	retrieval that bypasses loaded strings
+//-------------------------------------------------
+
+const char *info::database::getStringFromData(const State &state, std::uint32_t offset)
+{
+	// sanity check
+	if (offset >= state.m_data.size() || (state.m_string_table_offset + offset) >= state.m_data.size())
+		return "";	// should not happen with a valid info DB
+
+	// access the data
+	return reinterpret_cast<const char *>(&state.m_data.data()[state.m_string_table_offset + offset]);
 }
 
 
@@ -244,4 +233,14 @@ std::optional<info::machine> info::database::find_machine(const QString &machine
 	return iter != machines().end()
 		? std::optional<info::machine>(*iter)
 		: std::optional<info::machine>();
+}
+
+
+//-------------------------------------------------
+//  info::database::State ctor
+//-------------------------------------------------
+
+info::database::State::State()
+	: m_string_table_offset(0)
+{
 }

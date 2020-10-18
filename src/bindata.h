@@ -46,13 +46,39 @@ namespace bindata
 		const TBinary &		m_inner;
 	};
 
+
+	// ======================> view_position
+	class view_position
+	{
+	public:
+		view_position(std::uint32_t offset = 0, std::uint32_t count = 0)
+			: m_offset(offset)
+			, m_count(count)
+		{
+		}
+
+		void clear()
+		{
+			m_offset = 0;
+			m_count = 0;
+		}
+
+		std::uint32_t offset() const { return m_offset; }
+		std::uint32_t count() const { return m_count; }
+
+	private:
+		std::uint32_t	m_offset;
+		std::uint32_t	m_count;
+	};
+
+
 	// ======================> view
 	template<typename TDatabase, typename TPublic, typename TBinary>
 	class view
 	{
 	public:
 		view() : m_db(nullptr), m_offset(0), m_count(0) { }
-		view(const TDatabase &db, size_t offset, std::uint32_t count) : m_db(&db), m_offset(offset), m_count(count) { }
+		view(const TDatabase &db, const view_position &pos) : m_db(&db), m_offset(pos.offset()), m_count(pos.count()) { }
 		view(const view &that) = default;
 		view(view &&that) = default;
 
@@ -75,7 +101,7 @@ namespace bindata
 		{
 			if (position >= m_count)
 				throw false;
-			const std::uint8_t *ptr = &m_db->m_data.data()[m_offset + position * sizeof(TBinary)];
+			const std::uint8_t *ptr = &m_db->m_state.m_data.data()[m_offset + position * sizeof(TBinary)];
 			return TPublic(*m_db, *reinterpret_cast<const TBinary *>(ptr));
 		}
 
@@ -87,7 +113,7 @@ namespace bindata
 			if (index > m_count || (index + count > m_count))
 				throw false;
 			return count > 0
-				? view(*m_db, m_offset + index * sizeof(TBinary), count)
+				? view(*m_db, view_position(m_offset + index * sizeof(TBinary), count))
 				: view();
 		}
 

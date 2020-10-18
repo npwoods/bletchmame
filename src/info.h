@@ -291,19 +291,7 @@ namespace info
 		friend class ::bindata::view;
 	public:
 		database()
-			: m_machines_count(0)
-			, m_devices_offset(0)
-			, m_devices_count(0)
-			, m_configurations_offset(0)
-			, m_configurations_count(0)
-			, m_configuration_settings_offset(0)
-			, m_configuration_settings_count(0)
-			, m_software_lists_offset(0)
-			, m_software_lists_count(0)
-			, m_ram_options_offset(0)
-			, m_ram_options_count(0)
-			, m_string_table_offset(0)
-			, m_version(&util::g_empty_string)
+			: m_version(&util::g_empty_string)
 		{
 		}
 
@@ -316,40 +304,42 @@ namespace info
 		void setOnChanged(std::function<void()> &&onChanged) { m_onChanged = std::move(onChanged); }
 
 		// views
-		auto machines() const					{ return machine::view(*this, 0, m_machines_count); }
-		auto devices() const					{ return device::view(*this, m_devices_offset, m_devices_count); }
-		auto configurations() const				{ return configuration::view(*this, m_configurations_offset, m_configurations_count); }
-		auto configuration_settings() const		{ return configuration_setting::view(*this, m_configuration_settings_offset, m_configuration_settings_count); }
-		auto configuration_conditions() const	{ return configuration_condition::view(*this, m_configuration_conditions_offset, m_configuration_conditions_count); }
-		auto software_lists() const				{ return software_list::view(*this, m_software_lists_offset, m_software_lists_count); }
-		auto ram_options() const				{ return ram_option::view(*this, m_ram_options_offset, m_ram_options_count); }
+		auto machines() const					{ return machine::view(*this, m_state.m_machines_position); }
+		auto devices() const					{ return device::view(*this, m_state.m_devices_position); }
+		auto configurations() const				{ return configuration::view(*this, m_state.m_configurations_position); }
+		auto configuration_settings() const		{ return configuration_setting::view(*this, m_state.m_configuration_settings_position); }
+		auto configuration_conditions() const	{ return configuration_condition::view(*this, m_state.m_configuration_conditions_position); }
+		auto software_lists() const				{ return software_list::view(*this, m_state.m_software_lists_position); }
+		auto ram_options() const				{ return ram_option::view(*this, m_state.m_ram_options_position); }
 
 		// should only be called by info classes
 		const QString &get_string(std::uint32_t offset) const;
 
 	private:
+		struct State
+		{
+			State();
+
+			std::vector<std::uint8_t>						m_data;
+			bindata::view_position							m_machines_position;
+			bindata::view_position							m_devices_position;
+			bindata::view_position							m_configurations_position;
+			bindata::view_position							m_configuration_settings_position;
+			bindata::view_position							m_configuration_conditions_position;
+			bindata::view_position							m_software_lists_position;
+			bindata::view_position							m_ram_options_position;
+			std::uint32_t									m_string_table_offset;
+		};
+
 		// member variables
-		std::vector<std::uint8_t>							m_data;
-		std::uint32_t										m_machines_count;
-		std::uint32_t										m_devices_offset;
-		std::uint32_t										m_devices_count;
-		std::uint32_t										m_configurations_offset;
-		std::uint32_t										m_configurations_count;
-		std::uint32_t										m_configuration_settings_offset;
-		std::uint32_t										m_configuration_settings_count;
-		std::uint32_t										m_configuration_conditions_offset;
-		std::uint32_t										m_configuration_conditions_count;
-		std::uint32_t										m_software_lists_offset;
-		std::uint32_t										m_software_lists_count;
-		std::uint32_t										m_ram_options_offset;
-		std::uint32_t										m_ram_options_count;
-		size_t												m_string_table_offset;
+		State												m_state;
 		mutable std::unordered_map<std::uint32_t, QString>	m_loaded_strings;
 		const QString *										m_version;
 		std::function<void()>								m_onChanged;
 
 		// private functions
 		void onChanged();
+		static const char *getStringFromData(const State &state, std::uint32_t offset);
 	};
 
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
