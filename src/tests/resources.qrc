@@ -1,7 +1,8 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource>
-        <file>resources/listxml.xml</file>
+        <file>resources/listxml_alienar.xml</file>
+        <file>resources/listxml_coco.xml</file>
         <file>resources/softlist.xml</file>
     </qresource>
 </RCC>

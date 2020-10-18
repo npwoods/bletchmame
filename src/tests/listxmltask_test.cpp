@@ -40,7 +40,7 @@ void ListXmlTask::Test::internalProcess()
 	auto task = ListXmlTask(QString(outputPath));
 
 	// create a test asset
-	QFile testAsset(":/resources/listxml.xml");
+	QFile testAsset(":/resources/listxml_coco.xml");
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
 	// process!
@@ -70,7 +70,7 @@ void ListXmlTask::Test::pathWithFile()
 	auto task = ListXmlTask(tempDir.filePath("tempFile.bin/subdir/subdir/foo.infodb"));
 
 	// create a test asset
-	QFile testAsset(":/resources/listxml.xml");
+	QFile testAsset(":/resources/listxml_coco.xml");
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
 	// process - this should throw an exception

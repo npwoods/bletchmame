@@ -47,6 +47,6 @@ public:
 
 
 // helper functions
-QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml.xml");
+QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml_coco.xml");
 
 #endif // TEST_H

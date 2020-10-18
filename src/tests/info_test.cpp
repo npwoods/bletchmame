@@ -23,9 +23,11 @@ namespace
 		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
 		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
 		void loadGarbage_1000_1000()	{ loadGarbage(1000, 1000); }
+		void loadFailuresDontMutate();
 
 	private:
 		void loadGarbage(int legitBytes, int garbageBytes);
+		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
 };
 
@@ -103,15 +105,8 @@ void Test::general()
 
 void Test::loadGarbage(int legitBytes, int garbageBytes)
 {
-	static char garbage[] = { 'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F' };
-
 	QByteArray byteArray = buildInfoDatabase();
-	QVERIFY(byteArray.size() > 0);
-	byteArray.resize(legitBytes + garbageBytes);
-
-	// fill in garbage bytes
-	for (int i = 0; i < garbageBytes; i++)
-		byteArray[legitBytes + i] = garbage[i % sizeof(garbage)];
+	garbagifyByteArray(byteArray, legitBytes, garbageBytes);
 
 	// open the buffer
 	QBuffer buffer(&byteArray);
@@ -123,6 +118,63 @@ void Test::loadGarbage(int legitBytes, int garbageBytes)
 	db.setOnChanged([&dbChanged]() { dbChanged = true; });
 	QVERIFY(!db.load(buffer));
 	QVERIFY(!dbChanged);
+}
+
+
+//-------------------------------------------------
+//  loadFailuresDontMutate - if we have a DB loaded
+//	and we try to load another one, the existing DB
+//	needs to be kept intact
+//-------------------------------------------------
+
+void Test::loadFailuresDontMutate()
+{
+	// set up a buffer
+	QByteArray goodByteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
+	QVERIFY(goodByteArray.size() > 0);
+	QBuffer goodBuffer(&goodByteArray);
+	QVERIFY(goodBuffer.open(QIODevice::ReadOnly));
+
+	// and process it, validating we've done so successfully
+	info::database db;
+	int dbChangedCount = 0;
+	db.setOnChanged([&dbChangedCount]() { dbChangedCount++; });
+	QVERIFY(db.load(goodBuffer));
+	QVERIFY(dbChangedCount == 1);
+
+	// get the machine count
+	size_t machineCount = db.machines().size();
+	QVERIFY(machineCount > 0);
+
+	// now create a bad buffer
+	QByteArray badByteArray = buildInfoDatabase(":/resources/listxml_alienar.xml");
+	QVERIFY(badByteArray.size() > 0);
+	garbagifyByteArray(badByteArray, 1000, 1000);
+	QBuffer badBuffer(&badByteArray);
+	QVERIFY(badBuffer.open(QIODevice::ReadOnly));
+
+	// process it - we expect this to fail
+	QVERIFY(!db.load(badBuffer));
+
+	// we also expect the telltale signs of mutation to not apply
+	QVERIFY(dbChangedCount == 1);
+	QVERIFY(db.machines().size() == machineCount);
+}
+
+
+//-------------------------------------------------
+//  garbagifyByteArray
+//-------------------------------------------------
+
+void Test::garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount)
+{
+	// resize the array
+	byteArray.resize(garbageStart + garbageCount);
+
+	// fill in garbage bytes
+	static char garbage[] = { 'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F' };
+	for (int i = 0; i < garbageCount; i++)
+		byteArray[garbageStart + i] = garbage[i % sizeof(garbage)];
 }
 
 
