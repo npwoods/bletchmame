@@ -231,7 +231,7 @@ QVariant ProfileListItemModel::headerData(int section, Qt::Orientation orientati
 
 
 //-------------------------------------------------
-//  headerData
+//  flags
 //-------------------------------------------------
 
 Qt::ItemFlags ProfileListItemModel::flags(const QModelIndex &index) const
