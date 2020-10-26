@@ -52,7 +52,7 @@ ListXmlTask::ListXmlTask(QString &&output_filename)
 
 QStringList ListXmlTask::getArguments(const Preferences &) const
 {
-	return { "-listxml", "-nodtd" };
+	return { "-listxml" };
 }
 
 
