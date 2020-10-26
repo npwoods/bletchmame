@@ -107,11 +107,9 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
 		bool runnable;
-		if (attributes.get("runnable", runnable) && !runnable)
-			return XmlParser::ElementResult::Skip;
-
 		std::string data;
 		info::binaries::machine &machine = m_machines.emplace_back();
+		machine.m_runnable				= attributes.get("runnable", runnable) && !runnable ? 0 : 1;
 		machine.m_name_strindex			= attributes.get("name", data) ? m_strings.get(data) : 0;
 		machine.m_sourcefile_strindex	= attributes.get("sourcefile", data) ? m_strings.get(data) : 0;
 		machine.m_clone_of_strindex		= attributes.get("cloneof", data) ? m_strings.get(data) : 0;
@@ -127,7 +125,6 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 		machine.m_description_strindex	= 0;
 		machine.m_year_strindex			= 0;
 		machine.m_manufacturer_strindex = 0;
-		return XmlParser::ElementResult::Ok;
 	});
 	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{

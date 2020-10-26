@@ -62,6 +62,7 @@ namespace info
 			std::uint32_t	m_ram_options_count;
 			std::uint32_t	m_devices_index;
 			std::uint32_t	m_devices_count;
+			std::uint8_t	m_runnable;
 		};
 
 		struct configuration
@@ -264,6 +265,7 @@ namespace info
 		std::optional<info::device> find_device(const QString &tag) const;
 
 		// properties
+		bool runnable() const				{ return inner().m_runnable; }
 		const QString &name() const			{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const	{ return get_string(inner().m_sourcefile_strindex); }
 		const QString &clone_of() const		{ return get_string(inner().m_clone_of_strindex); }
