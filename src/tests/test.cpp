@@ -82,6 +82,11 @@ int main(int argc, char *argv[])
     int result;
     std::cout << "BletchMAME Test Harness" << std::endl;
 
+    // create a QCoreApplication to appease what might require it
+    int fauxArgc = 0;
+    char **fauxArgv = nullptr;
+    QCoreApplication app(fauxArgc, fauxArgv);
+
     // we support different types of tests
     if (argc >= 2 && !strcmp(argv[1], "--runmame"))
     {

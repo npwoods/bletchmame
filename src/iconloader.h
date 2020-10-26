@@ -21,7 +21,18 @@
 
 class Preferences;
 
-class IconLoader
+// ======================> IIconLoader
+
+class IIconLoader
+{
+public:
+	virtual const QPixmap &getIcon(const info::machine &machine) = 0;
+};
+
+
+// ======================> IconLoader
+
+class IconLoader : public IIconLoader
 {
 public:
 	// ctor / dtor
@@ -30,7 +41,7 @@ public:
 
 	// methods
 	void refreshIcons();
-	const QPixmap &getIcon(const info::machine &machine);
+	virtual const QPixmap &getIcon(const info::machine &machine) final;
 
 private:
 	class IconFinder;
