@@ -18,7 +18,10 @@ namespace
         Q_OBJECT
 
     private slots:
-        void general();
+        void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 15, 796, 32, 48); }
+		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 15, 796, 32, 48); }
+        void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 1, 0, 0, 0); }
+        void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 1, 0, 0, 0); }
 		void loadGarbage_0_0()			{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
 		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
@@ -26,6 +29,7 @@ namespace
 		void loadFailuresDontMutate();
 
 	private:
+		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
 		void loadGarbage(int legitBytes, int garbageBytes);
 		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
@@ -40,10 +44,10 @@ namespace
 //  general
 //-------------------------------------------------
 
-void Test::general()
+void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount)
 {
 	// set up a buffer
-	QByteArray byteArray = buildInfoDatabase();
+	QByteArray byteArray = buildInfoDatabase(fileName, skipDtd);
 	QVERIFY(byteArray.size() > 0);
 	QBuffer buffer(&byteArray);
 	QVERIFY(buffer.open(QIODevice::ReadOnly));
@@ -59,7 +63,7 @@ void Test::general()
 	QVERIFY(buffer.pos() == buffer.size());
 
 	// spelunk through the resulting db
-	int settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
+	int machineCount = 0, settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
 	for (info::machine machine : db.machines())
 	{
 		// basic machine properties
@@ -67,6 +71,9 @@ void Test::general()
 		const QString &description = machine.description();
 		QVERIFY(!name.isEmpty());
 		QVERIFY(!description.isEmpty());
+
+		// count machines
+		machineCount++;
 
 		for (info::device dev : machine.devices())
 		{
@@ -92,9 +99,11 @@ void Test::general()
 		for (info::ram_option ramopt : machine.ram_options())
 			ramOptionCount++;
 	}
-	QVERIFY(settingCount > 0);
-	QVERIFY(softwareListCount > 0);
-	QVERIFY(ramOptionCount > 0);
+	QVERIFY(machineCount == db.machines().size());
+	QVERIFY(machineCount == expectedMachineCount);
+	QVERIFY(settingCount == expectedSettingCount);
+	QVERIFY(softwareListCount == expectedSoftwareListCount);
+	QVERIFY(ramOptionCount == expectedRamOptionCount);
 }
 
 

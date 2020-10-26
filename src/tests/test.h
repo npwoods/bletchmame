@@ -47,6 +47,6 @@ public:
 
 
 // helper functions
-QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml_coco.xml");
+QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml_coco.xml", bool skipDtd = false);
 
 #endif // TEST_H
