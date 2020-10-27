@@ -13,7 +13,7 @@
 
 #include "info.h"
 
-class IconLoader;
+class IIconLoader;
 
 
 // ======================> MachineListItemModel
@@ -30,7 +30,7 @@ public:
 		Count
 	};
 
-	MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader &iconLoader);
+	MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader);
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -42,7 +42,7 @@ public:
 
 private:
 	info::database &	m_infoDb;
-	IconLoader &		m_iconLoader;
+	IIconLoader &		m_iconLoader;
 };
 
 #endif // MACHINELISTITEMMODEL_H

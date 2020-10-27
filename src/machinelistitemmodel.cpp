@@ -15,7 +15,7 @@
 //  ctor
 //-------------------------------------------------
 
-MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader &iconLoader)
+MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader)
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
     , m_iconLoader(iconLoader)

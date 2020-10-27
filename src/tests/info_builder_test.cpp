@@ -54,12 +54,26 @@ static QByteArray buildInfoDatabase(QIODevice &stream, QString &errorMessage)
 //  buildInfoDatabase
 //-------------------------------------------------
 
-QByteArray buildInfoDatabase(const QString &fileName)
+QByteArray buildInfoDatabase(const QString &fileName, bool skipDtd)
 {
 	// open the file
 	QFile file(fileName);
 	if (!file.open(QFile::ReadOnly))
 		return QByteArray();
+
+	// if we're asked to, skip the DTD
+	if (skipDtd)
+	{
+		char lastChars[2] = { 0, };
+		while (lastChars[0] != ']' || lastChars[1] != '>')
+		{
+			QByteArray byteArray = file.read(1);
+			if (byteArray.size() != 1)
+				throw false;
+			lastChars[0] = lastChars[1];
+			lastChars[1] = byteArray[0];
+		}
+	}
 
 	// process the file
 	QString errorMessage;
