@@ -12,6 +12,7 @@
 #define BINDATA_H
 
 #include <QString>
+#include <optional>
 
 
 //**************************************************************************
@@ -134,7 +135,7 @@ namespace bindata
 			using reference = TPublic & ;
 
 			TPublic operator*() const { return m_view[m_position]; }
-			TPublic operator->() const { return m_view[m_position]; }
+			std::optional<TPublic> operator->() const { return m_view[m_position]; }
 
 			bool operator<(const iterator &that)
 			{

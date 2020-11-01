@@ -171,6 +171,14 @@ void Test::viewIterators()
 	QVERIFY(iter1 - db.machines().begin() == 7);
 	QVERIFY(iter2 - db.machines().begin() == 0);
 	QVERIFY(iter3 - db.machines().begin() == 2);
+
+	// and ensure that dereferencing works consistently
+	QVERIFY(iter1->name() == db.machines()[7].name());
+	QVERIFY((*iter1).name() == db.machines()[7].name());
+	QVERIFY(iter2->name() == db.machines()[0].name());
+	QVERIFY((*iter2).name() == db.machines()[0].name());
+	QVERIFY(iter3->name() == db.machines()[2].name());
+	QVERIFY((*iter3).name() == db.machines()[2].name());
 }
 
 
