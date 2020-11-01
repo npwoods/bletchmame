@@ -66,10 +66,10 @@ jobs:
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        ./test_worker_ui.sh mame0213
-        ./test_worker_ui.sh mame0218
-        ./test_worker_ui.sh mame0224
-        ./test_worker_ui.sh mame0225
+        ./test_mame_interactions.sh mame0213
+        ./test_mame_interactions.sh mame0218
+        ./test_mame_interactions.sh mame0224
+        ./test_mame_interactions.sh mame0225
 
     # Install PanDoc
     - name: Install PanDoc

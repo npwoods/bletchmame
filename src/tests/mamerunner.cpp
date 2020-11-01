@@ -12,7 +12,7 @@
 #include <QProcess>
 #include <QThread>
 
-#include "mamerunner.h"
+#include "test.h"
 #include "mameversion.h"
 #include "mameworkercontroller.h"
 #include "xmlparser.h"
