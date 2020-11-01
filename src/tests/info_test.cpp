@@ -22,6 +22,8 @@ namespace
 		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 15, 796, 32, 48); }
         void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 1, 0, 0, 0); }
         void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 1, 0, 0, 0); }
+		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
+		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
 		void loadGarbage_0_0()			{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
 		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
@@ -30,6 +32,7 @@ namespace
 
 	private:
 		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
+		void machineLookup(const QString &filename);
 		void loadGarbage(int legitBytes, int garbageBytes);
 		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
@@ -104,6 +107,40 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 	QVERIFY(settingCount == expectedSettingCount);
 	QVERIFY(softwareListCount == expectedSoftwareListCount);
 	QVERIFY(ramOptionCount == expectedRamOptionCount);
+}
+
+
+//-------------------------------------------------
+//	machineLookup - test find_machine()'s ability
+//	to find all machines
+//-------------------------------------------------
+
+void Test::machineLookup(const QString &fileName)
+{
+	// set up a buffer
+	QByteArray byteArray = buildInfoDatabase(fileName);
+	QBuffer buffer(&byteArray);
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
+
+	// and process it, validating we've done so successfully
+	info::database db;
+	QVERIFY(db.load(buffer));
+	QVERIFY(db.machines().size() > 0);
+
+	// for all machines...
+	for (info::machine machine : db.machines())
+	{
+		// ...look it up
+		std::optional<info::machine> foundMachine = db.find_machine(machine.name());
+
+		// and check that we have the same results
+		QVERIFY(foundMachine.has_value());
+		QVERIFY(foundMachine->name() == machine.name());
+		QVERIFY(foundMachine->manufacturer() == machine.manufacturer());
+		QVERIFY(foundMachine->year() == machine.year());
+		QVERIFY(foundMachine->description() == machine.description());
+		QVERIFY(foundMachine->devices().size() == machine.devices().size());
+	}
 }
 
 
