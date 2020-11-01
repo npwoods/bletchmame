@@ -155,8 +155,8 @@ target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LI
 add_executable(BletchMAME_tests	
 	src/tests/test.cpp
 	src/tests/test.h
+	src/tests/listxmlrunner.cpp
 	src/tests/mamerunner.cpp
-	src/tests/mamerunner.h
 	src/tests/client_test.cpp
 	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp

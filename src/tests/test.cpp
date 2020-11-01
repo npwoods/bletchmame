@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include "test.h"
-#include "mamerunner.h"
 
 
 //**************************************************************************
@@ -91,6 +90,10 @@ int main(int argc, char *argv[])
     if (argc >= 2 && !strcmp(argv[1], "--runmame"))
     {
         result = runAndExcerciseMame(argc - 2, argv + 2);
+    }
+    else if (argc >= 2 && !strcmp(argv[1], "--runlistxml"))
+    {
+        result = runAndExcerciseListXml(argc - 2, argv + 2);
     }
     else
     {
