@@ -12,6 +12,7 @@
 #define BINDATA_H
 
 #include <QString>
+#include <optional>
 
 
 //**************************************************************************
@@ -134,7 +135,7 @@ namespace bindata
 			using reference = TPublic & ;
 
 			TPublic operator*() const { return m_view[m_position]; }
-			TPublic operator->() const { return m_view[m_position]; }
+			std::optional<TPublic> operator->() const { return m_view[m_position]; }
 
 			bool operator<(const iterator &that)
 			{
@@ -155,9 +156,23 @@ namespace bindata
 				return *this;
 			}
 
-			void operator++()
+			iterator &operator++()
 			{
 				m_position++;
+				return *this;
+			}
+
+			iterator operator++(int)
+			{
+				auto iter = *this;
+				m_position++;
+				return iter;
+			}
+
+			iterator &operator+=(uint32_t offs)
+			{
+				m_position += offs;
+				return *this;
 			}
 
 			ptrdiff_t operator-(const iterator &that)

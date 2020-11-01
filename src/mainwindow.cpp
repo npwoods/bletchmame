@@ -138,7 +138,7 @@ public:
 		assert(iter != devices.end());
 
 		// and return it!
-		return util::string_split((*iter).extensions(), [](auto ch) { return ch == ','; });
+		return util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
 	}
 
 	virtual void createImage(const QString &tag, QString &&path)
@@ -2075,8 +2075,6 @@ void MainWindow::PlaceInRecentFiles(const QString &tag, const QString &path)
 
 const QString &MainWindow::GetDeviceType(const info::machine &machine, const QString &tag)
 {
-	static const QString s_empty;
-
 	auto iter = std::find_if(
 		machine.devices().begin(),
 		machine.devices().end(),
@@ -2086,8 +2084,8 @@ const QString &MainWindow::GetDeviceType(const info::machine &machine, const QSt
 		});
 
 	return iter != machine.devices().end()
-		? (*iter).type()
-		: s_empty;
+		? iter->type()
+		: util::g_empty_string;
 }
 
 

@@ -24,6 +24,7 @@ namespace
         void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 1, 0, 0, 0); }
 		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
 		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
+		void viewIterators();
 		void loadGarbage_0_0()			{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
 		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
@@ -141,6 +142,43 @@ void Test::machineLookup(const QString &fileName)
 		QVERIFY(foundMachine->description() == machine.description());
 		QVERIFY(foundMachine->devices().size() == machine.devices().size());
 	}
+}
+
+
+//-------------------------------------------------
+//  viewIterators
+//-------------------------------------------------
+
+void Test::viewIterators()
+{
+	// set up a buffer
+	QByteArray byteArray = buildInfoDatabase();
+	QBuffer buffer(&byteArray);
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
+
+	// and process it, validating we've done so successfully
+	info::database db;
+	QVERIFY(db.load(buffer));
+	QVERIFY(db.machines().size() >= 7);
+
+	// perform a number of operations
+	auto iter1 = db.machines().begin();
+	auto iter2 = iter1++;
+	auto iter3 = ++iter1;
+	iter1 += 5;
+
+	// and validate that the iterators are what we expect
+	QVERIFY(iter1 - db.machines().begin() == 7);
+	QVERIFY(iter2 - db.machines().begin() == 0);
+	QVERIFY(iter3 - db.machines().begin() == 2);
+
+	// and ensure that dereferencing works consistently
+	QVERIFY(iter1->name() == db.machines()[7].name());
+	QVERIFY((*iter1).name() == db.machines()[7].name());
+	QVERIFY(iter2->name() == db.machines()[0].name());
+	QVERIFY((*iter2).name() == db.machines()[0].name());
+	QVERIFY(iter3->name() == db.machines()[2].name());
+	QVERIFY((*iter3).name() == db.machines()[2].name());
 }
 
 
