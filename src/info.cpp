@@ -275,15 +275,16 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 
 std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
 {
-	auto iter = std::find_if(
+	auto iter = std::lower_bound(
 		machines().begin(),
 		machines().end(),
-		[&machine_name](const info::machine m)
+		machine_name,
+		[](const info::machine &a, const QString &b)
 		{
-			return m.name() == machine_name;
+			return a.name() < b;
 		});
-	return iter != machines().end()
-		? std::optional<info::machine>(*iter)
+	return iter != machines().end() && iter->name() == machine_name
+		? *iter
 		: std::optional<info::machine>();
 }
 

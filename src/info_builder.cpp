@@ -271,6 +271,17 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	// and salt it
 	m_salted_header = util::salt(header, info::binaries::salt());
 
+	// sort machines by name to facilitate lookups
+	std::sort(
+		m_machines.begin(),
+		m_machines.end(),
+		[this](const binaries::machine &a, const binaries::machine &b)
+		{
+			const char *aText = m_strings.lookup(a.m_name_strindex);
+			const char *bText = m_strings.lookup(b.m_name_strindex);
+			return strcmp(aText, bText) < 0;
+		});
+
 	// success!
 	error_message.clear();
 	return true;
@@ -351,4 +362,16 @@ std::uint32_t info::database_builder::string_table::get(const QString &s)
 const std::vector<char> &info::database_builder::string_table::data() const
 {
 	return m_data;
+}
+
+
+//-------------------------------------------------
+//  string_table::lookup
+//-------------------------------------------------
+
+const char *info::database_builder::string_table::lookup(std::uint32_t value) const
+{
+	assert(value < m_data.size());
+	assert(value + strlen(&m_data[value]) < m_data.size());
+	return &m_data[value];
 }

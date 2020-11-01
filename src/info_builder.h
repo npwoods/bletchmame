@@ -40,6 +40,7 @@ namespace info
 			std::uint32_t get(const std::string &string);
 			std::uint32_t get(const QString &string);
 			const std::vector<char> &data() const;
+			const char *lookup(std::uint32_t value) const;
 
 			template<typename T> void embed_value(T value)
 			{
