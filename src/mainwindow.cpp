@@ -138,7 +138,7 @@ public:
 		assert(iter != devices.end());
 
 		// and return it!
-		return util::string_split((*iter).extensions(), [](auto ch) { return ch == ','; });
+		return util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
 	}
 
 	virtual void createImage(const QString &tag, QString &&path)
@@ -2086,7 +2086,7 @@ const QString &MainWindow::GetDeviceType(const info::machine &machine, const QSt
 		});
 
 	return iter != machine.devices().end()
-		? (*iter).type()
+		? iter->type()
 		: s_empty;
 }
 

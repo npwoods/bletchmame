@@ -219,7 +219,7 @@ const QString *ImagesDialog::deviceInterfaceFromTag(const QString &tag)
 
     // if we found a device, return the interface
     return iter != m_host.getMachine().devices().end()
-        ? &(*iter).devinterface()
+        ? &iter->devinterface()
         : nullptr;
 }
 
