@@ -155,9 +155,23 @@ namespace bindata
 				return *this;
 			}
 
-			void operator++()
+			iterator &operator++()
 			{
 				m_position++;
+				return *this;
+			}
+
+			iterator operator++(int)
+			{
+				auto iter = *this;
+				m_position++;
+				return iter;
+			}
+
+			iterator &operator+=(uint32_t offs)
+			{
+				m_position += offs;
+				return *this;
 			}
 
 			ptrdiff_t operator-(const iterator &that)
