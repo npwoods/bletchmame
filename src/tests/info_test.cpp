@@ -31,6 +31,7 @@ namespace
 		void loadGarbage_1000_1000()	{ loadGarbage(1000, 1000); }
 		void loadFailuresDontMutate();
 		void readsAllBytes();
+		void sortable();
 
 	private:
 		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
@@ -257,6 +258,48 @@ void Test::readsAllBytes()
 
 	// verify that we're at the end of the buffer
 	QVERIFY(buffer.pos() == buffer.size());
+}
+
+
+//-------------------------------------------------
+//  sortable - not really about sorting but rather
+//	ensuring that the info/bindata copy/move/assignment
+//	capabilities are up to snuff
+//-------------------------------------------------
+
+void Test::sortable()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	QVERIFY(db.machines().size() > 0);
+
+	// put "all the things" into a vector
+	std::vector<std::optional<info::machine>> vec;
+	vec.push_back(std::nullopt);
+	for (info::machine machine : db.machines())
+		vec.push_back(machine);
+	vec.push_back(std::nullopt);
+
+	// and then sort it, first with the empty items and then in reverse order
+	std::sort(
+		vec.begin(),
+		vec.end(),
+		[](const std::optional<info::machine> &a, const std::optional<info::machine> &b)
+		{
+			return a.has_value() && b.has_value()
+				? a->name() > b->name()
+				: b.has_value();
+		});
+
+	// validate the order
+	QVERIFY(!vec[0].has_value());
+	QVERIFY(!vec[1].has_value());
+	for (size_t i = 2; i < vec.size(); i++)
+	{
+		QVERIFY(vec[i].has_value());
+		if (i > 2)
+			QVERIFY(vec[i - 1]->name() > vec[i]->name());
+	}
 }
 
 
