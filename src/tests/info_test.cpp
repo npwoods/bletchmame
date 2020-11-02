@@ -30,6 +30,7 @@ namespace
 		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
 		void loadGarbage_1000_1000()	{ loadGarbage(1000, 1000); }
 		void loadFailuresDontMutate();
+		void readsAllBytes();
 
 	private:
 		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
@@ -50,21 +51,12 @@ namespace
 
 void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount)
 {
-	// set up a buffer
-	QByteArray byteArray = buildInfoDatabase(fileName, skipDtd);
-	QVERIFY(byteArray.size() > 0);
-	QBuffer buffer(&byteArray);
-	QVERIFY(buffer.open(QIODevice::ReadOnly));
-
-	// and process it, validating we've done so successfully
+	// read the db, validating we've done so successfully
 	info::database db;
 	bool dbChanged = false;
 	db.setOnChanged([&dbChanged]() { dbChanged = true; });
-	QVERIFY(db.load(buffer));
+	QVERIFY(db.load(buildInfoDatabase(fileName, skipDtd)));
 	QVERIFY(dbChanged);
-
-	// verify that we're at the end of the buffer
-	QVERIFY(buffer.pos() == buffer.size());
 
 	// spelunk through the resulting db
 	int machineCount = 0, settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
@@ -118,14 +110,9 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 
 void Test::machineLookup(const QString &fileName)
 {
-	// set up a buffer
-	QByteArray byteArray = buildInfoDatabase(fileName);
-	QBuffer buffer(&byteArray);
-	QVERIFY(buffer.open(QIODevice::ReadOnly));
-
 	// and process it, validating we've done so successfully
 	info::database db;
-	QVERIFY(db.load(buffer));
+	QVERIFY(db.load(buildInfoDatabase(fileName)));
 	QVERIFY(db.machines().size() > 0);
 
 	// for all machines...
@@ -151,14 +138,9 @@ void Test::machineLookup(const QString &fileName)
 
 void Test::viewIterators()
 {
-	// set up a buffer
-	QByteArray byteArray = buildInfoDatabase();
-	QBuffer buffer(&byteArray);
-	QVERIFY(buffer.open(QIODevice::ReadOnly));
-
-	// and process it, validating we've done so successfully
+	// load the db, validating we've done so successfully
 	info::database db;
-	QVERIFY(db.load(buffer));
+	QVERIFY(db.load(buildInfoDatabase()));
 	QVERIFY(db.machines().size() >= 7);
 
 	// perform a number of operations
@@ -192,15 +174,11 @@ void Test::loadGarbage(int legitBytes, int garbageBytes)
 	QByteArray byteArray = buildInfoDatabase();
 	garbagifyByteArray(byteArray, legitBytes, garbageBytes);
 
-	// open the buffer
-	QBuffer buffer(&byteArray);
-	QVERIFY(buffer.open(QIODevice::ReadOnly));
-
 	// try to load it
 	info::database db;
 	bool dbChanged = false;
 	db.setOnChanged([&dbChanged]() { dbChanged = true; });
-	QVERIFY(!db.load(buffer));
+	QVERIFY(!db.load(byteArray));
 	QVERIFY(!dbChanged);
 }
 
@@ -216,14 +194,12 @@ void Test::loadFailuresDontMutate()
 	// set up a buffer
 	QByteArray goodByteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
 	QVERIFY(goodByteArray.size() > 0);
-	QBuffer goodBuffer(&goodByteArray);
-	QVERIFY(goodBuffer.open(QIODevice::ReadOnly));
 
 	// and process it, validating we've done so successfully
 	info::database db;
 	int dbChangedCount = 0;
 	db.setOnChanged([&dbChangedCount]() { dbChangedCount++; });
-	QVERIFY(db.load(goodBuffer));
+	QVERIFY(db.load(goodByteArray));
 	QVERIFY(dbChangedCount == 1);
 
 	// get the machine count
@@ -234,11 +210,9 @@ void Test::loadFailuresDontMutate()
 	QByteArray badByteArray = buildInfoDatabase(":/resources/listxml_alienar.xml");
 	QVERIFY(badByteArray.size() > 0);
 	garbagifyByteArray(badByteArray, 1000, 1000);
-	QBuffer badBuffer(&badByteArray);
-	QVERIFY(badBuffer.open(QIODevice::ReadOnly));
 
 	// process it - we expect this to fail
-	QVERIFY(!db.load(badBuffer));
+	QVERIFY(!db.load(badByteArray));
 
 	// we also expect the telltale signs of mutation to not apply
 	QVERIFY(dbChangedCount == 1);
@@ -259,6 +233,30 @@ void Test::garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garba
 	static char garbage[] = { 'D', 'E', 'A', 'D', 'B', 'E', 'E', 'F' };
 	for (int i = 0; i < garbageCount; i++)
 		byteArray[garbageStart + i] = garbage[i % sizeof(garbage)];
+}
+
+
+//-------------------------------------------------
+//  readsAllBytes
+//-------------------------------------------------
+
+void Test::readsAllBytes()
+{
+	// set up a buffer
+	QByteArray byteArray = buildInfoDatabase();
+	QVERIFY(byteArray.size() > 0);
+	QBuffer buffer(&byteArray);
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
+
+	// read the db, validating we've done so successfully
+	info::database db;
+	bool dbChanged = false;
+	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	QVERIFY(db.load(buffer));
+	QVERIFY(dbChanged);
+
+	// verify that we're at the end of the buffer
+	QVERIFY(buffer.pos() == buffer.size());
 }
 
 

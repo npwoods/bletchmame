@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stdexcept>
 
+#include <QBuffer>
 #include <QDataStream>
 
 #include "info.h"
@@ -82,6 +83,19 @@ bool info::database::load(const QString &file_name, const QString &expected_vers
 
 	// open up the file
 	return load(file, expected_version);
+}
+
+
+//-------------------------------------------------
+//  database::load - in practice this will likely
+//	only be used by unit tests
+//-------------------------------------------------
+
+bool info::database::load(const QByteArray &byteArray, const QString &expected_version)
+{
+	QBuffer buffer((QByteArray *) &byteArray);
+	return buffer.open(QIODevice::ReadOnly)
+		&& load(buffer, expected_version);
 }
 
 
