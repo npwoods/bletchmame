@@ -33,18 +33,18 @@ namespace bindata
 
 	protected:
 		entry(const TDatabase &db, const TBinary &inner)
-			: m_db(db)
-			, m_inner(inner)
+			: m_db(&db)
+			, m_inner(&inner)
 		{
 		}
 
-		const TDatabase &db() const { return m_db; }
-		const TBinary &inner() const { return m_inner; }
+		const TDatabase &db() const { return *m_db; }
+		const TBinary &inner() const { return *m_inner; }
 		const QString &get_string(std::uint32_t strindex) const { return db().get_string(strindex); }
 
 	private:
-		const TDatabase &	m_db;
-		const TBinary &		m_inner;
+		const TDatabase *	m_db;
+		const TBinary *		m_inner;
 	};
 
 
