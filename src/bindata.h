@@ -143,6 +143,12 @@ namespace bindata
 				return m_position < that.m_position;
 			}
 
+			bool operator==(const iterator &that)
+			{
+				asset_compatible_iterator(that);
+				return m_position == that.m_position;
+			}
+
 			bool operator!=(const iterator &that)
 			{
 				asset_compatible_iterator(that);

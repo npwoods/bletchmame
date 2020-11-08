@@ -149,6 +149,7 @@ void Test::viewIterators()
 	auto iter2 = iter1++;
 	auto iter3 = ++iter1;
 	iter1 += 5;
+	auto iter4 = iter1;
 
 	// and validate that the iterators are what we expect
 	QVERIFY(iter1 - db.machines().begin() == 7);
@@ -162,6 +163,22 @@ void Test::viewIterators()
 	QVERIFY((*iter2).name() == db.machines()[0].name());
 	QVERIFY(iter3->name() == db.machines()[2].name());
 	QVERIFY((*iter3).name() == db.machines()[2].name());
+
+	// and the equals operator works correctly
+	QVERIFY(!(iter1 == iter2));
+	QVERIFY(!(iter1 == iter3));
+	QVERIFY(!(iter2 == iter3));
+	QVERIFY(iter1 == iter4);
+	QVERIFY(!(iter2 == iter4));
+	QVERIFY(!(iter3 == iter4));
+
+	// and the not-equals operator works correctly
+	QVERIFY(iter1 != iter2);
+	QVERIFY(iter1 != iter3);
+	QVERIFY(iter2 != iter3);
+	QVERIFY(!(iter1 != iter4));
+	QVERIFY(iter2 != iter4);
+	QVERIFY(iter3 != iter4);
 }
 
 
