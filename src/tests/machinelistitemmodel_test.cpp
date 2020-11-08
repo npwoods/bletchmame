@@ -53,13 +53,26 @@ void Test::general()
     QVERIFY(model.rowCount(QModelIndex()) == 0);
 
     // load an info DB
-    QByteArray byteArray = buildInfoDatabase();
-    QBuffer buffer(&byteArray);
-    QVERIFY(buffer.open(QIODevice::ReadOnly));
-    QVERIFY(db.load(buffer));
+    {
+        QByteArray byteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
+        QBuffer buffer(&byteArray);
+        QVERIFY(buffer.open(QIODevice::ReadOnly));
+        QVERIFY(db.load(buffer));
+    }
 
     // verify that we got rows
     QVERIFY(model.rowCount(QModelIndex()) == 15);
+
+    // try loading a different one
+    {
+        QByteArray byteArray = buildInfoDatabase(":/resources/listxml_alienar.xml");
+        QBuffer buffer(&byteArray);
+        QVERIFY(buffer.open(QIODevice::ReadOnly));
+        QVERIFY(db.load(buffer));
+    }
+
+    // verify that we got rows
+    QVERIFY(model.rowCount(QModelIndex()) == 1);
 }
 
 
