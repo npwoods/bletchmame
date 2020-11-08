@@ -164,6 +164,14 @@ void Test::viewIterators()
 	QVERIFY(iter3->name() == db.machines()[2].name());
 	QVERIFY((*iter3).name() == db.machines()[2].name());
 
+	// and the equals operator works correctly
+	QVERIFY(!(iter1 == iter2));
+	QVERIFY(!(iter1 == iter3));
+	QVERIFY(!(iter2 == iter3));
+	QVERIFY(iter1 == iter4);
+	QVERIFY(!(iter2 == iter4));
+	QVERIFY(!(iter3 == iter4));
+
 	// and the not-equals operator works correctly
 	QVERIFY(iter1 != iter2);
 	QVERIFY(iter1 != iter3);
