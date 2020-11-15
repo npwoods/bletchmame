@@ -267,6 +267,9 @@ namespace info
 		{
 		}
 
+		// methods
+		std::optional<info::device> find_device(const QString &tag) const;
+
 		// properties
 		const QString &name() const			{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const	{ return get_string(inner().m_sourcefile_strindex); }

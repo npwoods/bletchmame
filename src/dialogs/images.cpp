@@ -212,14 +212,11 @@ const QString &ImagesDialog::prettifyImageFileName(const software_list_collectio
 const QString *ImagesDialog::deviceInterfaceFromTag(const QString &tag)
 {
     // find the device
-    auto iter = std::find_if(
-        m_host.getMachine().devices().cbegin(),
-        m_host.getMachine().devices().end(),
-        [&tag](info::device dev) { return tag == dev.tag(); });
+    std::optional<info::device> device = m_host.getMachine().find_device(tag);
 
     // if we found a device, return the interface
-    return iter != m_host.getMachine().devices().end()
-        ? &iter->devinterface()
+    return device.has_value()
+        ? &device->devinterface()
         : nullptr;
 }
 
@@ -264,7 +261,7 @@ bool ImagesDialog::imageMenu(const QPushButton &button, int row)
     }
 
     // unload
-    QAction &unloadAction = *popupMenu.addAction("Unload");
+    QAction &unloadAction = *popupMenu.addAction("Unload", [this, &image]() { unloadImage(image.m_tag); });
     unloadAction.setEnabled(!image.m_file_name.isEmpty());
 
     // recent files

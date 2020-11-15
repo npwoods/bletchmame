@@ -24,6 +24,8 @@ namespace
         void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 1, 0, 0, 0); }
 		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
 		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
+		void deviceLookup_coco2b()		{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }
+		void deviceLookup_coco3()		{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
 		void viewIterators();
 		void loadGarbage_0_0()			{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
@@ -35,7 +37,8 @@ namespace
 
 	private:
 		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
-		void machineLookup(const QString &filename);
+		void machineLookup(const QString &fileName);
+		void deviceLookup(const QString &fileName, const QString &machineName);
 		void loadGarbage(int legitBytes, int garbageBytes);
 		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
@@ -129,6 +132,35 @@ void Test::machineLookup(const QString &fileName)
 		QVERIFY(foundMachine->year() == machine.year());
 		QVERIFY(foundMachine->description() == machine.description());
 		QVERIFY(foundMachine->devices().size() == machine.devices().size());
+	}
+}
+
+
+//-------------------------------------------------
+//	deviceLookup - test machine::find_device()'s
+//	ability to find all machines
+//-------------------------------------------------
+
+void Test::deviceLookup(const QString &fileName, const QString &machineName)
+{
+	// and process it, validating we've done so successfully
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(fileName)));
+
+	// get the machine
+	std::optional<info::machine> machine = db.find_machine(machineName);
+	QVERIFY(machine.has_value());
+
+	// for all devices...
+	for (info::device device : machine.value().devices())
+	{
+		// ...look it up
+		std::optional<info::device> foundDevice = machine->find_device(device.tag());
+
+		// and check that we have the same results
+		QVERIFY(foundDevice.has_value());
+		QVERIFY(foundDevice->tag() == device.tag());
+		QVERIFY(foundDevice->type() == device.type());
 	}
 }
 
