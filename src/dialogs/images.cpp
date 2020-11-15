@@ -261,7 +261,7 @@ bool ImagesDialog::imageMenu(const QPushButton &button, int row)
     }
 
     // unload
-    QAction &unloadAction = *popupMenu.addAction("Unload");
+    QAction &unloadAction = *popupMenu.addAction("Unload", [this, &image]() { unloadImage(image.m_tag); });
     unloadAction.setEnabled(!image.m_file_name.isEmpty());
 
     // recent files
