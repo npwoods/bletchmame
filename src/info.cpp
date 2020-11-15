@@ -232,6 +232,25 @@ const char *info::database::getStringFromData(const State &state, std::uint32_t 
 
 
 //-------------------------------------------------
+//  machine::find_device
+//-------------------------------------------------
+
+std::optional<info::device> info::machine::find_device(const QString &tag) const
+{
+	// find the device
+	auto iter = std::find_if(
+		devices().cbegin(),
+		devices().cend(),
+		[&tag](info::device dev) { return tag == dev.tag(); });
+
+	// if we found a device, return the interface
+	return iter != devices().cend()
+		? *iter
+		: std::optional<info::device>();
+}
+
+
+//-------------------------------------------------
 //  database::find_machine
 //-------------------------------------------------
 
