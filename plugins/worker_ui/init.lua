@@ -126,14 +126,14 @@ function xml_encode(str)
 end
 
 function get_images()
+	-- return a list of images, avoiding dupes
+	--
+	-- Before MAME 0.227, the images collection could be indexed by both instance_name and
+	-- brief_instance_name, but starting with MAME 0.227, it is indexed by tag.  This
+	-- technique of building a table is neutral to these changes
 	local result = {}
-	local i = 1
-
-	for k,v in pairs(manager:machine().images) do
-		if k == v.instance_name then
-			result[i] = v
-			i = i + 1
-		end
+	for _,image in pairs(manager:machine().images) do
+		result[image.device:tag()] = image
 	end
 	return result
 end
@@ -143,7 +143,7 @@ function find_image_by_tag(tag)
 		tag = ":" .. tag
 	end
 
-	for _,image in ipairs(get_images()) do
+	for _,image in pairs(get_images()) do
 		if image.device:tag() == tag then
 			return image
 		end
@@ -306,8 +306,7 @@ function emit_status(light, out)
 	if (not light or manager:machine().paused or is_polling_input_seq()) then
 		-- <images>
 		emit("\t<images>")
-		for _,image in ipairs(get_images()) do
-
+		for _,image in pairs(get_images()) do
 			local filename = image:filename()
 			if filename == nil then
 				filename = ""
