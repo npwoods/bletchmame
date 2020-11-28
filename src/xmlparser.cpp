@@ -190,14 +190,88 @@ bool XmlParser::internalParse(QDataStream &input)
 
 
 //-------------------------------------------------
-//  ErrorMessage
+//  errorMessage
 //-------------------------------------------------
 
 QString XmlParser::errorMessage() const
 {
+	int lineNumber = XML_GetCurrentLineNumber(m_parser);
+	int columnNumber = XML_GetCurrentColumnNumber(m_parser);
 	XML_Error code = XML_GetErrorCode(m_parser);
-	const char *message = XML_ErrorString(code);
+	const char *errorString = XML_ErrorString(code);
+	QString message = QString("%1:%2: %3").arg(
+		QString::number(lineNumber),
+		QString::number(columnNumber),
+		QString(errorString));
+	QString context = errorContext();
+	if (!context.isEmpty())
+		message = message + "\n" + context;
 	return message;
+}
+
+
+//-------------------------------------------------
+//  errorContext
+//-------------------------------------------------
+
+QString XmlParser::errorContext() const
+{
+	int contextOffset = 0, contextSize = 0;
+	const char *contextString = XML_GetInputContext(m_parser, &contextOffset, &contextSize);
+	return errorContext(contextString, contextOffset, contextSize);
+}
+
+
+//-------------------------------------------------
+//  errorContext
+//-------------------------------------------------
+
+QString XmlParser::errorContext(const char *contextString, int contextOffset, int contextSize)
+{
+	QString result;
+	if (contextString)
+	{
+		// find the beginning of the line
+		int contextLineBegin = contextOffset;
+		while (contextLineBegin > 0 && !isLineEnding(contextString[contextLineBegin - 1]))
+			contextLineBegin--;
+
+		// and advance the beginning of the line to cover whitespace
+		while (contextLineBegin < contextSize - 1 && isWhitespace(contextString[contextLineBegin]))
+			contextLineBegin++;
+
+		// find the end of the line
+		int contextLineEnd = contextOffset;
+		while (contextLineEnd < contextSize - 1 && !isLineEnding(contextString[contextLineEnd + 1]))
+			contextLineEnd++;
+
+		// now that we have all of that, we can format the error message
+		result = QString::fromUtf8(&contextString[contextLineBegin], contextLineEnd - contextLineBegin)
+			+ "\n"
+			+ QString(contextOffset - contextLineBegin, QChar(' '))
+			+ "^";
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  isLineEnding
+//-------------------------------------------------
+
+bool XmlParser::isLineEnding(char ch)
+{
+	return ch == '\r' || ch == '\n';
+}
+
+
+//-------------------------------------------------
+//  isWhitespace
+//-------------------------------------------------
+
+bool XmlParser::isWhitespace(char ch)
+{
+	return ch == ' ' || ch == '\t';
 }
 
 
