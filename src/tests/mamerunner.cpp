@@ -67,6 +67,17 @@ static void chatter(MameWorkerController::ChatterType chatterType, const QString
 
 
 //-------------------------------------------------
+//  checkResponseForParseError
+//-------------------------------------------------
+
+static void checkResponseForParseError(const MameWorkerController::Response &response)
+{
+    if (response.m_update.has_value() && !response.m_update->m_parse_error.isEmpty())
+        throw std::logic_error(QString("Error parsing status update: %1").arg(response.m_update->m_parse_error).toLocal8Bit());
+}
+
+
+//-------------------------------------------------
 //  receiveResponseEnsureSuccess
 //-------------------------------------------------
 
@@ -79,6 +90,7 @@ static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerC
     MameWorkerController::Response response = controller.receiveResponse();
     if (response.m_type != MameWorkerController::Response::Type::Ok)
         throw std::logic_error(QString("Received invalid response from MAME: %1").arg(response.m_text).toLocal8Bit());
+    checkResponseForParseError(response);
     return response;
 }
 
@@ -166,6 +178,7 @@ static void internalRunAndExcerciseMame(const QString &scriptFileName, const QSt
             : controller.scrapeMameStartupError();
         throw std::logic_error(errorMessage.toLocal8Bit());
     }
+    checkResponseForParseError(response);
 
     // get ready to parse
     XmlParser xml;

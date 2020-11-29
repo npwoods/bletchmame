@@ -162,6 +162,10 @@ private:
 	void startElement(const char *name, const char **attributes);
 	void endElement(const char *name);
 	void characterData(const char *s, int len);
+	QString errorContext() const;
+	static QString errorContext(const char *contextString, int contextOffset, int contextSize);
+	static bool isLineEnding(char ch);
+	static bool isWhitespace(char ch);
 	Node::ptr getNode(const std::initializer_list<const char *> &elements);
 
 	static void startElementHandler(void *user_data, const char *name, const char **attributes);

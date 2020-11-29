@@ -107,18 +107,20 @@ end
 function xml_encode(str)
 	local res = ""
 	local callback = (function(val)
-		if (val > 127 or val < 32) then
-			res = res .. "&#" .. tostring(val) .. ";"
+		if (val > 127 or val == 9 or val == 10 or val == 13) then
+			res = res .. "&#" .. tostring(val) .. ";"			-- control and non-ASCII characters
+		elseif (val < 32) then
+			res = res .. "&#" .. tostring(val + 0xE000) .. ";"	-- control characters illegal in XML 1.0
 		elseif string.char(val) == "\"" then
-			res = res .. "&quot;"
+			res = res .. "&quot;"								-- quotation mark
 		elseif string.char(val) == "&" then
-			res = res .. "&amp;"
+			res = res .. "&amp;"								-- ampersand
 		elseif string.char(val) == "<" then
-			res = res .. "&lt;"
+			res = res .. "&lt;"									-- less than sign
 		elseif string.char(val) == ">" then
-			res = res .. "&gt;"
+			res = res .. "&gt;"									-- greater than sign
 		else
-			res = res .. string.char(val)
+			res = res .. string.char(val)						-- characters legal in XML 1.0
 		end
 	end)
 	utf8_process(str, callback)
