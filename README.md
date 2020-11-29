@@ -12,6 +12,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Added a warning to the Images Dialog if no hash paths were set up
 	- Fixed a bug that could cause image widgets to not be properly cleaned up if they got removed by a slot change
 	- Fixed a bug that prevented the "Unload Image" menu item from working
+	- Fixed a bug in the console window that could cause text to be appended in the wrong location
 	- No longer passing -nodtd when invoking -listxml on MAME
 	- Changed worker_ui plugin to tolerate changes in machine().images expected with MAME 0.227
 

@@ -99,8 +99,11 @@ void ConsoleDialog::onChatter(const ChatterEvent &evt)
 		throw false;
 	}
 
-	// append the text
+	// create a cursor
 	QTextCursor cursor(m_ui->textView->textCursor());
+	cursor.movePosition(QTextCursor::End);
+
+	// append the text
 	QTextCharFormat format;
 	format.setForeground(QBrush(color));
 	cursor.setCharFormat(format);
