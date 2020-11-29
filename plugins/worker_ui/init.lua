@@ -229,6 +229,12 @@ function emit_status(light, out)
 	end
 	local emit
 	if out then
+		-- we've been called with an output, likely in a debugging scenario; this
+		-- could either be a file or a file name (string)
+		if type(out) == "string" then
+			-- normalize as a file
+			out = assert(io.open(out, "w"))
+		end
 		emit = (function(s)
 			out:write(s)
 			out:write("\n")
