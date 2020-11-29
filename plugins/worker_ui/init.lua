@@ -228,12 +228,14 @@ function emit_status(light, out)
 		light = false
 	end
 	local emit
+	local opened_file
 	if out then
 		-- we've been called with an output, likely in a debugging scenario; this
 		-- could either be a file or a file name (string)
 		if type(out) == "string" then
 			-- normalize as a file
-			out = assert(io.open(out, "w"))
+			opened_file = assert(io.open(out, "w"))
+			out = opened_file
 		end
 		emit = (function(s)
 			out:write(s)
@@ -429,6 +431,10 @@ function emit_status(light, out)
 	end
 
 	emit("</status>");
+
+	if opened_file then
+		opened_file:close()
+	end
 end
 
 -- EXIT command
