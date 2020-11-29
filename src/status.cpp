@@ -201,7 +201,7 @@ status::update::~update()
 //  update::read()
 //-------------------------------------------------
 
-status::update status::update::read(QDataStream &input_stream)
+status::update status::update::read(QIODevice &input_stream)
 {
 	status::update result;
 

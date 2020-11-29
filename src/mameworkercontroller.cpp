@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <QBuffer>
 #include <QProcess>
 
 #include "mameworkercontroller.h"
@@ -107,22 +108,25 @@ MameWorkerController::Response MameWorkerController::receiveResponse()
 status::update MameWorkerController::readStatus()
 {
 	bool done = false;
-	QByteArray buffer;
+	QBuffer buffer;
+
+	// open the buffer
+	buffer.open(QIODevice::ReadWrite);
 
 	// because XmlParser::parse() is not smart enough to read until XML ends, we are using this
 	// crude mechanism to read the XML while leaving everything else intact
 	while (!done)
 	{
 		QString line = reallyReadLineFromProcess();
-		buffer.append(line.toUtf8());
+		buffer.write(line.toUtf8());
 
 		if (line.isEmpty() || line.startsWith("</"))
 			done = true;
 	}
 
 	// now that we have our own private buffer, read it
-	QDataStream stream(buffer);
-	return status::update::read(stream);
+	buffer.seek(0);
+	return status::update::read(buffer);
 }
 
 
