@@ -242,7 +242,7 @@ namespace status
 		std::optional<std::vector<input_class>>		m_input_classes;
 		std::optional<std::vector<cheat>>			m_cheats;
 
-		static update read(QDataStream &input);
+		static update read(QIODevice &input);
 
 		update &operator=(update &&that) = default;
 	};

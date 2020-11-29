@@ -132,6 +132,7 @@ public:
 		}
 	}
 
+	bool parse(QIODevice &input);
 	bool parse(QDataStream &input);
 	bool parse(const QString &file_name);
 	bool parseBytes(const void *ptr, size_t sz);

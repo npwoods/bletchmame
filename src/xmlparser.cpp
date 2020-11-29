@@ -104,7 +104,18 @@ XmlParser::~XmlParser()
 
 
 //-------------------------------------------------
-//  Parse
+//  parse
+//-------------------------------------------------
+
+bool XmlParser::parse(QIODevice &input)
+{
+	QDataStream dataStream(&input);
+	return parse(dataStream);
+}
+
+
+//-------------------------------------------------
+//  parse
 //-------------------------------------------------
 
 bool XmlParser::parse(QDataStream &input)
@@ -127,9 +138,9 @@ bool XmlParser::parse(QDataStream &input)
 bool XmlParser::parse(const QString &file_name)
 {
 	QFile file(file_name);
-	file.open(QFile::ReadOnly);
-	QDataStream file_stream(&file);
-	return parse(file_stream);
+	if (!file.open(QFile::ReadOnly))
+		return false;
+	return parse(file);
 }
 
 
