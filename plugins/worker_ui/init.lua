@@ -127,6 +127,18 @@ function xml_encode(str)
 	return res
 end
 
+-- before MAME 0.227, the tag was a method (e.g. - device:tag()) but starting with
+-- MAME 0.227, it is now a property (e.g. - device.tag); we need to support both
+function get_device_tag_init(device)
+	if device.tag and type(device.tag) == "string" then
+		get_device_tag = function(dev) return dev.tag end
+	else
+		get_device_tag = function(dev) return dev:tag() end
+	end
+	return get_device_tag(device)
+end
+local get_device_tag = get_device_tag_init
+
 function get_images()
 	-- return a list of images, avoiding dupes
 	--
@@ -135,7 +147,7 @@ function get_images()
 	-- technique of building a table is neutral to these changes
 	local result = {}
 	for _,image in pairs(manager:machine().images) do
-		result[image.device:tag()] = image
+		result[get_device_tag(image.device)] = image
 	end
 	return result
 end
@@ -146,7 +158,7 @@ function find_image_by_tag(tag)
 	end
 
 	for _,image in pairs(get_images()) do
-		if image.device:tag() == tag then
+		if get_device_tag(image.device) == tag then
 			return image
 		end
 	end
@@ -324,7 +336,7 @@ function emit_status(light, out)
 
 			-- basic image properties
 			emit(string.format("\t\t<image tag=\"%s\" instance_name=\"%s\" is_readable=\"%s\" is_writeable=\"%s\" is_creatable=\"%s\" must_be_loaded=\"%s\"",
-				xml_encode(image.device:tag()),
+				xml_encode(get_device_tag(image.device)),
 				xml_encode(image.instance_name),
 				string_from_bool(image.is_readable),
 				string_from_bool(image.is_writeable),
