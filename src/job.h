@@ -28,7 +28,7 @@ public:
             CloseHandle(m_handle);
     }
 
-    void AddProcess(Q_PID process_id);
+    void AddProcess(qint64 process_id);
 
 private:
     HANDLE          m_handle;
@@ -42,7 +42,7 @@ private:
 class NullJob
 {
 public:
-    void AddProcess(Q_PID process_id) { (void)process_id; }
+    void AddProcess(qint64 process_id) { (void)process_id; }
 };
 
 

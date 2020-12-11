@@ -29,7 +29,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 5.15.0
+        version: 6.0.0
       
     # Generate buildversion.txt
     - name: Generate buildversion.txt

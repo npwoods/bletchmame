@@ -27,8 +27,8 @@ find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 # Qt
-find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
-find_package(Qt5Test REQUIRED)
+find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat REQUIRED)
+find_package(Qt6Test REQUIRED)
 
 # Yes, we're unit testing
 enable_testing(true)
@@ -136,7 +136,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets QuaZip)
 
 
 #############################################################################
@@ -145,7 +145,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
 
 add_executable(BletchMAME WIN32 src/main.cpp)
 target_include_directories(BletchMAME PRIVATE src lib)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 
 #############################################################################
@@ -174,7 +174,7 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 
 #############################################################################
@@ -213,7 +213,7 @@ add_library(QuaZip
 	lib/quazip/zip.h
 )
 target_include_directories(QuaZip PRIVATE lib/quazip)
-target_link_libraries(QuaZip PRIVATE Qt5::Widgets ${ZLIB_LIBRARIES})
+target_link_libraries(QuaZip PRIVATE Qt6::Widgets ${ZLIB_LIBRARIES} PUBLIC Qt6::Core5Compat)
 add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
 
 
@@ -221,4 +221,4 @@ add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
 # Translations                                                              #
 #############################################################################
 
-qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+qt6_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
