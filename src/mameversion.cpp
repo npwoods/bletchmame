@@ -18,6 +18,71 @@
 //**************************************************************************
 
 //-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
+MameVersion::MameVersion(const QString &version)
+{
+	parse(version, m_major, m_minor, m_dirty);
+}
+
+
+//-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
+MameVersion::MameVersion(int major, int minor, bool dirty)
+	: m_major(major)
+	, m_minor(minor)
+	, m_dirty(dirty)
+{
+}
+
+
+//-------------------------------------------------
+//  isAtLeast
+//-------------------------------------------------
+
+bool MameVersion::isAtLeast(const MameVersion &that) const
+{
+	bool result;
+	if (major() > that.major())
+		result = true;
+	else if (major() < that.major())
+		result = false;
+	else if (minor() > that.minor())
+		result = true;
+	else if (minor() < that.minor())
+		result = false;
+	else
+		result = dirty() || !that.dirty();
+	return result;
+}
+
+
+//-------------------------------------------------
+//  nextCleanVersion
+//-------------------------------------------------
+
+MameVersion MameVersion::nextCleanVersion() const
+{
+	return MameVersion(major(), minor() + (dirty() ? 1 : 0), false);
+}
+
+
+//-------------------------------------------------
+//  toString
+//-------------------------------------------------
+
+QString MameVersion::toString() const
+{
+	return QString(dirty() ? "%1.%2 (dirty)" : "%1.%2").arg(
+		QString::number(major()),
+		QString::number(minor()));
+}
+
+
+//-------------------------------------------------
 //  parse
 //-------------------------------------------------
 
