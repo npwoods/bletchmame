@@ -30,7 +30,11 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: 6.0.0
-      
+
+    # Install OpenGL
+    - name: Install OpenGL
+      uses: openrndr/setup-opengl@v1.1
+
     # Generate buildversion.txt
     - name: Generate buildversion.txt
       run: |
