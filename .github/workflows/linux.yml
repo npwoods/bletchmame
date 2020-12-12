@@ -31,9 +31,11 @@ jobs:
       with:
         version: 6.0.0
 
-    # Install OpenGL
-    - name: Install OpenGL
-      uses: openrndr/setup-opengl@v1.1
+    # Install Packages
+    - name: Install Packages
+      run: |
+        sudo apt update
+        sudo apt install -y libgl1-mesa-dev
 
     # Generate buildversion.txt
     - name: Generate buildversion.txt
