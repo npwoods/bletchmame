@@ -22,6 +22,8 @@ class AboutDialog : public QDialog
     Q_OBJECT
 
 public:
+    class Test;
+
     explicit AboutDialog(QWidget *parent, const QString &mameVersion);
     ~AboutDialog();
 
