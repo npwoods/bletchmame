@@ -130,10 +130,10 @@ end
 -- before MAME 0.227, the tag was a method (e.g. - device:tag()) but starting with
 -- MAME 0.227, it is now a property (e.g. - device.tag); we need to support both
 function get_device_tag_init(device)
-	if device.tag and type(device.tag) == "string" then
-		get_device_tag = function(dev) return dev.tag end
-	else
+	if device.tag and type(device.tag) == "function" then
 		get_device_tag = function(dev) return dev:tag() end
+	else
+		get_device_tag = function(dev) return dev.tag end
 	end
 	return get_device_tag(device)
 end
@@ -257,10 +257,22 @@ function emit_status(light, out)
 		emit = print
 	end
 
+	-- abstractions to hide some differences between MAME 0.227 and
+	-- previous versions, similar to get_device_tag
+	local natkeyboard_in_use
+	local get_item_code
+	if type(manager:machine():ioport().natkeyboard) == "function" then
+		natkeyboard_in_use = manager:machine():ioport():natkeyboard().in_use
+		get_item_code = function(item) return item:code() end
+	else
+		natkeyboard_in_use = manager:machine():ioport().natkeyboard.in_use
+		get_item_code = function(item) return item.code end
+	end
+
 	emit("<status");
 	emit("\tphase=\"running\"");
 	emit("\tpolling_input_seq=\"" .. tostring(is_polling_input_seq()) .. "\"");
-	emit("\tnatural_keyboard_in_use=\"" .. tostring(manager:machine():ioport():natkeyboard().in_use) .. "\"");
+	emit("\tnatural_keyboard_in_use=\"" .. tostring(natkeyboard_in_use) .. "\"");
 	emit("\tpaused=\"" .. tostring(manager:machine().paused) .. "\"");
 	emit("\tstartup_text=\"\"");
 	emit("\tdebugger_present=\"" .. string_from_bool(manager:machine():debugger()) .. "\"");
@@ -368,7 +380,7 @@ function emit_status(light, out)
 					local is_switch = type_class == "dipswitch" or type_class == "config"
 
 					emit("\t\t<input"
-						.. " port_tag=\"" .. xml_encode(port:tag()) .. "\""
+						.. " port_tag=\"" .. xml_encode(get_device_tag(port)) .. "\""
 						.. " mask=\"" .. tostring(field.mask) .. "\""
 						.. " class=\"" .. type_class .. "\""
 						.. " group=\"" .. tostring(manager:machine():ioport():type_group(field.type, field.player)) .. "\""
@@ -432,7 +444,7 @@ function emit_status(light, out)
 				for id,item in pairs(device.items) do
 					emit("\t\t\t\t<item name=\"" .. xml_encode(item.name)
 						.. "\" token=\"" .. xml_encode(item.token)
-						.. "\" code=\"" .. xml_encode(manager:machine():input():code_to_token(item:code()))
+						.. "\" code=\"" .. xml_encode(manager:machine():input():code_to_token(get_item_code(item)))
 						.. "\"/>")
 				end
 				emit("\t\t\t</device>")
