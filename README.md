@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.3 (TBD)
+- 2.3 (2020-Dec-13)
 	- Added a warning to the Images Dialog if no hash paths were set up
 	- Fixed a bug that could cause image widgets to not be properly cleaned up if they got removed by a slot change
 	- Fixed a bug that prevented the "Unload Image" menu item from working
