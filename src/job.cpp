@@ -38,9 +38,9 @@ Win32Job::Win32Job()
 //  AddProcess
 //-------------------------------------------------
 
-void Win32Job::AddProcess(Q_PID process_id)
+void Win32Job::AddProcess(qint64 process_id)
 {
-	HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id->dwProcessId);
+	HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)process_id);
 	AssignProcessToJobObject(m_handle, process_handle);
 	CloseHandle(process_handle);
 }
