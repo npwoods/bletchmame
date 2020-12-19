@@ -18,10 +18,10 @@ namespace
         Q_OBJECT
 
     private slots:
-        void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 88, 15, 1221, 32, 48); }
-		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 88, 15, 1221, 32, 48); }
-        void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 14, 1, 0, 0, 0); }
-        void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 14, 1, 0, 0, 0); }
+        void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 88, 15, 1221, 32, 48, 97, 413); }
+		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 88, 15, 1221, 32, 48, 97, 413); }
+        void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 14, 1, 0, 0, 0, 0, 0); }
+        void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 14, 1, 0, 0, 0, 0, 0); }
 		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
 		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
 		void deviceLookup_coco2b()		{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }
@@ -36,7 +36,8 @@ namespace
 		void sortable();
 
 	private:
-		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
+		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount,
+			int expectedRamOptionCount, int expectedSlotCount, int expectedSlotOptionCount);
 		void machineLookup(const QString &filename);
 		void deviceLookup(const QString &fileName, const QString &machineName);
 		void loadGarbage(int legitBytes, int garbageBytes);
@@ -53,7 +54,8 @@ namespace
 //  general
 //-------------------------------------------------
 
-void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount)
+void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount,
+	int expectedRamOptionCount, int expectedSlotCount, int expectedSlotOptionCount)
 {
 	// read the db, validating we've done so successfully
 	info::database db;
@@ -64,6 +66,7 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 
 	// spelunk through the resulting db
 	int machineCount = 0, runnableMachineCount = 0, settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
+	int slotCount = 0, slotOptionCount = 0;
 	for (info::machine machine : db.machines())
 	{
 		// basic machine properties
@@ -100,6 +103,13 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 
 		for (info::ram_option ramopt : machine.ram_options())
 			ramOptionCount++;
+
+		for (info::slot slot : machine.devslots())
+		{
+			slotCount++;
+			for (info::slot_option opt : slot.options())
+				slotOptionCount++;
+		}
 	}
 	QVERIFY(machineCount == db.machines().size());
 	QVERIFY(machineCount == expectedMachineCount);
@@ -107,6 +117,8 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 	QVERIFY(settingCount == expectedSettingCount);
 	QVERIFY(softwareListCount == expectedSoftwareListCount);
 	QVERIFY(ramOptionCount == expectedRamOptionCount);
+	QVERIFY(slotCount == expectedSlotCount);
+	QVERIFY(slotOptionCount == expectedSlotOptionCount);
 }
 
 

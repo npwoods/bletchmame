@@ -124,6 +124,8 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	size_t cursor = 0;
 	newState.m_machines_position					= getPosition<binaries::machine>(cursor, hdr.m_machines_count);
 	newState.m_devices_position						= getPosition<binaries::device>(cursor, hdr.m_devices_count);
+	newState.m_slots_position						= getPosition<binaries::slot>(cursor, hdr.m_slots_count);
+	newState.m_slot_options_position				= getPosition<binaries::slot>(cursor, hdr.m_slot_options_count);
 	newState.m_configurations_position				= getPosition<binaries::configuration>(cursor, hdr.m_configurations_count);
 	newState.m_configuration_settings_position		= getPosition<binaries::configuration_setting>(cursor, hdr.m_configuration_settings_count);
 	newState.m_configuration_conditions_position	= getPosition<binaries::configuration_condition>(cursor, hdr.m_configuration_conditions_count);
@@ -174,6 +176,8 @@ uint64_t info::database::calculate_sizes_hash()
 		sizeof(info::binaries::header),
 		sizeof(info::binaries::machine),
 		sizeof(info::binaries::device),
+		sizeof(info::binaries::slot),
+		sizeof(info::binaries::slot_option),
 		sizeof(info::binaries::configuration),
 		sizeof(info::binaries::configuration_setting),
 		sizeof(info::binaries::configuration_condition),
@@ -266,6 +270,17 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 	return iter != devices().cend()
 		? *iter
 		: std::optional<info::device>();
+}
+
+
+//-------------------------------------------------
+//  slot_option::machine
+//-------------------------------------------------
+
+std::optional<info::machine> info::slot_option::machine() const
+{
+	return db().find_machine(devname());
+
 }
 
 

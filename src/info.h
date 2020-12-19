@@ -38,6 +38,8 @@ namespace info
 			std::uint32_t	m_build_strindex;
 			std::uint32_t	m_machines_count;
 			std::uint32_t	m_devices_count;
+			std::uint32_t	m_slots_count;
+			std::uint32_t	m_slot_options_count;
 			std::uint32_t	m_configurations_count;
 			std::uint32_t	m_configuration_settings_count;
 			std::uint32_t	m_configuration_conditions_count;
@@ -62,6 +64,8 @@ namespace info
 			std::uint32_t	m_ram_options_count;
 			std::uint32_t	m_devices_index;
 			std::uint32_t	m_devices_count;
+			std::uint32_t	m_slots_index;
+			std::uint32_t	m_slots_count;
 			std::uint8_t	m_runnable;
 		};
 
@@ -99,6 +103,20 @@ namespace info
 			std::uint8_t	m_mandatory;
 		};
 
+		struct slot
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint32_t	m_slot_options_index;
+			std::uint32_t	m_slot_options_count;
+		};
+
+		struct slot_option
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint32_t	m_devname_strindex;
+			std::uint8_t	m_is_default;
+		};
+
 		struct software_list
 		{
 			std::uint32_t	m_name_strindex;
@@ -134,6 +152,7 @@ namespace info
 namespace info
 {
 	class database;
+	class machine;
 
 	// ======================> device
 	class device : public bindata::entry<database, device, binaries::device>
@@ -150,6 +169,36 @@ namespace info
 		const QString &instance_name() const { return get_string(inner().m_instance_name_strindex); }
 		const QString &extensions() const { return get_string(inner().m_extensions_strindex); }
 		bool mandatory() const { return inner().m_mandatory != 0; }
+	};
+
+
+	// ======================> slot_option
+	class slot_option : public bindata::entry<database, slot_option, binaries::slot_option>
+	{
+	public:
+		slot_option(const database &db, const binaries::slot_option &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &devname() const { return get_string(inner().m_devname_strindex); }
+		bool is_default() const { return inner().m_is_default; }
+		std::optional<info::machine> machine() const;
+	};
+
+
+	// ======================> slot
+	class slot : public bindata::entry<database, slot, binaries::slot>
+	{
+	public:
+		slot(const database &db, const binaries::slot &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		slot_option::view options() const;
 	};
 
 
@@ -276,6 +325,7 @@ namespace info
 
 		// views
 		device::view 				devices() const;
+		slot::view					devslots() const;
 		configuration::view			configurations() const;
 		software_list::view			software_lists() const;
 		ram_option::view			ram_options() const;
@@ -305,6 +355,8 @@ namespace info
 		// views
 		auto machines() const					{ return machine::view(*this, m_state.m_machines_position); }
 		auto devices() const					{ return device::view(*this, m_state.m_devices_position); }
+		auto devslots() const					{ return slot::view(*this, m_state.m_slots_position); }
+		auto slot_options() const				{ return slot_option::view(*this, m_state.m_slot_options_position); }
 		auto configurations() const				{ return configuration::view(*this, m_state.m_configurations_position); }
 		auto configuration_settings() const		{ return configuration_setting::view(*this, m_state.m_configuration_settings_position); }
 		auto configuration_conditions() const	{ return configuration_condition::view(*this, m_state.m_configuration_conditions_position); }
@@ -325,6 +377,8 @@ namespace info
 			std::vector<std::uint8_t>						m_data;
 			bindata::view_position							m_machines_position;
 			bindata::view_position							m_devices_position;
+			bindata::view_position							m_slots_position;
+			bindata::view_position							m_slot_options_position;
 			bindata::view_position							m_configurations_position;
 			bindata::view_position							m_configuration_settings_position;
 			bindata::view_position							m_configuration_conditions_position;
@@ -345,6 +399,8 @@ namespace info
 	};
 
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
+	inline slot::view					machine::devslots() const		{ return db().devslots().subview(inner().m_slots_index, inner().m_slots_count); }
+	inline slot_option::view			slot::options() const			{ return db().slot_options().subview(inner().m_slot_options_index, inner().m_slot_options_count); }
 	inline configuration::view			machine::configurations() const	{ return db().configurations().subview(inner().m_configurations_index, inner().m_configurations_count); }
 	inline configuration_setting::view	configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }
 	inline software_list::view			machine::software_lists() const	{ return db().software_lists().subview(inner().m_software_lists_index, inner().m_software_lists_count); }
