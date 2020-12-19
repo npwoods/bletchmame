@@ -261,12 +261,15 @@ function emit_status(light, out)
 	-- previous versions, similar to get_device_tag
 	local natkeyboard_in_use
 	local get_item_code
+	local get_image_filename
 	if type(manager:machine():ioport().natkeyboard) == "function" then
 		natkeyboard_in_use = manager:machine():ioport():natkeyboard().in_use
 		get_item_code = function(item) return item:code() end
+		get_image_filename = function(image) return image:filename() end
 	else
 		natkeyboard_in_use = manager:machine():ioport().natkeyboard.in_use
 		get_item_code = function(item) return item.code end
+		get_image_filename = function(image) return image.filename end
 	end
 
 	emit("<status");
@@ -341,7 +344,7 @@ function emit_status(light, out)
 		-- <images>
 		emit("\t<images>")
 		for _,image in pairs(get_images()) do
-			local filename = image:filename()
+			local filename = get_image_filename(image)
 			if filename == nil then
 				filename = ""
 			end
@@ -356,7 +359,6 @@ function emit_status(light, out)
 				string_from_bool(image.must_be_loaded)))
 
 			-- filename
-			local filename = image:filename()
 			if filename ~= nil and filename ~= "" then
 				emit("\t\t\tfilename=\"" .. xml_encode(filename) .. "\"")
 			end

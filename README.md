@@ -8,6 +8,10 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.4 (TBD)
+	- Updated various parts of the worker_ui plugin in response to breaking LUA changes in MAME 0.227
+		- An implication is that previous versions of BletchMAME will not work with MAME 0.227 or greater
+
 - 2.3 (2020-Dec-13)
 	- Added a warning to the Images Dialog if no hash paths were set up
 	- Fixed a bug that could cause image widgets to not be properly cleaned up if they got removed by a slot change
