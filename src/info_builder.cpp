@@ -82,8 +82,10 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	assert(m_machines.empty());
 	assert(m_devices.empty());
 
-	// prepare data
+	// prepare header and magic variables
 	info::binaries::header header = { 0, };
+	header.m_magic = info::binaries::MAGIC_HDR;
+	header.m_sizes_hash = info::database::calculate_sizes_hash();
 
 	// reserve space based on what we know about MAME 0.213
 	m_machines.reserve(40000);					// 36111 machines
@@ -93,16 +95,6 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	m_configuration_settings.reserve(1500000);	// 1454273 settings
 	m_software_lists.reserve(4200);				// 3977 software lists
 	m_ram_options.reserve(3800);				// 3616 ram options
-
-	// header magic variables
-	header.m_size_header					= sizeof(info::binaries::header);
-	header.m_size_machine					= sizeof(info::binaries::machine);
-	header.m_size_device					= sizeof(info::binaries::device);
-	header.m_size_configuration				= sizeof(info::binaries::configuration);
-	header.m_size_configuration_setting		= sizeof(info::binaries::configuration_setting);
-	header.m_size_configuration_condition	= sizeof(info::binaries::configuration_condition);
-	header.m_size_software_list				= sizeof(info::binaries::software_list);
-	header.m_size_ram_option				= sizeof(info::binaries::ram_option);
 
 	// parse the -listxml output
 	XmlParser xml;

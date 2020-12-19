@@ -27,21 +27,14 @@ namespace info
 {
 	namespace binaries
 	{
+		const std::uint64_t MAGIC_HDR = 0x4D414D45494E464F;		// MAMEINFO
 		const std::uint16_t MAGIC_STRINGTABLE_BEGIN = 0x9D9B;
 		const std::uint16_t MAGIC_STRINGTABLE_END = 0x9F99;
 
 		struct header
 		{
-			std::uint32_t	m_magic;
-			std::uint32_t	m_version;
-			std::uint8_t	m_size_header;
-			std::uint8_t	m_size_machine;
-			std::uint8_t	m_size_device;
-			std::uint8_t	m_size_configuration;
-			std::uint8_t	m_size_configuration_setting;
-			std::uint8_t	m_size_configuration_condition;
-			std::uint8_t	m_size_software_list;
-			std::uint8_t	m_size_ram_option;
+			std::uint64_t	m_magic;
+			std::uint64_t	m_sizes_hash;
 			std::uint32_t	m_build_strindex;
 			std::uint32_t	m_machines_count;
 			std::uint32_t	m_devices_count;
@@ -315,6 +308,9 @@ namespace info
 		auto configuration_conditions() const	{ return configuration_condition::view(*this, m_state.m_configuration_conditions_position); }
 		auto software_lists() const				{ return software_list::view(*this, m_state.m_software_lists_position); }
 		auto ram_options() const				{ return ram_option::view(*this, m_state.m_ram_options_position); }
+
+		// statics
+		static uint64_t calculate_sizes_hash();
 
 		// should only be called by info classes
 		const QString &get_string(std::uint32_t offset) const;
