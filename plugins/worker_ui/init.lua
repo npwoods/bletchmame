@@ -235,6 +235,13 @@ function has_input_using_mouse()
 	return result
 end
 
+function get_slot_option(tag)
+	if (tag:sub(1, 1) == ":") then
+		tag = tag:sub(2, tag:len())
+	end
+	return manager:machine():options():slot_option(tag)
+end
+
 function emit_status(light, out)
 	if light == nil then
 		light = false
@@ -372,6 +379,39 @@ function emit_status(light, out)
 			emit("\t\t/>")
 		end	
 		emit("\t</images>")
+
+		-- <slots>
+		if pcall(function() return manager:machine().slots end) then
+			emit("\t<slots>");
+			for name,slot in pairs(manager:machine().slots) do
+				-- perform logic equivalent to menu_slot_devices::get_current_option()
+				local current_option_name
+				if (slot.fixed) then
+					current_option_name = slot:default_option()
+				else
+					local current_option = get_slot_option(name)
+					if current_option then
+						current_option_name = current_option.value
+					end
+				end
+
+				emit(string.format("\t\t<slot name=\"%s\" fixed=\"%s\" has_selectable_options=\"%s\"",
+					xml_encode(name),
+					string_from_bool(slot.fixed),
+					string_from_bool(slot.has_selectable_options)))
+				if (current_option_name) then
+					emit(string.format("\t\t\tcurrent_option=\"%s\"", xml_encode(current_option_name)))
+				end
+				emit("\t\t>")				
+				for optname,option in pairs(slot.options) do
+					emit(string.format("\t\t\t<option name=\"%s\" selectable=\"%s\"/>",
+						xml_encode(optname),
+						string_from_bool(option.selectable)))
+				end
+				emit("\t\t</slot>")
+			end
+			emit("\t</slots>");
+		end
 
 		-- <inputs>
 		emit("\t<inputs>")

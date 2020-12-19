@@ -64,6 +64,18 @@ bool status::image::operator==(const status::image &that) const
 
 
 //-------------------------------------------------
+//  slot::operator==
+//-------------------------------------------------
+
+bool status::slot::operator==(const status::slot &that) const
+{
+	return m_name == that.m_name
+		&& m_current_option == that.m_current_option
+		&& m_fixed == that.m_fixed;
+}
+
+
+//-------------------------------------------------
 //  input_seq::operator==
 //-------------------------------------------------
 
@@ -245,6 +257,29 @@ status::update status::update::read(QIODevice &input_stream)
 		attributes.get("display",				image.m_display);
 		normalize_tag(image.m_tag);
 	});
+	xml.onElementBegin({ "status", "slots" }, [&](const XmlParser::Attributes &)
+	{
+		result.m_slots.emplace();
+	});
+	xml.onElementEnd({ "status", "slots" }, [&](QString &&content)
+	{
+		// downstream logic becomes much simpler if this is sorted
+		std::sort(
+			result.m_slots->begin(),
+			result.m_slots->end(),
+			[](const status::slot &x, const status::slot &y)
+			{
+				return x.m_name < y.m_name;
+			});
+	});
+	xml.onElementBegin({ "status", "slots", "slot" }, [&](const XmlParser::Attributes &attributes)
+	{
+		slot &slot = result.m_slots.value().emplace_back();
+		attributes.get("name",					slot.m_name);
+		attributes.get("current_option",		slot.m_current_option);
+		attributes.get("fixed",					slot.m_fixed, false);
+		normalize_tag(slot.m_name);
+	});
 	xml.onElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_inputs.emplace();
@@ -396,6 +431,7 @@ void status::state::update(status::update &&that)
 	take(m_is_recording,			that.m_is_recording);
 	take(m_sound_attenuation,		that.m_sound_attenuation);
 	take(m_images,					that.m_images);
+	take(m_slots,					that.m_slots);
 	take(m_inputs,					that.m_inputs);
 	take(m_input_classes,			that.m_input_classes);
 	take(m_cheats,					that.m_cheats);
