@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     status.cpp
 
@@ -47,6 +47,19 @@ static const util::enum_parser<status::input_seq::type> s_inputseq_type_parser =
 //**************************************************************************
 
 //-------------------------------------------------
+//  image_format::operator==
+//-------------------------------------------------
+
+bool status::image_format::operator==(const status::image_format &that) const
+{
+	return m_name == that.m_name
+		&& m_description == that.m_description
+		&& m_option_spec == that.m_option_spec
+		&& m_extensions == that.m_extensions;
+}
+
+
+//-------------------------------------------------
 //  image::operator==
 //-------------------------------------------------
 
@@ -59,7 +72,8 @@ bool status::image::operator==(const status::image &that) const
 		&& m_is_creatable == that.m_is_creatable
 		&& m_must_be_loaded == that.m_must_be_loaded
 		&& m_file_name == that.m_file_name
-		&& m_display == that.m_display;
+		&& m_display == that.m_display
+		&& m_formats == that.m_formats;
 }
 
 
@@ -256,6 +270,25 @@ status::update status::update::read(QIODevice &input_stream)
 		attributes.get("filename",				image.m_file_name);
 		attributes.get("display",				image.m_display);
 		normalize_tag(image.m_tag);
+	});
+	xml.onElementBegin({ "status", "images", "image", "formats" }, [&](const XmlParser::Attributes &attributes)
+	{
+		image &image = util::last(*result.m_images);
+		image.m_formats.emplace();
+	});
+	xml.onElementBegin({ "status", "images", "image", "formats", "format" }, [&](const XmlParser::Attributes &attributes)
+	{
+		image &image = util::last(*result.m_images);
+		image_format &format = image.m_formats.value().emplace_back();
+		attributes.get("name",					format.m_name);
+		attributes.get("description",			format.m_description);
+		attributes.get("option_spec",			format.m_option_spec);
+	});
+	xml.onElementEnd({ "status", "images", "image", "formats", "format", "extension" }, [&](QString &&content)
+	{
+		image &image = util::last(*result.m_images);
+		image_format &format = util::last(*image.m_formats);
+		format.m_extensions.push_back(std::move(content));
 	});
 	xml.onElementBegin({ "status", "slots" }, [&](const XmlParser::Attributes &)
 	{

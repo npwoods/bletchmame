@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     status.h
 
@@ -39,6 +39,22 @@ typedef std::uint32_t ioport_value;
 namespace status
 {
 	// ======================> image
+	struct image_format
+	{
+		image_format() = default;
+		image_format(const image_format &) = SHOULD_BE_DELETE;
+		image_format(image_format && that) = default;
+
+		QString					m_name;
+		QString					m_description;
+		QString					m_option_spec;
+		std::vector<QString>	m_extensions;
+
+		image_format &operator=(image_format &&that) = default;
+		bool operator==(const image_format & that) const;
+	};
+
+	// ======================> image
 	struct image
 	{
 		image() = default;
@@ -53,6 +69,7 @@ namespace status
 		bool				m_must_be_loaded;
 		QString				m_file_name;
 		QString				m_display;
+		std::optional<std::vector<image_format>>	m_formats;
 
 		image &operator=(image &&that) = default;
 		bool operator==(const image &that) const;

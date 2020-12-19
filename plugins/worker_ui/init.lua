@@ -375,8 +375,25 @@ function emit_status(light, out)
 			if display ~= nil and display ~= "" then
 				emit("\t\t\tdisplay=\"" .. xml_encode(display) .. "\"")
 			end
+			emit("\t\t>")
 
-			emit("\t\t/>")
+			-- formats
+			if pcall(function() return image.formatlist end) and image.formatlist ~= nil then
+				emit("\t\t\t<formats>")
+				for _,format in pairs(image.formatlist) do
+					emit(string.format("\t\t\t\t<format name=\"%s\" description=\"%s\" option_spec=\"%s\">",
+						xml_encode(format.name),
+						xml_encode(format.description),
+						xml_encode(format.option_spec)))
+					for _,ext in pairs(format.extensions) do
+						emit(string.format("\t\t\t\t\t<extension>%s</extension>", xml_encode(ext)))
+					end
+					emit("\t\t\t\t</format>")
+				end
+				emit("\t\t\t</formats>")
+			end
+
+			emit("\t\t</image>")
 		end	
 		emit("\t</images>")
 
