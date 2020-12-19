@@ -197,11 +197,18 @@ void Test::viewIterators()
 	auto iter3 = ++iter1;
 	iter1 += 5;
 	auto iter4 = iter1;
+	auto iter5 = iter1;
+	auto iter6 = --iter5;
+	auto iter7 = iter5--;
 
 	// and validate that the iterators are what we expect
 	QVERIFY(iter1 - db.machines().begin() == 7);
 	QVERIFY(iter2 - db.machines().begin() == 0);
 	QVERIFY(iter3 - db.machines().begin() == 2);
+	QVERIFY(iter4 - db.machines().begin() == 7);
+	QVERIFY(iter5 - db.machines().begin() == 5);
+	QVERIFY(iter6 - db.machines().begin() == 6);
+	QVERIFY(iter7 - db.machines().begin() == 6);
 
 	// and ensure that dereferencing works consistently
 	QVERIFY(iter1->name() == db.machines()[7].name());
