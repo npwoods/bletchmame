@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainwindow.h
 
@@ -105,7 +105,7 @@ private:
 	};
 
 	class Pauser;
-	class ImagesHost;
+	class ConfigurableDevicesDialogHost;
 	class InputsHost;
 	class SwitchesHost;
 	class CheatsHost;

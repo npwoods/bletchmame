@@ -105,12 +105,14 @@ add_library(BletchMAME_core
 	src/dialogs/choosesw.cpp
 	src/dialogs/choosesw.h
 	src/dialogs/choosesw.ui
+	src/dialogs/confdev.cpp
+	src/dialogs/confdev.h
+	src/dialogs/confdev.ui
+	src/dialogs/confdevmodel.cpp
+	src/dialogs/confdevmodel.h
 	src/dialogs/console.cpp
 	src/dialogs/console.h
 	src/dialogs/console.ui
-	src/dialogs/images.cpp
-	src/dialogs/images.h
-	src/dialogs/images.ui
 	src/dialogs/inputs.cpp
 	src/dialogs/inputs.h
 	src/dialogs/inputs_base.cpp
@@ -170,6 +172,7 @@ add_executable(BletchMAME_tests
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
 	src/tests/dialogs/about_test.cpp
+	src/tests/dialogs/confdevmodel_test.cpp
 	src/tests/dialogs/inputs_test.cpp
 	src/tests/dialogs/paths_test.cpp
 	src/tests/resources.qrc

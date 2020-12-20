@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainwindow.cpp
 
@@ -32,8 +32,8 @@
 #include "dialogs/about.h"
 #include "dialogs/cheats.h"
 #include "dialogs/choosesw.h"
+#include "dialogs/confdev.h"
 #include "dialogs/console.h"
-#include "dialogs/images.h"
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
@@ -84,12 +84,12 @@ private:
 };
 
 
-// ======================> ImagesHost
+// ======================> ConfigurableDevicesDialogHost
 
-class MainWindow::ImagesHost : public IImagesHost
+class MainWindow::ConfigurableDevicesDialogHost : public IConfigurableDevicesDialogHost
 {
 public:
-	ImagesHost(MainWindow &host)
+	ConfigurableDevicesDialogHost(MainWindow &host)
 		: m_host(host)
 	{
 	}
@@ -107,6 +107,11 @@ public:
 	virtual observable::value<std::vector<status::image>> &getImages()
 	{
 		return m_host.m_state->images();
+	}
+
+	virtual observable::value<std::vector<status::slot>> &getSlots()
+	{
+		return m_host.m_state->devslots();
 	}
 
 	virtual const QString &getWorkingDirectory() const
@@ -128,17 +133,37 @@ public:
 
 	virtual std::vector<QString> getExtensions(const QString &tag) const
 	{
-		// find the device declaration
-		auto devices = m_host.GetRunningMachine().devices();
+		std::vector<QString> result;
 
-		auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
+		// first try getting the result from the image format
+		const status::image *image = m_host.m_state->find_image(tag);
+		if (image && image->m_formats.has_value())
 		{
-			return dev.tag() == tag;
-		});
-		assert(iter != devices.end());
+			// we did find it in the image formats
+			for (const status::image_format &format : *image->m_formats)
+			{
+				for (const QString &ext : format.m_extensions)
+				{
+					if (std::find(result.begin(), result.end(), ext) == result.end())
+						result.push_back(ext);
+				}
+			}
+		}
+		else
+		{
+			// find the device declaration
+			auto devices = m_host.GetRunningMachine().devices();
 
-		// and return it!
-		return util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
+			auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
+			{
+				return dev.tag() == tag;
+			});
+			assert(iter != devices.end());
+
+			// and return it!
+			result = util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
+		}
+		return result;
 	}
 
 	virtual void createImage(const QString &tag, QString &&path)
@@ -161,6 +186,24 @@ public:
 	virtual bool startedWithHashPaths() const
 	{
 		return m_host.m_client.GetCurrentTask<RunMachineTask>()->startedWithHashPaths();
+	}
+
+	virtual void changeSlots(std::map<QString, QString> &&changes)
+	{
+		// prepare an argument list
+		std::vector<QString> args;
+		args.reserve(changes.size() * 2 + 1);
+		args.push_back("change_slots");
+
+		// move the change map into the arguments
+		for (auto &pair : changes)
+		{
+			args.push_back(std::move(pair.first));
+			args.push_back(std::move(pair.second));
+		}
+
+		// and issue the command
+		m_host.Issue(args);
 	}
 
 private:
@@ -844,8 +887,8 @@ void MainWindow::on_actionPause_triggered()
 void MainWindow::on_actionImages_triggered()
 {
 	Pauser pauser(*this);
-	ImagesHost images_host(*this);
-	ImagesDialog dialog(*this, images_host, false);
+	ConfigurableDevicesDialogHost images_host(*this);
+	ConfigurableDevicesDialog dialog(*this, images_host, false);
 	dialog.exec();
 }
 
@@ -1654,8 +1697,8 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	if (iter != m_state->images().get().cend())
 	{
 		// if so, show the dialog
-		ImagesHost images_host(*this);
-		ImagesDialog dialog(*this, images_host, true);
+		ConfigurableDevicesDialogHost images_host(*this);
+		ConfigurableDevicesDialog dialog(*this, images_host, true);
 		dialog.exec();
 		if (dialog.result() != QDialog::DialogCode::Accepted)
 		{

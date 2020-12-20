@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -227,7 +227,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Images...</string>
+    <string>Devices and Images...</string>
    </property>
   </action>
   <action name="actionQuickLoadState">

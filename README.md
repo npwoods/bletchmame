@@ -11,6 +11,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.4 (TBD)
 	- Updated various parts of the worker_ui plugin in response to breaking LUA changes in MAME 0.227
 		- An implication is that previous versions of BletchMAME will not work with MAME 0.227 or greater
+	- Changed the Images Dialog to a Configurable Devices dialog, combining image and slot selection
+		- Slot modification requires MAME 0.227, and will not function in previouew versions
 
 - 2.3 (2020-Dec-13)
 	- Added a warning to the Images Dialog if no hash paths were set up
