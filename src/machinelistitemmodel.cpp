@@ -23,8 +23,36 @@ MachineListItemModel::MachineListItemModel(QObject *parent, info::database &info
     m_infoDb.setOnChanged([this]
     {
         beginResetModel();
+        populateIndexes();
         endResetModel();
     });
+}
+
+
+//-------------------------------------------------
+//  machineFromIndex
+//-------------------------------------------------
+
+info::machine MachineListItemModel::machineFromIndex(const QModelIndex &index) const
+{
+    return m_infoDb.machines()[m_indexes[index.row()]];
+}
+
+
+//-------------------------------------------------
+//  populateIndexes - we only use runnable machines
+//-------------------------------------------------
+
+void MachineListItemModel::populateIndexes()
+{
+    m_indexes.clear();
+    m_indexes.reserve(m_infoDb.machines().size());
+    for (int i = 0; i < m_infoDb.machines().size(); i++)
+    {
+        if (m_infoDb.machines()[i].runnable())
+            m_indexes.push_back(i);
+    }
+    m_indexes.shrink_to_fit();
 }
 
 
@@ -54,7 +82,7 @@ QModelIndex MachineListItemModel::parent(const QModelIndex &child) const
 
 int MachineListItemModel::rowCount(const QModelIndex &parent) const
 {
-    return util::safe_static_cast<int>(m_infoDb.machines().size());
+    return util::safe_static_cast<int>(m_indexes.size());
 }
 
 
@@ -77,9 +105,9 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
     QVariant result;
     if (index.isValid()
         && index.row() >= 0
-        && index.row() < m_infoDb.machines().size())
+        && index.row() < m_indexes.size())
     {
-        info::machine machine = m_infoDb.machines()[index.row()];
+        info::machine machine = machineFromIndex(index);
         Column column = (Column)index.column();
 
         switch (role)

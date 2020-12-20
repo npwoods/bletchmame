@@ -117,22 +117,15 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	binaries::header hdr = util::salt(salted_hdr, info::binaries::salt());
 
 	// check the header
-	if ((hdr.m_size_header != sizeof(binaries::header))
-		|| (hdr.m_size_machine != sizeof(binaries::machine))
-		|| (hdr.m_size_device != sizeof(binaries::device))
-		|| (hdr.m_size_configuration != sizeof(binaries::configuration))
-		|| (hdr.m_size_configuration_setting != sizeof(binaries::configuration_setting))
-		|| (hdr.m_size_configuration_condition != sizeof(binaries::configuration_condition))
-		|| (hdr.m_size_software_list != sizeof(binaries::software_list))
-		|| (hdr.m_size_ram_option != sizeof(binaries::ram_option)))
-	{
+	if ((hdr.m_magic != info::binaries::MAGIC_HDR) || (hdr.m_sizes_hash != calculate_sizes_hash()))
 		return false;
-	}
 
 	// positions
 	size_t cursor = 0;
 	newState.m_machines_position					= getPosition<binaries::machine>(cursor, hdr.m_machines_count);
 	newState.m_devices_position						= getPosition<binaries::device>(cursor, hdr.m_devices_count);
+	newState.m_slots_position						= getPosition<binaries::slot>(cursor, hdr.m_slots_count);
+	newState.m_slot_options_position				= getPosition<binaries::slot>(cursor, hdr.m_slot_options_count);
 	newState.m_configurations_position				= getPosition<binaries::configuration>(cursor, hdr.m_configurations_count);
 	newState.m_configuration_settings_position		= getPosition<binaries::configuration_setting>(cursor, hdr.m_configuration_settings_count);
 	newState.m_configuration_conditions_position	= getPosition<binaries::configuration_condition>(cursor, hdr.m_configuration_conditions_count);
@@ -141,11 +134,11 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	newState.m_string_table_offset					= cursor;
 
 	// sanity check the string table
-	if (newState.m_data.size() < newState.m_string_table_offset + 1)
+	if (newState.m_data.size() < (size_t)newState.m_string_table_offset + 1)
 		return false;
 	if (newState.m_data[newState.m_string_table_offset] != '\0')
 		return false;
-	if (!unaligned_check(&newState.m_data[newState.m_string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
+	if (!unaligned_check(&newState.m_data[(size_t)newState.m_string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
 		return false;
 	if (newState.m_data[newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
 		return false;
@@ -169,6 +162,36 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	// signal that we've changed and we're done
 	onChanged();
 	return true;
+}
+
+
+//-------------------------------------------------
+//  database::calculate_sizes_hash
+//-------------------------------------------------
+ 
+uint64_t info::database::calculate_sizes_hash()
+{
+	static const uint64_t sizes[] =
+	{
+		sizeof(info::binaries::header),
+		sizeof(info::binaries::machine),
+		sizeof(info::binaries::device),
+		sizeof(info::binaries::slot),
+		sizeof(info::binaries::slot_option),
+		sizeof(info::binaries::configuration),
+		sizeof(info::binaries::configuration_setting),
+		sizeof(info::binaries::configuration_condition),
+		sizeof(info::binaries::software_list),
+		sizeof(info::binaries::ram_option)
+	};
+
+	uint64_t result = 0;
+	for (int i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++)
+	{
+		result *= 4729;			// arbitrary prime number
+		result ^= sizes[i];
+	}
+	return result;
 }
 
 
@@ -251,20 +274,32 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 
 
 //-------------------------------------------------
+//  slot_option::machine
+//-------------------------------------------------
+
+std::optional<info::machine> info::slot_option::machine() const
+{
+	return db().find_machine(devname());
+
+}
+
+
+//-------------------------------------------------
 //  database::find_machine
 //-------------------------------------------------
 
 std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
 {
-	auto iter = std::find_if(
+	auto iter = std::lower_bound(
 		machines().begin(),
 		machines().end(),
-		[&machine_name](const info::machine m)
+		machine_name,
+		[](const info::machine &a, const QString &b)
 		{
-			return m.name() == machine_name;
+			return a.name() < b;
 		});
-	return iter != machines().end()
-		? std::optional<info::machine>(*iter)
+	return iter != machines().end() && iter->name() == machine_name
+		? *iter
 		: std::optional<info::machine>();
 }
 

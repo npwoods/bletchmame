@@ -40,6 +40,7 @@ namespace info
 			std::uint32_t get(const std::string &string);
 			std::uint32_t get(const QString &string);
 			const std::vector<char> &data() const;
+			const char *lookup(std::uint32_t value) const;
 
 			template<typename T> void embed_value(T value)
 			{
@@ -55,6 +56,8 @@ namespace info
 		info::binaries::header									m_salted_header;
 		std::vector<info::binaries::machine>					m_machines;
 		std::vector<info::binaries::device>						m_devices;
+		std::vector<info::binaries::slot>						m_slots;
+		std::vector<info::binaries::slot_option>				m_slot_options;
 		std::vector<info::binaries::configuration>				m_configurations;
 		std::vector<info::binaries::configuration_condition>	m_configuration_conditions;
 		std::vector<info::binaries::configuration_setting>		m_configuration_settings;

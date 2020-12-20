@@ -32,6 +32,9 @@ public:
 
 	MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader);
 
+	// methods
+	info::machine machineFromIndex(const QModelIndex &index) const;
+
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
 	virtual QModelIndex parent(const QModelIndex &child) const override;
@@ -43,6 +46,9 @@ public:
 private:
 	info::database &	m_infoDb;
 	IIconLoader &		m_iconLoader;
+	std::vector<int>	m_indexes;
+
+	void populateIndexes();
 };
 
 #endif // MACHINELISTITEMMODEL_H

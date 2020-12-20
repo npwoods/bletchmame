@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     status.cpp
 
@@ -47,6 +47,19 @@ static const util::enum_parser<status::input_seq::type> s_inputseq_type_parser =
 //**************************************************************************
 
 //-------------------------------------------------
+//  image_format::operator==
+//-------------------------------------------------
+
+bool status::image_format::operator==(const status::image_format &that) const
+{
+	return m_name == that.m_name
+		&& m_description == that.m_description
+		&& m_option_spec == that.m_option_spec
+		&& m_extensions == that.m_extensions;
+}
+
+
+//-------------------------------------------------
 //  image::operator==
 //-------------------------------------------------
 
@@ -59,7 +72,20 @@ bool status::image::operator==(const status::image &that) const
 		&& m_is_creatable == that.m_is_creatable
 		&& m_must_be_loaded == that.m_must_be_loaded
 		&& m_file_name == that.m_file_name
-		&& m_display == that.m_display;
+		&& m_display == that.m_display
+		&& m_formats == that.m_formats;
+}
+
+
+//-------------------------------------------------
+//  slot::operator==
+//-------------------------------------------------
+
+bool status::slot::operator==(const status::slot &that) const
+{
+	return m_name == that.m_name
+		&& m_current_option == that.m_current_option
+		&& m_fixed == that.m_fixed;
 }
 
 
@@ -245,6 +271,48 @@ status::update status::update::read(QIODevice &input_stream)
 		attributes.get("display",				image.m_display);
 		normalize_tag(image.m_tag);
 	});
+	xml.onElementBegin({ "status", "images", "image", "formats" }, [&](const XmlParser::Attributes &attributes)
+	{
+		image &image = util::last(*result.m_images);
+		image.m_formats.emplace();
+	});
+	xml.onElementBegin({ "status", "images", "image", "formats", "format" }, [&](const XmlParser::Attributes &attributes)
+	{
+		image &image = util::last(*result.m_images);
+		image_format &format = image.m_formats.value().emplace_back();
+		attributes.get("name",					format.m_name);
+		attributes.get("description",			format.m_description);
+		attributes.get("option_spec",			format.m_option_spec);
+	});
+	xml.onElementEnd({ "status", "images", "image", "formats", "format", "extension" }, [&](QString &&content)
+	{
+		image &image = util::last(*result.m_images);
+		image_format &format = util::last(*image.m_formats);
+		format.m_extensions.push_back(std::move(content));
+	});
+	xml.onElementBegin({ "status", "slots" }, [&](const XmlParser::Attributes &)
+	{
+		result.m_slots.emplace();
+	});
+	xml.onElementEnd({ "status", "slots" }, [&](QString &&content)
+	{
+		// downstream logic becomes much simpler if this is sorted
+		std::sort(
+			result.m_slots->begin(),
+			result.m_slots->end(),
+			[](const status::slot &x, const status::slot &y)
+			{
+				return x.m_name < y.m_name;
+			});
+	});
+	xml.onElementBegin({ "status", "slots", "slot" }, [&](const XmlParser::Attributes &attributes)
+	{
+		slot &slot = result.m_slots.value().emplace_back();
+		attributes.get("name",					slot.m_name);
+		attributes.get("current_option",		slot.m_current_option);
+		attributes.get("fixed",					slot.m_fixed, false);
+		normalize_tag(slot.m_name);
+	});
 	xml.onElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_inputs.emplace();
@@ -396,6 +464,7 @@ void status::state::update(status::update &&that)
 	take(m_is_recording,			that.m_is_recording);
 	take(m_sound_attenuation,		that.m_sound_attenuation);
 	take(m_images,					that.m_images);
+	take(m_slots,					that.m_slots);
 	take(m_inputs,					that.m_inputs);
 	take(m_input_classes,			that.m_input_classes);
 	take(m_cheats,					that.m_cheats);

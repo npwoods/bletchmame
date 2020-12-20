@@ -2415,11 +2415,17 @@ void MainWindow::showInGraphicalShell(const QString &path) const
 
 info::machine MainWindow::machineFromModelIndex(const QModelIndex &index) const
 {
-	// map the index to the actual index
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->machinesTableView).mapToSource(index);
+	// get the proxy model
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
 
-	// and look up in the info DB
-	return m_info_db.machines()[actualIndex.row()];
+	// map the index to the actual index
+	QModelIndex actualIndex = proxyModel.mapToSource(index);
+
+	// get the machine list item model
+	const MachineListItemModel &machineModel = *dynamic_cast<const MachineListItemModel *>(proxyModel.sourceModel());
+
+	// and return the machine
+	return machineModel.machineFromIndex(actualIndex);
 }
 
 

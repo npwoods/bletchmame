@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     status.h
 
@@ -39,6 +39,22 @@ typedef std::uint32_t ioport_value;
 namespace status
 {
 	// ======================> image
+	struct image_format
+	{
+		image_format() = default;
+		image_format(const image_format &) = SHOULD_BE_DELETE;
+		image_format(image_format && that) = default;
+
+		QString					m_name;
+		QString					m_description;
+		QString					m_option_spec;
+		std::vector<QString>	m_extensions;
+
+		image_format &operator=(image_format &&that) = default;
+		bool operator==(const image_format & that) const;
+	};
+
+	// ======================> image
 	struct image
 	{
 		image() = default;
@@ -53,9 +69,26 @@ namespace status
 		bool				m_must_be_loaded;
 		QString				m_file_name;
 		QString				m_display;
+		std::optional<std::vector<image_format>>	m_formats;
 
 		image &operator=(image &&that) = default;
 		bool operator==(const image &that) const;
+	};
+
+
+	// ======================> slot
+	struct slot
+	{
+		slot() = default;
+		slot(const slot &) = SHOULD_BE_DELETE;
+		slot(slot &&that) = default;
+
+		QString				m_name;
+		QString				m_current_option;
+		bool				m_fixed;
+
+		slot &operator=(slot &&that) = default;
+		bool operator==(const slot &that) const;
 	};
 
 
@@ -238,6 +271,7 @@ namespace status
 		std::optional<bool>							m_is_recording;
 		std::optional<int>							m_sound_attenuation;
 		std::optional<std::vector<image>>			m_images;
+		std::optional<std::vector<slot>>			m_slots;
 		std::optional<std::vector<input>>			m_inputs;
 		std::optional<std::vector<input_class>>		m_input_classes;
 		std::optional<std::vector<cheat>>			m_cheats;
@@ -271,6 +305,7 @@ namespace status
 		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
 		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
 		observable::value<std::vector<image>> &			images()					{ return m_images; }
+		observable::value<std::vector<slot>> &			devslots()					{ return m_slots; }
 		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
 		observable::value<std::vector<input_class>> &	input_classes()				{ return m_input_classes; }
 		observable::value<QString> &					frameskip()					{ return m_frameskip; }
@@ -294,6 +329,7 @@ namespace status
 		observable::value<float>						m_speed_percent;
 		observable::value<int>							m_effective_frameskip;
 		observable::value<std::vector<image>>			m_images;
+		observable::value<std::vector<slot>>			m_slots;
 		observable::value<std::vector<input>>			m_inputs;
 		observable::value<std::vector<input_class>>		m_input_classes;
 		observable::value<QString>						m_frameskip;

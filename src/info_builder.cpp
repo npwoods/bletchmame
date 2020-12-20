@@ -82,8 +82,10 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	assert(m_machines.empty());
 	assert(m_devices.empty());
 
-	// prepare data
+	// prepare header and magic variables
 	info::binaries::header header = { 0, };
+	header.m_magic = info::binaries::MAGIC_HDR;
+	header.m_sizes_hash = info::database::calculate_sizes_hash();
 
 	// reserve space based on what we know about MAME 0.213
 	m_machines.reserve(40000);					// 36111 machines
@@ -93,16 +95,6 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	m_configuration_settings.reserve(1500000);	// 1454273 settings
 	m_software_lists.reserve(4200);				// 3977 software lists
 	m_ram_options.reserve(3800);				// 3616 ram options
-
-	// header magic variables
-	header.m_size_header					= sizeof(info::binaries::header);
-	header.m_size_machine					= sizeof(info::binaries::machine);
-	header.m_size_device					= sizeof(info::binaries::device);
-	header.m_size_configuration				= sizeof(info::binaries::configuration);
-	header.m_size_configuration_setting		= sizeof(info::binaries::configuration_setting);
-	header.m_size_configuration_condition	= sizeof(info::binaries::configuration_condition);
-	header.m_size_software_list				= sizeof(info::binaries::software_list);
-	header.m_size_ram_option				= sizeof(info::binaries::ram_option);
 
 	// parse the -listxml output
 	XmlParser xml;
@@ -115,11 +107,9 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
 		bool runnable;
-		if (attributes.get("runnable", runnable) && !runnable)
-			return XmlParser::ElementResult::Skip;
-
 		std::string data;
 		info::binaries::machine &machine = m_machines.emplace_back();
+		machine.m_runnable				= attributes.get("runnable", runnable) && !runnable ? 0 : 1;
 		machine.m_name_strindex			= attributes.get("name", data) ? m_strings.get(data) : 0;
 		machine.m_sourcefile_strindex	= attributes.get("sourcefile", data) ? m_strings.get(data) : 0;
 		machine.m_clone_of_strindex		= attributes.get("cloneof", data) ? m_strings.get(data) : 0;
@@ -132,10 +122,11 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 		machine.m_ram_options_count		= 0;
 		machine.m_devices_index			= to_uint32(m_devices.size());
 		machine.m_devices_count			= 0;
+		machine.m_slots_index			= to_uint32(m_slots.size());
+		machine.m_slots_count			= 0;
 		machine.m_description_strindex	= 0;
 		machine.m_year_strindex			= 0;
 		machine.m_manufacturer_strindex = 0;
-		return XmlParser::ElementResult::Ok;
 	});
 	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{
@@ -220,6 +211,25 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
 	});
+	xml.onElementBegin({ "mame", "machine", "slot" }, [this](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		info::binaries::slot &slot = m_slots.emplace_back();
+		slot.m_name_strindex					= attributes.get("name", data) ? m_strings.get(data) : 0;
+		slot.m_slot_options_index				= to_uint32(m_slot_options.size());
+		slot.m_slot_options_count				= 0;
+		util::last(m_machines).m_slots_count++;
+	});
+	xml.onElementBegin({ "mame", "machine", "slot", "slotoption" }, [this](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		bool isDefault = false;
+		info::binaries::slot_option &slot_option = m_slot_options.emplace_back();
+		slot_option.m_name_strindex				= attributes.get("name", data) ? m_strings.get(data) : 0;
+		slot_option.m_devname_strindex			= attributes.get("devname", data) ? m_strings.get(data) : 0;
+		slot_option.m_is_default				= attributes.get("default", isDefault) && isDefault;
+		util::last(m_slots).m_slot_options_count++;
+	});
 	xml.onElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
@@ -273,6 +283,8 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	// finalize the header
 	header.m_machines_count					= to_uint32(m_machines.size());
 	header.m_devices_count					= to_uint32(m_devices.size());
+	header.m_slots_count					= to_uint32(m_slots.size());
+	header.m_slot_options_count				= to_uint32(m_slot_options.size());
 	header.m_configurations_count			= to_uint32(m_configurations.size());
 	header.m_configuration_settings_count	= to_uint32(m_configuration_settings.size());
 	header.m_configuration_conditions_count	= to_uint32(m_configuration_conditions.size());
@@ -281,6 +293,17 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 
 	// and salt it
 	m_salted_header = util::salt(header, info::binaries::salt());
+
+	// sort machines by name to facilitate lookups
+	std::sort(
+		m_machines.begin(),
+		m_machines.end(),
+		[this](const binaries::machine &a, const binaries::machine &b)
+		{
+			const char *aText = m_strings.lookup(a.m_name_strindex);
+			const char *bText = m_strings.lookup(b.m_name_strindex);
+			return strcmp(aText, bText) < 0;
+		});
 
 	// success!
 	error_message.clear();
@@ -297,6 +320,8 @@ void info::database_builder::emit_info(QIODevice &output) const
 	output.write((const char *) &m_salted_header, sizeof(m_salted_header));
 	writeVectorData(output, m_machines);
 	writeVectorData(output, m_devices);
+	writeVectorData(output, m_slots);
+	writeVectorData(output, m_slot_options);
 	writeVectorData(output, m_configurations);
 	writeVectorData(output, m_configuration_settings);
 	writeVectorData(output, m_configuration_conditions);
@@ -362,4 +387,16 @@ std::uint32_t info::database_builder::string_table::get(const QString &s)
 const std::vector<char> &info::database_builder::string_table::data() const
 {
 	return m_data;
+}
+
+
+//-------------------------------------------------
+//  string_table::lookup
+//-------------------------------------------------
+
+const char *info::database_builder::string_table::lookup(std::uint32_t value) const
+{
+	assert(value < m_data.size());
+	assert(value + strlen(&m_data[value]) < m_data.size());
+	return &m_data[value];
 }
