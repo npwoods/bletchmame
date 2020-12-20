@@ -1,0 +1,718 @@
+<status
+	phase="running"
+	polling_input_seq="false"
+	natural_keyboard_in_use="false"
+	paused="true"
+	startup_text=""
+	debugger_present="0"
+	show_profiler="false"
+	has_input_using_mouse="false"
+>
+	<video
+		speed_percent="1.0"
+		frameskip="0"
+		effective_frameskip="0"
+		throttled="true"
+		throttle_rate="1.0"
+		is_recording="0"
+	/>
+	<sound
+		attenuation="0"
+	/>
+	<cheats>
+	</cheats>
+	<images>
+		<image tag=":vhd0" instance_name="harddisk1" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+		</image>
+		<image tag=":ext:fdcv11:wd17xx:0:qd" instance_name="floppydisk1" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+		</image>
+		<image tag=":ext" instance_name="cartridge" is_readable="1" is_writeable="0" is_creatable="0" must_be_loaded="0"
+		>
+		</image>
+		<image tag=":rs232:printer:printer" instance_name="printout" is_readable="0" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+		</image>
+		<image tag=":vhd1" instance_name="harddisk2" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+		</image>
+		<image tag=":ext:fdcv11:wd17xx:1:qd" instance_name="floppydisk2" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+		</image>
+		<image tag=":cassette" instance_name="cassette" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+		</image>
+	</images>
+	<inputs>
+		<input port_tag=":joystick_rx" mask="255" class="controller" group="1" type="152" player="0" is_analog="1" name="Right Joystick X"
+		>
+			<seq type="standard" tokens="JOYCODE_1_XAXIS"/>
+			<seq type="increment" tokens="KEYCODE_6PAD OR JOYCODE_1_XAXIS_RIGHT_SWITCH"/>
+			<seq type="decrement" tokens="KEYCODE_4PAD OR JOYCODE_1_XAXIS_LEFT_SWITCH"/>
+		</input>
+		<input port_tag=":row5" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="9  )  ]"
+			first_keyboard_code="57"
+		>
+			<seq type="standard" tokens="KEYCODE_9"/>
+		</input>
+		<input port_tag=":row5" mask="64" class="keyboard" group="11" type="49" player="0" is_analog="0" name=".  &gt;  }"
+			first_keyboard_code="46"
+		>
+			<seq type="standard" tokens="KEYCODE_STOP"/>
+		</input>
+		<input port_tag=":row5" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="8  (  ["
+			first_keyboard_code="56"
+		>
+			<seq type="standard" tokens="KEYCODE_8"/>
+		</input>
+		<input port_tag=":row5" mask="32" class="keyboard" group="11" type="49" player="0" is_analog="0" name="-  =  _"
+			first_keyboard_code="45"
+		>
+			<seq type="standard" tokens="KEYCODE_EQUALS"/>
+		</input>
+		<input port_tag=":row5" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="/  ?  \"
+			first_keyboard_code="47"
+		>
+			<seq type="standard" tokens="KEYCODE_SLASH"/>
+		</input>
+		<input port_tag=":row5" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="/  ?  \"
+			first_keyboard_code="47"
+		>
+			<seq type="standard" tokens="KEYCODE_SLASH"/>
+		</input>
+		<input port_tag=":row5" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name=":  *"
+			first_keyboard_code="58"
+		>
+			<seq type="standard" tokens="KEYCODE_MINUS"/>
+		</input>
+		<input port_tag=":row5" mask="16" class="keyboard" group="11" type="49" player="0" is_analog="0" name=",  &lt;  {"
+			first_keyboard_code="44"
+		>
+			<seq type="standard" tokens="KEYCODE_COMMA"/>
+		</input>
+		<input port_tag=":row5" mask="8" class="keyboard" group="11" type="49" player="0" is_analog="0" name=";  +"
+			first_keyboard_code="59"
+		>
+			<seq type="standard" tokens="KEYCODE_COLON"/>
+		</input>
+		<input port_tag=":joystick_ry" mask="255" class="controller" group="1" type="153" player="0" is_analog="1" name="Right Joystick Y"
+		>
+			<seq type="standard" tokens="JOYCODE_1_YAXIS"/>
+			<seq type="increment" tokens="KEYCODE_2PAD OR JOYCODE_1_YAXIS_DOWN_SWITCH"/>
+			<seq type="decrement" tokens="KEYCODE_8PAD OR JOYCODE_1_YAXIS_UP_SWITCH"/>
+		</input>
+		<input port_tag=":ctrl_sel" mask="240" class="config" group="13" type="6" player="0" is_analog="0" name="Left Controller Port (P2)"
+			value="16"
+		>
+		</input>
+		<input port_tag=":ctrl_sel" mask="15" class="config" group="13" type="6" player="0" is_analog="0" name="Right Controller Port (P1)"
+			value="1"
+		>
+		</input>
+		<input port_tag=":real_time_clock" mask="3" class="config" group="13" type="6" player="0" is_analog="0" name="Real Time Clock"
+			value="0"
+		>
+		</input>
+		<input port_tag=":hires_intf" mask="7" class="config" group="13" type="6" player="0" is_analog="0" name="Hi-Res Joystick Interfaces"
+			value="0"
+		>
+		</input>
+		<input port_tag=":joystick_ly" mask="255" class="controller" group="2" type="153" player="1" is_analog="1" name="Left Joystick Y"
+		>
+			<seq type="standard" tokens="JOYCODE_2_UNKNOWN_ABSOLUTE OR MOUSECODE_2_UNKNOWN_RELATIVE"/>
+			<seq type="increment" tokens="KEYCODE_2PAD OR JOYCODE_1_YAXIS_DOWN_SWITCH"/>
+			<seq type="decrement" tokens="KEYCODE_8PAD OR JOYCODE_1_YAXIS_UP_SWITCH"/>
+		</input>
+		<input port_tag=":rs232:printer:RS232_RXBAUD" mask="255" class="config" group="13" type="6" player="0" is_analog="0" name="RX Baud"
+			value="3"
+		>
+		</input>
+		<input port_tag=":rs232:printer:RS232_PARITY" mask="255" class="config" group="13" type="6" player="0" is_analog="0" name="Parity"
+			value="0"
+		>
+		</input>
+		<input port_tag=":row4" mask="16" class="keyboard" group="11" type="49" player="0" is_analog="0" name="4  $"
+			first_keyboard_code="52"
+		>
+			<seq type="standard" tokens="KEYCODE_4"/>
+		</input>
+		<input port_tag=":row4" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="7  '  ^"
+			first_keyboard_code="55"
+		>
+			<seq type="standard" tokens="KEYCODE_7"/>
+		</input>
+		<input port_tag=":row4" mask="8" class="keyboard" group="11" type="49" player="0" is_analog="0" name="3  #  ~"
+			first_keyboard_code="51"
+		>
+			<seq type="standard" tokens="KEYCODE_3"/>
+		</input>
+		<input port_tag=":row4" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="1  !  |"
+			first_keyboard_code="49"
+		>
+			<seq type="standard" tokens="KEYCODE_1"/>
+		</input>
+		<input port_tag=":row4" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="0"
+			first_keyboard_code="48"
+		>
+			<seq type="standard" tokens="KEYCODE_0"/>
+		</input>
+		<input port_tag=":row4" mask="32" class="keyboard" group="11" type="49" player="0" is_analog="0" name="5  %"
+			first_keyboard_code="53"
+		>
+			<seq type="standard" tokens="KEYCODE_5"/>
+		</input>
+		<input port_tag=":row4" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="7  '  ^"
+			first_keyboard_code="55"
+		>
+			<seq type="standard" tokens="KEYCODE_7"/>
+		</input>
+		<input port_tag=":row4" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="2  &quot;"
+			first_keyboard_code="50"
+		>
+			<seq type="standard" tokens="KEYCODE_2"/>
+		</input>
+		<input port_tag=":row4" mask="64" class="keyboard" group="11" type="49" player="0" is_analog="0" name="6  &amp;"
+			first_keyboard_code="54"
+		>
+			<seq type="standard" tokens="KEYCODE_6"/>
+		</input>
+		<input port_tag=":vdg:artifacting" mask="3" class="config" group="13" type="6" player="0" is_analog="0" name="Artifacting"
+			value="1"
+		>
+		</input>
+		<input port_tag=":row0" mask="32" class="keyboard" group="11" type="49" player="0" is_analog="0" name="e  E"
+			first_keyboard_code="101"
+		>
+			<seq type="standard" tokens="KEYCODE_E"/>
+		</input>
+		<input port_tag=":row0" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="a  A"
+			first_keyboard_code="97"
+		>
+			<seq type="standard" tokens="KEYCODE_A"/>
+		</input>
+		<input port_tag=":row0" mask="8" class="keyboard" group="11" type="49" player="0" is_analog="0" name="c  C"
+			first_keyboard_code="99"
+		>
+			<seq type="standard" tokens="KEYCODE_C"/>
+		</input>
+		<input port_tag=":row0" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="@"
+			first_keyboard_code="64"
+		>
+			<seq type="standard" tokens="KEYCODE_OPENBRACE"/>
+		</input>
+		<input port_tag=":row0" mask="16" class="keyboard" group="11" type="49" player="0" is_analog="0" name="d  D"
+			first_keyboard_code="100"
+		>
+			<seq type="standard" tokens="KEYCODE_D"/>
+		</input>
+		<input port_tag=":row0" mask="64" class="keyboard" group="11" type="49" player="0" is_analog="0" name="f  F"
+			first_keyboard_code="102"
+		>
+			<seq type="standard" tokens="KEYCODE_F"/>
+		</input>
+		<input port_tag=":row0" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="g  G"
+			first_keyboard_code="103"
+		>
+			<seq type="standard" tokens="KEYCODE_G"/>
+		</input>
+		<input port_tag=":row0" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="b  B"
+			first_keyboard_code="98"
+		>
+			<seq type="standard" tokens="KEYCODE_B"/>
+		</input>
+		<input port_tag=":row0" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="g  G"
+			first_keyboard_code="103"
+		>
+			<seq type="standard" tokens="KEYCODE_G"/>
+		</input>
+		<input port_tag=":dwsock:drivewire_port" mask="65535" class="config" group="13" type="6" player="0" is_analog="0" name="Drivewire Server TCP Port"
+			value="65504"
+		>
+		</input>
+		<input port_tag=":rs232:printer:RS232_STOPBITS" mask="255" class="config" group="13" type="6" player="0" is_analog="0" name="Stop Bits"
+			value="1"
+		>
+		</input>
+		<input port_tag=":rs232:printer:RS232_STARTBITS" mask="255" class="config" group="13" type="6" player="0" is_analog="0" name="Start Bits"
+			value="1"
+		>
+		</input>
+		<input port_tag=":row1" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="j  J"
+			first_keyboard_code="106"
+		>
+			<seq type="standard" tokens="KEYCODE_J"/>
+		</input>
+		<input port_tag=":row1" mask="64" class="keyboard" group="11" type="49" player="0" is_analog="0" name="n  N"
+			first_keyboard_code="110"
+		>
+			<seq type="standard" tokens="KEYCODE_N"/>
+		</input>
+		<input port_tag=":row1" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="o  O"
+			first_keyboard_code="111"
+		>
+			<seq type="standard" tokens="KEYCODE_O"/>
+		</input>
+		<input port_tag=":row1" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="o  O"
+			first_keyboard_code="111"
+		>
+			<seq type="standard" tokens="KEYCODE_O"/>
+		</input>
+		<input port_tag=":row1" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="h  H"
+			first_keyboard_code="104"
+		>
+			<seq type="standard" tokens="KEYCODE_H"/>
+		</input>
+		<input port_tag=":row1" mask="8" class="keyboard" group="11" type="49" player="0" is_analog="0" name="k  K"
+			first_keyboard_code="107"
+		>
+			<seq type="standard" tokens="KEYCODE_K"/>
+		</input>
+		<input port_tag=":row1" mask="16" class="keyboard" group="11" type="49" player="0" is_analog="0" name="l  L"
+			first_keyboard_code="108"
+		>
+			<seq type="standard" tokens="KEYCODE_L"/>
+		</input>
+		<input port_tag=":row1" mask="32" class="keyboard" group="11" type="49" player="0" is_analog="0" name="m  M"
+			first_keyboard_code="109"
+		>
+			<seq type="standard" tokens="KEYCODE_M"/>
+		</input>
+		<input port_tag=":row1" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="i  I"
+			first_keyboard_code="105"
+		>
+			<seq type="standard" tokens="KEYCODE_I"/>
+		</input>
+		<input port_tag=":row2" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="r  R"
+			first_keyboard_code="114"
+		>
+			<seq type="standard" tokens="KEYCODE_R"/>
+		</input>
+		<input port_tag=":row2" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="q  Q"
+			first_keyboard_code="113"
+		>
+			<seq type="standard" tokens="KEYCODE_Q"/>
+		</input>
+		<input port_tag=":row2" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="w  W"
+			first_keyboard_code="119"
+		>
+			<seq type="standard" tokens="KEYCODE_W"/>
+		</input>
+		<input port_tag=":row2" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="w  W"
+			first_keyboard_code="119"
+		>
+			<seq type="standard" tokens="KEYCODE_W"/>
+		</input>
+		<input port_tag=":row2" mask="32" class="keyboard" group="11" type="49" player="0" is_analog="0" name="u  U"
+			first_keyboard_code="117"
+		>
+			<seq type="standard" tokens="KEYCODE_U"/>
+		</input>
+		<input port_tag=":row2" mask="64" class="keyboard" group="11" type="49" player="0" is_analog="0" name="v  V"
+			first_keyboard_code="118"
+		>
+			<seq type="standard" tokens="KEYCODE_V"/>
+		</input>
+		<input port_tag=":row2" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="p  P"
+			first_keyboard_code="112"
+		>
+			<seq type="standard" tokens="KEYCODE_P"/>
+		</input>
+		<input port_tag=":row2" mask="16" class="keyboard" group="11" type="49" player="0" is_analog="0" name="t  T"
+			first_keyboard_code="116"
+		>
+			<seq type="standard" tokens="KEYCODE_T"/>
+		</input>
+		<input port_tag=":row2" mask="8" class="keyboard" group="11" type="49" player="0" is_analog="0" name="s  S"
+			first_keyboard_code="115"
+		>
+			<seq type="standard" tokens="KEYCODE_S"/>
+		</input>
+		<input port_tag=":joystick_lx" mask="255" class="controller" group="2" type="152" player="1" is_analog="1" name="Left Joystick X"
+		>
+			<seq type="standard" tokens="JOYCODE_2_UNKNOWN_ABSOLUTE OR MOUSECODE_2_UNKNOWN_RELATIVE"/>
+			<seq type="increment" tokens="KEYCODE_6PAD OR JOYCODE_1_XAXIS_RIGHT_SWITCH"/>
+			<seq type="decrement" tokens="KEYCODE_4PAD OR JOYCODE_1_XAXIS_LEFT_SWITCH"/>
+		</input>
+		<input port_tag=":beckerport" mask="1" class="config" group="13" type="6" player="0" is_analog="0" name="Becker Port"
+			value="0"
+		>
+		</input>
+		<input port_tag=":row6" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="SHIFT"
+			first_keyboard_code="1048576"
+		>
+			<seq type="standard" tokens="KEYCODE_LSHIFT OR KEYCODE_RSHIFT"/>
+		</input>
+		<input port_tag=":row6" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="ENTER"
+			first_keyboard_code="13"
+		>
+			<seq type="standard" tokens="KEYCODE_ENTER"/>
+		</input>
+		<input port_tag=":row6" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="BREAK"
+			first_keyboard_code="27"
+		>
+			<seq type="standard" tokens="KEYCODE_END OR KEYCODE_ESC"/>
+		</input>
+		<input port_tag=":row6" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="CLEAR"
+			first_keyboard_code="12"
+		>
+			<seq type="standard" tokens="KEYCODE_HOME"/>
+		</input>
+		<input port_tag=":row3" mask="8" class="keyboard" group="11" type="49" player="0" is_analog="0" name="UP"
+			first_keyboard_code="1048660"
+		>
+			<seq type="standard" tokens="KEYCODE_UP"/>
+		</input>
+		<input port_tag=":row3" mask="2" class="keyboard" group="11" type="49" player="0" is_analog="0" name="y  Y"
+			first_keyboard_code="121"
+		>
+			<seq type="standard" tokens="KEYCODE_Y"/>
+		</input>
+		<input port_tag=":row3" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="z  Z"
+			first_keyboard_code="122"
+		>
+			<seq type="standard" tokens="KEYCODE_Z"/>
+		</input>
+		<input port_tag=":row3" mask="16" class="keyboard" group="11" type="49" player="0" is_analog="0" name="DOWN"
+			first_keyboard_code="1048661"
+		>
+			<seq type="standard" tokens="KEYCODE_DOWN"/>
+		</input>
+		<input port_tag=":row3" mask="32" class="keyboard" group="11" type="49" player="0" is_analog="0" name="LEFT"
+			first_keyboard_code="1048658"
+		>
+			<seq type="standard" tokens="KEYCODE_LEFT OR KEYCODE_BACKSPACE"/>
+		</input>
+		<input port_tag=":row3" mask="128" class="keyboard" group="11" type="49" player="0" is_analog="0" name="SPACE"
+			first_keyboard_code="32"
+		>
+			<seq type="standard" tokens="KEYCODE_SPACE"/>
+		</input>
+		<input port_tag=":row3" mask="4" class="keyboard" group="11" type="49" player="0" is_analog="0" name="z  Z"
+			first_keyboard_code="122"
+		>
+			<seq type="standard" tokens="KEYCODE_Z"/>
+		</input>
+		<input port_tag=":row3" mask="64" class="keyboard" group="11" type="49" player="0" is_analog="0" name="RIGHT"
+			first_keyboard_code="1048659"
+		>
+			<seq type="standard" tokens="KEYCODE_RIGHT"/>
+		</input>
+		<input port_tag=":row3" mask="1" class="keyboard" group="11" type="49" player="0" is_analog="0" name="x  X"
+			first_keyboard_code="120"
+		>
+			<seq type="standard" tokens="KEYCODE_X"/>
+		</input>
+		<input port_tag=":rs232:printer:RS232_DATABITS" mask="255" class="config" group="13" type="6" player="0" is_analog="0" name="Data Bits"
+			value="3"
+		>
+		</input>
+		<input port_tag=":joystick_buttons" mask="1" class="controller" group="1" type="64" player="0" is_analog="0" name="Right Button"
+		>
+			<seq type="standard" tokens="JOYCODE_1_BUTTON1"/>
+		</input>
+		<input port_tag=":joystick_buttons" mask="2" class="controller" group="2" type="64" player="1" is_analog="0" name="Left Button"
+		>
+			<seq type="standard" tokens="JOYCODE_1_BUTTON1"/>
+		</input>
+	</inputs>
+	<input_devices>
+		<class name="keyboard" enabled="1" multi="0">
+			<device name="Microsoft USB Natural Ergonomic Keyboard 4000 (Mouse and Keyboard Center)" id="\\?\HID#VID_045E&amp;PID_00DB&amp;MI_00#8&amp;75d0ed&amp;0&amp;0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}" devindex="0">
+				<item name="A" token="A" code="KEYCODE_A"/>
+				<item name="B" token="B" code="KEYCODE_B"/>
+				<item name="C" token="C" code="KEYCODE_C"/>
+				<item name="D" token="D" code="KEYCODE_D"/>
+				<item name="E" token="E" code="KEYCODE_E"/>
+				<item name="F" token="F" code="KEYCODE_F"/>
+				<item name="G" token="G" code="KEYCODE_G"/>
+				<item name="H" token="H" code="KEYCODE_H"/>
+				<item name="I" token="I" code="KEYCODE_I"/>
+				<item name="J" token="J" code="KEYCODE_J"/>
+				<item name="K" token="K" code="KEYCODE_K"/>
+				<item name="L" token="L" code="KEYCODE_L"/>
+				<item name="M" token="M" code="KEYCODE_M"/>
+				<item name="N" token="N" code="KEYCODE_N"/>
+				<item name="O" token="O" code="KEYCODE_O"/>
+				<item name="P" token="P" code="KEYCODE_P"/>
+				<item name="Q" token="Q" code="KEYCODE_Q"/>
+				<item name="R" token="R" code="KEYCODE_R"/>
+				<item name="S" token="S" code="KEYCODE_S"/>
+				<item name="T" token="T" code="KEYCODE_T"/>
+				<item name="U" token="U" code="KEYCODE_U"/>
+				<item name="V" token="V" code="KEYCODE_V"/>
+				<item name="W" token="W" code="KEYCODE_W"/>
+				<item name="X" token="X" code="KEYCODE_X"/>
+				<item name="Y" token="Y" code="KEYCODE_Y"/>
+				<item name="Z" token="Z" code="KEYCODE_Z"/>
+				<item name="0" token="0" code="KEYCODE_0"/>
+				<item name="1" token="1" code="KEYCODE_1"/>
+				<item name="2" token="2" code="KEYCODE_2"/>
+				<item name="3" token="3" code="KEYCODE_3"/>
+				<item name="4" token="4" code="KEYCODE_4"/>
+				<item name="5" token="5" code="KEYCODE_5"/>
+				<item name="6" token="6" code="KEYCODE_6"/>
+				<item name="7" token="7" code="KEYCODE_7"/>
+				<item name="8" token="8" code="KEYCODE_8"/>
+				<item name="9" token="9" code="KEYCODE_9"/>
+				<item name="F1" token="F1" code="KEYCODE_F1"/>
+				<item name="F2" token="F2" code="KEYCODE_F2"/>
+				<item name="F3" token="F3" code="KEYCODE_F3"/>
+				<item name="F4" token="F4" code="KEYCODE_F4"/>
+				<item name="F5" token="F5" code="KEYCODE_F5"/>
+				<item name="F6" token="F6" code="KEYCODE_F6"/>
+				<item name="F7" token="F7" code="KEYCODE_F7"/>
+				<item name="F8" token="F8" code="KEYCODE_F8"/>
+				<item name="F9" token="F9" code="KEYCODE_F9"/>
+				<item name="F10" token="F10" code="KEYCODE_F10"/>
+				<item name="F11" token="F11" code="KEYCODE_F11"/>
+				<item name="F12" token="F12" code="KEYCODE_F12"/>
+				<item name="Scan100" token="F13" code="KEYCODE_F13"/>
+				<item name="Scan101" token="F14" code="KEYCODE_F14"/>
+				<item name="Scan102" token="F15" code="KEYCODE_F15"/>
+				<item name="Esc" token="ESC" code="KEYCODE_ESC"/>
+				<item name="`" token="TILDE" code="KEYCODE_TILDE"/>
+				<item name="-" token="MINUS" code="KEYCODE_MINUS"/>
+				<item name="=" token="EQUALS" code="KEYCODE_EQUALS"/>
+				<item name="Backspace" token="BACKSPACE" code="KEYCODE_BACKSPACE"/>
+				<item name="Tab" token="TAB" code="KEYCODE_TAB"/>
+				<item name="[" token="OPENBRACE" code="KEYCODE_OPENBRACE"/>
+				<item name="]" token="CLOSEBRACE" code="KEYCODE_CLOSEBRACE"/>
+				<item name="Enter" token="ENTER" code="KEYCODE_ENTER"/>
+				<item name=";" token="COLON" code="KEYCODE_COLON"/>
+				<item name="'" token="QUOTE" code="KEYCODE_QUOTE"/>
+				<item name="\" token="BACKSLASH" code="KEYCODE_BACKSLASH"/>
+				<item name="\" token="BACKSLASH2" code="KEYCODE_BACKSLASH2"/>
+				<item name="," token="COMMA" code="KEYCODE_COMMA"/>
+				<item name="." token="STOP" code="KEYCODE_STOP"/>
+				<item name="/" token="SLASH" code="KEYCODE_SLASH"/>
+				<item name="Space" token="SPACE" code="KEYCODE_SPACE"/>
+				<item name="Insert" token="INSERT" code="KEYCODE_INSERT"/>
+				<item name="Delete" token="DEL" code="KEYCODE_DEL"/>
+				<item name="Home" token="HOME" code="KEYCODE_HOME"/>
+				<item name="End" token="END" code="KEYCODE_END"/>
+				<item name="Page Up" token="PGUP" code="KEYCODE_PGUP"/>
+				<item name="Page Down" token="PGDN" code="KEYCODE_PGDN"/>
+				<item name="Left" token="LEFT" code="KEYCODE_LEFT"/>
+				<item name="Right" token="RIGHT" code="KEYCODE_RIGHT"/>
+				<item name="Up" token="UP" code="KEYCODE_UP"/>
+				<item name="Down" token="DOWN" code="KEYCODE_DOWN"/>
+				<item name="Num 0" token="0PAD" code="KEYCODE_0PAD"/>
+				<item name="Num 1" token="1PAD" code="KEYCODE_1PAD"/>
+				<item name="Num 2" token="2PAD" code="KEYCODE_2PAD"/>
+				<item name="Num 3" token="3PAD" code="KEYCODE_3PAD"/>
+				<item name="Num 4" token="4PAD" code="KEYCODE_4PAD"/>
+				<item name="Num 5" token="5PAD" code="KEYCODE_5PAD"/>
+				<item name="Num 6" token="6PAD" code="KEYCODE_6PAD"/>
+				<item name="Num 7" token="7PAD" code="KEYCODE_7PAD"/>
+				<item name="Num 8" token="8PAD" code="KEYCODE_8PAD"/>
+				<item name="Num 9" token="9PAD" code="KEYCODE_9PAD"/>
+				<item name="Num /" token="SLASHPAD" code="KEYCODE_SLASHPAD"/>
+				<item name="Num *" token="ASTERISK" code="KEYCODE_ASTERISK"/>
+				<item name="Num -" token="MINUSPAD" code="KEYCODE_MINUSPAD"/>
+				<item name="Num +" token="PLUSPAD" code="KEYCODE_PLUSPAD"/>
+				<item name="Num Del" token="DELPAD" code="KEYCODE_DELPAD"/>
+				<item name="Num Enter" token="ENTERPAD" code="KEYCODE_ENTERPAD"/>
+				<item name="," token="," code="KEYCODE_,"/>
+				<item name="=" token="=" code="KEYCODE_="/>
+				<item name="Prnt Scrn" token="PRTSCR" code="KEYCODE_PRTSCR"/>
+				<item name="Num Lock" token="PAUSE" code="KEYCODE_PAUSE"/>
+				<item name="Shift" token="LSHIFT" code="KEYCODE_LSHIFT"/>
+				<item name="Right Shift" token="RSHIFT" code="KEYCODE_RSHIFT"/>
+				<item name="Ctrl" token="LCONTROL" code="KEYCODE_LCONTROL"/>
+				<item name="Right Ctrl" token="RCONTROL" code="KEYCODE_RCONTROL"/>
+				<item name="Alt" token="LALT" code="KEYCODE_LALT"/>
+				<item name="Right Alt" token="RALT" code="KEYCODE_RALT"/>
+				<item name="Scroll Lock" token="SCRLOCK" code="KEYCODE_SCRLOCK"/>
+				<item name="Pause" token="NUMLOCK" code="KEYCODE_NUMLOCK"/>
+				<item name="Caps Lock" token="CAPSLOCK" code="KEYCODE_CAPSLOCK"/>
+				<item name="Left Windows" token="LWIN" code="KEYCODE_LWIN"/>
+				<item name="Right Windows" token="RWIN" code="KEYCODE_RWIN"/>
+				<item name="Application" token="MENU" code="KEYCODE_MENU"/>
+				<item name="Scan000" token="CANCEL" code="KEYCODE_CANCEL"/>
+				<item name="Sys Req" token="SYSREQ" code="KEYCODE_SYSREQ"/>
+				<item name="Scan085" token="SCAN085" code="KEYCODE_SCAN085"/>
+				<item name="Scan089" token="SCAN089" code="KEYCODE_SCAN089"/>
+				<item name="Scan090" token="SCAN090" code="KEYCODE_SCAN090"/>
+				<item name="Scan091" token="SCAN091" code="KEYCODE_SCAN091"/>
+				<item name="Scan092" token="SCAN092" code="KEYCODE_SCAN092"/>
+				<item name="Scan093" token="SCAN093" code="KEYCODE_SCAN093"/>
+				<item name="Scan094" token="SCAN094" code="KEYCODE_SCAN094"/>
+				<item name="Scan095" token="SCAN095" code="KEYCODE_SCAN095"/>
+				<item name="Scan096" token="SCAN096" code="KEYCODE_SCAN096"/>
+				<item name="Scan097" token="SCAN097" code="KEYCODE_SCAN097"/>
+				<item name="Scan098" token="SCAN098" code="KEYCODE_SCAN098"/>
+				<item name="Scan099" token="SCAN099" code="KEYCODE_SCAN099"/>
+				<item name="Scan103" token="SCAN103" code="KEYCODE_SCAN103"/>
+				<item name="Scan104" token="SCAN104" code="KEYCODE_SCAN104"/>
+				<item name="Scan105" token="SCAN105" code="KEYCODE_SCAN105"/>
+				<item name="Scan106" token="SCAN106" code="KEYCODE_SCAN106"/>
+				<item name="Scan107" token="SCAN107" code="KEYCODE_SCAN107"/>
+				<item name="Scan108" token="SCAN108" code="KEYCODE_SCAN108"/>
+				<item name="Scan109" token="SCAN109" code="KEYCODE_SCAN109"/>
+				<item name="Scan110" token="SCAN110" code="KEYCODE_SCAN110"/>
+				<item name="Scan111" token="SCAN111" code="KEYCODE_SCAN111"/>
+				<item name="Scan112" token="SCAN112" code="KEYCODE_SCAN112"/>
+				<item name="Scan113" token="SCAN113" code="KEYCODE_SCAN113"/>
+				<item name="Scan114" token="SCAN114" code="KEYCODE_SCAN114"/>
+				<item name="Scan115" token="SCAN115" code="KEYCODE_SCAN115"/>
+				<item name="Scan116" token="SCAN116" code="KEYCODE_SCAN116"/>
+				<item name="Scan117" token="SCAN117" code="KEYCODE_SCAN117"/>
+				<item name="Scan118" token="SCAN118" code="KEYCODE_SCAN118"/>
+				<item name="Scan119" token="SCAN119" code="KEYCODE_SCAN119"/>
+				<item name="Scan120" token="SCAN120" code="KEYCODE_SCAN120"/>
+				<item name="Scan121" token="SCAN121" code="KEYCODE_SCAN121"/>
+				<item name="Scan122" token="SCAN122" code="KEYCODE_SCAN122"/>
+				<item name="Scan123" token="SCAN123" code="KEYCODE_SCAN123"/>
+				<item name="F13" token="F13" code="KEYCODE_F13"/>
+				<item name="F14" token="F14" code="KEYCODE_F14"/>
+				<item name="F15" token="F15" code="KEYCODE_F15"/>
+				<item name="F16" token="F16" code="KEYCODE_F16"/>
+				<item name="Scan128" token="SCAN128" code="KEYCODE_SCAN128"/>
+				<item name="&#57371;" token="&#57371;" code="KEYCODE_&#57371;"/>
+				<item name="1" token="1" code="KEYCODE_1"/>
+				<item name="2" token="2" code="KEYCODE_2"/>
+				<item name="3" token="3" code="KEYCODE_3"/>
+				<item name="4" token="4" code="KEYCODE_4"/>
+				<item name="5" token="5" code="KEYCODE_5"/>
+				<item name="6" token="6" code="KEYCODE_6"/>
+				<item name="7" token="7" code="KEYCODE_7"/>
+				<item name="8" token="8" code="KEYCODE_8"/>
+				<item name="9" token="9" code="KEYCODE_9"/>
+				<item name="0" token="0" code="KEYCODE_0"/>
+				<item name="-" token="-" code="KEYCODE_-"/>
+				<item name="&#57352;" token="&#57352;" code="KEYCODE_&#57352;"/>
+				<item name="&#9;" token="&#9;" code="KEYCODE_&#9;"/>
+				<item name="Q" token="Q" code="KEYCODE_Q"/>
+				<item name="W" token="W" code="KEYCODE_W"/>
+				<item name="E" token="E" code="KEYCODE_E"/>
+				<item name="R" token="R" code="KEYCODE_R"/>
+				<item name="T" token="T" code="KEYCODE_T"/>
+				<item name="Y" token="Y" code="KEYCODE_Y"/>
+				<item name="U" token="U" code="KEYCODE_U"/>
+				<item name="I" token="I" code="KEYCODE_I"/>
+				<item name="O" token="O" code="KEYCODE_O"/>
+				<item name="P" token="P" code="KEYCODE_P"/>
+				<item name="[" token="[" code="KEYCODE_["/>
+				<item name="]" token="]" code="KEYCODE_]"/>
+				<item name="A" token="A" code="KEYCODE_A"/>
+				<item name="S" token="S" code="KEYCODE_S"/>
+				<item name="D" token="D" code="KEYCODE_D"/>
+				<item name="F" token="F" code="KEYCODE_F"/>
+				<item name="G" token="G" code="KEYCODE_G"/>
+				<item name="H" token="H" code="KEYCODE_H"/>
+				<item name="J" token="J" code="KEYCODE_J"/>
+				<item name="K" token="K" code="KEYCODE_K"/>
+				<item name="L" token="L" code="KEYCODE_L"/>
+				<item name=";" token=";" code="KEYCODE_;"/>
+				<item name="'" token="'" code="KEYCODE_'"/>
+				<item name="`" token="`" code="KEYCODE_`"/>
+				<item name="Scan170" token="SCAN170" code="KEYCODE_SCAN170"/>
+				<item name="\" token="\" code="KEYCODE_\"/>
+				<item name="Z" token="Z" code="KEYCODE_Z"/>
+				<item name="X" token="X" code="KEYCODE_X"/>
+				<item name="C" token="C" code="KEYCODE_C"/>
+				<item name="V" token="V" code="KEYCODE_V"/>
+				<item name="B" token="B" code="KEYCODE_B"/>
+				<item name="N" token="N" code="KEYCODE_N"/>
+				<item name="M" token="M" code="KEYCODE_M"/>
+				<item name="." token="." code="KEYCODE_."/>
+				<item name="Scan182" token="SCAN182" code="KEYCODE_SCAN182"/>
+				<item name=" " token="" code="KEYCODE"/>
+				<item name="Scan186" token="SCAN186" code="KEYCODE_SCAN186"/>
+				<item name="Scan187" token="SCAN187" code="KEYCODE_SCAN187"/>
+				<item name="Scan188" token="SCAN188" code="KEYCODE_SCAN188"/>
+				<item name="Scan189" token="SCAN189" code="KEYCODE_SCAN189"/>
+				<item name="Scan190" token="SCAN190" code="KEYCODE_SCAN190"/>
+				<item name="Scan191" token="SCAN191" code="KEYCODE_SCAN191"/>
+				<item name="Scan192" token="SCAN192" code="KEYCODE_SCAN192"/>
+				<item name="Scan193" token="SCAN193" code="KEYCODE_SCAN193"/>
+				<item name="Scan194" token="SCAN194" code="KEYCODE_SCAN194"/>
+				<item name="Scan195" token="SCAN195" code="KEYCODE_SCAN195"/>
+				<item name="Scan196" token="SCAN196" code="KEYCODE_SCAN196"/>
+				<item name="Break" token="BREAK" code="KEYCODE_BREAK"/>
+				<item name="-" token="-" code="KEYCODE_-"/>
+				<item name="Scan204" token="SCAN204" code="KEYCODE_SCAN204"/>
+				<item name="+" token="+" code="KEYCODE_+"/>
+				<item name="&lt;00&gt;" token="&lt;00&gt;" code="KEYCODE_&lt;00&gt;"/>
+				<item name="Scan213" token="SCAN213" code="KEYCODE_SCAN213"/>
+				<item name="Help" token="HELP" code="KEYCODE_HELP"/>
+				<item name="Scan215" token="SCAN215" code="KEYCODE_SCAN215"/>
+				<item name="Scan216" token="SCAN216" code="KEYCODE_SCAN216"/>
+				<item name="Scan217" token="SCAN217" code="KEYCODE_SCAN217"/>
+				<item name="Scan218" token="SCAN218" code="KEYCODE_SCAN218"/>
+				<item name="Scan222" token="SCAN222" code="KEYCODE_SCAN222"/>
+				<item name="Scan223" token="SCAN223" code="KEYCODE_SCAN223"/>
+				<item name="Scan224" token="SCAN224" code="KEYCODE_SCAN224"/>
+				<item name="Scan225" token="SCAN225" code="KEYCODE_SCAN225"/>
+				<item name="Scan226" token="SCAN226" code="KEYCODE_SCAN226"/>
+				<item name="Scan227" token="SCAN227" code="KEYCODE_SCAN227"/>
+				<item name="Scan228" token="SCAN228" code="KEYCODE_SCAN228"/>
+				<item name="Scan229" token="SCAN229" code="KEYCODE_SCAN229"/>
+				<item name="Scan230" token="SCAN230" code="KEYCODE_SCAN230"/>
+				<item name="Scan231" token="SCAN231" code="KEYCODE_SCAN231"/>
+				<item name="Scan232" token="SCAN232" code="KEYCODE_SCAN232"/>
+				<item name="Scan233" token="SCAN233" code="KEYCODE_SCAN233"/>
+				<item name="Scan234" token="SCAN234" code="KEYCODE_SCAN234"/>
+				<item name="Scan235" token="SCAN235" code="KEYCODE_SCAN235"/>
+				<item name="Scan236" token="SCAN236" code="KEYCODE_SCAN236"/>
+				<item name="Scan237" token="SCAN237" code="KEYCODE_SCAN237"/>
+				<item name="Scan238" token="SCAN238" code="KEYCODE_SCAN238"/>
+				<item name="Scan239" token="SCAN239" code="KEYCODE_SCAN239"/>
+				<item name="Scan240" token="SCAN240" code="KEYCODE_SCAN240"/>
+				<item name="Scan241" token="SCAN241" code="KEYCODE_SCAN241"/>
+				<item name="Scan242" token="SCAN242" code="KEYCODE_SCAN242"/>
+				<item name="Scan243" token="SCAN243" code="KEYCODE_SCAN243"/>
+				<item name="Scan244" token="SCAN244" code="KEYCODE_SCAN244"/>
+				<item name="Scan245" token="SCAN245" code="KEYCODE_SCAN245"/>
+				<item name="Scan246" token="SCAN246" code="KEYCODE_SCAN246"/>
+				<item name="Scan247" token="SCAN247" code="KEYCODE_SCAN247"/>
+				<item name="Scan248" token="SCAN248" code="KEYCODE_SCAN248"/>
+				<item name="Scan249" token="SCAN249" code="KEYCODE_SCAN249"/>
+				<item name="Scan250" token="SCAN250" code="KEYCODE_SCAN250"/>
+				<item name="Scan251" token="SCAN251" code="KEYCODE_SCAN251"/>
+				<item name="&#9;" token="&#9;" code="KEYCODE_&#9;"/>
+				<item name="Scan253" token="SCAN253" code="KEYCODE_SCAN253"/>
+				<item name="Scan254" token="SCAN254" code="KEYCODE_SCAN254"/>
+			</device>
+		</class>
+		<class name="joystick" enabled="1" multi="1">
+			<device name="Logitech WingMan Gamepad (USB)" id="Logitech WingMan Gamepad (USB) product_c209046d-0000-0000-0000-504944564944 instance_3d674b10-bf96-11e9-8001-444553540000" devindex="0">
+				<item name="Button 0" token="BUTTON1" code="JOYCODE_1_BUTTON1"/>
+				<item name="Button 1" token="BUTTON2" code="JOYCODE_1_BUTTON2"/>
+				<item name="Button 2" token="BUTTON3" code="JOYCODE_1_BUTTON3"/>
+				<item name="Button 3" token="BUTTON4" code="JOYCODE_1_BUTTON4"/>
+				<item name="Button 4" token="BUTTON5" code="JOYCODE_1_BUTTON5"/>
+				<item name="Button 5" token="BUTTON6" code="JOYCODE_1_BUTTON6"/>
+				<item name="Button 6" token="BUTTON7" code="JOYCODE_1_BUTTON7"/>
+				<item name="Button 7" token="BUTTON8" code="JOYCODE_1_BUTTON8"/>
+				<item name="X Axis" token="XAXIS" code="JOYCODE_1_XAXIS"/>
+				<item name="Y Axis" token="YAXIS" code="JOYCODE_1_YAXIS"/>
+				<item name="Button 9" token="BUTTON10" code="JOYCODE_1_BUTTON10"/>
+				<item name="Button 8" token="BUTTON9" code="JOYCODE_1_BUTTON9"/>
+			</device>
+		</class>
+		<class name="mouse" enabled="0" multi="0">
+			<device name="Microsoft Comfort Mouse 4500 (Mouse and Keyboard Center)" id="\\?\HID#VID_045E&amp;PID_076C&amp;Col02#7&amp;114bb93c&amp;0&amp;0001#{378de44c-56ef-11d1-bc8c-00a0c91405dd}" devindex="0">
+				<item name="X" token="XAXIS" code="MOUSECODE_1_XAXIS"/>
+				<item name="Y" token="YAXIS" code="MOUSECODE_1_YAXIS"/>
+				<item name="Z" token="ZAXIS" code="MOUSECODE_1_ZAXIS"/>
+				<item name="B3" token="BUTTON4" code="MOUSECODE_1_BUTTON4"/>
+				<item name="B2" token="BUTTON3" code="MOUSECODE_1_BUTTON3"/>
+				<item name="B1" token="BUTTON2" code="MOUSECODE_1_BUTTON2"/>
+				<item name="B0" token="BUTTON1" code="MOUSECODE_1_BUTTON1"/>
+			</device>
+		</class>
+		<class name="lightgun" enabled="0" multi="1">
+			<device name="Microsoft Comfort Mouse 4500 (Mouse and Keyboard Center)" id="\\?\HID#VID_045E&amp;PID_076C&amp;Col02#7&amp;114bb93c&amp;0&amp;0001#{378de44c-56ef-11d1-bc8c-00a0c91405dd}" devindex="0">
+				<item name="X" token="XAXIS" code="GUNCODE_1_XAXIS"/>
+				<item name="Y" token="YAXIS" code="GUNCODE_1_YAXIS"/>
+				<item name="Z" token="ZAXIS" code="GUNCODE_1_ZAXIS"/>
+				<item name="B3" token="BUTTON4" code="GUNCODE_1_BUTTON4"/>
+				<item name="B2" token="BUTTON3" code="GUNCODE_1_BUTTON3"/>
+				<item name="B1" token="BUTTON2" code="GUNCODE_1_BUTTON2"/>
+				<item name="B0" token="BUTTON1" code="GUNCODE_1_BUTTON1"/>
+			</device>
+		</class>
+	</input_devices>
+</status>
