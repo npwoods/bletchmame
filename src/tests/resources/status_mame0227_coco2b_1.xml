@@ -1,0 +1,308 @@
+<status
+	phase="running"
+	polling_input_seq="false"
+	natural_keyboard_in_use="false"
+	paused="false"
+	startup_text=""
+	debugger_present="1"
+	show_profiler="false"
+	has_input_using_mouse="false"
+>
+	<video
+		speed_percent="1.0002181725889"
+		frameskip="0"
+		effective_frameskip="0"
+		throttled="true"
+		throttle_rate="1.0"
+		is_recording="0"
+	/>
+	<sound
+		attenuation="0"
+	/>
+	<cheats>
+	</cheats>
+	<images>
+		<image tag=":rs232:printer:printer" instance_name="printout" is_readable="0" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":cassette" instance_name="cassette" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":ext" instance_name="cartridge1" is_readable="1" is_writeable="0" is_creatable="0" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":vhd1" instance_name="harddisk2" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":ext:multi:slot1" instance_name="cartridge2" is_readable="1" is_writeable="0" is_creatable="0" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":ext:multi:slot4:fdcv11:wd17xx:1:qd" instance_name="floppydisk2" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+			<formats>
+				<format name="sdf" description="SDF disk image" optspec="">
+					<extension>sdf</extension>
+				</format>
+				<format name="dsk" description="CPC DSK Format" optspec="">
+					<extension>dsk</extension>
+				</format>
+				<format name="dmk" description="DMK disk image" optspec="">
+					<extension>dmk</extension>
+				</format>
+				<format name="os9" description="OS-9 floppy disk image" optspec="">
+					<extension>dsk</extension>
+					<extension>os9</extension>
+				</format>
+				<format name="cqm" description="CopyQM disk image" optspec="">
+					<extension>cqm</extension>
+					<extension>cqi</extension>
+					<extension>dsk</extension>
+				</format>
+				<format name="hfe" description="SDCard HxC Floppy Emulator HFE File format" optspec="">
+					<extension>hfe</extension>
+				</format>
+				<format name="mfi" description="MESS floppy image" optspec="">
+					<extension>mfi</extension>
+				</format>
+				<format name="td0" description="Teledisk disk image" optspec="">
+					<extension>td0</extension>
+				</format>
+				<format name="vdk" description="VDK disk image" optspec="">
+					<extension>vdk</extension>
+				</format>
+				<format name="mfm" description="HxCFloppyEmulator floppy disk image" optspec="">
+					<extension>mfm</extension>
+				</format>
+				<format name="ipf" description="SPS floppy disk image" optspec="">
+					<extension>ipf</extension>
+				</format>
+				<format name="d88" description="D88 disk image" optspec="">
+					<extension>d77</extension>
+					<extension>d88</extension>
+					<extension>1dd</extension>
+				</format>
+				<format name="imd" description="IMD disk image" optspec="">
+					<extension>imd</extension>
+				</format>
+				<format name="dfi" description="DiscFerret flux dump format" optspec="">
+					<extension>dfi</extension>
+				</format>
+				<format name="jvc" description="JVC disk image" optspec="">
+					<extension>jvc</extension>
+					<extension>dsk</extension>
+				</format>
+			</formats>
+		</image>
+		<image tag=":ext:multi:slot4" instance_name="cartridge5" is_readable="1" is_writeable="0" is_creatable="0" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":ext:multi:slot3" instance_name="cartridge4" is_readable="1" is_writeable="0" is_creatable="0" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":ext:multi:slot2" instance_name="cartridge3" is_readable="1" is_writeable="0" is_creatable="0" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":vhd0" instance_name="harddisk1" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+		>
+			<formats>
+			</formats>
+		</image>
+		<image tag=":ext:multi:slot4:fdcv11:wd17xx:0:qd" instance_name="floppydisk1" is_readable="1" is_writeable="1" is_creatable="1" must_be_loaded="0"
+			filename="C:\MyDisk.dsk"
+		>
+			<formats>
+				<format name="sdf" description="SDF disk image" optspec="">
+					<extension>sdf</extension>
+				</format>
+				<format name="dsk" description="CPC DSK Format" optspec="">
+					<extension>dsk</extension>
+				</format>
+				<format name="dmk" description="DMK disk image" optspec="">
+					<extension>dmk</extension>
+				</format>
+				<format name="os9" description="OS-9 floppy disk image" optspec="">
+					<extension>dsk</extension>
+					<extension>os9</extension>
+				</format>
+				<format name="cqm" description="CopyQM disk image" optspec="">
+					<extension>cqm</extension>
+					<extension>cqi</extension>
+					<extension>dsk</extension>
+				</format>
+				<format name="hfe" description="SDCard HxC Floppy Emulator HFE File format" optspec="">
+					<extension>hfe</extension>
+				</format>
+				<format name="mfi" description="MESS floppy image" optspec="">
+					<extension>mfi</extension>
+				</format>
+				<format name="td0" description="Teledisk disk image" optspec="">
+					<extension>td0</extension>
+				</format>
+				<format name="vdk" description="VDK disk image" optspec="">
+					<extension>vdk</extension>
+				</format>
+				<format name="mfm" description="HxCFloppyEmulator floppy disk image" optspec="">
+					<extension>mfm</extension>
+				</format>
+				<format name="ipf" description="SPS floppy disk image" optspec="">
+					<extension>ipf</extension>
+				</format>
+				<format name="d88" description="D88 disk image" optspec="">
+					<extension>d77</extension>
+					<extension>d88</extension>
+					<extension>1dd</extension>
+				</format>
+				<format name="imd" description="IMD disk image" optspec="">
+					<extension>imd</extension>
+				</format>
+				<format name="dfi" description="DiscFerret flux dump format" optspec="">
+					<extension>dfi</extension>
+				</format>
+				<format name="jvc" description="JVC disk image" optspec="">
+					<extension>jvc</extension>
+					<extension>dsk</extension>
+				</format>
+			</formats>
+		</image>
+	</images>
+	<slots>
+		<slot name=":rs232" fixed="0" has_selectable_options="1"
+			current_option="printer"
+		>
+			<option name="loopback" selectable="1"/>
+			<option name="terminal" selectable="1"/>
+			<option name="ie15" selectable="1"/>
+			<option name="swtpc8212" selectable="1"/>
+			<option name="sunkbd" selectable="1"/>
+			<option name="null_modem" selectable="1"/>
+			<option name="keyboard" selectable="1"/>
+			<option name="printer" selectable="1"/>
+			<option name="pty" selectable="1"/>
+			<option name="dec_loopback" selectable="1"/>
+		</slot>
+		<slot name=":ext" fixed="0" has_selectable_options="1"
+			current_option="multi"
+		>
+			<option name="cc3hdb1" selectable="1"/>
+			<option name="cp450_fdc" selectable="1"/>
+			<option name="ssc" selectable="1"/>
+			<option name="stecomp" selectable="1"/>
+			<option name="pak" selectable="0"/>
+			<option name="fdc" selectable="1"/>
+			<option name="ccpsg" selectable="1"/>
+			<option name="orch90" selectable="1"/>
+			<option name="fdcv11" selectable="1"/>
+			<option name="cc2hdb1" selectable="1"/>
+			<option name="games_master" selectable="1"/>
+			<option name="banked_16k" selectable="0"/>
+			<option name="sym12" selectable="1"/>
+			<option name="ram" selectable="1"/>
+			<option name="dcmodem" selectable="1"/>
+			<option name="multi" selectable="1"/>
+			<option name="rs232" selectable="1"/>
+			<option name="cd6809_fdc" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot1" fixed="0" has_selectable_options="1"
+			current_option="ssc"
+		>
+			<option name="orch90" selectable="1"/>
+			<option name="rs232" selectable="1"/>
+			<option name="ssc" selectable="1"/>
+			<option name="stecomp" selectable="1"/>
+			<option name="banked_16k" selectable="0"/>
+			<option name="sym12" selectable="1"/>
+			<option name="dcmodem" selectable="1"/>
+			<option name="pak" selectable="0"/>
+			<option name="games_master" selectable="1"/>
+			<option name="ccpsg" selectable="1"/>
+			<option name="ram" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot2" fixed="0" has_selectable_options="1"
+			current_option=""
+		>
+			<option name="orch90" selectable="1"/>
+			<option name="rs232" selectable="1"/>
+			<option name="ssc" selectable="1"/>
+			<option name="stecomp" selectable="1"/>
+			<option name="banked_16k" selectable="0"/>
+			<option name="sym12" selectable="1"/>
+			<option name="dcmodem" selectable="1"/>
+			<option name="pak" selectable="0"/>
+			<option name="games_master" selectable="1"/>
+			<option name="ccpsg" selectable="1"/>
+			<option name="ram" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot3" fixed="0" has_selectable_options="1"
+			current_option=""
+		>
+			<option name="orch90" selectable="1"/>
+			<option name="rs232" selectable="1"/>
+			<option name="ssc" selectable="1"/>
+			<option name="stecomp" selectable="1"/>
+			<option name="banked_16k" selectable="0"/>
+			<option name="sym12" selectable="1"/>
+			<option name="dcmodem" selectable="1"/>
+			<option name="pak" selectable="0"/>
+			<option name="games_master" selectable="1"/>
+			<option name="ccpsg" selectable="1"/>
+			<option name="ram" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot4" fixed="0" has_selectable_options="1"
+			current_option="fdcv11"
+		>
+			<option name="cc3hdb1" selectable="1"/>
+			<option name="cp450_fdc" selectable="1"/>
+			<option name="ssc" selectable="1"/>
+			<option name="stecomp" selectable="1"/>
+			<option name="cd6809_fdc" selectable="1"/>
+			<option name="fdc" selectable="1"/>
+			<option name="ccpsg" selectable="1"/>
+			<option name="orch90" selectable="1"/>
+			<option name="fdcv11" selectable="1"/>
+			<option name="pak" selectable="0"/>
+			<option name="banked_16k" selectable="0"/>
+			<option name="sym12" selectable="1"/>
+			<option name="cc2hdb1" selectable="1"/>
+			<option name="dcmodem" selectable="1"/>
+			<option name="games_master" selectable="1"/>
+			<option name="ram" selectable="1"/>
+			<option name="rs232" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot4:fdcv11:wd17xx:0" fixed="0" has_selectable_options="1"
+			current_option="qd"
+		>
+			<option name="qd" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot4:fdcv11:wd17xx:1" fixed="0" has_selectable_options="1"
+			current_option="qd"
+		>
+			<option name="qd" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot4:fdcv11:wd17xx:2" fixed="0" has_selectable_options="1"
+			current_option=""
+		>
+			<option name="qd" selectable="1"/>
+		</slot>
+		<slot name=":ext:multi:slot4:fdcv11:wd17xx:3" fixed="0" has_selectable_options="1"
+			current_option=""
+		>
+			<option name="qd" selectable="1"/>
+		</slot>
+	</slots>
+</status>

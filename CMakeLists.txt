@@ -166,6 +166,7 @@ add_executable(BletchMAME_tests
 	src/tests/prefs_test.cpp
 	src/tests/runmachinetask_test.cpp
 	src/tests/softwarelist_test.cpp
+	src/tests/status_test.cpp
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
 	src/tests/dialogs/about_test.cpp

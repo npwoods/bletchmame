@@ -229,11 +229,13 @@ status::update::~update()
 
 status::update status::update::read(QIODevice &input_stream)
 {
+	int rootTagParseCount = 0;
 	status::update result;
 
 	XmlParser xml;
 	xml.onElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
+		rootTagParseCount++;
 		attributes.get("phase",					result.m_phase, s_machine_phase_parser);
 		attributes.get("paused",				result.m_paused);
 		attributes.get("polling_input_seq",		result.m_polling_input_seq);
@@ -405,6 +407,13 @@ status::update status::update::read(QIODevice &input_stream)
 	// this should not happen unless there is a bug
 	if (!result.m_success)
 		result.m_parse_error = xml.errorMessage();
+
+	// check that we parsed the status tag once
+	if (result.m_success && rootTagParseCount != 1)
+	{
+		result.m_success = false;
+		result.m_parse_error = "Could not parse <status> tag";
+	}
 
 	// sort the results
 	if (result.m_images)
