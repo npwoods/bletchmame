@@ -21,6 +21,7 @@ namespace
         void statusUpdateRead_mame0226()    { statusUpdateRead(":/resources/status_mame0226_coco2b_1.xml"); }
         void statusUpdateRead_mame0227()    { statusUpdateRead(":/resources/status_mame0227_coco2b_1.xml"); }
         void statusUpdateReadError_1()      { statusUpdateReadError(""); }
+        void statusUpdateReadError_2()      { statusUpdateReadError("<bogusxml/>"); }
 
     private:
         void statusUpdateRead(const char *resourceName);
