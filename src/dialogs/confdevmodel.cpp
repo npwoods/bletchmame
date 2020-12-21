@@ -16,8 +16,8 @@
 //  CONSTANTS
 //**************************************************************************
 
-#define LOG_POPULATE_DEVICES	1
-#define LOG_UNEXPECTED			1
+#define LOG_POPULATE_DEVICES	0
+#define LOG_UNEXPECTED			0
 
 
 //**************************************************************************
@@ -340,7 +340,7 @@ T &ConfigurableDevicesModel::nodeFromModelIndex(const QModelIndex &index)
 {
 	Node *node = index.isValid()
 		? static_cast<Node *>(index.internalPointer())
-		: m_root;
+		: &*m_root;
 	return *dynamic_cast<T *>(node);
 }
 
@@ -437,7 +437,7 @@ std::optional<QString> ConfigurableDevicesModel::getSlotOptionText(info::slot sl
 		else
 		{
 			// very special case - this is an option that is not present in the infodb; return it verbatim
-			result = QString("%1 (???)").arg(slotOption);
+			result = QString("%1 (\?\?\?)").arg(slotOption);
 		}
 	}
 	else
