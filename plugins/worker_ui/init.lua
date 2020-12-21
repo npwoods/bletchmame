@@ -181,10 +181,11 @@ function find_port_and_field(tag, mask)
 	end
 end
 
--- input polling and mouse
+-- global state
 local current_poll_field = nil
 local current_poll_seq_type = nul
 local mouse_enabled_by_ui = false
+local pause_when_restarted = true
 
 function is_polling_input_seq()
 	if current_poll_field then
@@ -709,6 +710,23 @@ function command_create(args)
 	emit_status()
 end
 
+-- CHANGE_SLOTS Command
+function command_change_slots(args)
+	for i = 2,#args-1,2 do
+		local slot_option_name = args[i + 0]
+		local slot_option_value = args[i + 1]
+		local opt = get_slot_option(slot_option_name)
+		if not opt then
+			print("@ERROR ### Cannot find slot option '" .. slot_option_name .. "'")
+			return
+		end
+		opt:specify(slot_option_value)
+	end
+	pause_when_restarted = manager:machine().paused
+	manager:machine():hard_reset()
+	print("@OK ### Slots changed and hard reset scheduled")
+end
+
 -- SEQ_SET command
 function command_seq_set(args)
 	local field_ids = ""
@@ -913,6 +931,7 @@ local commands =
 	["load"]						= command_load,
 	["unload"]						= command_unload,
 	["create"]						= command_create,
+	["change_slots"]				= command_change_slots,
 	["seq_set"]						= command_seq_set,
 	["seq_poll_start"]				= command_seq_poll_start,
 	["seq_poll_stop"]				= command_seq_poll_stop,
@@ -965,10 +984,15 @@ function startplugin()
 		session_active = true
 		update_mouse_enabled()
 
+		-- do we have to pause now that we [re]started?
+		if pause_when_restarted then
+			emu.pause()
+			pause_when_restarted = true
+		end
+
 		-- is this the very first time we have hit a pre-start?
 		if not initial_start then
 			-- and indicate that we're ready for commands
-			emu.pause()
 			print("@OK STATUS ### Emulation commenced; ready for commands")
 			emit_status()
 			initial_start = true
