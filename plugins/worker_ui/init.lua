@@ -821,7 +821,6 @@ function command_seq_poll_start(args)
 		end
 
 		-- start polling
-		print(sequence_poller)
 		if (start_seq) then
 			sequence_poller:start(start_seq)
 		else
