@@ -182,13 +182,12 @@ function find_port_and_field(tag, mask)
 end
 
 -- global state
-local current_poll_field = nil
-local current_poll_seq_type = nul
+local current_poll_callback = nil
 local mouse_enabled_by_ui = false
 local pause_when_restarted = true
 
 function is_polling_input_seq()
-	if current_poll_field then
+	if current_poll_callback then
 		return true
 	else
 		return false
@@ -200,8 +199,7 @@ function update_mouse_enabled()
 end
 
 function stop_polling_input_seq()
-	current_poll_field = nil
-	current_poll_seq_type = nil
+	current_poll_callback = nil
 	manager:ui():set_aggressive_input_focus(false)
 	update_mouse_enabled()
 end
@@ -786,25 +784,71 @@ function command_seq_poll_start(args)
 		return
 	end
 
-	-- identify seq class (absolute/relative/switch)
-	local input_seq_class
-	if (field.is_analog and args[4] == "standard") then
-		input_seq_class = "absolute"
-	else
-		input_seq_class = "switch"
-	end
-
 	-- optional start seq
 	local start_seq
 	if (args[5] and args[5] ~= "") then
 		start_seq = manager:machine():input():seq_from_tokens(args[5])
 	end
 
-	-- start polling!
-	manager:machine():input():seq_poll_start(input_seq_class, start_seq)
+	-- start polling! (this was changed radically in MAME 0.227, so this is quite complicated and it
+	-- also involves setting up seq_poll_continue to hide these nuances)
+	local seq_poll_continue
+	if manager:machine():input().seq_poll_start ~= nil then
+		-- MAME 0.226 and prior technique
+		local input_seq_class
+		if (field.is_analog and args[4] == "standard") then
+			input_seq_class = "absolute"
+		else
+			input_seq_class = "switch"
+		end
+
+		-- start polling
+		manager:machine():input():seq_poll_start(input_seq_class, start_seq)
+
+		-- and prepare seq_poll_continue
+		seq_poll_continue = function()
+			if manager:machine():input():seq_poll() then
+				return manager:machine():input():seq_poll_final()
+			end
+		end
+	else
+		-- MAME 0.227 and later technique
+		local sequence_poller
+		if (field.is_analog and args[4] == "standard") then
+			sequence_poller = manager:machine():input():axis_sequence_poller()
+		else
+			sequence_poller = manager:machine():input():switch_sequence_poller()
+		end
+
+		-- start polling
+		print(sequence_poller)
+		if (start_seq) then
+			sequence_poller:start(start_seq)
+		else
+			sequence_poller:start()
+		end
+
+		-- and prepare seq_poll_continue
+		seq_poll_continue = function()
+			if sequence_poller:poll() then
+				return sequence_poller.sequence
+			end
+		end
+	end
+
+	-- set up the callback and tidy things up
+	current_poll_callback = function()
+		local final_seq = seq_poll_continue()
+		if final_seq then
+			-- we got something - specify the input seq
+			manager:machine():input():seq_pressed(final_seq)
+			field:set_input_seq(args[4], final_seq)
+					
+			-- and terminate polling
+			stop_polling_input_seq()
+		end
+	end
 	manager:ui():set_aggressive_input_focus(true)
-	current_poll_field = field
-	current_poll_seq_type = args[4]
 	update_mouse_enabled()
 	print("@OK STATUS ### Starting polling")
 	emit_status()
@@ -1014,17 +1058,9 @@ function startplugin()
 		-- it is essential that we only perform these activities when there
 		-- is an active session!
 		if session_active then
-			-- are we polling input?
+			-- are we polling input?  if so, poll!
 			if is_polling_input_seq() then
-				if manager:machine():input():seq_poll() then
-					-- done polling; set the new input_seq
-					local seq = manager:machine():input():seq_poll_final()
-					manager:machine():input():seq_pressed(seq)
-					current_poll_field:set_input_seq(current_poll_seq_type, seq)
-					
-					-- and terminate polling
-					stop_polling_input_seq()
-				end
+				current_poll_callback()
 			end
 
 			-- do we have a command?
