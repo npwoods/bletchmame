@@ -1,0 +1,8 @@
+<script>
+	<command>THROTTLED 0</command>
+	<command>RESUME</command>
+	<sleep seconds="5"/>
+	<command>SEQ_POLL_START INP1 1 standard</command>
+	<sleep seconds="5"/>
+	<command>EXIT</command>
+</script>
