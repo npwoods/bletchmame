@@ -51,13 +51,6 @@ namespace profiles
 		void save() const;
 		void save_as(QTextStream &stream) const;
 
-		QString directory_path() const
-		{
-			QString result;
-			wxFileName::SplitPath(path(), &result, nullptr, nullptr);
-			return result;
-		}
-
 		// statics
 		static std::vector<profile> scan_directories(const QStringList &paths);
 		static void create(QTextStream &stream, const info::machine &machine, const software_list::software *software);

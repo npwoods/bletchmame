@@ -13,6 +13,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 		- An implication is that previous versions of BletchMAME will not work with MAME 0.227 or greater
 	- Changed the Images Dialog to a Configurable Devices dialog, combining image and slot selection
 		- Slot modification requires MAME 0.227, and will not function in previouew versions
+	- Fixed profile renaming, which has been broken since 2.0
+	- Fixed a bug in the profiles view that could cause a crash if one right clicks empty space
 
 - 2.3 (2020-Dec-13)
 	- Added a warning to the Images Dialog if no hash paths were set up
