@@ -674,12 +674,15 @@ end
 
 -- LOAD command
 function command_load(args)
-	local image = find_image_by_tag(args[2])
-	if not image then
-		print("@ERROR ### Cannot find device '" .. args[2] .. "'")
-		return
+	-- loop; this is a batch command
+	for i = 2,#args-1,2 do		
+		local image = find_image_by_tag(args[i+0])
+		if not image then
+			print("@ERROR ### Cannot find device '" .. args[i+0] .. "'")
+			return
+		end
+		image:load(args[i+1])
 	end
-	image:load(args[3])
 	print("@OK STATUS ### Device '" .. args[2] .. "' loaded '" .. args[3] .. "' successfully")
 	emit_status()
 end

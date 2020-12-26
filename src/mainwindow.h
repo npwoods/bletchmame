@@ -14,7 +14,7 @@
 #include <QFileDialog>
 #include <memory.h>
 
-#include "profile.h"
+#include "sessionbehavior.h"
 #include "prefs.h"
 #include "client.h"
 #include "iconloader.h"
@@ -148,8 +148,7 @@ private:
 	info::database						m_info_db;
 
 	// status of running emulation
-	QString								m_current_profile_path;
-	bool								m_current_profile_auto_save_state;
+	std::unique_ptr<SessionBehavior>	m_sessionBehavior;
 	std::optional<status::state>		m_state;
 
 	// other
@@ -184,7 +183,6 @@ private:
 	bool PromptForMameExecutable();
 	bool refreshMameInfoDatabase();
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
-	bool shouldPromptOnStop() const;
 	void showInputsDialog(status::input::input_class input_class);
 	void showSwitchesDialog(status::input::input_class input_class);
 	bool isMameVersionAtLeast(const MameVersion &version) const;
@@ -195,8 +193,9 @@ private:
 	void updateSoftwareList();
 	info::machine getRunningMachine() const;
 	bool attachToRootPanel() const;
-	void run(const info::machine &machine, const software_list::software *software = nullptr, const profiles::profile *profile = nullptr);
-	void run(const profiles::profile &profile);
+	void run(const info::machine &machine, const software_list::software *software = nullptr);
+	void run(std::shared_ptr<profiles::profile> &&profile);
+	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
 	void FileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
