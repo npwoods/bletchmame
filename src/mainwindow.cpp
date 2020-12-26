@@ -2353,7 +2353,8 @@ bool MainWindow::DirExistsOrMake(const QString &path)
 
 void MainWindow::duplicateProfile(const profiles::profile &profile)
 {
-	QString dir_path = profile.directory_path();
+	QFileInfo fi(profile.path());
+	QString dir_path = fi.dir().absolutePath();
 
 	// get the full path for a new profile
 	QString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
@@ -2394,7 +2395,9 @@ void MainWindow::duplicateProfile(const profiles::profile &profile)
 
 void MainWindow::renameProfile(const profiles::profile &profile)
 {
-	throw false;
+	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
+	for (const QModelIndex &modelIndex : selection)
+		m_ui->profilesTableView->edit(modelIndex);
 }
 
 

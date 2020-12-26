@@ -114,6 +114,18 @@ QModelIndex ProfileListItemModel::findProfileIndex(const QString &path) const
 
 
 //-------------------------------------------------
+//  setProfileName
+//-------------------------------------------------
+
+bool ProfileListItemModel::setProfileName(const profiles::profile &profile, const QString &newName)
+{
+    QFileInfo fi(profile.path());
+    QString newPath = fi.dir().absolutePath() + "/" + newName + ".bletchmameprofile";
+    return profiles::profile::profile_file_rename(profile.path(), newPath);
+}
+
+
+//-------------------------------------------------
 //  index
 //-------------------------------------------------
 
@@ -192,6 +204,13 @@ QVariant ProfileListItemModel::data(const QModelIndex &index, int role) const
                     result = m_iconLoader.getIcon(*machine);
             }
             break;
+
+        case Qt::EditRole:
+            if (column == Column::Name)
+            {
+                result = p.name();
+            }
+            break;
         }
     }
     return result;
@@ -239,5 +258,28 @@ Qt::ItemFlags ProfileListItemModel::flags(const QModelIndex &index) const
     Qt::ItemFlags result = QAbstractItemModel::flags(index);
     if (index.column() == (int)Column::Name)
         result |= Qt::ItemIsEditable;
+    return result;
+}
+
+
+//-------------------------------------------------
+//  setData
+//-------------------------------------------------
+
+bool ProfileListItemModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    bool result = false;
+    if (index.isValid()
+        && index.row() >= 0
+        && index.row() < m_profiles.size())
+    {
+        const profiles::profile &p = m_profiles[index.row()];
+        Column column = (Column)index.column();
+
+        if (role == Qt::EditRole && column == Column::Name)
+        {
+            result = setProfileName(p, value.toString());
+        }
+    }
     return result;
 }

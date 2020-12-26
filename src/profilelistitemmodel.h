@@ -52,6 +52,7 @@ public:
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
+	virtual bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
 private:
 	Preferences &					m_prefs;
@@ -60,6 +61,8 @@ private:
 	QFileSystemWatcher &			m_fileSystemWatcher;
 	std::vector<profiles::profile>	m_profiles;
 	std::function<void()>			m_fswCallback;
+
+	static bool setProfileName(const profiles::profile &profile, const QString &newName);
 
 };
 
