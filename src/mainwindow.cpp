@@ -1369,6 +1369,8 @@ void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &p
 {
 	// identify the selected software
 	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
+	if (selection.count() <= 0)
+		return;
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
 	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
