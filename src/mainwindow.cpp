@@ -64,7 +64,7 @@ public:
 		// if we're running and not pause, pause while the message box is up
 		m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
 		if (m_is_running)
-			m_host.ChangePaused(true);
+			m_host.changePaused(true);
 
 		// track the chain of pausers
 		m_host.m_current_pauser = this;
@@ -73,7 +73,7 @@ public:
 	~Pauser()
 	{
 		if (m_is_running)
-			m_host.ChangePaused(false);
+			m_host.changePaused(false);
 		m_host.m_current_pauser = m_last_pauser;
 	}
 
@@ -96,7 +96,7 @@ public:
 
 	virtual info::machine getMachine()
 	{
-		return m_host.GetRunningMachine();
+		return m_host.getRunningMachine();
 	}
 
 	virtual Preferences &getPreferences()
@@ -126,7 +126,7 @@ public:
 
 	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
 	{
-		info::machine machine = m_host.GetRunningMachine();
+		info::machine machine = m_host.getRunningMachine();
 		const QString &device_type = GetDeviceType(machine, tag);
 		return m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
 	}
@@ -152,7 +152,7 @@ public:
 		else
 		{
 			// find the device declaration
-			auto devices = m_host.GetRunningMachine().devices();
+			auto devices = m_host.getRunningMachine().devices();
 
 			auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
 			{
@@ -169,18 +169,18 @@ public:
 	virtual void createImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
-		m_host.Issue({ "create", tag, std::move(path) });
+		m_host.issue({ "create", tag, std::move(path) });
 	}
 
 	virtual void loadImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
-		m_host.Issue({ "load", tag, std::move(path) });
+		m_host.issue({ "load", tag, std::move(path) });
 	}
 
 	virtual void unloadImage(const QString &tag)
 	{
-		m_host.Issue({ "unload", tag });
+		m_host.issue({ "unload", tag });
 	}
 
 	virtual bool startedWithHashPaths() const
@@ -203,7 +203,7 @@ public:
 		}
 
 		// and issue the command
-		m_host.Issue(args);
+		m_host.issue(args);
 	}
 
 private:
@@ -211,7 +211,7 @@ private:
 
 	const QString &getMachineName() const
 	{
-		return m_host.GetRunningMachine().name();
+		return m_host.getRunningMachine().name();
 	}
 };
 
@@ -258,17 +258,17 @@ public:
 		}
 
 		// invoke!
-		m_host.Issue(args);
+		m_host.issue(args);
 	}
 
 	virtual void StartPolling(const QString &port_tag, ioport_value mask, status::input_seq::type seq_type, const QString &start_seq_tokens) override
 	{
-		m_host.Issue({ "seq_poll_start", port_tag, QString::number(mask), SeqTypeString(seq_type), start_seq_tokens });
+		m_host.issue({ "seq_poll_start", port_tag, QString::number(mask), SeqTypeString(seq_type), start_seq_tokens });
 	}
 
 	virtual void StopPolling() override
 	{
-		m_host.Issue({ "seq_poll_stop" });
+		m_host.issue({ "seq_poll_stop" });
 	}
 
 private:
@@ -309,7 +309,7 @@ public:
 
 	virtual void SetInputValue(const QString &port_tag, ioport_value mask, ioport_value value) override
 	{
-		m_host.Issue({ "set_input_value", port_tag, QString::number(mask), QString::number(value) });
+		m_host.issue({ "set_input_value", port_tag, QString::number(mask), QString::number(value) });
 	}
 
 private:
@@ -335,9 +335,9 @@ public:
 	virtual void setCheatState(const QString &id, bool enabled, std::optional<std::uint64_t> parameter) override
 	{
 		if (parameter)
-			m_host.Issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(parameter.value()) });
+			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(parameter.value()) });
 		else
-			m_host.Issue({ "set_cheat_state", id, enabled ? "1" : "0" });
+			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0" });
 	}
 
 private:
@@ -542,7 +542,7 @@ public:
 		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_host.m_menu_bar_shown);
 		m_mouseCaptured.subscribe([this]()
 		{
-			m_host.Issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
+			m_host.issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
 			m_host.setCursor(m_mouseCaptured.get() ? Qt::BlankCursor : Qt::ArrowCursor);
 		});
 	}
@@ -699,13 +699,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
-	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::InvokePing);
+	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::invokePing);
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isEnabled,	&QWidget::setEnabled,		{ },								false);
 	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isHidden,		&QWidget::setHidden,		{ },								true);
-	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		{ },								[this]() { return !AttachToRootPanel(); });
+	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		{ },								[this]() { return !attachToRootPanel(); });
 	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	&status::state::paused,				[this]() { return getTitleBarText(); });
 
 	// actions
@@ -744,7 +744,7 @@ MainWindow::MainWindow(QWidget *parent)
 		action.setEnabled(false);
 		action.setCheckable(true);
 
-		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { ChangeThrottleRate(throttle_rate); });
+		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { changeThrottleRate(throttle_rate); });
 		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },								true);
 		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::throttle_rate,	[this, throttle_rate]() { return m_state->throttle_rate().get() == throttle_rate; });
 	}
@@ -758,7 +758,7 @@ MainWindow::MainWindow(QWidget *parent)
 		action.setEnabled(false);
 		action.setCheckable(true);
 
-		connect(&action, &QAction::triggered, this, [this, value{ value.toStdString()}]() { Issue({ "frameskip", value }); });
+		connect(&action, &QAction::triggered, this, [this, value{ value.toStdString()}]() { issue({ "frameskip", value }); });
 		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },							true);
 		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::frameskip,	[this, value{std::move(value)}]() { return m_state->frameskip().get() == value; });
 	}
@@ -866,7 +866,7 @@ void MainWindow::on_actionStop_triggered()
 			return;
 	}
 
-	InvokeExit();
+	invokeExit();
 }
 
 
@@ -876,7 +876,7 @@ void MainWindow::on_actionStop_triggered()
 
 void MainWindow::on_actionPause_triggered()
 {
-	ChangePaused(!m_state->paused().get());
+	changePaused(!m_state->paused().get());
 }
 
 
@@ -963,7 +963,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 	if (m_state.value().is_recording())
 	{
 		// If so, stop the recording
-		Issue({ "end_recording" });
+		issue({ "end_recording" });
 		m_current_recording_movie_filename = "";
 	}
 	else
@@ -1006,7 +1006,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 			// and issue the command
 			QString nativePath = QDir::toNativeSeparators(path);
-			Issue({ "begin_recording", std::move(nativePath), recordingTypeString });
+			issue({ "begin_recording", std::move(nativePath), recordingTypeString });
 			m_current_recording_movie_filename = std::move(path);
 		}
 	}
@@ -1019,7 +1019,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 void MainWindow::on_actionDebugger_triggered()
 {
-	Issue("debugger");
+	issue("debugger");
 }
 
 
@@ -1029,7 +1029,7 @@ void MainWindow::on_actionDebugger_triggered()
 
 void MainWindow::on_actionSoftReset_triggered()
 {
-	Issue("soft_reset");
+	issue("soft_reset");
 }
 
 
@@ -1039,7 +1039,7 @@ void MainWindow::on_actionSoftReset_triggered()
 
 void MainWindow::on_actionHardReset_triggered()
 {
-	Issue("hard_reset");
+	issue("hard_reset");
 }
 
 
@@ -1059,7 +1059,7 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::on_actionIncreaseSpeed_triggered()
 {
-	ChangeThrottleRate(-1);
+	changeThrottleRate(-1);
 }
 
 
@@ -1069,7 +1069,7 @@ void MainWindow::on_actionIncreaseSpeed_triggered()
 
 void MainWindow::on_actionDecreaseSpeed_triggered()
 {
-	ChangeThrottleRate(+1);
+	changeThrottleRate(+1);
 }
 
 
@@ -1079,7 +1079,7 @@ void MainWindow::on_actionDecreaseSpeed_triggered()
 
 void MainWindow::on_actionWarpMode_triggered()
 {
-	ChangeThrottled(!m_state->throttled());
+	changeThrottled(!m_state->throttled());
 }
 
 
@@ -1112,7 +1112,7 @@ void MainWindow::on_actionFullScreen_triggered()
 void MainWindow::on_actionToggleSound_triggered()
 {
 	bool isEnabled = m_ui->actionToggleSound->isEnabled();
-	ChangeSound(!isEnabled);
+	changeSound(!isEnabled);
 }
 
 
@@ -1294,7 +1294,7 @@ void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
 {
 	// run the machine
 	const info::machine machine = machineFromModelIndex(index);
-	Run(machine);
+	run(machine);
 }
 
 
@@ -1324,7 +1324,7 @@ void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
 	const software_list::software &software = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
 
 	// and run!
-	Run(machine, &software);
+	run(machine, &software);
 }
 
 
@@ -1357,7 +1357,7 @@ void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
 	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
 	// and run!
-	Run(profile);
+	run(profile);
 }
 
 
@@ -1374,10 +1374,10 @@ void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &p
 
 	// build the popup menu
 	QMenu popupMenu;
-	popupMenu.addAction(QString("Run \"%1\"").arg(profile.name()),	[this, &profile]() { Run(profile); });
-	popupMenu.addAction("Duplicate",								[this, &profile]() { DuplicateProfile(profile); });
-	popupMenu.addAction("Rename",									[this, &profile]() { RenameProfile(profile); });
-	popupMenu.addAction("Delete",									[this, &profile]() { DeleteProfile(profile); });
+	popupMenu.addAction(QString("Run \"%1\"").arg(profile.name()),	[this, &profile]() { run(profile); });
+	popupMenu.addAction("Duplicate",								[this, &profile]() { duplicateProfile(profile); });
+	popupMenu.addAction("Rename",									[this, &profile]() { renameProfile(profile); });
+	popupMenu.addAction("Delete",									[this, &profile]() { deleteProfile(profile); });
 	popupMenu.addSeparator();
 	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile.path()); });
 	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
@@ -1582,10 +1582,10 @@ bool MainWindow::refreshMameInfoDatabase()
 
 
 //-------------------------------------------------
-//  GetRunningMachine
+//  getRunningMachine
 //-------------------------------------------------
 
-info::machine MainWindow::GetRunningMachine() const
+info::machine MainWindow::getRunningMachine() const
 {
 	// get the currently running machine
 	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
@@ -1599,10 +1599,10 @@ info::machine MainWindow::GetRunningMachine() const
 
 
 //-------------------------------------------------
-//  AttachToRootPanel
+//  attachToRootPanel
 //-------------------------------------------------
 
-bool MainWindow::AttachToRootPanel() const
+bool MainWindow::attachToRootPanel() const
 {
 	bool result = false;
 	if (HAS_ATTACH_WINDOW)
@@ -1618,10 +1618,10 @@ bool MainWindow::AttachToRootPanel() const
 
 
 //-------------------------------------------------
-//  Run
+//  run
 //-------------------------------------------------
 
-void MainWindow::Run(const info::machine &machine, const software_list::software *software, const profiles::profile *profile)
+void MainWindow::run(const info::machine &machine, const software_list::software *software, const profiles::profile *profile)
 {
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
 	QString preflight_errors = preflightCheck();
@@ -1647,7 +1647,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	Task::ptr task = std::make_shared<RunMachineTask>(
 		machine,
 		std::move(software_name),
-		AttachToRootPanel() ? *m_ui->rootWidget : *this);
+		attachToRootPanel() ? *m_ui->rootWidget : *this);
 	m_client.launch(std::move(task));
 
 	// set up running state and subscribe to events
@@ -1677,7 +1677,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	{
 		// load all images
 		for (const auto &image : profile->images())
-			Issue({ "load", image.m_tag, image.m_path });
+			issue({ "load", image.m_tag, image.m_path });
 
 		// if we have a save state, start it
 		if (profile->auto_save_states())
@@ -1685,7 +1685,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 			QString save_state_path = profiles::profile::change_path_save_state(profile->path());
 			QFileInfo fi(save_state_path);
 			if (fi.exists())
-				Issue({ "state_load", save_state_path });
+				issue({ "state_load", save_state_path });
 		}
 	}
 
@@ -1702,17 +1702,21 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 		dialog.exec();
 		if (dialog.result() != QDialog::DialogCode::Accepted)
 		{
-			Issue("exit");
+			issue("exit");
 			return;
 		}
 	}
 
 	// unpause
-	ChangePaused(false);
+	changePaused(false);
 }
 
 
-void MainWindow::Run(const profiles::profile &profile)
+//-------------------------------------------------
+//	run
+//-------------------------------------------------
+
+void MainWindow::run(const profiles::profile &profile)
 {
 	// find the machine
 	std::optional<info::machine> machine = m_info_db.find_machine(profile.machine());
@@ -1722,7 +1726,7 @@ void MainWindow::Run(const profiles::profile &profile)
 		return;
 	}
 
-	Run(machine.value(), nullptr, &profile);
+	run(machine.value(), nullptr, &profile);
 }
 
 
@@ -1833,7 +1837,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 		}
 
 		// issue exit command so we can shut down the emulation session gracefully
-		InvokeExit();
+		invokeExit();
 		while (m_state.has_value())
 		{
 			QCoreApplication::processEvents();
@@ -1893,7 +1897,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 {
 	Pauser pauser(*this);
 	SwitchesHost host(*this);
-	SwitchesDialog dialog(this, host, input_class, GetRunningMachine());
+	SwitchesDialog dialog(this, host, input_class, getRunningMachine());
 	dialog.exec();
 }
 
@@ -2091,7 +2095,7 @@ void MainWindow::WatchForImageMount(const QString &tag)
 void MainWindow::PlaceInRecentFiles(const QString &tag, const QString &path)
 {
 	// get the machine and device type to update recents
-	info::machine machine = GetRunningMachine();
+	info::machine machine = getRunningMachine();
 	const QString &device_type = GetDeviceType(machine, tag);
 
 	// actually edit the recent files; start by getting recent files
@@ -2176,7 +2180,7 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 
 	// identify the default file and directory
 	const QString &defaultPath = m_prefs.GetMachinePath(
-		GetRunningMachine().name(),
+		getRunningMachine().name(),
 		pathType);
 	QFileInfo defaultPathInfo(QDir::fromNativeSeparators(defaultPath));
 
@@ -2210,7 +2214,7 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, const QStrin
 	commands.push_back(std::move(path));
 
 	// put back the default
-	const QString &running_machine_name(GetRunningMachine().name());
+	const QString &running_machine_name(getRunningMachine().name());
 	if (path_is_file)
 	{
 		m_prefs.SetMachinePath(running_machine_name, pathType, QDir::toNativeSeparators(path));
@@ -2223,7 +2227,7 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, const QStrin
 	}
 
 	// finally issue the actual commands
-	Issue(commands);
+	issue(commands);
 }
 
 
@@ -2243,8 +2247,8 @@ void MainWindow::LaunchingListContextMenu(const QPoint &pos, const software_list
 		: machine.description();
 
 	QMenu popupMenu(this);
-	popupMenu.addAction(QString("Run \"%1\"").arg(description),	[this, machine, &software]() { Run(machine, std::move(software));	});
-	popupMenu.addAction("Create profile",						[this, machine, &software]() { CreateProfile(machine, software);	});
+	popupMenu.addAction(QString("Run \"%1\"").arg(description),	[this, machine, &software]() { run(machine, std::move(software));	});
+	popupMenu.addAction("Create profile",						[this, machine, &software]() { createProfile(machine, software);	});
 	popupMenu.exec(pos);
 }
 
@@ -2276,10 +2280,10 @@ static QString GetUniqueProfilePath(const QString &dir_path, TFunc generate_name
 
 
 //-------------------------------------------------
-//  CreateProfile
+//  createProfile
 //-------------------------------------------------
 
-void MainWindow::CreateProfile(const info::machine &machine, const software_list::software *software)
+void MainWindow::createProfile(const info::machine &machine, const software_list::software *software)
 {
 	// find a path to create the new profile in
 	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
@@ -2324,7 +2328,7 @@ void MainWindow::CreateProfile(const info::machine &machine, const software_list
 	// create the new profile and focus
 	QTextStream text_stream(&file);
 	profiles::profile::create(text_stream, machine, software);
-	FocusOnNewProfile(std::move(new_profile_path));
+	focusOnNewProfile(std::move(new_profile_path));
 }
 
 
@@ -2345,7 +2349,7 @@ bool MainWindow::DirExistsOrMake(const QString &path)
 //  DuplicateProfile
 //-------------------------------------------------
 
-void MainWindow::DuplicateProfile(const profiles::profile &profile)
+void MainWindow::duplicateProfile(const profiles::profile &profile)
 {
 	QString dir_path = profile.directory_path();
 
@@ -2378,25 +2382,25 @@ void MainWindow::DuplicateProfile(const profiles::profile &profile)
 	}
 
 	// finally focus
-	FocusOnNewProfile(std::move(new_profile_path));
+	focusOnNewProfile(std::move(new_profile_path));
 }
 
 
 //-------------------------------------------------
-//  RenameProfile
+//  renameProfile
 //-------------------------------------------------
 
-void MainWindow::RenameProfile(const profiles::profile &profile)
+void MainWindow::renameProfile(const profiles::profile &profile)
 {
 	throw false;
 }
 
 
 //-------------------------------------------------
-//  DeleteProfile
+//  deleteProfile
 //-------------------------------------------------
 
-void MainWindow::DeleteProfile(const profiles::profile &profile)
+void MainWindow::deleteProfile(const profiles::profile &profile)
 {
 	QString message = QString("Are you sure you want to delete profile \"%1\"").arg(profile.name());
 	if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
@@ -2408,10 +2412,10 @@ void MainWindow::DeleteProfile(const profiles::profile &profile)
 
 
 //-------------------------------------------------
-//  FocusOnNewProfile
+//  focusOnNewProfile
 //-------------------------------------------------
 
-void MainWindow::FocusOnNewProfile(QString &&new_profile_path)
+void MainWindow::focusOnNewProfile(QString &&new_profile_path)
 {
 	// set the profiles tab as selected
 	m_ui->tabWidget->setCurrentWidget(m_ui->profilesTab);
@@ -2507,7 +2511,7 @@ void MainWindow::ensureProperFocus()
 	// In absence of a better way to handle this, we have some Windows specific
 	// code below.  Eventually this code should be retired once there is an understanding
 	// of the proper Qt techniques to apply here
-	if (AttachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
+	if (attachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
 	{
 		if (::GetFocus() == (HWND)winId())
 			::SetFocus((HWND)m_ui->rootWidget->winId());
@@ -2525,10 +2529,10 @@ void MainWindow::ensureProperFocus()
 //**************************************************************************
 
 //-------------------------------------------------
-//  Issue
+//  issue
 //-------------------------------------------------
 
-void MainWindow::Issue(const std::vector<QString> &args)
+void MainWindow::issue(const std::vector<QString> &args)
 {
 	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
 	if (!task)
@@ -2538,7 +2542,7 @@ void MainWindow::Issue(const std::vector<QString> &args)
 }
 
 
-void MainWindow::Issue(const std::initializer_list<std::string> &args)
+void MainWindow::issue(const std::initializer_list<std::string> &args)
 {
 	std::vector<QString> qargs;
 	qargs.reserve(args.size());
@@ -2549,85 +2553,85 @@ void MainWindow::Issue(const std::initializer_list<std::string> &args)
 		qargs.push_back(std::move(qarg));
 	}
 
-	Issue(qargs);
+	issue(qargs);
 }
 
 
-void MainWindow::Issue(const char *command)
+void MainWindow::issue(const char *command)
 {
 	QString command_string = command;
-	Issue({ command_string });
+	issue({ command_string });
 }
 
 
 //-------------------------------------------------
-//  InvokePing
+//  invokePing
 //-------------------------------------------------
 
-void MainWindow::InvokePing()
+void MainWindow::invokePing()
 {
 	// only issue a ping if there is an active session, and there is no ping in flight
 	if (!m_pinging && m_state.has_value())
 	{
 		m_pinging = true;
-		Issue("ping");
+		issue("ping");
 	}
 }
 
 
 //-------------------------------------------------
-//  InvokeExit
+//  invokeExit
 //-------------------------------------------------
 
-void MainWindow::InvokeExit()
+void MainWindow::invokeExit()
 {
 	if (m_current_profile_auto_save_state)
 	{
 		QString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);
-		Issue({ "state_save_and_exit", QDir::toNativeSeparators(save_state_path) });
+		issue({ "state_save_and_exit", QDir::toNativeSeparators(save_state_path) });
 	}
 	else
 	{
-		Issue({ "exit" });
+		issue({ "exit" });
 	}
 }
 
 
 //-------------------------------------------------
-//  ChangePaused
+//  changePaused
 //-------------------------------------------------
 
-void MainWindow::ChangePaused(bool paused)
+void MainWindow::changePaused(bool paused)
 {
-	Issue(paused ? "pause" : "resume");
+	issue(paused ? "pause" : "resume");
 }
 
 
 //-------------------------------------------------
-//  ChangeThrottled
+//  changeThrottled
 //-------------------------------------------------
 
-void MainWindow::ChangeThrottled(bool throttled)
+void MainWindow::changeThrottled(bool throttled)
 {
-	Issue({ "throttled", std::to_string(throttled ? 1 : 0) });
+	issue({ "throttled", std::to_string(throttled ? 1 : 0) });
 }
 
 
 //-------------------------------------------------
-//  ChangeThrottleRate
+//  changeThrottleRate
 //-------------------------------------------------
 
-void MainWindow::ChangeThrottleRate(float throttle_rate)
+void MainWindow::changeThrottleRate(float throttle_rate)
 {
-	Issue({ "throttle_rate", std::to_string(throttle_rate) });
+	issue({ "throttle_rate", std::to_string(throttle_rate) });
 }
 
 
 //-------------------------------------------------
-//  ChangeThrottleRate
+//  changeThrottleRate
 //-------------------------------------------------
 
-void MainWindow::ChangeThrottleRate(int adjustment)
+void MainWindow::changeThrottleRate(int adjustment)
 {
 	// find where we are in the array
 	int index;
@@ -2643,17 +2647,17 @@ void MainWindow::ChangeThrottleRate(int adjustment)
 	index = std::min(index, (int)(sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]) - 1));
 
 	// and change the throttle rate
-	ChangeThrottleRate(s_throttle_rates[index]);
+	changeThrottleRate(s_throttle_rates[index]);
 }
 
 
 //-------------------------------------------------
-//  ChangeSound
+//  changeSound
 //-------------------------------------------------
 
-void MainWindow::ChangeSound(bool sound_enabled)
+void MainWindow::changeSound(bool sound_enabled)
 {
-	Issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
+	issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
 }
 
 
