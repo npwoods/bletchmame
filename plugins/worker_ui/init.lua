@@ -139,6 +139,35 @@ function get_device_tag_init(device)
 end
 local get_device_tag = get_device_tag_init
 
+-- get the running_machine - this is different in MAME 0.227 and beyond
+local machine, machine_debugger, machine_input, machine_ioport, machine_natkeyboard
+local machine_options, machine_sound, machine_uiinput, machine_video, ui, plugins
+if (type(manager.machine) == "function") then
+	machine				= function() return manager:machine() end
+	machine_debugger	= function() return manager:machine():debugger() end
+	machine_input		= function() return manager:machine():input() end
+	machine_ioport		= function() return manager:machine():ioport() end
+	machine_natkeyboard	= function() return manager:machine():ioport():natkeyboard() end
+	machine_options		= function() return manager:machine():options() end
+	machine_sound		= function() return manager:machine():sound() end
+	machine_uiinput		= function() return manager:machine():uiinput() end
+	machine_video		= function() return manager:machine():video() end
+	ui					= function() return manager:ui() end
+	plugins				= function() return manager:plugins() end
+else
+	machine				= function() return manager.machine end
+	machine_debugger	= function() return manager.machine.debugger end
+	machine_input		= function() return manager.machine.input end
+	machine_ioport		= function() return manager.machine.ioport end
+	machine_natkeyboard	= function() return manager.machine.ioport.natkeyboard end
+	machine_options		= function() return manager.machine.options end
+	machine_sound		= function() return manager.machine.sound end
+	machine_uiinput		= function() return manager.machine.uiinput end
+	machine_video		= function() return manager.machine.video end
+	ui					= function() return manager.ui end
+	plugins				= function() return manager.plugins end
+end
+
 function get_images()
 	-- return a list of images, avoiding dupes
 	--
@@ -146,7 +175,7 @@ function get_images()
 	-- brief_instance_name, but starting with MAME 0.227, it is indexed by tag.  This
 	-- technique of building a table is neutral to these changes
 	local result = {}
-	for _,image in pairs(manager:machine().images) do
+	for _,image in pairs(machine().images) do
 		result[get_device_tag(image.device)] = image
 	end
 	return result
@@ -169,7 +198,7 @@ function find_port_and_field(tag, mask)
 		tag = ":" .. tag
 	end
 
-	local port = manager:machine():ioport().ports[tag]
+	local port = machine_ioport().ports[tag]
 	if not port then
 		return
 	end
@@ -195,7 +224,8 @@ function is_polling_input_seq()
 end
 
 function update_mouse_enabled()
-	manager:machine():input().device_classes["mouse"].enabled = mouse_enabled_by_ui and not is_polling_input_seq()
+	local enabled = mouse_enabled_by_ui and not is_polling_input_seq()
+	pcall(function() machine_input().device_classes["mouse"].enabled = enabled end)
 end
 
 function stop_polling_input_seq()
@@ -211,8 +241,8 @@ function has_input_using_mouse()
 		-- check this input seq for mouse codes; we clean the seq before checking because if
 		-- it references an unknown mouse we don't care about it
 		local seq = field:input_seq(seq_type)
-		local cleaned_seq = manager:machine():input():seq_clean(seq)
-		local tokens = manager:machine():input():seq_to_tokens(cleaned_seq)
+		local cleaned_seq = machine_input():seq_clean(seq)
+		local tokens = machine_input():seq_to_tokens(cleaned_seq)
 
 		for _, token in pairs(split(tokens)) do
 			if (string.match(tokens, "MOUSECODE_")) then
@@ -221,7 +251,7 @@ function has_input_using_mouse()
 		end
 	end
 
-	for _,port in pairs(manager:machine():ioport().ports) do
+	for _,port in pairs(machine_ioport().ports) do
 		for _,field in pairs(port.fields) do
 			check_seq(field, "standard")
 			if field.is_analog then
@@ -238,7 +268,7 @@ function get_slot_option(tag)
 	if (tag:sub(1, 1) == ":") then
 		tag = tag:sub(2, tag:len())
 	end
-	return manager:machine():options():slot_option(tag)
+	return machine_options():slot_option(tag)
 end
 
 function emit_status(light, out)
@@ -265,27 +295,30 @@ function emit_status(light, out)
 
 	-- abstractions to hide some differences between MAME 0.227 and
 	-- previous versions, similar to get_device_tag
-	local natkeyboard_in_use
-	local get_item_code
-	local get_image_filename
-	if type(manager:machine():ioport().natkeyboard) == "function" then
-		natkeyboard_in_use = manager:machine():ioport():natkeyboard().in_use
-		get_item_code = function(item) return item:code() end
-		get_image_filename = function(image) return image:filename() end
+	local get_item_code, get_image_filename
+	local get_speed_percent, get_effective_frameskip, get_is_recording
+	if type(machine_ioport().natkeyboard) == "function" then
+		get_item_code			= function(item) return item:code() end
+		get_image_filename		= function(image) return image:filename() end
+		get_speed_percent		= function() return machine_video():speed_percent() end
+		get_effective_frameskip	= function() return machine_video():effective_frameskip() end
+		get_is_recording		= function() return machine_video():is_recording() end
 	else
-		natkeyboard_in_use = manager:machine():ioport().natkeyboard.in_use
-		get_item_code = function(item) return item.code end
-		get_image_filename = function(image) return image.filename end
+		get_item_code			= function(item) return item.code end
+		get_image_filename		= function(image) return image.filename end
+		get_speed_percent		= function() return machine_video().speed_percent end
+		get_effective_frameskip	= function() return machine_video().effective_frameskip end
+		get_is_recording		= function() return machine_video().is_recording end
 	end
 
 	emit("<status");
 	emit("\tphase=\"running\"");
 	emit("\tpolling_input_seq=\"" .. tostring(is_polling_input_seq()) .. "\"");
-	emit("\tnatural_keyboard_in_use=\"" .. tostring(natkeyboard_in_use) .. "\"");
-	emit("\tpaused=\"" .. tostring(manager:machine().paused) .. "\"");
+	emit("\tnatural_keyboard_in_use=\"" .. tostring(machine_natkeyboard().in_use) .. "\"");
+	emit("\tpaused=\"" .. tostring(machine().paused) .. "\"");
 	emit("\tstartup_text=\"\"");
-	emit("\tdebugger_present=\"" .. string_from_bool(manager:machine():debugger()) .. "\"");
-	emit("\tshow_profiler=\"" .. tostring(manager:ui().show_profiler) .. "\"");
+	emit("\tdebugger_present=\"" .. string_from_bool(machine_debugger()) .. "\"");
+	emit("\tshow_profiler=\"" .. tostring(ui().show_profiler) .. "\"");
 	if (not light) then
 		emit("\thas_input_using_mouse=\"" .. tostring(has_input_using_mouse()) .. "\"");
 	end
@@ -293,17 +326,17 @@ function emit_status(light, out)
 
 	-- <video> (video_manager)
 	emit("\t<video");
-	emit("\t\tspeed_percent=\"" .. tostring(manager:machine():video():speed_percent()) .. "\"");
-	emit("\t\tframeskip=\"" .. tostring(manager:machine():video().frameskip) .. "\"");
-	emit("\t\teffective_frameskip=\"" .. tostring(manager:machine():video():effective_frameskip()) .. "\"");
-	emit("\t\tthrottled=\"" .. tostring(manager:machine():video().throttled) .. "\"");
-	emit("\t\tthrottle_rate=\"" .. tostring(manager:machine():video().throttle_rate) .. "\"");
-	emit("\t\tis_recording=\"" .. string_from_bool(manager:machine():video():is_recording()) .. "\"");
+	emit("\t\tspeed_percent=\"" .. tostring(get_speed_percent()) .. "\"");
+	emit("\t\tframeskip=\"" .. tostring(machine_video().frameskip) .. "\"");
+	emit("\t\teffective_frameskip=\"" .. tostring(get_effective_frameskip) .. "\"");
+	emit("\t\tthrottled=\"" .. tostring(machine_video().throttled) .. "\"");
+	emit("\t\tthrottle_rate=\"" .. tostring(machine_video().throttle_rate) .. "\"");
+	emit("\t\tis_recording=\"" .. string_from_bool(get_is_recording()) .. "\"");
 	emit("\t/>");
 
 	-- <sound> (sound_manager)
 	emit("\t<sound");
-	emit("\t\tattenuation=\"" .. tostring(manager:machine():sound().attenuation) .. "\"");
+	emit("\t\tattenuation=\"" .. tostring(machine_sound().attenuation) .. "\"");
 	emit("\t/>");
 
 	-- <cheats> (cheat manager)
@@ -346,7 +379,7 @@ function emit_status(light, out)
 		emit("\t</cheats>");
 	end
 
-	if (not light or manager:machine().paused or is_polling_input_seq()) then
+	if (not light or machine().paused or is_polling_input_seq()) then
 		-- <images>
 		emit("\t<images>")
 		for _,image in pairs(get_images()) do
@@ -397,9 +430,9 @@ function emit_status(light, out)
 		emit("\t</images>")
 
 		-- <slots>
-		if pcall(function() return manager:machine().slots end) then
+		if pcall(function() return machine().slots end) then
 			emit("\t<slots>");
-			for name,slot in pairs(manager:machine().slots) do
+			for name,slot in pairs(machine().slots) do
 				-- perform logic equivalent to menu_slot_devices::get_current_option()
 				local current_option_name
 				if (slot.fixed) then
@@ -431,7 +464,7 @@ function emit_status(light, out)
 
 		-- <inputs>
 		emit("\t<inputs>")
-		for _,port in pairs(manager:machine():ioport().ports) do
+		for _,port in pairs(machine_ioport().ports) do
 			for _,field in pairs(port.fields) do
 				if field.enabled then
 					local type_class = field.type_class
@@ -441,7 +474,7 @@ function emit_status(light, out)
 						.. " port_tag=\"" .. xml_encode(get_device_tag(port)) .. "\""
 						.. " mask=\"" .. tostring(field.mask) .. "\""
 						.. " class=\"" .. type_class .. "\""
-						.. " group=\"" .. tostring(manager:machine():ioport():type_group(field.type, field.player)) .. "\""
+						.. " group=\"" .. tostring(machine_ioport():type_group(field.type, field.player)) .. "\""
 						.. " type=\"" .. field.type .. "\""
 						.. " player=\"" .. field.player .. "\""
 						.. " is_analog=\"" .. string_from_bool(field.is_analog) .. "\""
@@ -479,7 +512,7 @@ function emit_status(light, out)
 
 						for _,seq_type in pairs(seq_types) do
 							emit("\t\t\t<seq type=\"" .. seq_type
-								.. "\" tokens=\"" .. xml_encode(manager:machine():input():seq_to_tokens(field:input_seq(seq_type)))
+								.. "\" tokens=\"" .. xml_encode(machine_input():seq_to_tokens(field:input_seq(seq_type)))
 								.. "\"/>")
 						end
 					end
@@ -491,7 +524,7 @@ function emit_status(light, out)
 		emit("\t</inputs>")
 
 		emit("\t<input_devices>")
-		for _,devclass in pairs(manager:machine():input().device_classes) do
+		for _,devclass in pairs(machine_input().device_classes) do
 			emit("\t\t<class name=\"" .. xml_encode(devclass.name)
 				.. "\" enabled=\"" .. string_from_bool(devclass.enabled)
 				.. "\" multi=\"" .. string_from_bool(devclass.multi) .. "\">")
@@ -502,7 +535,7 @@ function emit_status(light, out)
 				for id,item in pairs(device.items) do
 					emit("\t\t\t\t<item name=\"" .. xml_encode(item.name)
 						.. "\" token=\"" .. xml_encode(item.token)
-						.. "\" code=\"" .. xml_encode(manager:machine():input():code_to_token(get_item_code(item)))
+						.. "\" code=\"" .. xml_encode(machine_input():code_to_token(get_item_code(item)))
 						.. "\"/>")
 				end
 				emit("\t\t\t</device>")
@@ -521,7 +554,7 @@ end
 
 -- EXIT command
 function command_exit(args)
-	manager:machine():exit()
+	machine():exit()
 	print("@OK ### Exit scheduled")
 end
 
@@ -535,13 +568,13 @@ end
 
 -- SOFT_RESET command
 function command_soft_reset(args)
-	manager:machine():soft_reset()
+	machine():soft_reset()
 	print("@OK ### Soft Reset Scheduled")
 end
 
 -- HARD_RESET command
 function command_hard_reset(args)
-	manager:machine():hard_reset()
+	machine():hard_reset()
 	print("@OK ### Hard Reset Scheduled")
 end
 
@@ -561,26 +594,26 @@ end
 
 -- DEBUGGER command
 function command_debugger(args)
-	if not manager:machine():debugger() then
+	if not machine_debugger() then
 		print("@ERROR ### Debugger not present")
 		return
 	end
 
-	manager:machine():debugger().execution_state = 'stop'
+	machine_debugger().execution_state = 'stop'
 	print("@OK ### Dropping into debugger")
 end
 
 -- THROTTLED command
 function command_throttled(args)
-	manager:machine():video().throttled = toboolean(args[2])
-	print("@OK STATUS ### Throttled set to " .. tostring(manager:machine():video().throttled))
+	machine_video().throttled = toboolean(args[2])
+	print("@OK STATUS ### Throttled set to " .. tostring(machine_video().throttled))
 	emit_status()
 end
 
 -- THROTTLE_RATE command
 function command_throttle_rate(args)
-	manager:machine():video().throttle_rate = tonumber(args[2])
-	print("@OK STATUS ### Throttle rate set to " .. tostring(manager:machine():video().throttle_rate))
+	machine_video().throttle_rate = tonumber(args[2])
+	print("@OK STATUS ### Throttle rate set to " .. tostring(machine_video().throttle_rate))
 	emit_status()
 end
 
@@ -592,34 +625,34 @@ function command_frameskip(args)
 	else
 		frameskip = tonumber(args[2])
 	end
-	manager:machine():video().frameskip = frameskip
-	print("@OK STATUS ### Frame skip rate set to " .. tostring(manager:machine():video().frameskip))
+	machine_video().frameskip = frameskip
+	print("@OK STATUS ### Frame skip rate set to " .. tostring(machine_video().frameskip))
 	emit_status()
 end
 
 -- INPUT command
 function command_input(args)
-	manager:machine():ioport():natkeyboard():post(args[2])
+	machine_ioport():natkeyboard():post(args[2])
 	print("@OK ### Text inputted")
 end
 
 -- PASTE command
 function command_paste(args)
-	manager:machine():ioport():natkeyboard():paste(args[2])
+	machine_ioport():natkeyboard():paste(args[2])
 	print("@OK ### Text inputted from clipboard")
 end
 
 -- SET_ATTENUATION command
 function command_set_attenuation(args)
-	manager:machine():sound().attenuation = tonumber(args[2])
-	print("@OK STATUS ### Sound attenuation set to " .. tostring(manager:machine():sound().attenuation))
+	machine_sound().attenuation = tonumber(args[2])
+	print("@OK STATUS ### Sound attenuation set to " .. tostring(machine_sound().attenuation))
 	emit_status()
 end
 
 -- SET_NATURAL_KEYBOARD_IN_USE command
 function command_set_natural_keyboard_in_use(args)
-	manager:machine():ioport():natkeyboard().in_use = toboolean(args[2])
-	print("@OK STATUS ### Natural keyboard in use set to " .. tostring(manager:machine():ioport():natkeyboard().in_use))
+	machine_ioport():natkeyboard().in_use = toboolean(args[2])
+	print("@OK STATUS ### Natural keyboard in use set to " .. tostring(machine_ioport():natkeyboard().in_use))
 	emit_status()
 end
 
@@ -660,14 +693,14 @@ end
 
 -- BEGIN_RECORDING command
 function command_begin_recording(args)
-	manager:machine():video():begin_recording(args[2], args[3])
+	machine_video():begin_recording(args[2], args[3])
 	print("@OK STATUS ### Began recording '" .. args[2] .. "'")
 	emit_status()
 end
 
 -- END_RECORDING command
 function command_end_recording(args)
-	manager:machine():video():end_recording()
+	machine_video():end_recording()
 	print("@OK STATUS ### Ended recording")
 	emit_status()
 end
@@ -757,7 +790,7 @@ function command_seq_set(args)
 		if (tokens == "*") then
 			seq = field:default_input_seq(seq_type)
 		else
-			seq = manager:machine():input():seq_from_tokens(tokens)
+			seq = machine_input():seq_from_tokens(tokens)
 		end
 		field:set_input_seq(seq_type, seq)
 
@@ -790,13 +823,13 @@ function command_seq_poll_start(args)
 	-- optional start seq
 	local start_seq
 	if (args[5] and args[5] ~= "") then
-		start_seq = manager:machine():input():seq_from_tokens(args[5])
+		start_seq = machine_input():seq_from_tokens(args[5])
 	end
 
 	-- start polling! (this was changed radically in MAME 0.227, so this is quite complicated and it
 	-- also involves setting up seq_poll_continue to hide these nuances)
 	local seq_poll_continue
-	if manager:machine():input().seq_poll_start ~= nil then
+	if machine_input().seq_poll_start ~= nil then
 		-- MAME 0.226 and prior technique
 		local input_seq_class
 		if (field.is_analog and args[4] == "standard") then
@@ -806,21 +839,21 @@ function command_seq_poll_start(args)
 		end
 
 		-- start polling
-		manager:machine():input():seq_poll_start(input_seq_class, start_seq)
+		machine_input():seq_poll_start(input_seq_class, start_seq)
 
 		-- and prepare seq_poll_continue
 		seq_poll_continue = function()
-			if manager:machine():input():seq_poll() then
-				return manager:machine():input():seq_poll_final()
+			if machine_input():seq_poll() then
+				return machine_input():seq_poll_final()
 			end
 		end
 	else
 		-- MAME 0.227 and later technique
 		local sequence_poller
 		if (field.is_analog and args[4] == "standard") then
-			sequence_poller = manager:machine():input():axis_sequence_poller()
+			sequence_poller = machine_input():axis_sequence_poller()
 		else
-			sequence_poller = manager:machine():input():switch_sequence_poller()
+			sequence_poller = machine_input():switch_sequence_poller()
 		end
 
 		-- start polling
@@ -843,7 +876,7 @@ function command_seq_poll_start(args)
 		local final_seq = seq_poll_continue()
 		if final_seq then
 			-- we got something - specify the input seq
-			manager:machine():input():seq_pressed(final_seq)
+			machine_input():seq_pressed(final_seq)
 			field:set_input_seq(args[4], final_seq)
 					
 			-- and terminate polling
@@ -1023,9 +1056,9 @@ function startplugin()
 	local session_active = true
 	emu.register_prestart(function()
 		-- prestart has been invoked; set up MAME for our control
-		manager:machine():uiinput().presses_enabled = false
-		if manager:machine():debugger() then
-			manager:machine():debugger().execution_state = 'run'
+		machine_uiinput().presses_enabled = false
+		if machine_debugger() then
+			machine_debugger().execution_state = 'run'
 		end
 		session_active = true
 		update_mouse_enabled()
@@ -1088,19 +1121,19 @@ function startplugin()
 	emu.register_before_load_settings(function()
 		function fix_default_input_seq(field, seq_type)
 			local old_default_seq = field:default_input_seq(seq_type)
-			local cleaned_default_seq = manager:machine():input():seq_clean(old_default_seq)
-			local cleaned_default_seq_tokens = manager:machine():input():seq_to_tokens(cleaned_default_seq)
+			local cleaned_default_seq = machine_input():seq_clean(old_default_seq)
+			local cleaned_default_seq_tokens = machine_input():seq_to_tokens(cleaned_default_seq)
 			local match = string.match(cleaned_default_seq_tokens, "JOYCODE_[0-9A-Z_]+ OR MOUSECODE_[0-9A-Z_]+")
 			if match then		
 				local new_default_seq_tokens = string.match(cleaned_default_seq_tokens, "JOYCODE_[0-9A-Z_]+")
 				if new_default_seq_tokens then
-					local new_default_seq = manager:machine():input():seq_from_tokens(new_default_seq_tokens)
+					local new_default_seq = machine_input():seq_from_tokens(new_default_seq_tokens)
 					field:set_default_input_seq(seq_type, new_default_seq)
 				end
 			end
 		end
 
-		for _,port in pairs(manager:machine():ioport().ports) do
+		for _,port in pairs(machine_ioport().ports) do
 			for _,field in pairs(port.fields) do
 				fix_default_input_seq(field, "standard")
 				if field.is_analog then
@@ -1112,7 +1145,7 @@ function startplugin()
 	end)
 
 	-- activate the cheat plugin, if present (and not started separately)
-	local cheatentry = manager:plugins()["cheat"]
+	local cheatentry = plugins()["cheat"]
 	local cheatplugin
 	if cheatentry and not cheatentry.start then -- don't try to start it twice
 		local stat, res = pcall(require, cheatentry.name)
