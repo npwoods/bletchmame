@@ -214,6 +214,7 @@ private:
 	void issue(const std::vector<QString> &args);
 	void issue(const std::initializer_list<std::string> &args);
 	void issue(const char *command);
+	void waitForStatusUpdate();
 	void invokePing();
 	void invokeExit();
 	void changePaused(bool paused);

@@ -1663,14 +1663,7 @@ void MainWindow::run(const info::machine &machine, const software_list::software
 	setFocus();
 
 	// wait for first ping
-	m_pinging = true;
-	while (m_pinging)
-	{
-		if (!m_state.has_value())
-			return;
-		QCoreApplication::processEvents();
-		QThread::yieldCurrentThread();
-	}
+	waitForStatusUpdate();
 
 	// set up profile (if we have one)
 	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
@@ -2566,6 +2559,23 @@ void MainWindow::issue(const char *command)
 {
 	QString command_string = command;
 	issue({ command_string });
+}
+
+
+//-------------------------------------------------
+//  waitForStatusUpdate
+//-------------------------------------------------
+
+void MainWindow::waitForStatusUpdate()
+{
+	m_pinging = true;
+	while (m_pinging)
+	{
+		if (!m_state.has_value())
+			return;
+		QCoreApplication::processEvents();
+		QThread::yieldCurrentThread();
+	}
 }
 
 
