@@ -105,7 +105,7 @@ public:
 		auto proxy = proxy_type(std::move(func));
 
 		// supply the proxy
-		getNode(elements)->m_begin_func = std::move(proxy);
+		getNode(elements)->m_beginFunc = std::move(proxy);
 	}
 
 	template<typename TFunc>
@@ -121,7 +121,7 @@ public:
 	typedef std::function<void(QString &&content)> OnEndElementCallback;
 	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
-		getNode(elements)->m_end_func = std::move(func);
+		getNode(elements)->m_endFunc = std::move(func);
 	}
 	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func)
 	{
@@ -147,17 +147,17 @@ private:
 		typedef std::weak_ptr<Node> weak_ptr;
 		typedef std::unordered_map<const char *, Node::ptr> Map;
 
-		OnBeginElementCallback	m_begin_func;
-		OnEndElementCallback	m_end_func;
-		Node::weak_ptr		m_parent;
+		OnBeginElementCallback	m_beginFunc;
+		OnEndElementCallback	m_endFunc;
+		Node::weak_ptr			m_parent;
 		Map						m_map;
 	};
 
 	struct XML_ParserStruct *	m_parser;
 	Node::ptr					m_root;
-	Node::ptr					m_current_node;
-	int							m_skipping_depth;
-	QString						m_current_content;
+	Node::ptr					m_currentNode;
+	int							m_skippingDepth;
+	QString						m_currentContent;
 
 	bool internalParse(QDataStream &input);
 	void startElement(const char *name, const char **attributes);

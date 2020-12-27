@@ -83,7 +83,7 @@ static const util::enum_parser<bool> s_bool_parser =
 
 XmlParser::XmlParser()
 	: m_root(std::make_unique<Node>())
-	, m_skipping_depth(0)
+	, m_skippingDepth(0)
 {
 	m_parser = XML_ParserCreate(nullptr);
 
@@ -120,13 +120,13 @@ bool XmlParser::parse(QIODevice &input)
 
 bool XmlParser::parse(QDataStream &input)
 {
-	m_current_node = m_root;
-	m_skipping_depth = 0;
+	m_currentNode = m_root;
+	m_skippingDepth = 0;
 
 	bool success = internalParse(input);
 
-	m_current_node = nullptr;
-	m_skipping_depth = 0;
+	m_currentNode = nullptr;
+	m_skippingDepth = 0;
 	return success;
 }
 
@@ -318,10 +318,10 @@ void XmlParser::startElement(const char *element, const char **attributes)
 {
 	// only try to find this node in our tables if we are not skipping
 	Node::ptr child;
-	if (m_skipping_depth == 0)
+	if (m_skippingDepth == 0)
 	{
-		auto iter = m_current_node->m_map.find(element);
-		if (iter != m_current_node->m_map.end())
+		auto iter = m_currentNode->m_map.find(element);
+		if (iter != m_currentNode->m_map.end())
 			child = iter->second;
 	}
 
@@ -330,14 +330,14 @@ void XmlParser::startElement(const char *element, const char **attributes)
 	if (child)
 	{
 		// we do - traverse down the tree
-		m_current_node = child;
+		m_currentNode = child;
 
 		// do we have a callback function for beginning this node?
-		if (m_current_node->m_begin_func)
+		if (m_currentNode->m_beginFunc)
 		{
 			// we do - call it
 			Attributes *attributes_object = reinterpret_cast<Attributes *>(reinterpret_cast<void *>(attributes));
-			result = m_current_node->m_begin_func(*attributes_object);
+			result = m_currentNode->m_beginFunc(*attributes_object);
 		}
 		else
 		{
@@ -360,7 +360,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 	case ElementResult::Skip:
 		// we're skipping this element; treat it the same as an unknown element
-		m_skipping_depth++;
+		m_skippingDepth++;
 		break;
 
 	default:
@@ -369,7 +369,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 	}
 
 	// finally clear out content
-	m_current_content.clear();
+	m_currentContent.clear();
 }
 
 
@@ -379,19 +379,19 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 void XmlParser::endElement(const char *)
 {
-	if (m_skipping_depth)
+	if (m_skippingDepth)
 	{
 		// coming out of an unknown element type
-		m_skipping_depth--;
+		m_skippingDepth--;
 	}
 	else
 	{
 		// call back the end func, if appropriate
-		if (m_current_node->m_end_func)
-			m_current_node->m_end_func(std::move(m_current_content));
+		if (m_currentNode->m_endFunc)
+			m_currentNode->m_endFunc(std::move(m_currentContent));
 
 		// and go up the tree
-		m_current_node = m_current_node->m_parent.lock();
+		m_currentNode = m_currentNode->m_parent.lock();
 	}
 }
 
@@ -403,7 +403,7 @@ void XmlParser::endElement(const char *)
 void XmlParser::characterData(const char *s, int len)
 {
 	QString text = QString::fromUtf8(s, len);
-	m_current_content.append(std::move(text));
+	m_currentContent.append(std::move(text));
 }
 
 
