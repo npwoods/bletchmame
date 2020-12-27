@@ -22,6 +22,14 @@ QT_END_NAMESPACE
 
 namespace profiles
 {
+	struct slot
+	{
+		QString		m_name;
+		QString		m_value;
+
+		bool operator==(const slot &that) const;
+	};
+
 	struct image
 	{
 		QString		m_tag;
@@ -34,17 +42,24 @@ namespace profiles
 	class profile
 	{
 	public:
+		profile(const profile &) = delete;
 		profile(profile &&) = default;
-		profile &operator =(profile &&) = default;
+		profile &operator =(const profile &) = delete;
+		profile &operator =(profile &&) = delete;
 
 		// accessors
 		const QString &name() const					{ return m_name; }
 		const QString &path() const					{ return m_path; }
 		const QString &machine() const				{ return m_machine; }
 		const QString &software() const				{ return m_software; }
+		const std::vector<slot> &devslots() const	{ return m_slots; }
+		std::vector<slot> &devslots()				{ return m_slots; }
 		const std::vector<image> &images() const	{ return m_images; }
 		std::vector<image> &images()				{ return m_images; }
 		bool auto_save_states() const				{ return true; }
+		
+		// mutators
+		void setSoftware(QString &&software)		{ m_software = std::move(software); }
 		
 		// methods
 		bool is_valid() const;
@@ -66,13 +81,12 @@ namespace profiles
 
 	private:
 		profile();
-		profile(const profile &) = delete;
-		profile &operator =(const profile &) = delete;
 
 		QString				m_name;
 		QString				m_path;
 		QString				m_machine;
 		QString				m_software;
+		std::vector<slot>	m_slots;
 		std::vector<image>	m_images;
 	};
 };
