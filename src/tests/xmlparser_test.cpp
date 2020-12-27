@@ -18,6 +18,7 @@ private slots:
 	void unicode();
 	void skipping();
 	void multiple();
+	void xmlParsingError();
 };
 
 
@@ -184,6 +185,32 @@ void XmlParser::Test::multiple()
 	QVERIFY(total == 10);
 }
 
+
+//-------------------------------------------------
+//  xmlParsingError
+//-------------------------------------------------
+
+void XmlParser::Test::xmlParsingError()
+{
+	XmlParser xml;
+	std::vector<int> values;
+	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		int value;
+		attributes.get("value", value);
+		values.push_back(value);
+	});
+
+	const char *xmlText1 =
+		"<alpha---blahhhrg>"
+		"</alpha>";
+	QVERIFY(!xml.parseBytes(xmlText1, strlen(xmlText1)));
+	QVERIFY(xml.m_errors.size() == 1);
+	QVERIFY(values.size() == 0);
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<XmlParser::Test> fixture;
 #include "xmlparser_test.moc"

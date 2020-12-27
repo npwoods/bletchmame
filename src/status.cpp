@@ -406,7 +406,7 @@ status::update status::update::read(QIODevice &input_stream)
 
 	// this should not happen unless there is a bug
 	if (!result.m_success)
-		result.m_parse_error = xml.errorMessage();
+		result.m_parse_error = xml.errorMessagesSingleString();
 
 	// check that we parsed the status tag once
 	if (result.m_success && rootTagParseCount != 1)

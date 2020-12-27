@@ -273,7 +273,7 @@ bool info::database_builder::process_xml(QDataStream &input, QString &error_mess
 	{
 		// now check for XML parsing errors; this is likely the result of somebody aborting the DB rebuild, but
 		// it is the caller's responsibility to handle that situation
-		error_message = xml.errorMessage();
+		error_message = xml.errorMessagesSingleString();
 		return false;
 	}
 

@@ -188,7 +188,8 @@ bool XmlParser::internalParse(QDataStream &input)
 		// and feed this into expat
 		if (!XML_Parse(m_parser, buffer, done ? 0 : lastRead, done))
 		{
-			// an error happened; bail out
+			// an error happened; append the error and bail out
+			appendCurrentXmlError();
 			success = false;		
 			done = true;
 		}
@@ -201,23 +202,28 @@ bool XmlParser::internalParse(QDataStream &input)
 
 
 //-------------------------------------------------
-//  errorMessage
+//  appendCurrentXmlError
 //-------------------------------------------------
 
-QString XmlParser::errorMessage() const
+void XmlParser::appendCurrentXmlError()
 {
-	int lineNumber = XML_GetCurrentLineNumber(m_parser);
-	int columnNumber = XML_GetCurrentColumnNumber(m_parser);
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *errorString = XML_ErrorString(code);
-	QString message = QString("%1:%2: %3").arg(
-		QString::number(lineNumber),
-		QString::number(columnNumber),
-		QString(errorString));
-	QString context = errorContext();
-	if (!context.isEmpty())
-		message = message + "\n" + context;
-	return message;
+	appendError(errorString);
+}
+
+
+//-------------------------------------------------
+//  appendError
+//-------------------------------------------------
+
+void XmlParser::appendError(QString &&message)
+{
+	Error &error = m_errors.emplace_back();
+	error.m_lineNumber = XML_GetCurrentLineNumber(m_parser);
+	error.m_columnNumber = XML_GetCurrentColumnNumber(m_parser);
+	error.m_message = std::move(message);
+	error.m_context = errorContext();
 }
 
 
@@ -261,6 +267,26 @@ QString XmlParser::errorContext(const char *contextString, int contextOffset, in
 			+ "\n"
 			+ QString(contextOffset - contextLineBegin, QChar(' '))
 			+ "^";
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  errorMessagesSingleString
+//-------------------------------------------------
+
+QString XmlParser::errorMessagesSingleString() const
+{
+	QString result;
+	for (const Error &error : m_errors)
+	{
+		if (!result.isEmpty())
+			result += "\n";
+		result += QString("%1:%2: %3").arg(
+			QString::number(error.m_lineNumber),
+			QString::number(error.m_columnNumber),
+			error.m_message);
 	}
 	return result;
 }

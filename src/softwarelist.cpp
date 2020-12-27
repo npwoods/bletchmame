@@ -65,7 +65,7 @@ bool software_list::load(QDataStream &stream, QString &error_message)
 	// did we succeed?
 	if (!success)
 	{
-		error_message = xml.errorMessage();
+		error_message = xml.errorMessagesSingleString();
 		return false;
 	}
 

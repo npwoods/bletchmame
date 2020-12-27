@@ -26,6 +26,8 @@ QT_BEGIN_NAMESPACE
 class QDataStream;
 QT_END_NAMESPACE
 
+// ======================> XmlParser
+
 class XmlParser
 {
 public:
@@ -36,6 +38,20 @@ public:
 		Ok,
 		Skip
 	};
+
+
+	// ======================> XmlParser
+
+	struct Error
+	{
+		int		m_lineNumber;
+		int		m_columnNumber;
+		QString	m_message;
+		QString	m_context;
+	};
+
+
+	// ======================> Attributes
 
 	class Attributes
 	{
@@ -136,7 +152,7 @@ public:
 	bool parse(QDataStream &input);
 	bool parse(const QString &file_name);
 	bool parseBytes(const void *ptr, size_t sz);
-	QString errorMessage() const;
+	QString errorMessagesSingleString() const;
 
 	static std::string escape(const QString &str);
 
@@ -158,11 +174,14 @@ private:
 	Node::ptr					m_currentNode;
 	int							m_skippingDepth;
 	QString						m_currentContent;
+	std::vector<Error>			m_errors;
 
 	bool internalParse(QDataStream &input);
 	void startElement(const char *name, const char **attributes);
 	void endElement(const char *name);
 	void characterData(const char *s, int len);
+	void appendError(QString &&message);
+	void appendCurrentXmlError();
 	QString errorContext() const;
 	static QString errorContext(const char *contextString, int contextOffset, int contextSize);
 	static bool isLineEnding(char ch);
