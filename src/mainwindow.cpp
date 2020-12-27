@@ -636,9 +636,9 @@ private:
 		QString quickStateName;
 		if (!m_currentQuickState.get().isEmpty())
 		{
-			QFileInfo fi(m_currentQuickState.get());
-			if (fi.exists())
-				quickStateName = fi.completeBaseName();
+			// we want to only get the complete base name (note that if we triggered a state save,
+			// the file might not be saved yet)
+			quickStateName = QFileInfo(m_currentQuickState.get()).completeBaseName();
 		}
 
 		bool isEnabled = !quickStateName.isEmpty();
@@ -652,7 +652,7 @@ private:
 		m_quickLoadState.setEnabled(isEnabled);
 		m_quickLoadState.setText(quickLoadText);
 		m_quickSaveState.setEnabled(isEnabled);
-		m_quickSaveState.setText(quickLoadText);
+		m_quickSaveState.setText(quickSaveText);
 	}
 };
 
@@ -962,7 +962,8 @@ void MainWindow::on_actionImages_triggered()
 
 void MainWindow::on_actionQuickLoadState_triggered()
 {
-	issue({ "state_load", m_currentQuickState.get() });
+	if (QFileInfo(m_currentQuickState.get()).exists())
+		issue({ "state_load", m_currentQuickState.get() });
 }
 
 
