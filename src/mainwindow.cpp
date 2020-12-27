@@ -1354,10 +1354,10 @@ void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(index);
 
 	// identify the profile
-	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
 	// and run!
-	run(profile);
+	run(*profile);
 }
 
 
@@ -1372,16 +1372,16 @@ void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &p
 	if (selection.count() <= 0)
 		return;
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
-	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
 	// build the popup menu
 	QMenu popupMenu;
-	popupMenu.addAction(QString("Run \"%1\"").arg(profile.name()),	[this, &profile]() { run(profile); });
-	popupMenu.addAction("Duplicate",								[this, &profile]() { duplicateProfile(profile); });
-	popupMenu.addAction("Rename",									[this, &profile]() { renameProfile(profile); });
-	popupMenu.addAction("Delete",									[this, &profile]() { deleteProfile(profile); });
+	popupMenu.addAction(QString("Run \"%1\"").arg(profile->name()),	[this, &profile]() { run(*profile); });
+	popupMenu.addAction("Duplicate",								[this, &profile]() { duplicateProfile(*profile); });
+	popupMenu.addAction("Rename",									[this, &profile]() { renameProfile(*profile); });
+	popupMenu.addAction("Delete",									[this, &profile]() { deleteProfile(*profile); });
 	popupMenu.addSeparator();
-	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile.path()); });
+	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile->path()); });
 	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
 }
 

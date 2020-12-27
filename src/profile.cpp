@@ -90,9 +90,9 @@ bool profiles::profile::is_valid() const
 //  scan_directory
 //-------------------------------------------------
 
-std::vector<profiles::profile> profiles::profile::scan_directories(const QStringList &paths)
+std::vector<std::shared_ptr<profiles::profile>> profiles::profile::scan_directories(const QStringList &paths)
 {
-	std::vector<profile> results;
+	std::vector<std::shared_ptr<profiles::profile>> results;
 
 	for (const QString &path : paths)
 	{
@@ -100,9 +100,12 @@ std::vector<profiles::profile> profiles::profile::scan_directories(const QString
 		while (iter.hasNext())
 		{
 			QString file = iter.next();
-			std::optional<profile> p = load(std::move(file));
-			if (p)
-				results.push_back(std::move(p.value()));
+			std::optional<profile> profile = load(std::move(file));
+			if (profile)
+			{
+				std::shared_ptr<profiles::profile> profilePtr = std::make_shared<profiles::profile>(std::move(profile.value()));
+				results.push_back(std::move(profilePtr));
+			}
 		}
 	}
 	return results;

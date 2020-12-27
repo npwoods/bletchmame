@@ -67,7 +67,7 @@ namespace profiles
 		void save_as(QTextStream &stream) const;
 
 		// statics
-		static std::vector<profile> scan_directories(const QStringList &paths);
+		static std::vector<std::shared_ptr<profiles::profile>> scan_directories(const QStringList &paths);
 		static void create(QTextStream &stream, const info::machine &machine, const software_list::software *software);
 		static std::optional<profile> load(QString &&path);
 		static std::optional<profile> load(const QString &path);
