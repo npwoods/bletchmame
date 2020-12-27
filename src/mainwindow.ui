@@ -249,7 +249,7 @@
     <string>Quick Save State</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+F7</string>
    </property>
   </action>
   <action name="actionLoadState">
@@ -259,6 +259,9 @@
    <property name="text">
     <string>Load State...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+F7</string>
+   </property>
   </action>
   <action name="actionSaveState">
    <property name="enabled">
@@ -266,6 +269,9 @@
    </property>
    <property name="text">
     <string>Save State...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F7</string>
    </property>
   </action>
   <action name="actionSaveScreenshot">

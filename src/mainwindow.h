@@ -59,6 +59,8 @@ private slots:
 	void on_actionStop_triggered();
 	void on_actionPause_triggered();
 	void on_actionImages_triggered();
+	void on_actionQuickLoadState_triggered();
+	void on_actionQuickSaveState_triggered();
 	void on_actionLoadState_triggered();
 	void on_actionSaveState_triggered();
 	void on_actionSaveScreenshot_triggered();
@@ -125,6 +127,7 @@ private:
 	class StatusBarAspect;
 	class MenuBarAspect;
 	class ToggleMovieTextAspect;
+	class QuickLoadSaveAspect;
 	class Dummy;
 
 	// statics
@@ -161,6 +164,7 @@ private:
 	software_list_collection			m_softwareListCollection;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
 	IconLoader							m_icon_loader;
+	observable::value<QString>			m_currentQuickState;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -198,7 +202,7 @@ private:
 	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
-	void FileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
+	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
 	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
 	void createProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);
