@@ -1667,6 +1667,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	Task::ptr task = std::make_shared<RunMachineTask>(
 		machine,
 		std::move(software_name),
+		m_sessionBehavior->getOptions(),
 		attachToRootPanel() ? *m_ui->rootWidget : *this);
 	m_client.launch(std::move(task));
 

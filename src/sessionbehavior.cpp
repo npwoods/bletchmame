@@ -50,7 +50,7 @@ QString NormalSessionBehavior::getInitialSoftware() const
 //  NormalSessionBehavior::getOptions
 //-------------------------------------------------
 
-std::vector<QString> NormalSessionBehavior::getOptions() const
+std::map<QString, QString> NormalSessionBehavior::getOptions() const
 {
     return { };
 }
@@ -123,9 +123,12 @@ QString ProfileSessionBehavior::getInitialSoftware() const
 //  ProfileSessionBehavior::getOptions
 //-------------------------------------------------
 
-std::vector<QString> ProfileSessionBehavior::getOptions() const
+std::map<QString, QString> ProfileSessionBehavior::getOptions() const
 {
-    return { };
+    std::map<QString, QString> result;
+    for (const auto &slot : m_profile->devslots())
+        result.insert({ slot.m_name, slot.m_value });
+    return result;
 }
 
 

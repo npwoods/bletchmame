@@ -20,7 +20,7 @@ class SessionBehavior
 public:
     virtual ~SessionBehavior();
     virtual QString getInitialSoftware() const = 0;
-    virtual std::vector<QString> getOptions() const = 0;
+    virtual std::map<QString, QString> getOptions() const = 0;
     virtual std::map<QString, QString> getImages() const = 0;
     virtual QString getSavedState() const = 0;
     virtual void persistState(const std::vector<status::slot> &devslots, const std::vector<status::image> &images) = 0;
@@ -38,7 +38,7 @@ public:
 
     // virtuals
     virtual QString getInitialSoftware() const override;
-    virtual std::vector<QString> getOptions() const override;
+    virtual std::map<QString, QString> getOptions() const override;
     virtual std::map<QString, QString> getImages() const override;
     virtual QString getSavedState() const override;
     virtual void persistState(const std::vector<status::slot> &devslots, const std::vector<status::image> &images) override;
@@ -59,7 +59,7 @@ public:
 
     // virtuals
     virtual QString getInitialSoftware() const override;
-    virtual std::vector<QString> getOptions() const override;
+    virtual std::map<QString, QString> getOptions() const override;
     virtual std::map<QString, QString> getImages() const override;
     virtual QString getSavedState() const override;
     virtual void persistState(const std::vector<status::slot> &devslots, const std::vector<status::image> &images) override;

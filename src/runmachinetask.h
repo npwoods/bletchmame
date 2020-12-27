@@ -109,7 +109,7 @@ class RunMachineTask : public Task
 public:
 	class Test;
 
-	RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow);
+	RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QWidget &targetWindow);
 
 	void issue(const std::vector<QString> &args);
 	void issueFullCommandLine(QString &&full_command);
@@ -141,6 +141,7 @@ private:
 
 	info::machine					m_machine;
 	QString							m_software;
+	std::map<QString, QString>		m_slotOptions;
 	QString							m_attachWindowParameter;
 	MessageQueue<Message>		    m_messageQueue;
 	volatile bool					m_chatterEnabled;
