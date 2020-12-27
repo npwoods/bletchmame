@@ -603,6 +603,60 @@ private:
 };
 
 
+// ======================> QuickLoadSaveAspect
+
+class MainWindow::QuickLoadSaveAspect : public Aspect
+{
+public:
+	QuickLoadSaveAspect(observable::value<QString> &currentQuickState, QAction &quickLoadState, QAction &quickSaveState)
+		: m_currentQuickState(currentQuickState)
+		, m_quickLoadState(quickLoadState)
+		, m_quickSaveState(quickSaveState)
+	{
+		m_currentQuickState.subscribe([this] { update(); });
+	}
+
+	virtual void start()
+	{
+		m_currentQuickState = "";
+	}
+
+	virtual void stop()
+	{
+		m_currentQuickState = "";
+	}
+
+private:
+	observable::value<QString> &	m_currentQuickState;
+	QAction &						m_quickLoadState;
+	QAction &						m_quickSaveState;
+
+	void update()
+	{
+		QString quickStateName;
+		if (!m_currentQuickState.get().isEmpty())
+		{
+			QFileInfo fi(m_currentQuickState.get());
+			if (fi.exists())
+				quickStateName = fi.completeBaseName();
+		}
+
+		bool isEnabled = !quickStateName.isEmpty();
+		QString quickLoadText = quickStateName.isEmpty()
+			? QString("Quick Load State")
+			: QString("Quick Load \"%1\"").arg(quickStateName);
+		QString quickSaveText = quickStateName.isEmpty()
+			? QString("Quick Save State")
+			: QString("Quick Save \"%1\"").arg(quickStateName);
+
+		m_quickLoadState.setEnabled(isEnabled);
+		m_quickLoadState.setText(quickLoadText);
+		m_quickSaveState.setEnabled(isEnabled);
+		m_quickSaveState.setText(quickLoadText);
+	}
+};
+
+
 // ======================> Dummy
 
 class MainWindow::Dummy
@@ -778,6 +832,7 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
 	m_aspects.push_back(std::make_unique<MenuBarAspect>(*this));
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
+	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -902,18 +957,41 @@ void MainWindow::on_actionImages_triggered()
 
 
 //-------------------------------------------------
+//  on_actionQuickLoadState_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionQuickLoadState_triggered()
+{
+	issue({ "state_load", m_currentQuickState.get() });
+}
+
+
+//-------------------------------------------------
+//  on_actionQuickSaveState_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionQuickSaveState_triggered()
+{
+	issue({ "state_save", m_currentQuickState.get() });
+}
+
+
+//-------------------------------------------------
 //  on_actionLoadState_triggered
 //-------------------------------------------------
 
 void MainWindow::on_actionLoadState_triggered()
 {
-	FileDialogCommand(
+	QString path = fileDialogCommand(
 		{ "state_load" },
 		"Load State",
 		Preferences::machine_path_type::LAST_SAVE_STATE,
 		true,
 		s_wc_saved_state,
 		QFileDialog::AcceptMode::AcceptOpen);
+
+	if (!path.isEmpty())
+		m_currentQuickState = std::move(path);
 }
 
 
@@ -923,13 +1001,16 @@ void MainWindow::on_actionLoadState_triggered()
 
 void MainWindow::on_actionSaveState_triggered()
 {
-	FileDialogCommand(
+	QString path = fileDialogCommand(
 		{ "state_save" },
 		"Save State",
 		Preferences::machine_path_type::LAST_SAVE_STATE,
 		true,
 		s_wc_saved_state,
 		QFileDialog::AcceptMode::AcceptSave);
+
+	if (!path.isEmpty())
+		m_currentQuickState = std::move(path);
 }
 
 
@@ -939,7 +1020,7 @@ void MainWindow::on_actionSaveState_triggered()
 
 void MainWindow::on_actionSaveScreenshot_triggered()
 {
-	FileDialogCommand(
+	fileDialogCommand(
 		{ "save_snapshot", "0" },
 		"Save Snapshot",
 		Preferences::machine_path_type::WORKING_DIRECTORY,
@@ -2191,18 +2272,18 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 
 
 //-------------------------------------------------
-//  FileDialogCommand
+//  fileDialogCommand
 //-------------------------------------------------
 
-void MainWindow::FileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode)
+QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode)
 {
 	Pauser pauser(*this);
 	QString path = GetFileDialogFilename(caption, pathType, wildcard_string, acceptMode);
 	if (path.isEmpty())
-		return;
+		return { };
 
 	// append the resulting path to the command list
-	commands.push_back(std::move(path));
+	commands.push_back(path);
 
 	// put back the default
 	const QString &running_machine_name(getRunningMachine().name());
@@ -2219,6 +2300,7 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, const QStrin
 
 	// finally issue the actual commands
 	issue(commands);
+	return path;
 }
 
 
