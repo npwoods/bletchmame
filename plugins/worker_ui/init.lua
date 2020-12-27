@@ -159,7 +159,7 @@ else
 	machine_debugger	= function() return manager.machine.debugger end
 	machine_input		= function() return manager.machine.input end
 	machine_ioport		= function() return manager.machine.ioport end
-	machine_natkeyboard	= function() return manager.machine.ioport.natkeyboard end
+	machine_natkeyboard	= function() return manager.machine.natkeyboard end
 	machine_options		= function() return manager.machine.options end
 	machine_sound		= function() return manager.machine.sound end
 	machine_uiinput		= function() return manager.machine.uiinput end
