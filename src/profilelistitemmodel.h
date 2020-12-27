@@ -41,7 +41,7 @@ public:
 	// methods
 	void refresh(bool updateProfileList, bool updateFileSystemWatcher);
 	void setOneTimeFswCallback(std::function<void()> &&fswCallback);
-	const profiles::profile &getProfileByIndex(int index) const;
+	std::shared_ptr<profiles::profile> getProfileByIndex(int index);;
 	QModelIndex findProfileIndex(const QString &path) const;
 
 	// virtuals
@@ -59,7 +59,7 @@ private:
 	info::database &				m_infoDb;
 	IconLoader &					m_iconLoader;
 	QFileSystemWatcher &			m_fileSystemWatcher;
-	std::vector<profiles::profile>	m_profiles;
+	std::vector<std::shared_ptr<profiles::profile>>	m_profiles;
 	std::function<void()>			m_fswCallback;
 
 	static bool setProfileName(const profiles::profile &profile, const QString &newName);

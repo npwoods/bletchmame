@@ -80,6 +80,8 @@ add_library(BletchMAME_core
 	src/profilelistitemmodel.h
 	src/runmachinetask.cpp
 	src/runmachinetask.h
+	src/sessionbehavior.cpp
+	src/sessionbehavior.h
 	src/softwarelist.cpp
 	src/softwarelist.h
 	src/softwarelistitemmodel.cpp

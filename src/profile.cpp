@@ -20,6 +20,17 @@
 //**************************************************************************
 
 //-------------------------------------------------
+//  slot::operator==
+//-------------------------------------------------
+
+bool profiles::slot::operator==(const slot &that) const
+{
+	return m_name == that.m_name
+		&& m_value == that.m_value;
+}
+
+
+//-------------------------------------------------
 //  image::operator==
 //-------------------------------------------------
 
@@ -79,9 +90,9 @@ bool profiles::profile::is_valid() const
 //  scan_directory
 //-------------------------------------------------
 
-std::vector<profiles::profile> profiles::profile::scan_directories(const QStringList &paths)
+std::vector<std::shared_ptr<profiles::profile>> profiles::profile::scan_directories(const QStringList &paths)
 {
-	std::vector<profile> results;
+	std::vector<std::shared_ptr<profiles::profile>> results;
 
 	for (const QString &path : paths)
 	{
@@ -89,9 +100,12 @@ std::vector<profiles::profile> profiles::profile::scan_directories(const QString
 		while (iter.hasNext())
 		{
 			QString file = iter.next();
-			std::optional<profile> p = load(std::move(file));
-			if (p)
-				results.push_back(std::move(p.value()));
+			std::optional<profile> profile = load(std::move(file));
+			if (profile)
+			{
+				std::shared_ptr<profiles::profile> profilePtr = std::make_shared<profiles::profile>(std::move(profile.value()));
+				results.push_back(std::move(profilePtr));
+			}
 		}
 	}
 	return results;
@@ -139,6 +153,12 @@ std::optional<profiles::profile> profiles::profile::load(QString &&path)
 		attributes.get("tag",	i.m_tag);
 		attributes.get("path",	i.m_path);
 	});
+	xml.onElementBegin({ "profile", "slot" }, [&](const XmlParser::Attributes &attributes)
+	{
+		slot &s = result.m_slots.emplace_back();
+		attributes.get("name",	s.m_name);
+		attributes.get("value",	s.m_value);
+	});
 
 	return xml.parse(result.m_path) && result.is_valid()
 		? std::optional<profiles::profile>(std::move(result))
@@ -174,6 +194,8 @@ void profiles::profile::save_as(QTextStream &stream) const
 		stream << " software=\"" << software() << "\"";
 	stream << ">" << Qt::endl;
 
+	for (const slot &slot : devslots())
+		stream << "\t<slot name=\"" << slot.m_name << "\" path=\"" << slot.m_value << "\"/>" << Qt::endl;
 	for (const image &image : images())
 		stream << "\t<image tag=\"" << image.m_tag << "\" path=\"" << image.m_path << "\"/>" << Qt::endl;
 	stream << "</profile>" << Qt::endl;

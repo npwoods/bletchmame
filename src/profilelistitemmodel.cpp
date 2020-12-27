@@ -92,7 +92,7 @@ void ProfileListItemModel::setOneTimeFswCallback(std::function<void()> &&fswCall
 //  getProfileByIndex
 //-------------------------------------------------
 
-const profiles::profile &ProfileListItemModel::getProfileByIndex(int index) const
+std::shared_ptr<profiles::profile> ProfileListItemModel::getProfileByIndex(int index)
 {
     return m_profiles[index];
 }
@@ -106,7 +106,7 @@ QModelIndex ProfileListItemModel::findProfileIndex(const QString &path) const
 {
     for (int i = 0; i < m_profiles.size(); i++)
     {
-        if (m_profiles[i].path() == path)
+        if (m_profiles[i]->path() == path)
             return createIndex(i, 0);
     }
     return QModelIndex();
@@ -176,7 +176,7 @@ QVariant ProfileListItemModel::data(const QModelIndex &index, int role) const
         && index.row() >= 0
         && index.row() < m_profiles.size())
     {
-        const profiles::profile &p = m_profiles[index.row()];
+        const profiles::profile &p = *m_profiles[index.row()];
         Column column = (Column)index.column();
 
         switch (role)
@@ -273,7 +273,7 @@ bool ProfileListItemModel::setData(const QModelIndex &index, const QVariant &val
         && index.row() >= 0
         && index.row() < m_profiles.size())
     {
-        const profiles::profile &p = m_profiles[index.row()];
+        const profiles::profile &p = *m_profiles[index.row()];
         Column column = (Column)index.column();
 
         if (role == Qt::EditRole && column == Column::Name)

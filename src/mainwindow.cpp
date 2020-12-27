@@ -47,6 +47,14 @@
 // BletchMAME requires MAME 0.213 or later
 const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
 
+#ifdef min
+#undef min
+#endif // min
+
+#ifdef max
+#undef max
+#endif // max
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -856,7 +864,7 @@ void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() co
 
 void MainWindow::on_actionStop_triggered()
 {
-	if (shouldPromptOnStop())
+	if (m_sessionBehavior->shouldPromptOnStop())
 	{
 		QString message = "Do you really want to stop?\n"
 			"\n"
@@ -1354,10 +1362,10 @@ void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(index);
 
 	// identify the profile
-	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
 	// and run!
-	run(profile);
+	run(std::move(profile));
 }
 
 
@@ -1372,16 +1380,16 @@ void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &p
 	if (selection.count() <= 0)
 		return;
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
-	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
 
 	// build the popup menu
 	QMenu popupMenu;
-	popupMenu.addAction(QString("Run \"%1\"").arg(profile.name()),	[this, &profile]() { run(profile); });
-	popupMenu.addAction("Duplicate",								[this, &profile]() { duplicateProfile(profile); });
-	popupMenu.addAction("Rename",									[this, &profile]() { renameProfile(profile); });
-	popupMenu.addAction("Delete",									[this, &profile]() { deleteProfile(profile); });
+	popupMenu.addAction(QString("Run \"%1\"").arg(profile->name()),	[this, &profile]() { run(std::move(profile)); });
+	popupMenu.addAction("Duplicate",								[this, &profile]() { duplicateProfile(*profile); });
+	popupMenu.addAction("Rename",									[this, &profile]() { renameProfile(*profile); });
+	popupMenu.addAction("Delete",									[this, &profile]() { deleteProfile(*profile); });
 	popupMenu.addSeparator();
-	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile.path()); });
+	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile->path()); });
 	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
 }
 
@@ -1623,8 +1631,22 @@ bool MainWindow::attachToRootPanel() const
 //  run
 //-------------------------------------------------
 
-void MainWindow::run(const info::machine &machine, const software_list::software *software, const profiles::profile *profile)
+void MainWindow::run(const info::machine &machine, const software_list::software *software)
 {
+	std::unique_ptr<SessionBehavior> sessionBehavior = std::make_unique<NormalSessionBehavior>(software);
+	run(machine, std::move(sessionBehavior));
+}
+
+
+//-------------------------------------------------
+//  run
+//-------------------------------------------------
+
+void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
+{
+	// set the session behavior
+	m_sessionBehavior = std::move(sessionBehavior);
+
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
 	QString preflight_errors = preflightCheck();
 	if (!preflight_errors.isEmpty())
@@ -1635,11 +1657,7 @@ void MainWindow::run(const info::machine &machine, const software_list::software
 
 	// identify the software name; we either used what was passed in, or we use what is in a profile
 	// for which no images are mounted (suggesting a fresh launch)
-	QString software_name;
-	if (software)
-		software_name = software->m_name;
-	else if (profile && profile->images().empty())
-		software_name = profile->software();
+	QString software_name = m_sessionBehavior->getInitialSoftware();
 
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
@@ -1649,6 +1667,7 @@ void MainWindow::run(const info::machine &machine, const software_list::software
 	Task::ptr task = std::make_shared<RunMachineTask>(
 		machine,
 		std::move(software_name),
+		m_sessionBehavior->getOptions(),
 		attachToRootPanel() ? *m_ui->rootWidget : *this);
 	m_client.launch(std::move(task));
 
@@ -1663,38 +1682,36 @@ void MainWindow::run(const info::machine &machine, const software_list::software
 	setFocus();
 
 	// wait for first ping
-	m_pinging = true;
-	while (m_pinging)
+	waitForStatusUpdate();
+
+	// load images associated with the behavior
+	std::map<QString, QString> behaviorImages = m_sessionBehavior->getImages();
+	if (behaviorImages.size() > 0)
 	{
-		if (!m_state.has_value())
-			return;
-		QCoreApplication::processEvents();
-		QThread::yieldCurrentThread();
+		std::vector<QString> args;
+		args.push_back("load");
+		for (auto &pair : behaviorImages)
+		{
+			args.push_back(std::move(pair.first));
+			args.push_back(std::move(pair.second));
+		}
+		issue(args);
 	}
 
-	// set up profile (if we have one)
-	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
-	m_current_profile_auto_save_state = profile ? profile->auto_save_states() : false;
-	if (profile)
+	// load a saved state associated with the behavior
+	QString behaviorSavedStateFileName = m_sessionBehavior->getSavedState();
+	if (!behaviorSavedStateFileName.isEmpty() && QFileInfo(behaviorSavedStateFileName).exists())
 	{
-		// load all images
-		for (const auto &image : profile->images())
-			issue({ "load", image.m_tag, image.m_path });
-
-		// if we have a save state, start it
-		if (profile->auto_save_states())
-		{
-			QString save_state_path = profiles::profile::change_path_save_state(profile->path());
-			QFileInfo fi(save_state_path);
-			if (fi.exists())
-				issue({ "state_load", save_state_path });
-		}
+		// no need to wait for a status update here
+		issue({ "state_load", behaviorSavedStateFileName });
 	}
 
 	// do we have any images that require images?
-	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [](const status::image &image)
+	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [&behaviorImages](const status::image &image)
 	{
-		return image.m_must_be_loaded && image.m_file_name.isEmpty();
+		return image.m_must_be_loaded										// is this an image that must be loaded?
+			&& image.m_file_name.isEmpty()									// and the filename is empty?
+			&& behaviorImages.find(image.m_tag) == behaviorImages.end();	// and it wasn't specified as a "behavior image" (in which case we need to wait)?
 	});
 	if (iter != m_state->images().get().cend())
 	{
@@ -1718,17 +1735,17 @@ void MainWindow::run(const info::machine &machine, const software_list::software
 //	run
 //-------------------------------------------------
 
-void MainWindow::run(const profiles::profile &profile)
+void MainWindow::run(std::shared_ptr<profiles::profile> &&profile)
 {
 	// find the machine
-	std::optional<info::machine> machine = m_info_db.find_machine(profile.machine());
+	std::optional<info::machine> machine = m_info_db.find_machine(profile->machine());
 	if (!machine)
 	{
-		messageBox("Unknown machine: " + profile.machine());
+		messageBox("Unknown machine: " + profile->machine());
 		return;
 	}
 
-	run(machine.value(), nullptr, &profile);
+	run(machine.value(), std::make_unique<ProfileSessionBehavior>(std::move(profile)));
 }
 
 
@@ -1826,7 +1843,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	if (m_state.has_value())
 	{
 		// prompt the user, if appropriate
-		if (shouldPromptOnStop())
+		if (m_sessionBehavior->shouldPromptOnStop())
 		{
 			QString message = "Do you really want to exit?\n"
 				"\n"
@@ -1865,16 +1882,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	// pressing ALT to bring up menus is not friendly when running the emulation
 	if (m_state.has_value() && (event->modifiers() & Qt::AltModifier))
 		event->ignore();
-}
-
-
-//-------------------------------------------------
-//  shouldPromptOnStop
-//-------------------------------------------------
-
-bool MainWindow::shouldPromptOnStop() const
-{
-	return m_current_profile_path.isEmpty() || !m_current_profile_auto_save_state;
 }
 
 
@@ -1979,31 +1986,13 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 
 bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 {
-	// update the profile, if present
-	if (!m_current_profile_path.isEmpty())
-	{
-		std::optional<profiles::profile> profile = profiles::profile::load(m_current_profile_path);
-		if (profile)
-		{
-			profile->images().clear();
-			for (const status::image &status_image : m_state->images().get())
-			{
-				if (!status_image.m_file_name.isEmpty())
-				{
-					profiles::image &profile_image = profile->images().emplace_back();
-					profile_image.m_tag = status_image.m_tag;
-					profile_image.m_path = status_image.m_file_name;
-				}
-			}
-			profile->save();
-		}
-	}
+	// this updates the profile, if present
+	m_sessionBehavior->persistState(m_state->devslots().get(), m_state->images().get());
 
 	// clear out all of the state
 	m_client.waitForCompletion();
 	m_state.reset();
-	m_current_profile_path = util::g_empty_string;
-	m_current_profile_auto_save_state = false;
+	m_sessionBehavior.reset();
 
 	// execute the stop handler for all aspects
 	for (const auto &aspect : m_aspects)
@@ -2570,6 +2559,23 @@ void MainWindow::issue(const char *command)
 
 
 //-------------------------------------------------
+//  waitForStatusUpdate
+//-------------------------------------------------
+
+void MainWindow::waitForStatusUpdate()
+{
+	m_pinging = true;
+	while (m_pinging)
+	{
+		if (!m_state.has_value())
+			return;
+		QCoreApplication::processEvents();
+		QThread::yieldCurrentThread();
+	}
+}
+
+
+//-------------------------------------------------
 //  invokePing
 //-------------------------------------------------
 
@@ -2590,10 +2596,10 @@ void MainWindow::invokePing()
 
 void MainWindow::invokeExit()
 {
-	if (m_current_profile_auto_save_state)
+	QString savedStatePath = m_sessionBehavior->getSavedState();
+	if (!savedStatePath.isEmpty())
 	{
-		QString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);
-		issue({ "state_save_and_exit", QDir::toNativeSeparators(save_state_path) });
+		issue({ "state_save_and_exit", QDir::toNativeSeparators(savedStatePath) });
 	}
 	else
 	{

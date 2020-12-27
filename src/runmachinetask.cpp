@@ -43,9 +43,10 @@ QEvent::Type ChatterEvent::s_eventId = (QEvent::Type) QEvent::registerEventType(
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow)
+RunMachineTask::RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QWidget &targetWindow)
     : m_machine(machine)
-	, m_software(software)
+	, m_software(std::move(software))
+	, m_slotOptions(std::move(slotOptions))
     , m_attachWindowParameter(getAttachWindowParameter(targetWindow))
 	, m_chatterEnabled(false)
 	, m_startedWithHashPaths(false)
@@ -70,10 +71,21 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		}
 	}
 
+	// the first argument is the machine name
 	QStringList results = { getMachine().name() };
+
+	// the second argument is the software (if specified)
 	if (!m_software.isEmpty())
 		results.push_back(m_software);
 
+	// then follow this with slot options
+	for (const auto &opt : m_slotOptions)
+	{
+		results.push_back(QString("-") + opt.first);
+		results.push_back(opt.second);
+	}
+
+	// and the rest of them
 	QStringList args =
 	{
 		"-rompath",
