@@ -230,7 +230,7 @@ end
 
 function stop_polling_input_seq()
 	current_poll_callback = nil
-	manager:ui():set_aggressive_input_focus(false)
+	ui():set_aggressive_input_focus(false)
 	update_mouse_enabled()
 end
 
@@ -756,8 +756,8 @@ function command_change_slots(args)
 		end
 		opt:specify(slot_option_value)
 	end
-	pause_when_restarted = manager:machine().paused
-	manager:machine():hard_reset()
+	pause_when_restarted = machine().paused
+	machine():hard_reset()
 	print("@OK ### Slots changed and hard reset scheduled")
 end
 
@@ -922,8 +922,8 @@ end
 
 -- SHOW_PROFILER command
 function command_show_profiler(args)
-	manager:ui().show_profiler = toboolean(args[2])
-	print("@OK STATUS ### Show profiler set to " .. tostring(manager:ui().show_profiler))
+	ui().show_profiler = toboolean(args[2])
+	print("@OK STATUS ### Show profiler set to " .. tostring(ui().show_profiler))
 	emit_status()
 end
 
