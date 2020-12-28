@@ -84,7 +84,7 @@ public:
 			{
 				result = func(text, value);
 				if (!result)
-					m_parser.appendError(QString("Error parsing attribute \"%1\"").arg(attribute));
+					reportAttributeParsingError(attribute, text);
 			}
 			if (!result)
 				value = T();
@@ -106,6 +106,7 @@ public:
 		const char **	m_attributes;
 
 		const char *internalGet(const char *attribute, bool return_null = false) const;
+		void reportAttributeParsingError(const char *attribute, const std::string &value) const;
 	};
 
 	// ctor/dtor
