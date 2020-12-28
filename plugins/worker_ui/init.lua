@@ -658,20 +658,20 @@ end
 
 -- STATE_LOAD command
 function command_state_load(args)
-	manager:machine():load(args[2])
+	machine():load(args[2])
 	print("@OK ### Scheduled state load of '" .. args[2] .. "'")
 end
 
 -- STATE_SAVE command
 function command_state_save(args)
-	manager:machine():save(args[2])
+	machine():save(args[2])
 	print("@OK ### Scheduled state save of '" .. args[2] .. "'")
 end
 
 -- STATE_SAVE_AND_EXIT command
 function command_state_save_and_exit(args)
-	manager:machine():save(args[2])
-	manager:machine():exit()
+	machine():save(args[2])
+	machine():exit()
 	print("@OK ### Scheduled state save of '" .. args[2] .. "' and an exit")
 end
 
@@ -679,7 +679,7 @@ end
 function command_save_snapshot(args)
 	-- hardcoded for first screen now
 	local index = tonumber(args[2])
-	for k,v in pairs(manager:machine().screens) do
+	for k,v in pairs(machine().screens) do
 		if index == 0 then
 			screen = v
 			break
@@ -883,7 +883,7 @@ function command_seq_poll_start(args)
 			stop_polling_input_seq()
 		end
 	end
-	manager:ui():set_aggressive_input_focus(true)
+	ui():set_aggressive_input_focus(true)
 	update_mouse_enabled()
 	print("@OK STATUS ### Starting polling")
 	emit_status()
