@@ -7,7 +7,6 @@
 ***************************************************************************/
 
 #include <QBuffer>
-#include <QTextStream>
 
 #include "profile.h"
 #include "test.h"
@@ -39,7 +38,7 @@ void profiles::profile::Test::general()
 	// create a profile in a buffer
 	QBuffer buffer;
 	QVERIFY(buffer.open(QIODevice::ReadWrite));
-	profile::create(QTextStream(&buffer), machine, nullptr);
+	profile::create(buffer, machine, nullptr);
 
 	// load the profile
 	QVERIFY(buffer.seek(0));
@@ -61,7 +60,7 @@ void profiles::profile::Test::general()
 
 	// persist the profile
 	QVERIFY(buffer.seek(0));
-	p.save_as(QTextStream(&buffer));
+	p.save_as(buffer);
 
 	// try reloading the profile
 	QVERIFY(buffer.seek(0));

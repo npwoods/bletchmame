@@ -183,10 +183,7 @@ void profiles::profile::save() const
 {
 	QFile file(path());
 	if (file.open(QFile::WriteOnly))
-	{
-		QTextStream stream(&file);
-		save_as(stream);
-	}
+		save_as(file);
 }
 
 
@@ -194,20 +191,22 @@ void profiles::profile::save() const
 //  save_as
 //-------------------------------------------------
 
-void profiles::profile::save_as(QTextStream &stream) const
+void profiles::profile::save_as(QIODevice &stream) const
 {
-	stream << "<!-- BletchMAME profile -->" << Qt::endl;
-	stream << "<profile";
-	stream << " machine=\"" << machine() << "\"";
+	QTextStream textStream(&stream);
+
+	textStream << "<!-- BletchMAME profile -->" << Qt::endl;
+	textStream << "<profile";
+	textStream << " machine=\"" << machine() << "\"";
 	if (!software().isEmpty())
-		stream << " software=\"" << software() << "\"";
-	stream << ">" << Qt::endl;
+		textStream << " software=\"" << software() << "\"";
+	textStream << ">" << Qt::endl;
 
 	for (const slot &slot : devslots())
-		stream << "\t<slot name=\"" << slot.m_name << "\" value=\"" << slot.m_value << "\"/>" << Qt::endl;
+		textStream << "\t<slot name=\"" << slot.m_name << "\" value=\"" << slot.m_value << "\"/>" << Qt::endl;
 	for (const image &image : images())
-		stream << "\t<image tag=\"" << image.m_tag << "\" path=\"" << image.m_path << "\"/>" << Qt::endl;
-	stream << "</profile>" << Qt::endl;
+		textStream << "\t<image tag=\"" << image.m_tag << "\" path=\"" << image.m_path << "\"/>" << Qt::endl;
+	textStream << "</profile>" << Qt::endl;
 }
 
 
@@ -215,7 +214,7 @@ void profiles::profile::save_as(QTextStream &stream) const
 //  create
 //-------------------------------------------------
 
-void profiles::profile::create(QTextStream &stream, const info::machine &machine, const software_list::software *software)
+void profiles::profile::create(QIODevice &stream, const info::machine &machine, const software_list::software *software)
 {
 	profile new_profile;
 	new_profile.m_machine = machine.name();
