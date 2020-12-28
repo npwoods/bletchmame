@@ -1,0 +1,10 @@
+<script>
+	<command>THROTTLED 0</command>
+	<command>RESUME</command>
+	<sleep seconds="1"/>
+	<command>SHOW_PROFILER 1</command>
+	<sleep seconds="1"/>
+	<command>SHOW_PROFILER 0</command>
+	<sleep seconds="1"/>
+	<command>EXIT</command>
+</script>
