@@ -19,8 +19,16 @@ private slots:
 	void skipping();
 	void multiple();
 	void xmlParsingError();
-	void attributeParsingErrorInt();
-	void attributeParsingErrorFloat();
+
+	void attributeParsingError_int_1()		{ attributeParsingError<int>("<alpha><bravo value=\"NOT_AN_INTEGER\"/></alpha>"); }
+	void attributeParsingError_int_2()		{ attributeParsingError<int>("<alpha><bravo value=\"42_NOT_AN_INTEGER_42\"/></alpha>"); }
+	void attributeParsingError_int_3()		{ attributeParsingError<int>("<alpha><bravo value=\"99999999999999999999999999999\"/></alpha>"); }
+	void attributeParsingError_uint_1()		{ attributeParsingError<unsigned int>("<alpha><bravo value=\"-999\"/></alpha>"); }
+	void attributeParsingError_float_1()	{ attributeParsingError<float>("<alpha><bravo value=\"NOT_A_FLOAT\"/></alpha>"); }
+	void attributeParsingError_float_2()	{ attributeParsingError<float>("<alpha><bravo value=\"42_NOT_A_FLOAT_42\"/></alpha>"); }
+
+private:
+	template<class T> void attributeParsingError(const char *xml);
 };
 
 
@@ -213,43 +221,21 @@ void XmlParser::Test::xmlParsingError()
 
 
 //-------------------------------------------------
-//  attributeParsingErrorInt
+//  attributeParsingError
 //-------------------------------------------------
 
-void XmlParser::Test::attributeParsingErrorInt()
+template<class T>
+void XmlParser::Test::attributeParsingError(const char *xmlText)
 {
 	XmlParser xml;
-	std::optional<int> value;
+	std::optional<T> value;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		int x;
+		T x;
 		if (attributes.get("value", x))
 			value = x;
 	});
 
-	const char *xmlText = "<alpha><bravo value=\"42_NOT_AN_INTEGER_42\"/></alpha>";
-	QVERIFY(!xml.parseBytes(xmlText, strlen(xmlText)));
-	QVERIFY(xml.m_errors.size() == 1);
-	QVERIFY(!value.has_value());
-}
-
-
-//-------------------------------------------------
-//  attributeParsingErrorFloat
-//-------------------------------------------------
-
-void XmlParser::Test::attributeParsingErrorFloat()
-{
-	XmlParser xml;
-	std::optional<float> value;
-	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
-	{
-		int x;
-		if (attributes.get("value", x))
-			value = x;
-	});
-
-	const char *xmlText = "<alpha><bravo value=\"42_NOT_A_FLOAT_42\"/></alpha>";
 	QVERIFY(!xml.parseBytes(xmlText, strlen(xmlText)));
 	QVERIFY(xml.m_errors.size() == 1);
 	QVERIFY(!value.has_value());
