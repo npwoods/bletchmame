@@ -56,8 +56,7 @@ public:
 	class Attributes
 	{
 	public:
-		Attributes() = delete;
-		~Attributes() = delete;
+		Attributes(XmlParser &parser, const char **attributes);
 
 		bool get(const char *attribute, int &value) const;
 		bool get(const char *attribute, std::uint32_t &value) const;
@@ -80,7 +79,13 @@ public:
 		bool get(const char *attribute, T &value, TFunc func) const
 		{
 			std::string text;
-			bool result = get(attribute, text) && func(text, value);
+			bool result = get(attribute, text);
+			if (result)
+			{
+				result = func(text, value);
+				if (!result)
+					m_parser.appendError(QString("Error parsing attribute \"%1\"").arg(attribute));
+			}
 			if (!result)
 				value = T();
 			return result;
@@ -97,6 +102,9 @@ public:
 		}
 
 	private:
+		XmlParser &		m_parser;
+		const char **	m_attributes;
+
 		const char *internalGet(const char *attribute, bool return_null = false) const;
 	};
 

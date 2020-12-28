@@ -8,6 +8,7 @@
 
 #include <expat.h>
 #include <inttypes.h>
+#include <string>
 
 #include "xmlparser.h"
 
@@ -30,22 +31,52 @@
 namespace
 {
 	template<typename T>
-	class scanf_parser
+	class strtoll_parser
 	{
 	public:
-		scanf_parser(const char *format)
-			: m_format(format)
-		{
-		}
-
 		bool operator()(const std::string &text, T &value) const
 		{
-			int rc = sscanf(text.c_str(), m_format, &value);
-			return rc > 0;
-		}
+			char *endptr;
+			long long l = strtoll(text.c_str(), &endptr, 10);
+			if (endptr != text.c_str() + text.size())
+				return false;
 
-	private:
-		const char *m_format;
+			value = (T)l;
+			return value == l;
+		}
+	};
+
+	template<typename T>
+	class strtoull_parser
+	{
+	public:
+		bool operator()(const std::string &text, T &value) const
+		{
+			char *endptr;
+			unsigned long long l = strtoull(text.c_str(), &endptr, 10);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)l;
+			return value == l;
+		}
+	};
+
+
+	template<typename T>
+	class strtof_parser
+	{
+	public:
+		bool operator()(const std::string &text, T &value) const
+		{
+			char *endptr;
+			float f = strtof(text.c_str(), &endptr);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)f;
+			return value == f;
+		}
 	};
 };
 
@@ -55,10 +86,10 @@ namespace
 //**************************************************************************
 
 
-static const scanf_parser<int> s_int_parser("%d");
-static const scanf_parser<unsigned int> s_uint_parser("%u");
-static const scanf_parser<std::uint64_t> s_ulong_parser("%" SCNu64);
-static const scanf_parser<float> s_float_parser("%f");
+static const strtoll_parser<int>			s_int_parser;
+static const strtoull_parser<unsigned int>	s_uint_parser;
+static const strtoull_parser<std::uint64_t>	s_ulong_parser;
+static const strtof_parser<float>			s_float_parser;
 
 static const util::enum_parser<bool> s_bool_parser =
 {
@@ -163,7 +194,6 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 bool XmlParser::internalParse(QDataStream &input)
 {
 	bool done = false;
-	bool success = true;
 	char buffer[8192];
 
 	if (LOG_XML)
@@ -190,11 +220,11 @@ bool XmlParser::internalParse(QDataStream &input)
 		{
 			// an error happened; append the error and bail out
 			appendCurrentXmlError();
-			success = false;		
 			done = true;
 		}
 	}
 
+	bool success = m_errors.size() == 0;
 	if (LOG_XML)
 		qDebug("XmlParser::internalParse(): ending parse (success=%s)", success ? "true" : "false");
 	return success;
@@ -362,8 +392,8 @@ void XmlParser::startElement(const char *element, const char **attributes)
 		if (m_currentNode->m_beginFunc)
 		{
 			// we do - call it
-			Attributes *attributes_object = reinterpret_cast<Attributes *>(reinterpret_cast<void *>(attributes));
-			result = m_currentNode->m_beginFunc(*attributes_object);
+			Attributes attributesObject(*this, attributes);
+			result = m_currentNode->m_beginFunc(attributesObject);
 		}
 		else
 		{
@@ -508,6 +538,17 @@ void XmlParser::characterDataHandler(void *user_data, const char *s, int len)
 //**************************************************************************
 
 //-------------------------------------------------
+//  Attributes ctor
+//-------------------------------------------------
+
+XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
+	: m_parser(parser)
+	, m_attributes(attributes)
+{
+}
+
+
+//-------------------------------------------------
 //  Attributes::get
 //-------------------------------------------------
 
@@ -593,12 +634,10 @@ bool XmlParser::Attributes::get(const char *attribute, std::string &value) const
 
 const char *XmlParser::Attributes::internalGet(const char *attribute, bool return_null) const
 {
-	const char **actual_attribute = reinterpret_cast<const char **>(const_cast<Attributes *>(this));
-
-	for (size_t i = 0; actual_attribute[i]; i += 2)
+	for (size_t i = 0; m_attributes[i]; i += 2)
 	{
-		if (!strcmp(attribute, actual_attribute[i + 0]))
-			return actual_attribute[i + 1];
+		if (!strcmp(attribute, m_attributes[i + 0]))
+			return m_attributes[i + 1];
 	}
 
 	return return_null ? nullptr : "";
