@@ -18,6 +18,9 @@ private slots:
 	void unicode();
 	void skipping();
 	void multiple();
+	void xmlParsingError();
+	void attributeParsingErrorInt();
+	void attributeParsingErrorFloat();
 };
 
 
@@ -184,6 +187,76 @@ void XmlParser::Test::multiple()
 	QVERIFY(total == 10);
 }
 
+
+//-------------------------------------------------
+//  xmlParsingError
+//-------------------------------------------------
+
+void XmlParser::Test::xmlParsingError()
+{
+	XmlParser xml;
+	std::vector<int> values;
+	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		int value;
+		attributes.get("value", value);
+		values.push_back(value);
+	});
+
+	const char *xmlText1 =
+		"<alpha---blahhhrg>"
+		"</alpha>";
+	QVERIFY(!xml.parseBytes(xmlText1, strlen(xmlText1)));
+	QVERIFY(xml.m_errors.size() == 1);
+	QVERIFY(values.size() == 0);
+}
+
+
+//-------------------------------------------------
+//  attributeParsingErrorInt
+//-------------------------------------------------
+
+void XmlParser::Test::attributeParsingErrorInt()
+{
+	XmlParser xml;
+	std::optional<int> value;
+	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		int x;
+		if (attributes.get("value", x))
+			value = x;
+	});
+
+	const char *xmlText = "<alpha><bravo value=\"42_NOT_AN_INTEGER_42\"/></alpha>";
+	QVERIFY(!xml.parseBytes(xmlText, strlen(xmlText)));
+	QVERIFY(xml.m_errors.size() == 1);
+	QVERIFY(!value.has_value());
+}
+
+
+//-------------------------------------------------
+//  attributeParsingErrorFloat
+//-------------------------------------------------
+
+void XmlParser::Test::attributeParsingErrorFloat()
+{
+	XmlParser xml;
+	std::optional<float> value;
+	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
+	{
+		int x;
+		if (attributes.get("value", x))
+			value = x;
+	});
+
+	const char *xmlText = "<alpha><bravo value=\"42_NOT_A_FLOAT_42\"/></alpha>";
+	QVERIFY(!xml.parseBytes(xmlText, strlen(xmlText)));
+	QVERIFY(xml.m_errors.size() == 1);
+	QVERIFY(!value.has_value());
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<XmlParser::Test> fixture;
 #include "xmlparser_test.moc"

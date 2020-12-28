@@ -26,6 +26,8 @@ QT_BEGIN_NAMESPACE
 class QDataStream;
 QT_END_NAMESPACE
 
+// ======================> XmlParser
+
 class XmlParser
 {
 public:
@@ -37,11 +39,24 @@ public:
 		Skip
 	};
 
+
+	// ======================> XmlParser
+
+	struct Error
+	{
+		int		m_lineNumber;
+		int		m_columnNumber;
+		QString	m_message;
+		QString	m_context;
+	};
+
+
+	// ======================> Attributes
+
 	class Attributes
 	{
 	public:
-		Attributes() = delete;
-		~Attributes() = delete;
+		Attributes(XmlParser &parser, const char **attributes);
 
 		bool get(const char *attribute, int &value) const;
 		bool get(const char *attribute, std::uint32_t &value) const;
@@ -64,7 +79,13 @@ public:
 		bool get(const char *attribute, T &value, TFunc func) const
 		{
 			std::string text;
-			bool result = get(attribute, text) && func(text, value);
+			bool result = get(attribute, text);
+			if (result)
+			{
+				result = func(text, value);
+				if (!result)
+					m_parser.appendError(QString("Error parsing attribute \"%1\"").arg(attribute));
+			}
 			if (!result)
 				value = T();
 			return result;
@@ -81,6 +102,9 @@ public:
 		}
 
 	private:
+		XmlParser &		m_parser;
+		const char **	m_attributes;
+
 		const char *internalGet(const char *attribute, bool return_null = false) const;
 	};
 
@@ -105,7 +129,7 @@ public:
 		auto proxy = proxy_type(std::move(func));
 
 		// supply the proxy
-		getNode(elements)->m_begin_func = std::move(proxy);
+		getNode(elements)->m_beginFunc = std::move(proxy);
 	}
 
 	template<typename TFunc>
@@ -121,7 +145,7 @@ public:
 	typedef std::function<void(QString &&content)> OnEndElementCallback;
 	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
-		getNode(elements)->m_end_func = std::move(func);
+		getNode(elements)->m_endFunc = std::move(func);
 	}
 	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func)
 	{
@@ -136,7 +160,7 @@ public:
 	bool parse(QDataStream &input);
 	bool parse(const QString &file_name);
 	bool parseBytes(const void *ptr, size_t sz);
-	QString errorMessage() const;
+	QString errorMessagesSingleString() const;
 
 	static std::string escape(const QString &str);
 
@@ -147,22 +171,25 @@ private:
 		typedef std::weak_ptr<Node> weak_ptr;
 		typedef std::unordered_map<const char *, Node::ptr> Map;
 
-		OnBeginElementCallback	m_begin_func;
-		OnEndElementCallback	m_end_func;
-		Node::weak_ptr		m_parent;
+		OnBeginElementCallback	m_beginFunc;
+		OnEndElementCallback	m_endFunc;
+		Node::weak_ptr			m_parent;
 		Map						m_map;
 	};
 
 	struct XML_ParserStruct *	m_parser;
 	Node::ptr					m_root;
-	Node::ptr					m_current_node;
-	int							m_skipping_depth;
-	QString						m_current_content;
+	Node::ptr					m_currentNode;
+	int							m_skippingDepth;
+	QString						m_currentContent;
+	std::vector<Error>			m_errors;
 
 	bool internalParse(QDataStream &input);
 	void startElement(const char *name, const char **attributes);
 	void endElement(const char *name);
 	void characterData(const char *s, int len);
+	void appendError(QString &&message);
+	void appendCurrentXmlError();
 	QString errorContext() const;
 	static QString errorContext(const char *contextString, int contextOffset, int contextSize);
 	static bool isLineEnding(char ch);

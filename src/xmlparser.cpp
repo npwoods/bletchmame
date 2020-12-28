@@ -8,6 +8,7 @@
 
 #include <expat.h>
 #include <inttypes.h>
+#include <string>
 
 #include "xmlparser.h"
 
@@ -30,22 +31,52 @@
 namespace
 {
 	template<typename T>
-	class scanf_parser
+	class strtoll_parser
 	{
 	public:
-		scanf_parser(const char *format)
-			: m_format(format)
-		{
-		}
-
 		bool operator()(const std::string &text, T &value) const
 		{
-			int rc = sscanf(text.c_str(), m_format, &value);
-			return rc > 0;
-		}
+			char *endptr;
+			long long l = strtoll(text.c_str(), &endptr, 10);
+			if (endptr != text.c_str() + text.size())
+				return false;
 
-	private:
-		const char *m_format;
+			value = (T)l;
+			return value == l;
+		}
+	};
+
+	template<typename T>
+	class strtoull_parser
+	{
+	public:
+		bool operator()(const std::string &text, T &value) const
+		{
+			char *endptr;
+			unsigned long long l = strtoull(text.c_str(), &endptr, 10);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)l;
+			return value == l;
+		}
+	};
+
+
+	template<typename T>
+	class strtof_parser
+	{
+	public:
+		bool operator()(const std::string &text, T &value) const
+		{
+			char *endptr;
+			float f = strtof(text.c_str(), &endptr);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)f;
+			return value == f;
+		}
 	};
 };
 
@@ -55,10 +86,10 @@ namespace
 //**************************************************************************
 
 
-static const scanf_parser<int> s_int_parser("%d");
-static const scanf_parser<unsigned int> s_uint_parser("%u");
-static const scanf_parser<std::uint64_t> s_ulong_parser("%" SCNu64);
-static const scanf_parser<float> s_float_parser("%f");
+static const strtoll_parser<int>			s_int_parser;
+static const strtoull_parser<unsigned int>	s_uint_parser;
+static const strtoull_parser<std::uint64_t>	s_ulong_parser;
+static const strtof_parser<float>			s_float_parser;
 
 static const util::enum_parser<bool> s_bool_parser =
 {
@@ -83,7 +114,7 @@ static const util::enum_parser<bool> s_bool_parser =
 
 XmlParser::XmlParser()
 	: m_root(std::make_unique<Node>())
-	, m_skipping_depth(0)
+	, m_skippingDepth(0)
 {
 	m_parser = XML_ParserCreate(nullptr);
 
@@ -120,13 +151,13 @@ bool XmlParser::parse(QIODevice &input)
 
 bool XmlParser::parse(QDataStream &input)
 {
-	m_current_node = m_root;
-	m_skipping_depth = 0;
+	m_currentNode = m_root;
+	m_skippingDepth = 0;
 
 	bool success = internalParse(input);
 
-	m_current_node = nullptr;
-	m_skipping_depth = 0;
+	m_currentNode = nullptr;
+	m_skippingDepth = 0;
 	return success;
 }
 
@@ -163,7 +194,6 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 bool XmlParser::internalParse(QDataStream &input)
 {
 	bool done = false;
-	bool success = true;
 	char buffer[8192];
 
 	if (LOG_XML)
@@ -188,12 +218,13 @@ bool XmlParser::internalParse(QDataStream &input)
 		// and feed this into expat
 		if (!XML_Parse(m_parser, buffer, done ? 0 : lastRead, done))
 		{
-			// an error happened; bail out
-			success = false;		
+			// an error happened; append the error and bail out
+			appendCurrentXmlError();
 			done = true;
 		}
 	}
 
+	bool success = m_errors.size() == 0;
 	if (LOG_XML)
 		qDebug("XmlParser::internalParse(): ending parse (success=%s)", success ? "true" : "false");
 	return success;
@@ -201,23 +232,28 @@ bool XmlParser::internalParse(QDataStream &input)
 
 
 //-------------------------------------------------
-//  errorMessage
+//  appendCurrentXmlError
 //-------------------------------------------------
 
-QString XmlParser::errorMessage() const
+void XmlParser::appendCurrentXmlError()
 {
-	int lineNumber = XML_GetCurrentLineNumber(m_parser);
-	int columnNumber = XML_GetCurrentColumnNumber(m_parser);
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *errorString = XML_ErrorString(code);
-	QString message = QString("%1:%2: %3").arg(
-		QString::number(lineNumber),
-		QString::number(columnNumber),
-		QString(errorString));
-	QString context = errorContext();
-	if (!context.isEmpty())
-		message = message + "\n" + context;
-	return message;
+	appendError(errorString);
+}
+
+
+//-------------------------------------------------
+//  appendError
+//-------------------------------------------------
+
+void XmlParser::appendError(QString &&message)
+{
+	Error &error = m_errors.emplace_back();
+	error.m_lineNumber = XML_GetCurrentLineNumber(m_parser);
+	error.m_columnNumber = XML_GetCurrentColumnNumber(m_parser);
+	error.m_message = std::move(message);
+	error.m_context = errorContext();
 }
 
 
@@ -261,6 +297,26 @@ QString XmlParser::errorContext(const char *contextString, int contextOffset, in
 			+ "\n"
 			+ QString(contextOffset - contextLineBegin, QChar(' '))
 			+ "^";
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  errorMessagesSingleString
+//-------------------------------------------------
+
+QString XmlParser::errorMessagesSingleString() const
+{
+	QString result;
+	for (const Error &error : m_errors)
+	{
+		if (!result.isEmpty())
+			result += "\n";
+		result += QString("%1:%2: %3").arg(
+			QString::number(error.m_lineNumber),
+			QString::number(error.m_columnNumber),
+			error.m_message);
 	}
 	return result;
 }
@@ -318,10 +374,10 @@ void XmlParser::startElement(const char *element, const char **attributes)
 {
 	// only try to find this node in our tables if we are not skipping
 	Node::ptr child;
-	if (m_skipping_depth == 0)
+	if (m_skippingDepth == 0)
 	{
-		auto iter = m_current_node->m_map.find(element);
-		if (iter != m_current_node->m_map.end())
+		auto iter = m_currentNode->m_map.find(element);
+		if (iter != m_currentNode->m_map.end())
 			child = iter->second;
 	}
 
@@ -330,14 +386,14 @@ void XmlParser::startElement(const char *element, const char **attributes)
 	if (child)
 	{
 		// we do - traverse down the tree
-		m_current_node = child;
+		m_currentNode = child;
 
 		// do we have a callback function for beginning this node?
-		if (m_current_node->m_begin_func)
+		if (m_currentNode->m_beginFunc)
 		{
 			// we do - call it
-			Attributes *attributes_object = reinterpret_cast<Attributes *>(reinterpret_cast<void *>(attributes));
-			result = m_current_node->m_begin_func(*attributes_object);
+			Attributes attributesObject(*this, attributes);
+			result = m_currentNode->m_beginFunc(attributesObject);
 		}
 		else
 		{
@@ -360,7 +416,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 	case ElementResult::Skip:
 		// we're skipping this element; treat it the same as an unknown element
-		m_skipping_depth++;
+		m_skippingDepth++;
 		break;
 
 	default:
@@ -369,7 +425,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 	}
 
 	// finally clear out content
-	m_current_content.clear();
+	m_currentContent.clear();
 }
 
 
@@ -379,19 +435,19 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 void XmlParser::endElement(const char *)
 {
-	if (m_skipping_depth)
+	if (m_skippingDepth)
 	{
 		// coming out of an unknown element type
-		m_skipping_depth--;
+		m_skippingDepth--;
 	}
 	else
 	{
 		// call back the end func, if appropriate
-		if (m_current_node->m_end_func)
-			m_current_node->m_end_func(std::move(m_current_content));
+		if (m_currentNode->m_endFunc)
+			m_currentNode->m_endFunc(std::move(m_currentContent));
 
 		// and go up the tree
-		m_current_node = m_current_node->m_parent.lock();
+		m_currentNode = m_currentNode->m_parent.lock();
 	}
 }
 
@@ -403,7 +459,7 @@ void XmlParser::endElement(const char *)
 void XmlParser::characterData(const char *s, int len)
 {
 	QString text = QString::fromUtf8(s, len);
-	m_current_content.append(std::move(text));
+	m_currentContent.append(std::move(text));
 }
 
 
@@ -480,6 +536,17 @@ void XmlParser::characterDataHandler(void *user_data, const char *s, int len)
 //**************************************************************************
 //  UTILITY/SUPPORT
 //**************************************************************************
+
+//-------------------------------------------------
+//  Attributes ctor
+//-------------------------------------------------
+
+XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
+	: m_parser(parser)
+	, m_attributes(attributes)
+{
+}
+
 
 //-------------------------------------------------
 //  Attributes::get
@@ -567,12 +634,10 @@ bool XmlParser::Attributes::get(const char *attribute, std::string &value) const
 
 const char *XmlParser::Attributes::internalGet(const char *attribute, bool return_null) const
 {
-	const char **actual_attribute = reinterpret_cast<const char **>(const_cast<Attributes *>(this));
-
-	for (size_t i = 0; actual_attribute[i]; i += 2)
+	for (size_t i = 0; m_attributes[i]; i += 2)
 	{
-		if (!strcmp(attribute, actual_attribute[i + 0]))
-			return actual_attribute[i + 1];
+		if (!strcmp(attribute, m_attributes[i + 0]))
+			return m_attributes[i + 1];
 	}
 
 	return return_null ? nullptr : "";
