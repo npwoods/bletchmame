@@ -85,12 +85,6 @@ namespace
 //  LOCAL VARIABLES
 //**************************************************************************
 
-
-static const strtoll_parser<int>			s_int_parser;
-static const strtoull_parser<unsigned int>	s_uint_parser;
-static const strtoull_parser<std::uint64_t>	s_ulong_parser;
-static const strtof_parser<float>			s_float_parser;
-
 static const util::enum_parser<bool> s_bool_parser =
 {
 	{ "0", false },
@@ -554,7 +548,7 @@ XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
 
 bool XmlParser::Attributes::get(const char *attribute, int &value) const
 {
-	return get(attribute, value, s_int_parser);
+	return get(attribute, value, strtoll_parser<int>());
 }
 
 
@@ -564,7 +558,7 @@ bool XmlParser::Attributes::get(const char *attribute, int &value) const
 
 bool XmlParser::Attributes::get(const char *attribute, std::uint32_t &value) const
 {
-	return get(attribute, value, s_uint_parser);
+	return get(attribute, value, strtoull_parser<std::uint32_t>());
 }
 
 
@@ -574,7 +568,7 @@ bool XmlParser::Attributes::get(const char *attribute, std::uint32_t &value) con
 
 bool XmlParser::Attributes::get(const char *attribute, std::uint64_t &value) const
 {
-	return get(attribute, value, s_ulong_parser);
+	return get(attribute, value, strtoull_parser<std::uint64_t>());
 }
 
 
@@ -594,7 +588,7 @@ bool XmlParser::Attributes::get(const char *attribute, bool &value) const
 
 bool XmlParser::Attributes::get(const char *attribute, float &value) const
 {
-	return get(attribute, value, s_float_parser);
+	return get(attribute, value, strtof_parser<float>());
 }
 
 
@@ -641,4 +635,17 @@ const char *XmlParser::Attributes::internalGet(const char *attribute, bool retur
 	}
 
 	return return_null ? nullptr : "";
+}
+
+
+//-------------------------------------------------
+//  Attributes::reportAttributeParsingError
+//-------------------------------------------------
+
+void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, const std::string &value) const
+{
+	QString message = QString("Error parsing attribute \"%1\" (text=\"%2\")").arg(
+		QString(attribute),
+		QString::fromStdString(value));
+	m_parser.appendError(std::move(message));
 }
