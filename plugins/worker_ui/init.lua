@@ -328,7 +328,7 @@ function emit_status(light, out)
 	emit("\t<video");
 	emit("\t\tspeed_percent=\"" .. tostring(get_speed_percent()) .. "\"");
 	emit("\t\tframeskip=\"" .. tostring(machine_video().frameskip) .. "\"");
-	emit("\t\teffective_frameskip=\"" .. tostring(get_effective_frameskip) .. "\"");
+	emit("\t\teffective_frameskip=\"" .. tostring(get_effective_frameskip()) .. "\"");
 	emit("\t\tthrottled=\"" .. tostring(machine_video().throttled) .. "\"");
 	emit("\t\tthrottle_rate=\"" .. tostring(machine_video().throttle_rate) .. "\"");
 	emit("\t\tis_recording=\"" .. string_from_bool(get_is_recording()) .. "\"");
