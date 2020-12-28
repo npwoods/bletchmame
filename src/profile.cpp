@@ -132,13 +132,22 @@ std::optional<profiles::profile> profiles::profile::load(QString &&path)
 	QFile file(path);
 	if (!file.open(QFile::ReadOnly))
 		return { };
-	QDataStream stream(&file);
 
+	QFileInfo fi(file);
+	return load(file, std::move(path), fi.baseName());
+}
+
+
+//-------------------------------------------------
+//  load
+//-------------------------------------------------
+
+std::optional<profiles::profile> profiles::profile::load(QIODevice & stream, QString &&path, QString &&name)
+{
 	// start setting up the profile
 	profile result;
 	result.m_path = std::move(path);
-	QFileInfo fi(file);
-	result.m_name = fi.baseName();
+	result.m_name = std::move(name);
 
 	// and parse the XML
 	XmlParser xml;
@@ -160,7 +169,7 @@ std::optional<profiles::profile> profiles::profile::load(QString &&path)
 		attributes.get("value",	s.m_value);
 	});
 
-	return xml.parse(result.m_path) && result.is_valid()
+	return xml.parse(stream) && result.is_valid()
 		? std::optional<profiles::profile>(std::move(result))
 		: std::optional<profiles::profile>();
 }
@@ -195,7 +204,7 @@ void profiles::profile::save_as(QTextStream &stream) const
 	stream << ">" << Qt::endl;
 
 	for (const slot &slot : devslots())
-		stream << "\t<slot name=\"" << slot.m_name << "\" path=\"" << slot.m_value << "\"/>" << Qt::endl;
+		stream << "\t<slot name=\"" << slot.m_name << "\" value=\"" << slot.m_value << "\"/>" << Qt::endl;
 	for (const image &image : images())
 		stream << "\t<image tag=\"" << image.m_tag << "\" path=\"" << image.m_path << "\"/>" << Qt::endl;
 	stream << "</profile>" << Qt::endl;

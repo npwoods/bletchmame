@@ -42,6 +42,8 @@ namespace profiles
 	class profile
 	{
 	public:
+		class Test;
+
 		profile(const profile &) = delete;
 		profile(profile &&) = default;
 		profile &operator =(const profile &) = delete;
@@ -88,6 +90,8 @@ namespace profiles
 		QString				m_software;
 		std::vector<slot>	m_slots;
 		std::vector<image>	m_images;
+
+		static std::optional<profile> load(QIODevice &stream, QString &&path, QString &&name);
 	};
 };
 
