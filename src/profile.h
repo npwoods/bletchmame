@@ -42,6 +42,8 @@ namespace profiles
 	class profile
 	{
 	public:
+		class Test;
+
 		profile(const profile &) = delete;
 		profile(profile &&) = default;
 		profile &operator =(const profile &) = delete;
@@ -64,11 +66,11 @@ namespace profiles
 		// methods
 		bool is_valid() const;
 		void save() const;
-		void save_as(QTextStream &stream) const;
+		void save_as(QIODevice &stream) const;
 
 		// statics
 		static std::vector<std::shared_ptr<profiles::profile>> scan_directories(const QStringList &paths);
-		static void create(QTextStream &stream, const info::machine &machine, const software_list::software *software);
+		static void create(QIODevice &stream, const info::machine &machine, const software_list::software *software);
 		static std::optional<profile> load(QString &&path);
 		static std::optional<profile> load(const QString &path);
 
@@ -88,6 +90,8 @@ namespace profiles
 		QString				m_software;
 		std::vector<slot>	m_slots;
 		std::vector<image>	m_images;
+
+		static std::optional<profile> load(QIODevice &stream, QString &&path, QString &&name);
 	};
 };
 

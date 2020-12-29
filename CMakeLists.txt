@@ -168,6 +168,7 @@ add_executable(BletchMAME_tests
 	src/tests/machinelistitemmodel_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
+	src/tests/profile_test.cpp
 	src/tests/runmachinetask_test.cpp
 	src/tests/softwarelist_test.cpp
 	src/tests/status_test.cpp

@@ -2400,8 +2400,7 @@ void MainWindow::createProfile(const info::machine &machine, const software_list
 	}
 
 	// create the new profile and focus
-	QTextStream text_stream(&file);
-	profiles::profile::create(text_stream, machine, software);
+	profiles::profile::create(file, machine, software);
 	focusOnNewProfile(std::move(new_profile_path));
 }
 
@@ -2445,8 +2444,7 @@ void MainWindow::duplicateProfile(const profiles::profile &profile)
 	}
 
 	// create the new profile
-	QTextStream stream(&file);
-	profile.save_as(stream);
+	profile.save_as(file);
 
 	// copy the save state file also, if present
 	QString old_save_state_file = profiles::profile::change_path_save_state(profile.path());
