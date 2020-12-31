@@ -159,7 +159,13 @@ else
 	machine_debugger	= function() return manager.machine.debugger end
 	machine_input		= function() return manager.machine.input end
 	machine_ioport		= function() return manager.machine.ioport end
-	machine_natkeyboard	= function() return manager.machine.natkeyboard end
+	machine_natkeyboard	= function()
+		if manager.machine.natkeyboard then
+			return manager.machine.natkeyboard
+		else
+			return manager.machine.ioport.natkeyboard
+		end
+	end
 	machine_options		= function() return manager.machine.options end
 	machine_sound		= function() return manager.machine.sound end
 	machine_uiinput		= function() return manager.machine.uiinput end
@@ -297,7 +303,7 @@ function emit_status(light, out)
 	-- previous versions, similar to get_device_tag
 	local get_item_code, get_image_filename
 	local get_speed_percent, get_effective_frameskip, get_is_recording
-	if type(machine_ioport().natkeyboard) == "function" then
+	if type(machine_video().speed_percent) == "function" then
 		get_item_code			= function(item) return item:code() end
 		get_image_filename		= function(image) return image:filename() end
 		get_speed_percent		= function() return machine_video():speed_percent() end

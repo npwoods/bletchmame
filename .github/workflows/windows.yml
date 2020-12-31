@@ -69,7 +69,8 @@ jobs:
         ./test_mame_interactions.sh mame0213
         ./test_mame_interactions.sh mame0218
         ./test_mame_interactions.sh mame0224
-        ./test_mame_interactions.sh mame0225
+        ./test_mame_interactions.sh mame0226
+        ./test_mame_interactions.sh mame0227
 
     # Install PanDoc
     - name: Install PanDoc

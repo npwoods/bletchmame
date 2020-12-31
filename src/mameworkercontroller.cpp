@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include <QBuffer>
+#include <QDateTime>
 #include <QProcess>
 
 #include "mameworkercontroller.h"
@@ -18,6 +19,7 @@
 
 #define LOG_COMMANDS		0
 #define LOG_RESPONSES		0
+#define TIMEOUT_SECONDS		300
 
 
 //-------------------------------------------------
@@ -27,6 +29,7 @@
 MameWorkerController::MameWorkerController(QProcess &process, std::function<void(ChatterType, const QString &)> &&chatterCallback)
     : m_process(process)
 	, m_chatterCallback(std::move(chatterCallback))
+	, m_timedOut(false)
 {
 }
 
@@ -95,9 +98,31 @@ MameWorkerController::Response MameWorkerController::receiveResponse()
 
 	// did we get a status reponse
 	if (response.m_type == Response::Type::Ok && args.size() >= 2 && args[1] == "STATUS")
-		response.m_update.emplace(readStatus());
+		readStatusIntoResponse(response);
 
 	return response;
+}
+
+
+//-------------------------------------------------
+//  readStatusIntoResponse
+//-------------------------------------------------
+
+void MameWorkerController::readStatusIntoResponse(Response &response)
+{
+	// read the status
+	status::update update = readStatus();
+
+	// if we timed out, report that error
+	if (m_timedOut)
+	{
+		response.m_type = Response::Type::Error;
+		response.m_text = "Timeout waiting for status update from MAME";
+		return;
+	}
+
+	// emplace the status update into the response
+	response.m_update.emplace(std::move(update));
 }
 
 
@@ -138,6 +163,9 @@ status::update MameWorkerController::readStatus()
 
 QString MameWorkerController::reallyReadLineFromProcess()
 {
+	QDateTime readStartDateTime = QDateTime::currentDateTime();
+	QDateTime timeoutDateTime = readStartDateTime.addSecs(TIMEOUT_SECONDS);
+
 	// Qt's stream classes are very clunky.  There seems to be an assumption that the caller
 	// wants something very simple (e.g. - read all input from a process), or wants something
 	// very asynchronous event driven
@@ -149,7 +177,7 @@ QString MameWorkerController::reallyReadLineFromProcess()
 	// loop while the process is running - because readLine() can return an empty string we
 	// need to keep on tryin'
 	QString result;
-	while (result.isEmpty() && m_process.state() == QProcess::ProcessState::Running)
+	while (result.isEmpty() && !m_timedOut && m_process.state() == QProcess::ProcessState::Running)
 	{
 		if (!m_process.canReadLine())
 		{
@@ -160,7 +188,14 @@ QString MameWorkerController::reallyReadLineFromProcess()
 
 		// read a line if we can
 		if (m_process.canReadLine())
+		{
 			result = m_process.readLine();
+		}
+		else if (QDateTime::currentDateTime() >= timeoutDateTime)
+		{
+			// bummer, we've timed out!  we consider this to be irrecoverable
+			m_timedOut = true;
+		}
 	}
 	return result;
 }
