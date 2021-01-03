@@ -236,12 +236,13 @@ status::update status::update::read(QIODevice &input_stream)
 	xml.onElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
 		rootTagParseCount++;
-		attributes.get("phase",					result.m_phase, s_machine_phase_parser);
-		attributes.get("paused",				result.m_paused);
-		attributes.get("polling_input_seq",		result.m_polling_input_seq);
-		attributes.get("has_input_using_mouse",	result.m_has_input_using_mouse);
-		attributes.get("startup_text",			result.m_startup_text);
-		attributes.get("debugger_present",		result.m_debugger_present);
+		attributes.get("phase",						result.m_phase, s_machine_phase_parser);
+		attributes.get("paused",					result.m_paused);
+		attributes.get("polling_input_seq",			result.m_polling_input_seq);
+		attributes.get("has_input_using_mouse",		result.m_has_input_using_mouse);
+		attributes.get("has_mouse_enabled_problem", result.m_has_mouse_enabled_problem);
+		attributes.get("startup_text",				result.m_startup_text);
+		attributes.get("debugger_present",			result.m_debugger_present);
 	});
 	xml.onElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -438,8 +439,17 @@ status::update status::update::read(QIODevice &input_stream)
 //-------------------------------------------------
 
 status::state::state()
-	: m_throttled(false)
+	: m_paused(false)
+	, m_polling_input_seq(false)
+	, m_has_input_using_mouse(false)
+	, m_has_mouse_enabled_problem(false)
+	, m_debugger_present(false)
+	, m_speed_percent(0)
+	, m_effective_frameskip(0)
+	, m_throttled(false)
 	, m_is_recording(false)
+	, m_sound_attenuation(0)
+	, m_cheats_enabled(false)
 {
 }
 
@@ -459,24 +469,25 @@ status::state::~state()
 
 void status::state::update(status::update &&that)
 {
-	take(m_phase,					that.m_phase);
-	take(m_paused,					that.m_paused);
-	take(m_polling_input_seq,		that.m_polling_input_seq);
-	take(m_has_input_using_mouse,	that.m_has_input_using_mouse);
-	take(m_startup_text,			that.m_startup_text);
-	take(m_debugger_present,		that.m_debugger_present);
-	take(m_speed_percent,			that.m_speed_percent);
-	take(m_frameskip,				that.m_frameskip);
-	take(m_effective_frameskip,		that.m_effective_frameskip);
-	take(m_throttled,				that.m_throttled);
-	take(m_throttle_rate,			that.m_throttle_rate);
-	take(m_is_recording,			that.m_is_recording);
-	take(m_sound_attenuation,		that.m_sound_attenuation);
-	take(m_images,					that.m_images);
-	take(m_slots,					that.m_slots);
-	take(m_inputs,					that.m_inputs);
-	take(m_input_classes,			that.m_input_classes);
-	take(m_cheats,					that.m_cheats);
+	take(m_phase,						that.m_phase);
+	take(m_paused,						that.m_paused);
+	take(m_polling_input_seq,			that.m_polling_input_seq);
+	take(m_has_input_using_mouse,		that.m_has_input_using_mouse);
+	take(m_has_mouse_enabled_problem,	that.m_has_mouse_enabled_problem);
+	take(m_startup_text,				that.m_startup_text);
+	take(m_debugger_present,			that.m_debugger_present);
+	take(m_speed_percent,				that.m_speed_percent);
+	take(m_frameskip,					that.m_frameskip);
+	take(m_effective_frameskip,			that.m_effective_frameskip);
+	take(m_throttled,					that.m_throttled);
+	take(m_throttle_rate,				that.m_throttle_rate);
+	take(m_is_recording,				that.m_is_recording);
+	take(m_sound_attenuation,			that.m_sound_attenuation);
+	take(m_images,						that.m_images);
+	take(m_slots,						that.m_slots);
+	take(m_inputs,						that.m_inputs);
+	take(m_input_classes,				that.m_input_classes);
+	take(m_cheats,						that.m_cheats);
 }
 
 

@@ -452,11 +452,13 @@ public:
 
 	virtual void start()
 	{
-		m_host.m_state->phase().subscribe([this]() { update(); });
-		m_host.m_state->speed_percent().subscribe([this]() { update(); });
-		m_host.m_state->effective_frameskip().subscribe([this]() { update(); });
-		m_host.m_state->startup_text().subscribe([this]() { update(); });
-		m_host.m_state->images().subscribe([this]() { update(); });
+		m_host.m_state->phase().subscribe(						[this]() { update(); });
+		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
+		m_host.m_state->effective_frameskip().subscribe(		[this]() { update(); });
+		m_host.m_state->startup_text().subscribe(				[this]() { update(); });
+		m_host.m_state->images().subscribe(						[this]() { update(); });
+		m_host.m_state->has_input_using_mouse().subscribe(		[this]() { update(); });
+		m_host.m_state->has_mouse_enabled_problem().subscribe(	[this]() { update(); });
 		update();
 	}
 
@@ -507,6 +509,10 @@ private:
 				if (!iter->m_display.isEmpty())
 					statusText.push_back(iter->m_display);
 			}
+
+			// do we have the mouse capture problem?
+			if (state()->has_input_using_mouse().get() && state()->has_mouse_enabled_problem().get())
+				statusText.push_back("This version of MAME does not support hot changes to mouse capture; the mouse may not be usable");
 		}
 
 		// and specify it
@@ -1765,6 +1771,10 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 
 	// wait for first ping
 	waitForStatusUpdate();
+
+	// if we exited, bail
+	if (!m_sessionBehavior)
+		return;
 
 	// load images associated with the behavior
 	std::map<QString, QString> behaviorImages = m_sessionBehavior->getImages();

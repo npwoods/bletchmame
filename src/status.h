@@ -261,6 +261,7 @@ namespace status
 		std::optional<bool>							m_paused;
 		std::optional<bool>							m_polling_input_seq;
 		std::optional<bool>							m_has_input_using_mouse;
+		std::optional<bool>							m_has_mouse_enabled_problem;
 		std::optional<QString>						m_startup_text;
 		std::optional<bool>							m_debugger_present;
 		std::optional<float>						m_speed_percent;
@@ -300,6 +301,7 @@ namespace status
 		observable::value<bool> &						paused()					{ return m_paused; }
 		observable::value<bool> &						polling_input_seq()			{ return m_polling_input_seq; }
 		observable::value<bool> &						has_input_using_mouse()		{ return m_has_input_using_mouse; }
+		observable::value<bool> &						has_mouse_enabled_problem()	{ return m_has_mouse_enabled_problem; }
 		observable::value<QString> &					startup_text()				{ return m_startup_text; }
 		observable::value<bool>	&						debugger_present()			{ return m_debugger_present; }
 		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
@@ -324,6 +326,7 @@ namespace status
 		observable::value<bool>							m_paused;
 		observable::value<bool>							m_polling_input_seq;
 		observable::value<bool>							m_has_input_using_mouse;
+		observable::value<bool>							m_has_mouse_enabled_problem;		
 		observable::value<QString>						m_startup_text;
 		observable::value<bool>							m_debugger_present;
 		observable::value<float>						m_speed_percent;

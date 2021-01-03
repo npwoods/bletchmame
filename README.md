@@ -11,6 +11,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.4 (TBD)
 	- Updated various parts of the worker_ui plugin in response to breaking LUA changes in MAME 0.227
 		- An implication is that previous versions of BletchMAME will not work with MAME 0.227 or greater
+		- Because MAME 0.227 doesn't support hot changes to mouse capture, the mouse may not be usable
+			- BletchMAME will warn the user in this scenario
 	- Changed the Images Dialog to a Configurable Devices dialog, combining image and slot selection
 		- Slot modification requires MAME 0.227, and will not function in previouew versions
 	- Resurrected the "Quick Load/Save State" feature, which has been broken since 2.0
