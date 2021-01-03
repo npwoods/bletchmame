@@ -1766,6 +1766,10 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	// wait for first ping
 	waitForStatusUpdate();
 
+	// if we exited, bail
+	if (!m_sessionBehavior)
+		return;
+
 	// load images associated with the behavior
 	std::map<QString, QString> behaviorImages = m_sessionBehavior->getImages();
 	if (behaviorImages.size() > 0)
