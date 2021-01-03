@@ -229,9 +229,23 @@ function is_polling_input_seq()
 	end
 end
 
+local has_mouse_enabled_problem = nil
 function update_mouse_enabled()
 	local enabled = mouse_enabled_by_ui and not is_polling_input_seq()
-	pcall(function() machine_input().device_classes["mouse"].enabled = enabled end)
+
+	-- only try to modify the property if it has changed
+	local mouse_device_class = machine_input().device_classes["mouse"]
+	if (mouse_device_class.enabled ~= enabled) then
+		-- in MAME 0.227, the enabled property was made read only without an adequate
+		-- substitute, so we need to detect this scenario
+		if not pcall(function() mouse_device_class.enabled = enabled end) then
+			-- we don't want to jump the gun and report the problem before we've checked
+			-- for the mouse
+			if type(has_mouse_enabled_problem) == "boolean" then
+				has_mouse_enabled_problem = true
+			end
+		end
+	end
 end
 
 function stop_polling_input_seq()
@@ -328,6 +342,7 @@ function emit_status(light, out)
 	if (not light) then
 		emit("\thas_input_using_mouse=\"" .. tostring(has_input_using_mouse()) .. "\"");
 	end
+	emit("\thas_mouse_enabled_problem=\"" .. tostring(has_mouse_enabled_problem) .. "\"");
 	emit(">");
 
 	-- <video> (video_manager)
@@ -1148,6 +1163,9 @@ function startplugin()
 				end
 			end
 		end
+
+		-- now that we've fixed the inputs that may have had mice, we're free to report the MAME 0.227 mouse problem
+		has_mouse_enabled_problem = false
 	end)
 
 	-- activate the cheat plugin, if present (and not started separately)
