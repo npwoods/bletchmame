@@ -1,10 +1,10 @@
 <script>
 	<command>THROTTLED 0</command>
 	<command>RESUME</command>
-	<sleep seconds="2"/>
+	<command>SLEEP 2</command>
 	<command>STATE_SAVE state.sta</command>
-	<sleep seconds="2"/>
+	<command>SLEEP 2</command>
 	<command>STATE_LOAD state.sta</command>
-	<sleep seconds="2"/>
+	<command>SLEEP 2</command>
 	<command>EXIT</command>
 </script>
