@@ -333,6 +333,7 @@ function emit_status(light, out)
 
 	emit("<status");
 	emit("\tphase=\"running\"");
+	emit("\ttime=\"" .. tostring(emu.time()) .. "\"");
 	emit("\tpolling_input_seq=\"" .. tostring(is_polling_input_seq()) .. "\"");
 	emit("\tnatural_keyboard_in_use=\"" .. tostring(machine_natkeyboard().in_use) .. "\"");
 	emit("\tpaused=\"" .. tostring(machine().paused) .. "\"");
@@ -585,6 +586,19 @@ function command_ping(args)
 	print("@OK STATUS ### Ping... pong...")
 	emit_status(next_ping_should_be_light)
 	next_ping_should_be_light = true
+end
+
+-- SLEEP command
+local wake_up_time = nil
+function command_sleep(args)
+	-- don't pause and sleep at the same time
+	if machine().paused then
+		print("@ERROR ### Cannot sleep while paused")
+		return
+	end
+
+	wake_up_time = emu.time() + tonumber(args[2])
+	-- not reporting completion; need to wait to wake up
 end
 
 -- SOFT_RESET command
@@ -1010,6 +1024,7 @@ local commands =
 {
 	["exit"]						= command_exit,
 	["ping"]						= command_ping,
+	["sleep"]						= command_sleep,
 	["soft_reset"]					= command_soft_reset,
 	["hard_reset"]					= command_hard_reset,
 	["throttled"]					= command_throttled,
@@ -1117,6 +1132,14 @@ function startplugin()
 			-- are we polling input?  if so, poll!
 			if is_polling_input_seq() then
 				current_poll_callback()
+			end
+
+			-- are we sleeping?
+			if wake_up_time then
+				if (emu.time() < wake_up_time) then return end
+				print("@OK STATUS ### Slept until time index " .. tostring(wake_up_time))
+				emit_status()
+				wake_up_time = nil
 			end
 
 			-- do we have a command?

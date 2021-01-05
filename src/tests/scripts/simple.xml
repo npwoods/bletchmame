@@ -1,8 +1,8 @@
 <script>
 	<command>THROTTLED 0</command>
 	<command>RESUME</command>
-	<sleep seconds="5"/>
+	<command>SLEEP 5</command>
 	<command>PING</command>
-	<sleep seconds="5"/>
+	<command>SLEEP 5</command>
 	<command>EXIT</command>
 </script>

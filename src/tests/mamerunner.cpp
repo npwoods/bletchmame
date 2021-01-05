@@ -190,12 +190,6 @@ static void internalRunAndExcerciseMame(const QString &scriptFileName, const QSt
         // issue the command
         issueCommandAndReceiveResponse(controller, text.toLocal8Bit());
     });
-    xml.onElementBegin({ "script", "sleep" }, [&controller](const XmlParser::Attributes &attributes)
-    {
-        float seconds = 0.0;
-        attributes.get("seconds", seconds);
-        QThread::msleep((unsigned long)(seconds * 1000));
-    });
 
     // load the script
     if (!xml.parse(scriptFileName))
