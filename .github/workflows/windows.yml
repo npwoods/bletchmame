@@ -66,7 +66,8 @@ jobs:
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        cat | parallel ./test_mame_interactions.sh << EOF
+        ls -l /usr/bin
+        cat | /usr/bin/parallel ./test_mame_interactions.sh << EOF
             mame0213
             mame0218
             mame0224
