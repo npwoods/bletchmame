@@ -66,7 +66,7 @@ jobs:
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        ls -l /usr/bin
+        pacman -S parallel
         find /usr -name bzip2.exe -print
         find /usr -name parallel.exe -print
         cat | /usr/bin/parallel ./test_mame_interactions.sh << EOF
