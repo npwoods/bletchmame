@@ -33,8 +33,9 @@ jobs:
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: true
-        install: git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
+        update: false
+        release: false
+        install: git make parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
     # Generate buildversion.txt
     - name: Generate buildversion.txt
