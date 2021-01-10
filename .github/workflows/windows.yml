@@ -40,7 +40,7 @@ jobs:
       run: |
         find /usr -name parallel
         find /usr -name 'parallel*'
-        cat | sed 's/^[[:space:]]*//g' | parallel echo foo- << EOF
+        cat | sed 's/^[[:blank:]]*//g' | parallel echo foo- << EOF
             mame0213
             mame0218
             mame0224
@@ -77,7 +77,7 @@ jobs:
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        cat | sed 's/^[[:space:]]*//g' | parallel ./test_mame_interactions.sh << EOF
+        cat | sed 's/^[[:blank:]]*//g' | parallel ./test_mame_interactions.sh << EOF
             mame0213
         EOF
 
