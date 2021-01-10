@@ -35,6 +35,12 @@ jobs:
         msystem: MINGW64
         install: git make parallel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
+    # Where is Parallel?
+    - name: Where is Parallel?
+      run: |
+        find /usr -name parallel
+        find /usr -name 'parallel*'
+
     # Generate buildversion.txt
     - name: Generate buildversion.txt
       run: |
@@ -65,8 +71,6 @@ jobs:
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        ls -l /usr/bin
-        ls -l /usr/share/doc
         cat | perl /usr/bin/parallel ./test_mame_interactions.sh << EOF
             mame0213
             mame0218
