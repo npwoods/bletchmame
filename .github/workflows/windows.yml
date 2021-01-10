@@ -37,19 +37,6 @@ jobs:
         release: false
         install: git make parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
-    # Where is Parallel?
-    - name: Where is Parallel?
-      run: |
-        find /usr -name parallel
-        find /usr -name 'parallel*'
-        cat | parallel echo foo- <<- EOF
-            mame0213
-            mame0218
-            mame0224
-            mame0226
-            mame0227
-        EOF
-
     # Generate buildversion.txt
     - name: Generate buildversion.txt
       run: |
@@ -79,8 +66,12 @@ jobs:
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        cat | parallel "./test_mame_interactions.sh {}" <<- EOF
+        cat | parallel "./test_mame_interactions.sh" <<- EOF
             mame0213
+            mame0218
+            mame0224
+            mame0226
+            mame0227
         EOF
 
     # Install PanDoc
