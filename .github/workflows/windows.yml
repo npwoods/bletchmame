@@ -62,16 +62,17 @@ jobs:
 
     # Run integration testing with actual MAME
     - name: Run integration testing with actual MAME
-      shell: bash
       run: |
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        ./test_mame_interactions.sh mame0213
-        ./test_mame_interactions.sh mame0218
-        ./test_mame_interactions.sh mame0224
-        ./test_mame_interactions.sh mame0226
-        ./test_mame_interactions.sh mame0227
+        cat | parallel "./test_mame_interactions.sh" <<- EOF
+            mame0213
+            mame0218
+            mame0224
+            mame0226
+            mame0227
+        EOF
 
     # Install PanDoc
     - name: Install PanDoc
