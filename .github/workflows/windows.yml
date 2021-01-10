@@ -40,6 +40,8 @@ jobs:
       run: |
         find /usr -name parallel
         find /usr -name 'parallel*'
+        sh -c "parallel"
+        sh -c "/usr/bin/parallel"
 
     # Generate buildversion.txt
     - name: Generate buildversion.txt
