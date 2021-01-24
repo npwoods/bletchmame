@@ -301,6 +301,7 @@ QStringList PathsDialog::buildComboBoxStrings()
 	paths[(size_t)Preferences::global_path_type::PLUGINS]			= "Plugins";
 	paths[(size_t)Preferences::global_path_type::PROFILES]			= "Profiles";
 	paths[(size_t)Preferences::global_path_type::CHEATS]			= "Cheats";
+	paths[(size_t)Preferences::global_path_type::SNAPSHOTS]			= "Snapshots";
 
 	QStringList result;
 	for (QString &str : paths)
@@ -346,7 +347,8 @@ bool PathsDialog::isDirPathType(Preferences::global_path_type type)
 		|| type == Preferences::global_path_type::ICONS
 		|| type == Preferences::global_path_type::PLUGINS
 		|| type == Preferences::global_path_type::PROFILES
-		|| type == Preferences::global_path_type::CHEATS;
+		|| type == Preferences::global_path_type::CHEATS
+		|| type == Preferences::global_path_type::SNAPSHOTS;
 }
 
 

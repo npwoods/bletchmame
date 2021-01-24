@@ -21,6 +21,7 @@
 #include "mainwindow.h"
 #include "mameversion.h"
 #include "ui_mainwindow.h"
+#include "machinefoldertreemodel.h"
 #include "machinelistitemmodel.h"
 #include "softwarelistitemmodel.h"
 #include "profilelistitemmodel.h"
@@ -738,13 +739,29 @@ MainWindow::MainWindow(QWidget *parent)
 	m_prefs.Load();
 
 	// set up machines view
-	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db, m_icon_loader);
+	MachineListItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db, m_icon_loader);
 	TableViewManager::setup(
 		*m_ui->machinesTableView,
 		machineListItemModel,
 		m_ui->machinesSearchBox,
 		m_prefs,
-		s_machineListTableViewDesc);
+		s_machineListTableViewDesc,
+		[this](const QString &machineName) { updateInfoPanel(machineName); });
+
+	// set up machine folder tree
+	MachineFolderTreeModel &machineFolderTreeModel = *new MachineFolderTreeModel(this, m_info_db);
+	m_ui->machinesFolderTreeView->setModel(&machineFolderTreeModel);
+	connect(m_ui->machinesFolderTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	{
+		machineFoldersTreeViewSelectionChanged(newSelection, oldSelection);
+	});
+	connect(&machineFolderTreeModel, &QAbstractItemModel::modelReset, this, [this, &machineFolderTreeModel]()
+	{
+		const QString &selectionPath = m_prefs.GetMachineFolderTreeSelection();
+		QModelIndex selectionIndex = machineFolderTreeModel.modelIndexFromPath(!selectionPath.isEmpty() ? selectionPath : "all");
+		m_ui->machinesFolderTreeView->selectionModel()->select(selectionIndex, QItemSelectionModel::Select);
+		m_ui->machinesFolderTreeView->scrollTo(selectionIndex);
+	});
 
 	// set up software list view
 	m_softwareListItemModel = new SoftwareListItemModel(this);
@@ -833,6 +850,11 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
+
+	// set up machine splitters
+	const QList<int> &machineSplitterSizes = m_prefs.GetMachineSplitterSizes();
+	if (!machineSplitterSizes.isEmpty())
+		m_ui->machinesSplitter->setSizes(machineSplitterSizes);
 
 	// set up other miscellaneous aspects
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
@@ -1497,6 +1519,17 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 		updateSoftwareList();
 		break;
 	}
+}
+
+
+//-------------------------------------------------
+//  on_machinesSplitter_splitterMoved
+//-------------------------------------------------
+
+void MainWindow::on_machinesSplitter_splitterMoved(int pos, int index)
+{
+	QList<int> splitterSizes = m_ui->machinesSplitter->sizes();
+	m_prefs.SetMachineSplitterSizes(std::move(splitterSizes));
 }
 
 
@@ -2579,6 +2612,60 @@ QString MainWindow::getTitleBarText()
 	return titleTextFormat.arg(
 		QCoreApplication::applicationName(),
 		machineDesc);
+}
+
+
+//-------------------------------------------------
+//  machineFoldersTreeViewSelectionChanged
+//-------------------------------------------------
+
+void MainWindow::machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection)
+{
+	// get the relevant models
+	MachineFolderTreeModel &machineFolderTreeModel = *((MachineFolderTreeModel *)m_ui->machinesFolderTreeView->model());
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
+	MachineListItemModel &machineListItemModel = *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
+
+	// identify the selection
+	QModelIndexList selectedIndexes = newSelection.indexes();
+	QModelIndex selectedIndex = !selectedIndexes.empty() ? selectedIndexes[0] : QModelIndex();
+
+	// and configure the filter
+	auto machineFilter = machineFolderTreeModel.getMachineFilter(selectedIndex);
+	machineListItemModel.setMachineFilter(std::move(machineFilter));
+
+	// update preferences
+	QString path = machineFolderTreeModel.pathFromModelIndex(selectedIndex);
+	m_prefs.SetMachineFolderTreeSelection(std::move(path));
+}
+
+
+//-------------------------------------------------
+//  updateInfoPanel
+//-------------------------------------------------
+
+void MainWindow::updateInfoPanel(const QString &machineName)
+{
+	QPixmap snapshot;
+
+	// do we have a machine?
+	if (!machineName.isEmpty())
+	{
+		// look for the pertinent snapshot file in every snapshot directory
+		QStringList snapPaths = m_prefs.GetSplitPaths(Preferences::global_path_type::SNAPSHOTS);
+		for (const QString &path : snapPaths)
+		{
+			QString snapshotFileName = QString("%1/%2.png").arg(path, machineName);
+			if (QFileInfo(snapshotFileName).exists())
+			{
+				snapshot = QPixmap(snapshotFileName);
+				if (snapshot.width() > 0 && snapshot.height() > 0)
+					break;
+			}
+		}
+	}
+
+	m_ui->machinesSnapLabel->setPixmap(snapshot);
 }
 
 

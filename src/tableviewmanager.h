@@ -42,17 +42,18 @@ public:
     };
 
     // static methods
-    static TableViewManager &setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc);
+    static TableViewManager &setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback = { });
 
 private:
-    Preferences &           m_prefs;
-    const Description &     m_desc;
-    int                     m_columnCount;
-    QSortFilterProxyModel * m_proxyModel;
-    bool                    m_currentlyApplyingColumnPrefs;
+    Preferences &                           m_prefs;
+    const Description &                     m_desc;
+    std::function<void(const QString &)>    m_selectionChangedCallback;
+    int                                     m_columnCount;
+    QSortFilterProxyModel *                 m_proxyModel;
+    bool                                    m_currentlyApplyingColumnPrefs;
 
     // ctor
-    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc);
+    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback);
 
     // methods
     const QTableView &parentAsTableView() const;

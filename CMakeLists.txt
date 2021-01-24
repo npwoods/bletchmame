@@ -62,6 +62,8 @@ add_library(BletchMAME_core
 	src/job.h
 	src/listxmltask.cpp
 	src/listxmltask.h
+	src/machinefoldertreemodel.cpp
+	src/machinefoldertreemodel.h
 	src/machinelistitemmodel.cpp
 	src/machinelistitemmodel.h
 	src/mainwindow.cpp
@@ -147,7 +149,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
 # BletchMAME executable                                                     #
 #############################################################################
 
-add_executable(BletchMAME WIN32 src/main.cpp)
+add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
@@ -165,6 +167,7 @@ add_executable(BletchMAME_tests
 	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/listxmltask_test.cpp
+	src/tests/machinefoldertreemodel_test.cpp
 	src/tests/machinelistitemmodel_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
@@ -179,6 +182,7 @@ add_executable(BletchMAME_tests
 	src/tests/dialogs/inputs_test.cpp
 	src/tests/dialogs/paths_test.cpp
 	src/tests/resources.qrc
+	src/resources.qrc
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)

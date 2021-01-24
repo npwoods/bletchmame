@@ -92,6 +92,7 @@ private slots:
 	void on_profilesTableView_activated(const QModelIndex &index);
 	void on_profilesTableView_customContextMenuRequested(const QPoint &pos);
 	void on_tabWidget_currentChanged(int index);
+	void on_machinesSplitter_splitterMoved(int pos, int index);
 
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
@@ -227,6 +228,8 @@ private:
 	void changeSound(bool sound_enabled);
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void ensureProperFocus();
+	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
+	void updateInfoPanel(const QString &machineName);
 };
 
 #endif // MAINWINDOW_H
