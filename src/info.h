@@ -350,7 +350,7 @@ namespace info
 		void reset();
 		std::optional<machine> find_machine(const QString &machine_name) const;
 		const QString &version() const			{ return *m_version; }
-		void setOnChanged(std::function<void()> &&onChanged) { m_onChanged = std::move(onChanged); }
+		void addOnChangedHandler(std::function<void()> &&onChanged);
 
 		// views
 		auto machines() const					{ return machine::view(*this, m_state.m_machines_position); }
@@ -391,7 +391,7 @@ namespace info
 		State												m_state;
 		mutable std::unordered_map<std::uint32_t, QString>	m_loaded_strings;
 		const QString *										m_version;
-		std::function<void()>								m_onChanged;
+		std::vector<std::function<void()>>					m_onChangedHandlers;
 
 		// private functions
 		void onChanged();

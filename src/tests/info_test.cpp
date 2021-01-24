@@ -60,9 +60,12 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 	// read the db, validating we've done so successfully
 	info::database db;
 	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	bool dbChangedAlt = false;
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
+	db.addOnChangedHandler([&dbChangedAlt]() { dbChangedAlt = true; });
 	QVERIFY(db.load(buildInfoDatabase(fileName, skipDtd)));
 	QVERIFY(dbChanged);
+	QVERIFY(dbChangedAlt);
 
 	// spelunk through the resulting db
 	int machineCount = 0, runnableMachineCount = 0, settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
@@ -249,7 +252,7 @@ void Test::loadGarbage(int legitBytes, int garbageBytes)
 	// try to load it
 	info::database db;
 	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
 	QVERIFY(!db.load(byteArray));
 	QVERIFY(!dbChanged);
 }
@@ -270,7 +273,7 @@ void Test::loadFailuresDontMutate()
 	// and process it, validating we've done so successfully
 	info::database db;
 	int dbChangedCount = 0;
-	db.setOnChanged([&dbChangedCount]() { dbChangedCount++; });
+	db.addOnChangedHandler([&dbChangedCount]() { dbChangedCount++; });
 	QVERIFY(db.load(goodByteArray));
 	QVERIFY(dbChangedCount == 1);
 
@@ -323,7 +326,7 @@ void Test::readsAllBytes()
 	// read the db, validating we've done so successfully
 	info::database db;
 	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
 	QVERIFY(db.load(buffer));
 	QVERIFY(dbChanged);
 

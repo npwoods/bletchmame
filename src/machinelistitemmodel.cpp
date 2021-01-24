@@ -20,7 +20,7 @@ MachineListItemModel::MachineListItemModel(QObject *parent, info::database &info
 	, m_infoDb(infoDb)
     , m_iconLoader(iconLoader)
 {
-    m_infoDb.setOnChanged([this]
+    m_infoDb.addOnChangedHandler([this]
     {
         beginResetModel();
         populateIndexes();
