@@ -1,6 +1,8 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource>
+        <file>resources/folderstoggle.png</file>
+        <file>resources/infotoggle.png</file>
         <file>resources/folder.ico</file>
         <file>resources/foldopen.ico</file>
         <file>resources/manufact.ico</file>
