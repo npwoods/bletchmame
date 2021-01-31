@@ -665,6 +665,30 @@ private:
 };
 
 
+// ======================> SnapshotViewEventFilter 
+
+class MainWindow::SnapshotViewEventFilter : public QObject
+{
+public:
+	SnapshotViewEventFilter(MainWindow &host)
+		: m_host(host)
+	{
+	}
+
+protected:
+	virtual bool eventFilter(QObject *obj, QEvent *event) override
+	{
+		bool result = QObject::eventFilter(obj, event);
+		if (event->type() == QEvent::Resize)
+			m_host.updateSnapshot();
+		return result;
+	}
+
+private:
+	MainWindow &m_host;
+};
+
+
 // ======================> Dummy
 
 class MainWindow::Dummy
@@ -860,6 +884,10 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up splitter togglers for the machines view
 	(void)new SplitterViewToggler(this, *m_ui->machinesFoldersToggleButton, *m_ui->machinesSplitter, 0, 1, [this]() { persistMachineSplitterSizes(); });
 	(void)new SplitterViewToggler(this, *m_ui->machinesInfoToggleButton, *m_ui->machinesSplitter, 2, 1, [this]() { persistMachineSplitterSizes(); });
+
+	// set up a resize event filter to resize snapshot imagery
+	QObject &eventFilter = *new SnapshotViewEventFilter(*this);
+	m_ui->machinesSnapLabel->installEventFilter(&eventFilter);
 
 	// set up other miscellaneous aspects
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
@@ -2661,7 +2689,7 @@ void MainWindow::machineFoldersTreeViewSelectionChanged(const QItemSelection &ne
 
 void MainWindow::updateInfoPanel(const QString &machineName)
 {
-	QPixmap snapshot;
+	m_currentSnapshot = QPixmap();
 
 	// do we have a machine?
 	if (!machineName.isEmpty())
@@ -2673,14 +2701,28 @@ void MainWindow::updateInfoPanel(const QString &machineName)
 			QString snapshotFileName = QString("%1/%2.png").arg(path, machineName);
 			if (QFileInfo(snapshotFileName).exists())
 			{
-				snapshot = QPixmap(snapshotFileName);
-				if (snapshot.width() > 0 && snapshot.height() > 0)
+				m_currentSnapshot = QPixmap(snapshotFileName);
+				if (m_currentSnapshot.width() > 0 && m_currentSnapshot.height() > 0)
 					break;
 			}
 		}
 	}
 
-	m_ui->machinesSnapLabel->setPixmap(snapshot);
+	updateSnapshot();
+}
+
+
+//-------------------------------------------------
+//  updateSnapshot
+//-------------------------------------------------
+
+void MainWindow::updateSnapshot()
+{
+	QPixmap scaledSnapshot = m_currentSnapshot.scaled(
+		m_ui->machinesSnapLabel->size(),
+		Qt::KeepAspectRatio,
+		Qt::SmoothTransformation);
+	m_ui->machinesSnapLabel->setPixmap(scaledSnapshot);
 }
 
 
