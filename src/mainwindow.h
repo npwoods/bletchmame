@@ -112,6 +112,7 @@ private:
 	class InputsHost;
 	class SwitchesHost;
 	class CheatsHost;
+	class SnapshotViewEventFilter;
 
 	class Aspect
 	{
@@ -166,6 +167,7 @@ private:
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
 	IconLoader							m_icon_loader;
 	observable::value<QString>			m_currentQuickState;
+	QPixmap								m_currentSnapshot;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -231,6 +233,7 @@ private:
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
 	void persistMachineSplitterSizes();
 	void updateInfoPanel(const QString &machineName);
+	void updateSnapshot();
 };
 
 #endif // MAINWINDOW_H

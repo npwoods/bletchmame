@@ -25,7 +25,7 @@
         <string>Machines</string>
        </attribute>
        <layout class="QVBoxLayout" name="machinesVerticalLayout">
-       <item>
+        <item>
          <widget class="QWidget" name="machinesTopWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -121,7 +121,7 @@
             <string/>
            </property>
            <property name="scaledContents">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
