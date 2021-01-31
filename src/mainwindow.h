@@ -229,6 +229,7 @@ private:
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void ensureProperFocus();
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
+	void persistMachineSplitterSizes();
 	void updateInfoPanel(const QString &machineName);
 };
 

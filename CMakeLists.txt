@@ -88,6 +88,8 @@ add_library(BletchMAME_core
 	src/softwarelist.h
 	src/softwarelistitemmodel.cpp
 	src/softwarelistitemmodel.h
+	src/splitterviewtoggler.cpp
+	src/splitterviewtoggler.h
 	src/status.cpp
 	src/status.h
 	src/utility.cpp

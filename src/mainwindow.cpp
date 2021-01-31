@@ -25,6 +25,7 @@
 #include "machinelistitemmodel.h"
 #include "softwarelistitemmodel.h"
 #include "profilelistitemmodel.h"
+#include "splitterviewtoggler.h"
 #include "tableviewmanager.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
@@ -856,6 +857,10 @@ MainWindow::MainWindow(QWidget *parent)
 	if (!machineSplitterSizes.isEmpty())
 		m_ui->machinesSplitter->setSizes(machineSplitterSizes);
 
+	// set up splitter togglers for the machines view
+	(void)new SplitterViewToggler(this, *m_ui->machinesFoldersToggleButton, *m_ui->machinesSplitter, 0, 1, [this]() { persistMachineSplitterSizes(); });
+	(void)new SplitterViewToggler(this, *m_ui->machinesInfoToggleButton, *m_ui->machinesSplitter, 2, 1, [this]() { persistMachineSplitterSizes(); });
+
 	// set up other miscellaneous aspects
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
 	m_aspects.push_back(std::make_unique<MenuBarAspect>(*this));
@@ -1527,6 +1532,16 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 //-------------------------------------------------
 
 void MainWindow::on_machinesSplitter_splitterMoved(int pos, int index)
+{
+	persistMachineSplitterSizes();
+}
+
+
+//-------------------------------------------------
+//  persistMachineSplitterSizes
+//-------------------------------------------------
+
+void MainWindow::persistMachineSplitterSizes()
 {
 	QList<int> splitterSizes = m_ui->machinesSplitter->sizes();
 	m_prefs.SetMachineSplitterSizes(std::move(splitterSizes));
