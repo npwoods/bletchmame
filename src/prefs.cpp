@@ -35,7 +35,8 @@ std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUN
 	"icons",
 	"plugins",
 	"profiles",
-	"cheats"
+	"cheats",
+	"snap"
 };
 
 
@@ -103,6 +104,41 @@ static std::tuple<const QChar *, const QChar *> SplitListViewSelectionKey(const 
 
 
 //-------------------------------------------------
+//  intListFromString
+//-------------------------------------------------
+
+static QList<int> intListFromString(const QString &s)
+{
+	QList<int> result;
+	for (const QString &part : s.split(','))
+	{
+		bool ok = false;
+		int i = part.toInt(&ok);
+		if (ok)
+			result.push_back(i);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  stringFromIntList
+//-------------------------------------------------
+
+static std::string stringFromIntList(const QList<int> &list)
+{
+	std::string result;
+	for (int i : list)
+	{
+		if (result.size() > 0)
+			result += ",";
+		result += std::to_string(i);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -146,6 +182,7 @@ Preferences::path_category Preferences::GetPathCategory(global_path_type path_ty
 	case Preferences::global_path_type::PLUGINS:
 	case Preferences::global_path_type::PROFILES:
 	case Preferences::global_path_type::CHEATS:
+	case Preferences::global_path_type::SNAPSHOTS:
 		result = path_category::MULTIPLE_DIRECTORIES;
 		break;
 
@@ -409,8 +446,7 @@ bool Preferences::Load(QDataStream &input)
 
 		list_view_type selected_tab;
 		if (attributes.get("selected_tab", selected_tab, s_list_view_type_parser))
-			SetSelectedTab(selected_tab);
-
+			SetSelectedTab(selected_tab);			
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -443,6 +479,16 @@ bool Preferences::Load(QDataStream &input)
 			size.setHeight(height);
 			SetSize(size);
 		}
+	});	
+	xml.onElementEnd({ "preferences", "machinefoldertreeselection" }, [&](QString &&content)
+	{
+		SetMachineFolderTreeSelection(std::move(content));
+	});
+	xml.onElementEnd({ "preferences", "machinelistsplitters" }, [&](QString &&content)
+	{
+		QList<int> splitterSizes = intListFromString(content);
+		if (!splitterSizes.isEmpty())
+			SetMachineSplitterSizes(std::move(splitterSizes));
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -539,6 +585,10 @@ void Preferences::Save(std::ostream &output)
 	if (!m_mame_extra_arguments.isEmpty())
 		output << "\t<mameextraarguments>" << util::to_utf8_string(m_mame_extra_arguments) << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.width() << "\" height=\"" << m_size.height() << "\"/>" << std::endl;
+	if (!m_machine_folder_tree_selection.isEmpty())
+		output << "\t<machinefoldertreeselection>" << util::to_utf8_string(m_machine_folder_tree_selection) << "</machinefoldertreeselection>" << std::endl;
+	if (!m_machine_splitter_sizes.isEmpty())
+		output << "\t<machinelistsplitters>" << stringFromIntList(m_machine_splitter_sizes) << "</machinelistsplitters>" << std::endl;
 
 	for (const auto &pair : m_list_view_selection)
 	{

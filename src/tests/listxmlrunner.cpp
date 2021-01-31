@@ -64,7 +64,7 @@ static void internalRunAndExcerciseListXml(const QString &program)
 
         // and process it, validating we've done so successfully
         bool dbChanged = false;
-        db.setOnChanged([&dbChanged]() { dbChanged = true; });
+        db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
         QVERIFY(db.load(buffer));
         QVERIFY(dbChanged);
     }

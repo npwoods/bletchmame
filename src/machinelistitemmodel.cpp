@@ -20,11 +20,9 @@ MachineListItemModel::MachineListItemModel(QObject *parent, info::database &info
 	, m_infoDb(infoDb)
     , m_iconLoader(iconLoader)
 {
-    m_infoDb.setOnChanged([this]
+    m_infoDb.addOnChangedHandler([this]
     {
-        beginResetModel();
         populateIndexes();
-        endResetModel();
     });
 }
 
@@ -40,19 +38,43 @@ info::machine MachineListItemModel::machineFromIndex(const QModelIndex &index) c
 
 
 //-------------------------------------------------
-//  populateIndexes - we only use runnable machines
+//  setMachineFilter
+//-------------------------------------------------
+
+void MachineListItemModel::setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter)
+{
+    m_machineFilter = std::move(machineFilter);
+    populateIndexes();
+}
+
+
+//-------------------------------------------------
+//  populateIndexes
 //-------------------------------------------------
 
 void MachineListItemModel::populateIndexes()
 {
+    beginResetModel();
+
     m_indexes.clear();
     m_indexes.reserve(m_infoDb.machines().size());
     for (int i = 0; i < m_infoDb.machines().size(); i++)
     {
-        if (m_infoDb.machines()[i].runnable())
-            m_indexes.push_back(i);
+        info::machine machine = m_infoDb.machines()[i];
+
+        // we only use runnable machines
+        if (machine.runnable())
+        {
+            // and we need to apply a filter (if we have one)
+            if (!m_machineFilter || m_machineFilter(machine))
+            {
+                m_indexes.push_back(i);
+            }
+        }
     }
     m_indexes.shrink_to_fit();
+
+    endResetModel();
 }
 
 

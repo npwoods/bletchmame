@@ -209,13 +209,23 @@ void info::database::reset()
 
 
 //-------------------------------------------------
-//  database::on_changed
+//  database::addOnChangedHandler
+//-------------------------------------------------
+
+void info::database::addOnChangedHandler(std::function<void()> &&onChanged)
+{
+	m_onChangedHandlers.push_back(std::move(onChanged));
+}
+
+
+//-------------------------------------------------
+//  database::onChanged
 //-------------------------------------------------
 
 void info::database::onChanged()
 {
-	if (m_onChanged)
-		m_onChanged();
+	for (const std::function<void()> &func : m_onChangedHandlers)
+		func();
 }
 
 

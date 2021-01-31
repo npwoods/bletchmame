@@ -34,6 +34,7 @@ public:
 
 	// methods
 	info::machine machineFromIndex(const QModelIndex &index) const;
+	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -44,9 +45,10 @@ public:
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 private:
-	info::database &	m_infoDb;
-	IIconLoader &		m_iconLoader;
-	std::vector<int>	m_indexes;
+	info::database &									m_infoDb;
+	IIconLoader &										m_iconLoader;
+	std::function<bool(const info::machine &machine)>	m_machineFilter;
+	std::vector<int>									m_indexes;
 
 	void populateIndexes();
 };

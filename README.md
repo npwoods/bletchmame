@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.5 (TBD)
+	- Beginings of a MAMEUI-style machine folder and snapshot view
+
 - 2.4 (2021-Jan-3)
 	- Updated various parts of the worker_ui plugin in response to breaking LUA changes in MAME 0.227
 		- An implication is that previous versions of BletchMAME will not work with MAME 0.227 or greater
