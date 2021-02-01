@@ -122,6 +122,20 @@ auto find_if_ptr(TContainer &container, TPredicate predicate)
 }
 
 
+template<typename TContainer>
+bool contains(typename TContainer::const_iterator begin, typename TContainer::const_iterator end, const typename TContainer::value_type &value)
+{
+	return std::find(begin, end, value) != end;
+}
+
+
+template<typename TContainer>
+bool contains(const TContainer &container, const typename TContainer::value_type &value)
+{
+	return contains<TContainer>(container.cbegin(), container.cend(), value);
+}
+
+
 //**************************************************************************
 //  ENUM UTILITY CLASSES
 //**************************************************************************

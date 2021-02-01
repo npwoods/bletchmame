@@ -1361,15 +1361,8 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-	// lambda to simplify "is this path changed?"
-	auto is_changed = [&changed_paths](Preferences::global_path_type type) -> bool
-	{
-		auto iter = std::find(changed_paths.begin(), changed_paths.end(), type);
-		return iter != changed_paths.end();
-	};
-
 	// did the user change the executable path?
-	if (is_changed(Preferences::global_path_type::EMU_EXECUTABLE))
+	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
 	{
 		// they did; check the MAME info DB
 		check_mame_info_status status = CheckMameInfoDatabase();
@@ -1395,11 +1388,11 @@ void MainWindow::on_actionPaths_triggered()
 	}
 
 	// did the user change the profiles path?
-	if (is_changed(Preferences::global_path_type::PROFILES))
+	if (util::contains(changed_paths, Preferences::global_path_type::PROFILES))
 		m_profileListItemModel->refresh(true, true);
 
 	// did the user change the icons path?
-	if (is_changed(Preferences::global_path_type::ICONS))
+	if (util::contains(changed_paths, Preferences::global_path_type::ICONS))
 	{
 		m_icon_loader.refreshIcons();
 	}
