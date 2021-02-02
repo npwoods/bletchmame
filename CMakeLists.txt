@@ -66,6 +66,9 @@ add_library(BletchMAME_core
 	src/machinefoldertreemodel.h
 	src/machinelistitemmodel.cpp
 	src/machinelistitemmodel.h
+	src/mainpanel.cpp
+	src/mainpanel.h
+	src/mainpanel.ui
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui

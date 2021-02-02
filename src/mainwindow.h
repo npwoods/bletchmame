@@ -17,7 +17,6 @@
 #include "sessionbehavior.h"
 #include "prefs.h"
 #include "client.h"
-#include "iconloader.h"
 #include "info.h"
 #include "softwarelist.h"
 #include "tableviewmanager.h"
@@ -33,8 +32,7 @@ class QAbstractItemModel;
 class QTableView;
 QT_END_NAMESPACE
 
-class SoftwareListItemModel;
-class ProfileListItemModel;
+class MainPanel;
 class MameVersion;
 class VersionResultEvent;
 class ListXmlResultEvent;
@@ -85,14 +83,6 @@ private slots:
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
-	void on_machinesTableView_activated(const QModelIndex &index);
-	void on_machinesTableView_customContextMenuRequested(const QPoint &pos);
-	void on_softwareTableView_activated(const QModelIndex &index);
-	void on_softwareTableView_customContextMenuRequested(const QPoint &pos);
-	void on_profilesTableView_activated(const QModelIndex &index);
-	void on_profilesTableView_customContextMenuRequested(const QPoint &pos);
-	void on_tabWidget_currentChanged(int index);
-	void on_machinesSplitter_splitterMoved(int pos, int index);
 
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
@@ -140,10 +130,9 @@ private:
 
 	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>		m_ui;
+	MainPanel *							m_mainPanel;
 	Preferences							m_prefs;
 	MameClient							m_client;
-	SoftwareListItemModel *				m_softwareListItemModel;
-	ProfileListItemModel *				m_profileListItemModel;
 	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
@@ -162,12 +151,8 @@ private:
 	const Pauser *						m_current_pauser;
 	observable::value<QString>			m_current_recording_movie_filename;
 	observable::unique_subscription		m_watch_subscription;
-	QString								m_currentSoftwareList;
-	software_list_collection			m_softwareListCollection;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
-	IconLoader							m_icon_loader;
 	observable::value<QString>			m_currentQuickState;
-	QPixmap								m_currentSnapshot;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -197,24 +182,12 @@ private:
 	virtual void SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func);
 	void WatchForImageMount(const QString &tag);
 	void PlaceInRecentFiles(const QString &tag, const QString &path);
-	void updateSoftwareList();
 	info::machine getRunningMachine() const;
 	bool attachToRootPanel() const;
-	void run(const info::machine &machine, const software_list::software *software = nullptr);
-	void run(std::shared_ptr<profiles::profile> &&profile);
 	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
 	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
-	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
-	void createProfile(const info::machine &machine, const software_list::software *software);
-	static bool DirExistsOrMake(const QString &path);
-	void duplicateProfile(const profiles::profile &profile);
-	void renameProfile(const profiles::profile &profile);
-	void deleteProfile(const profiles::profile &profile);
-	void focusOnNewProfile(QString &&new_profile_path);
-	void showInGraphicalShell(const QString &path) const;
-	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	QString getTitleBarText();
 	static QString InputClassText(status::input::input_class input_class, bool elipsis);
 	void issue(const std::vector<QString> &args);
@@ -228,12 +201,7 @@ private:
 	void changeThrottleRate(float throttle_rate);
 	void changeThrottleRate(int adjustment);
 	void changeSound(bool sound_enabled);
-	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void ensureProperFocus();
-	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
-	void persistMachineSplitterSizes();
-	void updateInfoPanel(const QString &machineName);
-	void updateSnapshot();
 };
 
 #endif // MAINWINDOW_H
