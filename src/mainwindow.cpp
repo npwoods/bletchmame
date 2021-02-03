@@ -19,21 +19,15 @@
 #include <QTextStream>
 
 #include "mainwindow.h"
+#include "mainpanel.h"
 #include "mameversion.h"
 #include "ui_mainwindow.h"
-#include "machinefoldertreemodel.h"
-#include "machinelistitemmodel.h"
-#include "softwarelistitemmodel.h"
-#include "profilelistitemmodel.h"
-#include "splitterviewtoggler.h"
-#include "tableviewmanager.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
 #include "dialogs/cheats.h"
-#include "dialogs/choosesw.h"
 #include "dialogs/confdev.h"
 #include "dialogs/console.h"
 #include "dialogs/inputs.h"
@@ -665,30 +659,6 @@ private:
 };
 
 
-// ======================> SnapshotViewEventFilter 
-
-class MainWindow::SnapshotViewEventFilter : public QObject
-{
-public:
-	SnapshotViewEventFilter(MainWindow &host)
-		: m_host(host)
-	{
-	}
-
-protected:
-	virtual bool eventFilter(QObject *obj, QEvent *event) override
-	{
-		bool result = QObject::eventFilter(obj, event);
-		if (event->type() == QEvent::Resize)
-			m_host.updateSnapshot();
-		return result;
-	}
-
-private:
-	MainWindow &m_host;
-};
-
-
 // ======================> Dummy
 
 class MainWindow::Dummy
@@ -707,38 +677,6 @@ const QString MainWindow::s_wc_saved_state = "MAME Saved State Files (*.sta);;Al
 const QString MainWindow::s_wc_save_snapshot = "PNG Files (*.png);;All Files (*.*)";
 const QString MainWindow::s_wc_record_movie = "AVI Files (*.avi);;MNG Files (*.mng);;All Files (*.*)";
 
-static const TableViewManager::ColumnDesc s_machineListTableViewColumns[] =
-{
-	{ "name",			85 },
-	{ "description",	370 },
-	{ "year",			50 },
-	{ "manufacturer",	320 },
-	{ nullptr }
-};
-
-static const TableViewManager::Description s_machineListTableViewDesc =
-{
-	"machine",
-	(int) MachineListItemModel::Column::Machine,
-	s_machineListTableViewColumns
-};
-
-static const TableViewManager::ColumnDesc s_profileListTableViewColumns[] =
-{
-	{ "name",			85 },
-	{ "machine",		85 },
-	{ "path",			600 },
-	{ nullptr }
-};
-
-static const TableViewManager::Description s_profileListTableViewDesc =
-{
-	"profile",
-	(int)ProfileListItemModel::Column::Path,
-	s_profileListTableViewColumns
-};
-
-
 static const int SOUND_ATTENUATION_OFF = -32;
 static const int SOUND_ATTENUATION_ON = 0;
 
@@ -749,12 +687,10 @@ static const int SOUND_ATTENUATION_ON = 0;
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
+	, m_mainPanel(nullptr)
 	, m_client(*this, m_prefs)
-	, m_softwareListItemModel(nullptr)
-	, m_profileListItemModel(nullptr)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
-	, m_icon_loader(m_prefs)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -763,49 +699,13 @@ MainWindow::MainWindow(QWidget *parent)
 	// initial preferences read
 	m_prefs.Load();
 
-	// set up machines view
-	MachineListItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db, m_icon_loader);
-	TableViewManager::setup(
-		*m_ui->machinesTableView,
-		machineListItemModel,
-		m_ui->machinesSearchBox,
+	// set up the MainPanel - the UX code that is active outside the emulation
+	m_mainPanel = new MainPanel(
+		m_info_db,
 		m_prefs,
-		s_machineListTableViewDesc,
-		[this](const QString &machineName) { updateInfoPanel(machineName); });
-
-	// set up machine folder tree
-	MachineFolderTreeModel &machineFolderTreeModel = *new MachineFolderTreeModel(this, m_info_db);
-	m_ui->machinesFolderTreeView->setModel(&machineFolderTreeModel);
-	connect(m_ui->machinesFolderTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
-	{
-		machineFoldersTreeViewSelectionChanged(newSelection, oldSelection);
-	});
-	connect(&machineFolderTreeModel, &QAbstractItemModel::modelReset, this, [this, &machineFolderTreeModel]()
-	{
-		const QString &selectionPath = m_prefs.GetMachineFolderTreeSelection();
-		QModelIndex selectionIndex = machineFolderTreeModel.modelIndexFromPath(!selectionPath.isEmpty() ? selectionPath : "all");
-		m_ui->machinesFolderTreeView->selectionModel()->select(selectionIndex, QItemSelectionModel::Select);
-		m_ui->machinesFolderTreeView->scrollTo(selectionIndex);
-	});
-
-	// set up software list view
-	m_softwareListItemModel = new SoftwareListItemModel(this);
-	TableViewManager::setup(
-		*m_ui->softwareTableView,
-		*m_softwareListItemModel,
-		m_ui->softwareSearchBox,
-		m_prefs,
-		ChooseSoftlistPartDialog::s_tableViewDesc);
-
-	// set up the profile list view
-	m_profileListItemModel = new ProfileListItemModel(this, m_prefs, m_info_db, m_icon_loader);
-	TableViewManager::setup(
-		*m_ui->profilesTableView,
-		*m_profileListItemModel,
-		nullptr,
-		m_prefs,
-		s_profileListTableViewDesc);
-	m_profileListItemModel->refresh(true, true);
+		[this](const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) { run(machine, std::move(sessionBehavior)); },
+		m_ui->rootWidget);
+	m_ui->verticalLayout->addWidget(m_mainPanel);
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
@@ -813,8 +713,9 @@ MainWindow::MainWindow(QWidget *parent)
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// setup properties that pertain to runtime behavior
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isEnabled,	&QWidget::setEnabled,		{ },								false);
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isHidden,		&QWidget::setHidden,		{ },								true);
+	// FIXME
+	setupPropSyncAspect((QWidget &) *m_mainPanel,				&QWidget::isEnabled,	&QWidget::setEnabled,		{ },								false);
+	setupPropSyncAspect((QWidget &) *m_mainPanel,				&QWidget::isHidden,		&QWidget::setHidden,		{ },								true);
 	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		{ },								[this]() { return !attachToRootPanel(); });
 	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	&status::state::paused,				[this]() { return getTitleBarText(); });
 
@@ -872,22 +773,6 @@ MainWindow::MainWindow(QWidget *parent)
 		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },							true);
 		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::frameskip,	[this, value{std::move(value)}]() { return m_state->frameskip().get() == value; });
 	}
-
-	// set up the tab widget
-	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
-
-	// set up machine splitters
-	const QList<int> &machineSplitterSizes = m_prefs.GetMachineSplitterSizes();
-	if (!machineSplitterSizes.isEmpty())
-		m_ui->machinesSplitter->setSizes(machineSplitterSizes);
-
-	// set up splitter togglers for the machines view
-	(void)new SplitterViewToggler(this, *m_ui->machinesFoldersToggleButton, *m_ui->machinesSplitter, 0, 1, [this]() { persistMachineSplitterSizes(); });
-	(void)new SplitterViewToggler(this, *m_ui->machinesInfoToggleButton, *m_ui->machinesSplitter, 2, 1, [this]() { persistMachineSplitterSizes(); });
-
-	// set up a resize event filter to resize snapshot imagery
-	QObject &eventFilter = *new SnapshotViewEventFilter(*this);
-	m_ui->machinesSnapLabel->installEventFilter(&eventFilter);
 
 	// set up other miscellaneous aspects
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
@@ -1361,15 +1246,8 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-	// lambda to simplify "is this path changed?"
-	auto is_changed = [&changed_paths](Preferences::global_path_type type) -> bool
-	{
-		auto iter = std::find(changed_paths.begin(), changed_paths.end(), type);
-		return iter != changed_paths.end();
-	};
-
 	// did the user change the executable path?
-	if (is_changed(Preferences::global_path_type::EMU_EXECUTABLE))
+	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
 	{
 		// they did; check the MAME info DB
 		check_mame_info_status status = CheckMameInfoDatabase();
@@ -1394,15 +1272,7 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-	// did the user change the profiles path?
-	if (is_changed(Preferences::global_path_type::PROFILES))
-		m_profileListItemModel->refresh(true, true);
-
-	// did the user change the icons path?
-	if (is_changed(Preferences::global_path_type::ICONS))
-	{
-		m_icon_loader.refreshIcons();
-	}
+	m_mainPanel->pathsChanged(changed_paths);
 }
 
 
@@ -1434,145 +1304,6 @@ void MainWindow::on_actionRefreshMachineInfo_triggered()
 void MainWindow::on_actionBletchMameWebSite_triggered()
 {
 	QDesktopServices::openUrl(QUrl("https://www.bletchmame.org/"));
-}
-
-
-//-------------------------------------------------
-//  on_machinesTableView_activated
-//-------------------------------------------------
-
-void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
-{
-	// run the machine
-	const info::machine machine = machineFromModelIndex(index);
-	run(machine);
-}
-
-
-//-------------------------------------------------
-//  on_machinesTableView_customContextMenuRequested
-//-------------------------------------------------
-
-void MainWindow::on_machinesTableView_customContextMenuRequested(const QPoint &pos)
-{
-	LaunchingListContextMenu(m_ui->machinesTableView->mapToGlobal(pos));
-}
-
-
-//-------------------------------------------------
-//  on_softwareTableView_activated
-//-------------------------------------------------
-
-void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
-{
-	// identify the machine
-	const info::machine machine = m_info_db.find_machine(m_currentSoftwareList).value();
-
-	// map the index to the actual index
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(index);
-
-	// identify the software
-	const software_list::software &software = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
-
-	// and run!
-	run(machine, &software);
-}
-
-
-//-------------------------------------------------
-//  on_softwareTableView_customContextMenuRequested
-//-------------------------------------------------
-
-void MainWindow::on_softwareTableView_customContextMenuRequested(const QPoint &pos)
-{
-	// identify the selected software
-	QModelIndexList selection = m_ui->softwareTableView->selectionModel()->selectedIndexes();
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(selection[0]);
-	const software_list::software &sw = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
-	
-	// and launch the context menu
-	LaunchingListContextMenu(m_ui->softwareTableView->mapToGlobal(pos), &sw);
-}
-
-
-//-------------------------------------------------
-//  on_profilesTableView_activated
-//-------------------------------------------------
-
-void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
-{
-	// map the index to the actual index
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(index);
-
-	// identify the profile
-	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
-
-	// and run!
-	run(std::move(profile));
-}
-
-
-//-------------------------------------------------
-//  on_profilesTableView_customContextMenuRequested
-//-------------------------------------------------
-
-void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &pos)
-{
-	// identify the selected software
-	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
-	if (selection.count() <= 0)
-		return;
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
-	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
-
-	// build the popup menu
-	QMenu popupMenu;
-	popupMenu.addAction(QString("Run \"%1\"").arg(profile->name()),	[this, &profile]() { run(std::move(profile)); });
-	popupMenu.addAction("Duplicate",								[this, &profile]() { duplicateProfile(*profile); });
-	popupMenu.addAction("Rename",									[this, &profile]() { renameProfile(*profile); });
-	popupMenu.addAction("Delete",									[this, &profile]() { deleteProfile(*profile); });
-	popupMenu.addSeparator();
-	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile->path()); });
-	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
-}
-
-
-//-------------------------------------------------
-//  on_tabWidget_currentChanged
-//-------------------------------------------------
-
-void MainWindow::on_tabWidget_currentChanged(int index)
-{
-	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(index);
-	m_prefs.SetSelectedTab(list_view_type);
-
-	switch (list_view_type)
-	{
-	case Preferences::list_view_type::SOFTWARELIST:
-		updateSoftwareList();
-		break;
-	}
-}
-
-
-//-------------------------------------------------
-//  on_machinesSplitter_splitterMoved
-//-------------------------------------------------
-
-void MainWindow::on_machinesSplitter_splitterMoved(int pos, int index)
-{
-	persistMachineSplitterSizes();
-}
-
-
-//-------------------------------------------------
-//  persistMachineSplitterSizes
-//-------------------------------------------------
-
-void MainWindow::persistMachineSplitterSizes()
-{
-	QList<int> splitterSizes = m_ui->machinesSplitter->sizes();
-	m_prefs.SetMachineSplitterSizes(std::move(splitterSizes));
 }
 
 
@@ -1795,17 +1526,6 @@ bool MainWindow::attachToRootPanel() const
 //  run
 //-------------------------------------------------
 
-void MainWindow::run(const info::machine &machine, const software_list::software *software)
-{
-	std::unique_ptr<SessionBehavior> sessionBehavior = std::make_unique<NormalSessionBehavior>(software);
-	run(machine, std::move(sessionBehavior));
-}
-
-
-//-------------------------------------------------
-//  run
-//-------------------------------------------------
-
 void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
 	// set the session behavior
@@ -1896,24 +1616,6 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 
 	// unpause
 	changePaused(false);
-}
-
-
-//-------------------------------------------------
-//	run
-//-------------------------------------------------
-
-void MainWindow::run(std::shared_ptr<profiles::profile> &&profile)
-{
-	// find the machine
-	std::optional<info::machine> machine = m_info_db.find_machine(profile->machine());
-	if (!machine)
-	{
-		messageBox("Unknown machine: " + profile->machine());
-		return;
-	}
-
-	run(machine.value(), std::make_unique<ProfileSessionBehavior>(std::move(profile)));
 }
 
 
@@ -2179,34 +1881,6 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 
 
 //-------------------------------------------------
-//  updateSoftwareList
-//-------------------------------------------------
-
-void MainWindow::updateSoftwareList()
-{
-	// identify the selection
-	QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
-	if (selection.size() > 0)
-	{
-		// load software lists for the current machine
-		const info::machine machine = machineFromModelIndex(selection[0]);
-
-		// load the software
-		m_currentSoftwareList = machine.name();
-		m_softwareListCollection.load(m_prefs, machine);
-
-		// and load the model
-		m_softwareListItemModel->load(m_softwareListCollection, false);
-	}
-	else
-	{
-		// no machines are selected - reset the software list view
-		m_softwareListItemModel->reset();
-	}
-}
-
-
-//-------------------------------------------------
 //  onStatusUpdate
 //-------------------------------------------------
 
@@ -2392,252 +2066,6 @@ QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QSt
 
 
 //-------------------------------------------------
-//  LaunchingListContextMenu
-//-------------------------------------------------
-
-void MainWindow::LaunchingListContextMenu(const QPoint &pos, const software_list::software *software)
-{
-	// identify the machine
-	QModelIndex index = m_ui->machinesTableView->selectionModel()->selectedIndexes()[0];
-	const info::machine machine = machineFromModelIndex(index);
-
-	// identify the description
-	const QString &description = software
-		? software->m_description
-		: machine.description();
-
-	QMenu popupMenu(this);
-	popupMenu.addAction(QString("Run \"%1\"").arg(description),	[this, machine, &software]() { run(machine, std::move(software));	});
-	popupMenu.addAction("Create profile",						[this, machine, &software]() { createProfile(machine, software);	});
-	popupMenu.exec(pos);
-}
-
-
-//-------------------------------------------------
-//  GetUniqueFileName
-//-------------------------------------------------
-
-template<typename TFunc>
-static QString GetUniqueProfilePath(const QString &dir_path, TFunc generate_name)
-{
-	// prepare for building file paths
-	QString file_path;
-
-	// try up to 10 attempts
-	for (int attempt = 0; file_path.isEmpty() && attempt < 10; attempt++)
-	{
-		// build the file path
-		QString name = generate_name(attempt);
-		QString path = dir_path + "/" + name + ".bletchmameprofile";
-		QFileInfo fi(path);
-
-		// get the file path if this file doesn't exist
-		if (!fi.exists())
-			file_path = fi.absoluteFilePath();
-	}
-	return file_path;
-}
-
-
-//-------------------------------------------------
-//  createProfile
-//-------------------------------------------------
-
-void MainWindow::createProfile(const info::machine &machine, const software_list::software *software)
-{
-	// find a path to create the new profile in
-	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
-	auto iter = std::find_if(paths.begin(), paths.end(), [](const QString &path)
-	{
-		QDir dir(path);
-		return dir.exists();
-	});
-	if (iter == paths.end())
-	{
-		iter = std::find_if(paths.begin(), paths.end(), DirExistsOrMake);
-		m_profileListItemModel->refresh(false, true);
-	}
-	if (iter == paths.end())
-	{
-		messageBox("Cannot create profile without valid profile path");
-		return;
-	}
-	const QString &path = *iter;
-
-	// identify the description, for use when we create the file name
-	const QString &description = software
-		? software->m_description
-		: machine.name();
-
-	// get the full path for a new profile
-	QString new_profile_path = GetUniqueProfilePath(path, [&description](int attempt)
-	{
-		return attempt == 0
-			? QString("%1 - New profile").arg(description)
-			: QString("%1 - New profile (%2)").arg(description, QString::number(attempt + 1));
-	});
-
-	// create the file stream
-	QFile file(new_profile_path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		messageBox("Could not create profile");
-		return;
-	}
-
-	// create the new profile and focus
-	profiles::profile::create(file, machine, software);
-	focusOnNewProfile(std::move(new_profile_path));
-}
-
-
-//-------------------------------------------------
-//  DirExistsOrMake
-//-------------------------------------------------
-
-bool MainWindow::DirExistsOrMake(const QString &path)
-{
-	bool result = QDir(path).exists();
-	if (!result)
-		result = QDir().mkdir(path);
-	return result;
-}
-
-
-//-------------------------------------------------
-//  DuplicateProfile
-//-------------------------------------------------
-
-void MainWindow::duplicateProfile(const profiles::profile &profile)
-{
-	QFileInfo fi(profile.path());
-	QString dir_path = fi.dir().absolutePath();
-
-	// get the full path for a new profile
-	QString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
-	{
-		return attempt == 0
-			? QString("%1 - Copy").arg(profile.name())
-			: QString("%1 - Copy (%2)").arg(profile.name(), QString::number(attempt + 1));
-	});
-
-	// create the file stream
-	QFile file(new_profile_path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		messageBox("Could not create profile");
-		return;
-	}
-
-	// create the new profile
-	profile.save_as(file);
-
-	// copy the save state file also, if present
-	QString old_save_state_file = profiles::profile::change_path_save_state(profile.path());
-	if (QFile(old_save_state_file).exists())
-	{
-		QString new_save_state_file = profiles::profile::change_path_save_state(new_profile_path);
-		QFile::copy(old_save_state_file, new_save_state_file);
-	}
-
-	// finally focus
-	focusOnNewProfile(std::move(new_profile_path));
-}
-
-
-//-------------------------------------------------
-//  renameProfile
-//-------------------------------------------------
-
-void MainWindow::renameProfile(const profiles::profile &profile)
-{
-	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
-	for (const QModelIndex &modelIndex : selection)
-		m_ui->profilesTableView->edit(modelIndex);
-}
-
-
-//-------------------------------------------------
-//  deleteProfile
-//-------------------------------------------------
-
-void MainWindow::deleteProfile(const profiles::profile &profile)
-{
-	QString message = QString("Are you sure you want to delete profile \"%1\"").arg(profile.name());
-	if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
-		return;
-
-	if (!profiles::profile::profile_file_remove(profile.path()))
-		messageBox("Could not delete profile");
-}
-
-
-//-------------------------------------------------
-//  focusOnNewProfile
-//-------------------------------------------------
-
-void MainWindow::focusOnNewProfile(QString &&new_profile_path)
-{
-	// set the profiles tab as selected
-	m_ui->tabWidget->setCurrentWidget(m_ui->profilesTab);
-
-	// set the profile as selected, so we focus on it when we rebuild the list view
-	m_prefs.SetListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
-
-	// we want the current profile to be renamed - do this with a callback
-	m_profileListItemModel->setOneTimeFswCallback([this, profilePath{std::move(new_profile_path)}]()
-	{
-		QModelIndex actualIndex = m_profileListItemModel->findProfileIndex(profilePath);
-		if (!actualIndex.isValid())
-			return;
-
-		QModelIndex index = sortFilterProxyModel(*m_ui->profilesTableView).mapFromSource(index);
-		if (!index.isValid())
-			return;
-
-		m_ui->profilesTableView->edit(actualIndex);
-	});
-}
-
-
-//-------------------------------------------------
-//  showInGraphicalShell
-//-------------------------------------------------
-
-void MainWindow::showInGraphicalShell(const QString &path) const
-{
-	// Windows-only code here; we really should eventually be doing something like:
-	// https://stackoverflow.com/questions/3490336/how-to-reveal-in-finder-or-show-in-explorer-with-qt
-	QFileInfo fi(path);
-	QStringList args;
-	if (!fi.isDir())
-		args += QLatin1String("/select,");
-	args << QDir::toNativeSeparators(fi.canonicalFilePath());
-	QProcess::startDetached("explorer.exe", args);
-}
-
-
-//-------------------------------------------------
-//  machineFromModelIndex
-//-------------------------------------------------
-
-info::machine MainWindow::machineFromModelIndex(const QModelIndex &index) const
-{
-	// get the proxy model
-	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
-
-	// map the index to the actual index
-	QModelIndex actualIndex = proxyModel.mapToSource(index);
-
-	// get the machine list item model
-	const MachineListItemModel &machineModel = *dynamic_cast<const MachineListItemModel *>(proxyModel.sourceModel());
-
-	// and return the machine
-	return machineModel.machineFromIndex(actualIndex);
-}
-
-
-//-------------------------------------------------
 //  getTitleBarText
 //-------------------------------------------------
 
@@ -2655,74 +2083,6 @@ QString MainWindow::getTitleBarText()
 	return titleTextFormat.arg(
 		QCoreApplication::applicationName(),
 		machineDesc);
-}
-
-
-//-------------------------------------------------
-//  machineFoldersTreeViewSelectionChanged
-//-------------------------------------------------
-
-void MainWindow::machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection)
-{
-	// get the relevant models
-	MachineFolderTreeModel &machineFolderTreeModel = *((MachineFolderTreeModel *)m_ui->machinesFolderTreeView->model());
-	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
-	MachineListItemModel &machineListItemModel = *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
-
-	// identify the selection
-	QModelIndexList selectedIndexes = newSelection.indexes();
-	QModelIndex selectedIndex = !selectedIndexes.empty() ? selectedIndexes[0] : QModelIndex();
-
-	// and configure the filter
-	auto machineFilter = machineFolderTreeModel.getMachineFilter(selectedIndex);
-	machineListItemModel.setMachineFilter(std::move(machineFilter));
-
-	// update preferences
-	QString path = machineFolderTreeModel.pathFromModelIndex(selectedIndex);
-	m_prefs.SetMachineFolderTreeSelection(std::move(path));
-}
-
-
-//-------------------------------------------------
-//  updateInfoPanel
-//-------------------------------------------------
-
-void MainWindow::updateInfoPanel(const QString &machineName)
-{
-	m_currentSnapshot = QPixmap();
-
-	// do we have a machine?
-	if (!machineName.isEmpty())
-	{
-		// look for the pertinent snapshot file in every snapshot directory
-		QStringList snapPaths = m_prefs.GetSplitPaths(Preferences::global_path_type::SNAPSHOTS);
-		for (const QString &path : snapPaths)
-		{
-			QString snapshotFileName = QString("%1/%2.png").arg(path, machineName);
-			if (QFileInfo(snapshotFileName).exists())
-			{
-				m_currentSnapshot = QPixmap(snapshotFileName);
-				if (m_currentSnapshot.width() > 0 && m_currentSnapshot.height() > 0)
-					break;
-			}
-		}
-	}
-
-	updateSnapshot();
-}
-
-
-//-------------------------------------------------
-//  updateSnapshot
-//-------------------------------------------------
-
-void MainWindow::updateSnapshot()
-{
-	QPixmap scaledSnapshot = m_currentSnapshot.scaled(
-		m_ui->machinesSnapLabel->size(),
-		Qt::KeepAspectRatio,
-		Qt::SmoothTransformation);
-	m_ui->machinesSnapLabel->setPixmap(scaledSnapshot);
 }
 
 
@@ -2904,15 +2264,4 @@ void MainWindow::changeThrottleRate(int adjustment)
 void MainWindow::changeSound(bool sound_enabled)
 {
 	issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
-}
-
-
-//-------------------------------------------------
-//  sortFilterProxyModel
-//-------------------------------------------------
-
-const QSortFilterProxyModel &MainWindow::sortFilterProxyModel(const QTableView &tableView) const
-{
-	assert(&tableView == m_ui->machinesTableView || &tableView == m_ui->softwareTableView || &tableView == m_ui->profilesTableView);
-	return *dynamic_cast<QSortFilterProxyModel *>(tableView.model());
 }
