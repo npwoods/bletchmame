@@ -434,9 +434,11 @@ bool Preferences::Load(QDataStream &input)
 	QString current_machine_name;
 	QString current_device_type;
 	QString *current_list_view_parameter = nullptr;
+	std::set<QString> *current_custom_folder = nullptr;
 
 	// clear out state
 	m_machine_info.clear();
+	m_custom_folders.clear();
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -489,6 +491,21 @@ bool Preferences::Load(QDataStream &input)
 		QList<int> splitterSizes = intListFromString(content);
 		if (!splitterSizes.isEmpty())
 			SetMachineSplitterSizes(std::move(splitterSizes));
+	});
+	xml.onElementBegin({ "preferences", "customfolder" }, [&](const XmlParser::Attributes &attributes)
+	{
+		QString name;
+		if (attributes.get("name", name))
+			current_custom_folder = &m_custom_folders.emplace(name, std::set<QString>()).first->second;
+	});
+	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
+	{
+		current_custom_folder = nullptr;
+	});
+	xml.onElementEnd({ "preferences", "customfolder", "system" }, [&](QString &&content)
+	{
+		if (current_custom_folder)
+			current_custom_folder->emplace(std::move(content));
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -589,6 +606,15 @@ void Preferences::Save(std::ostream &output)
 		output << "\t<machinefoldertreeselection>" << util::to_utf8_string(m_machine_folder_tree_selection) << "</machinefoldertreeselection>" << std::endl;
 	if (!m_machine_splitter_sizes.isEmpty())
 		output << "\t<machinelistsplitters>" << stringFromIntList(m_machine_splitter_sizes) << "</machinelistsplitters>" << std::endl;
+
+	// custom folders
+	for (const auto &pair : m_custom_folders)
+	{
+		output << "\t<customfolder name=\"" << util::to_utf8_string(pair.first) << "\">" << std::endl;
+		for (const QString &system : pair.second)
+			output << "\t\t<system>" << util::to_utf8_string(system) << "</system>" << std::endl;
+		output << "\t</customfolder>" << std::endl;
+	}
 
 	for (const auto &pair : m_list_view_selection)
 	{

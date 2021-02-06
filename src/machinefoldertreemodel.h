@@ -16,6 +16,8 @@
 
 #include "info.h"
 
+class Preferences;
+
 
 // ======================> MachineFolderTreeModel
 
@@ -25,12 +27,14 @@ public:
 	class Test;
 
 	// ctor
-	MachineFolderTreeModel(QObject *parent, info::database &infoDb);
+	MachineFolderTreeModel(QObject *parent, info::database &infoDb, Preferences &prefs);
 
 	// methods
 	std::function<bool(const info::machine &machine)> getMachineFilter(const QModelIndex &index);
 	QString pathFromModelIndex(const QModelIndex &index) const;
 	QModelIndex modelIndexFromPath(const QString &path) const;
+	QString customFolderForModelIndex(const QModelIndex &index) const;
+	void refresh();
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const final;
@@ -78,7 +82,9 @@ private:
 	};
 
 	info::database &							m_infoDb;
+	Preferences &								m_prefs;
 	std::vector<FolderEntry>					m_root;
+	std::vector<FolderEntry>					m_custom;
 	std::vector<FolderEntry>					m_manufacturer;
 	std::vector<FolderEntry>					m_source;
 	std::vector<FolderEntry>					m_year;

@@ -23,6 +23,7 @@
 #include "tableviewmanager.h"
 #include "ui_mainpanel.h"
 #include "dialogs/choosesw.h"
+#include "dialogs/newcustomfolder.h"
 
 
 //**************************************************************************
@@ -121,7 +122,7 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, std::function<v
 		[this](const QString &machineName) { updateInfoPanel(machineName); });
 
 	// set up machine folder tree
-	MachineFolderTreeModel &machineFolderTreeModel = *new MachineFolderTreeModel(this, m_infoDb);
+	MachineFolderTreeModel &machineFolderTreeModel = *new MachineFolderTreeModel(this, m_infoDb, m_prefs);
 	m_ui->machinesFolderTreeView->setModel(&machineFolderTreeModel);
 	connect(m_ui->machinesFolderTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
 	{
@@ -251,9 +252,71 @@ void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list:
 		? software->m_description
 		: machine.description();
 
+	// build the menu
 	QMenu popupMenu(this);
 	popupMenu.addAction(QString("Run \"%1\"").arg(description), [this, machine, &software]() { run(machine, std::move(software));	});
 	popupMenu.addAction("Create profile", [this, machine, &software]() { createProfile(machine, software);	});
+
+	// build the custom folder menu
+	QMenu &customFolderMenu = *popupMenu.addMenu("Add to custom folder");
+	std::map<QString, std::set<QString>> &customFolders = m_prefs.GetCustomFolders();
+	for (auto &pair : customFolders)
+	{
+		// create the custom folder menu item
+		const QString &customFolderName = pair.first;
+		auto &customFolderSystems = pair.second;
+		QAction &action = *customFolderMenu.addAction(customFolderName, [&customFolderSystems, &machine]()
+		{
+			customFolderSystems.emplace(machine.name());
+		});
+
+		// disable and check it if its already in the folder
+		bool alreadyInFolder = util::contains(customFolderSystems, machine.name());
+		action.setEnabled(!alreadyInFolder);
+	}
+	if (customFolders.size() > 0)
+		customFolderMenu.addSeparator();
+	customFolderMenu.addAction("Add to new custom folder...", [this, &machine, &customFolders]()
+	{
+		auto customFolderExistsFunc = [&customFolders](const QString &name)
+		{
+			return customFolders.find(name) != customFolders.end();
+		};
+		NewCustomFolderDialog dlg(std::move(customFolderExistsFunc), this);
+		dlg.setWindowTitle("Add to new custom folder");
+		if (dlg.exec() == QDialog::Accepted)
+		{
+			// create the new folder
+			std::set<QString> &newFolder = customFolders.emplace(dlg.newCustomFolderName(), std::set<QString>()).first->second;
+
+			// add this machine
+			newFolder.emplace(machine.name());
+
+			// and refresh the folder list
+			machineFolderTreeModel().refresh();
+		}
+	});
+
+	// if we're selecting a custom folder, we can have an item to remove this
+	QModelIndexList folderSelection = m_ui->machinesFolderTreeView->selectionModel()->selectedIndexes();
+	QString currentCustomFolder;
+	if (folderSelection.size() == 1)
+	{
+		currentCustomFolder = machineFolderTreeModel().customFolderForModelIndex(folderSelection[0]);
+		if (!currentCustomFolder.isEmpty())
+		{
+			popupMenu.addAction(QString("Remove from \"%1\"").arg(currentCustomFolder), [this, &customFolders, &currentCustomFolder, &machine]()
+			{
+				// erase this item
+				customFolders[currentCustomFolder].erase(machine.name());
+
+				// and refresh the folder list
+				machineFolderTreeModel().refresh();
+			});
+		}
+	}
+
+	// and execute the popup
 	popupMenu.exec(pos);
 }
 
@@ -487,6 +550,16 @@ info::machine MainPanel::machineFromModelIndex(const QModelIndex &index) const
 //  sortFilterProxyModel
 //-------------------------------------------------
 
+MachineFolderTreeModel &MainPanel::machineFolderTreeModel()
+{
+	return *dynamic_cast<MachineFolderTreeModel *>(m_ui->machinesFolderTreeView->model());
+}
+
+
+//-------------------------------------------------
+//  sortFilterProxyModel
+//-------------------------------------------------
+
 const QSortFilterProxyModel &MainPanel::sortFilterProxyModel(const QTableView &tableView) const
 {
 	assert(&tableView == m_ui->machinesTableView || &tableView == m_ui->softwareTableView || &tableView == m_ui->profilesTableView);
@@ -529,7 +602,6 @@ void MainPanel::updateSoftwareList()
 void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection)
 {
 	// get the relevant models
-	MachineFolderTreeModel &machineFolderTreeModel = *((MachineFolderTreeModel *)m_ui->machinesFolderTreeView->model());
 	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
 	MachineListItemModel &machineListItemModel = *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
 
@@ -538,11 +610,11 @@ void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &new
 	QModelIndex selectedIndex = !selectedIndexes.empty() ? selectedIndexes[0] : QModelIndex();
 
 	// and configure the filter
-	auto machineFilter = machineFolderTreeModel.getMachineFilter(selectedIndex);
+	auto machineFilter = machineFolderTreeModel().getMachineFilter(selectedIndex);
 	machineListItemModel.setMachineFilter(std::move(machineFilter));
 
 	// update preferences
-	QString path = machineFolderTreeModel.pathFromModelIndex(selectedIndex);
+	QString path = machineFolderTreeModel().pathFromModelIndex(selectedIndex);
 	m_prefs.SetMachineFolderTreeSelection(std::move(path));
 }
 

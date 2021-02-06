@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.6 (TBD)
+	- Added support for custom folders
+
 - 2.5 (2021-Jan-31)
 	- Beginings of a MAMEUI-style machine folder and snapshot view
 
