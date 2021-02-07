@@ -47,6 +47,7 @@ public:
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
 
 private slots:
+	void on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos);
 	void on_machinesTableView_activated(const QModelIndex &index);
 	void on_machinesTableView_customContextMenuRequested(const QPoint &pos);
 	void on_softwareTableView_activated(const QModelIndex &index);
@@ -84,11 +85,14 @@ private:
 	void createProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);
 	void duplicateProfile(const profiles::profile &profile);
-	void renameProfile(const profiles::profile &profile);
 	void deleteProfile(const profiles::profile &profile);
 	void focusOnNewProfile(QString &&new_profile_path);
+	void editSelection(QAbstractItemView &itemView);
+	QString currentlySelectedCustomFolder() const;
+	void deleteSelectedFolder();
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
+	const MachineFolderTreeModel &machineFolderTreeModel() const;
 	MachineFolderTreeModel &machineFolderTreeModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);

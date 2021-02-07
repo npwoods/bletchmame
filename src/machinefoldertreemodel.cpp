@@ -193,6 +193,68 @@ void MachineFolderTreeModel::populateVariableFolders()
 
 
 //-------------------------------------------------
+//  renameFolder
+//-------------------------------------------------
+
+bool MachineFolderTreeModel::renameFolder(const QModelIndex &index, QString &&newName)
+{
+	QString customFolder = customFolderForModelIndex(index);
+	if (customFolder.isEmpty())
+		return false;
+
+	// is this just a no-op?
+	if (customFolder == newName)
+		return true;
+
+	// get the custom folders map
+	std::map<QString, std::set<QString>> &customFolders = m_prefs.GetCustomFolders();
+
+	// find this entry
+	auto iter = customFolders.find(customFolder);
+	if (iter == customFolders.end())
+		return false;
+
+	// detach the list of systems
+	std::set<QString> systems = std::move(iter->second);
+	customFolders.erase(iter);
+
+	// and readd it
+	customFolders.emplace(std::move(newName), std::move(systems));
+
+	// refresh and we're done!
+	refresh();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  deleteFolder
+//-------------------------------------------------
+
+bool MachineFolderTreeModel::deleteFolder(const QModelIndex &index)
+{
+	QString customFolder = customFolderForModelIndex(index);
+	if (customFolder.isEmpty())
+		return false;
+
+	// get the custom folders map
+	std::map<QString, std::set<QString>> &customFolders = m_prefs.GetCustomFolders();
+
+	// find this entry
+	auto iter = customFolders.find(customFolder);
+	if (iter == customFolders.end())
+		return false;
+
+	// erase it
+	customFolders.erase(iter);
+
+	// refresh and we're done!
+	refresh();
+	return true;
+}
+
+
+//-------------------------------------------------
 //  getMachineFilter
 //-------------------------------------------------
 
@@ -348,6 +410,7 @@ QVariant MachineFolderTreeModel::data(const QModelIndex &index, int role) const
 	switch (role)
 	{
 	case Qt::DisplayRole:
+	case Qt::EditRole:
 		result = entry.text();
 		break;
 
@@ -356,6 +419,27 @@ QVariant MachineFolderTreeModel::data(const QModelIndex &index, int role) const
 		break;
 	}
 
+	return result;
+}
+
+
+//-------------------------------------------------
+//  setData
+//-------------------------------------------------
+
+bool MachineFolderTreeModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+	bool result;
+	switch (role)
+	{
+	case Qt::EditRole:
+		result = renameFolder(index, value.toString());
+		break;
+
+	default:
+		result = QAbstractItemModel::setData(index, value, role);
+		break;
+	}
 	return result;
 }
 
@@ -376,9 +460,9 @@ bool MachineFolderTreeModel::hasChildren(const QModelIndex &parent) const
 
 Qt::ItemFlags MachineFolderTreeModel::flags(const QModelIndex &index) const
 {
-	return true
-		? QAbstractItemModel::flags(index)
-		: Qt::NoItemFlags;
+	QString customFolder = customFolderForModelIndex(index);
+	return Qt::ItemIsSelectable | Qt::ItemIsEnabled
+		| (!customFolder.isEmpty() ? Qt::ItemIsEditable : 0);
 }
 
 

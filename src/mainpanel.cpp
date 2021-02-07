@@ -298,26 +298,46 @@ void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list:
 	});
 
 	// if we're selecting a custom folder, we can have an item to remove this
-	QModelIndexList folderSelection = m_ui->machinesFolderTreeView->selectionModel()->selectedIndexes();
-	QString currentCustomFolder;
-	if (folderSelection.size() == 1)
+	QString currentCustomFolder = currentlySelectedCustomFolder();
+	if (!currentCustomFolder.isEmpty())
 	{
-		currentCustomFolder = machineFolderTreeModel().customFolderForModelIndex(folderSelection[0]);
-		if (!currentCustomFolder.isEmpty())
+		popupMenu.addAction(QString("Remove from \"%1\"").arg(currentCustomFolder), [this, &customFolders, &currentCustomFolder, &machine]()
 		{
-			popupMenu.addAction(QString("Remove from \"%1\"").arg(currentCustomFolder), [this, &customFolders, &currentCustomFolder, &machine]()
-			{
-				// erase this item
-				customFolders[currentCustomFolder].erase(machine.name());
+			// erase this item
+			customFolders[currentCustomFolder].erase(machine.name());
 
-				// and refresh the folder list
-				machineFolderTreeModel().refresh();
-			});
-		}
+			// and refresh the folder list
+			machineFolderTreeModel().refresh();
+		});
 	}
 
 	// and execute the popup
 	popupMenu.exec(pos);
+}
+
+
+//-------------------------------------------------
+//  currentlySelectedCustomFolder
+//-------------------------------------------------
+
+QString MainPanel::currentlySelectedCustomFolder() const
+{
+	QModelIndexList folderSelection = m_ui->machinesFolderTreeView->selectionModel()->selectedIndexes();
+	return folderSelection.size() == 1
+		? machineFolderTreeModel().customFolderForModelIndex(folderSelection[0])
+		: QString();
+}
+
+
+//-------------------------------------------------
+//  deleteSelectedFolder
+//-------------------------------------------------
+
+void MainPanel::deleteSelectedFolder()
+{
+	QModelIndexList selection = m_ui->machinesFolderTreeView->selectionModel()->selectedIndexes();
+	for (const QModelIndex &index : selection)
+		machineFolderTreeModel().deleteFolder(index);
 }
 
 
@@ -454,18 +474,6 @@ void MainPanel::duplicateProfile(const profiles::profile &profile)
 
 
 //-------------------------------------------------
-//  renameProfile
-//-------------------------------------------------
-
-void MainPanel::renameProfile(const profiles::profile &profile)
-{
-	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
-	for (const QModelIndex &modelIndex : selection)
-		m_ui->profilesTableView->edit(modelIndex);
-}
-
-
-//-------------------------------------------------
 //  deleteProfile
 //-------------------------------------------------
 
@@ -510,6 +518,18 @@ void MainPanel::focusOnNewProfile(QString &&new_profile_path)
 
 
 //-------------------------------------------------
+//  editSelection
+//-------------------------------------------------
+
+void MainPanel::editSelection(QAbstractItemView &itemView)
+{
+	QModelIndexList selection = itemView.selectionModel()->selectedIndexes();
+	for (const QModelIndex &modelIndex : selection)
+		itemView.edit(modelIndex);
+}
+
+
+//-------------------------------------------------
 //  showInGraphicalShell
 //-------------------------------------------------
 
@@ -547,7 +567,17 @@ info::machine MainPanel::machineFromModelIndex(const QModelIndex &index) const
 
 
 //-------------------------------------------------
-//  sortFilterProxyModel
+//  machineFolderTreeModel
+//-------------------------------------------------
+
+const MachineFolderTreeModel &MainPanel::machineFolderTreeModel() const
+{
+	return *dynamic_cast<MachineFolderTreeModel *>(m_ui->machinesFolderTreeView->model());
+}
+
+
+//-------------------------------------------------
+//  machineFolderTreeModel
 //-------------------------------------------------
 
 MachineFolderTreeModel &MainPanel::machineFolderTreeModel()
@@ -674,6 +704,28 @@ void MainPanel::updateSnapshot()
 
 
 //-------------------------------------------------
+//  on_machinesFolderTreeView_customContextMenuRequested
+//-------------------------------------------------
+
+void MainPanel::on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos)
+{
+	int editableCount = 0;
+	QModelIndexList selection = m_ui->machinesFolderTreeView->selectionModel()->selectedIndexes();
+	for (const QModelIndex &index : selection)
+	{
+		if (machineFolderTreeModel().flags(index) & Qt::ItemIsEditable)
+			editableCount++;
+	}
+	bool isEditable = selection.size() > 0 && selection.size() == editableCount;
+
+	QMenu popupMenu;
+	popupMenu.addAction("Rename", [this]()	{ editSelection(*m_ui->machinesFolderTreeView); })->setEnabled(isEditable);
+	popupMenu.addAction("Delete", [this]()	{ deleteSelectedFolder(); })->setEnabled(isEditable);
+	popupMenu.exec(m_ui->machinesFolderTreeView->mapToGlobal(pos));
+}
+
+
+//-------------------------------------------------
 //  on_machinesTableView_activated
 //-------------------------------------------------
 
@@ -765,8 +817,8 @@ void MainPanel::on_profilesTableView_customContextMenuRequested(const QPoint &po
 	QMenu popupMenu;
 	popupMenu.addAction(QString("Run \"%1\"").arg(profile->name()), [this, &profile]() { run(std::move(profile)); });
 	popupMenu.addAction("Duplicate", [this, &profile]() { duplicateProfile(*profile); });
-	popupMenu.addAction("Rename", [this, &profile]() { renameProfile(*profile); });
-	popupMenu.addAction("Delete", [this, &profile]() { deleteProfile(*profile); });
+	popupMenu.addAction("Rename", [this]()				{ editSelection(*m_ui->profilesTableView); });
+	popupMenu.addAction("Delete", [this, &profile]()	{ deleteProfile(*profile); });
 	popupMenu.addSeparator();
 	popupMenu.addAction("Show in folder", [this, &profile]() { showInGraphicalShell(profile->path()); });
 	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));

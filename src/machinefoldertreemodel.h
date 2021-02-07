@@ -35,6 +35,8 @@ public:
 	QModelIndex modelIndexFromPath(const QString &path) const;
 	QString customFolderForModelIndex(const QModelIndex &index) const;
 	void refresh();
+	bool renameFolder(const QModelIndex &index, QString &&newName);
+	bool deleteFolder(const QModelIndex &index);
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const final;
@@ -42,6 +44,7 @@ public:
 	virtual int rowCount(const QModelIndex &parent) const final;
 	virtual int columnCount(const QModelIndex &parent) const final;
 	virtual QVariant data(const QModelIndex &index, int role) const final;
+	virtual bool setData(const QModelIndex &index, const QVariant &value, int role) final;
 	virtual bool hasChildren(const QModelIndex &parent) const final;
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const final;
 
