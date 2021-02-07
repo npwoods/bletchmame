@@ -460,9 +460,11 @@ bool MachineFolderTreeModel::hasChildren(const QModelIndex &parent) const
 
 Qt::ItemFlags MachineFolderTreeModel::flags(const QModelIndex &index) const
 {
+	Qt::ItemFlags result = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 	QString customFolder = customFolderForModelIndex(index);
-	return Qt::ItemIsSelectable | Qt::ItemIsEnabled
-		| (!customFolder.isEmpty() ? Qt::ItemIsEditable : 0);
+	if (!customFolder.isEmpty())
+		result |= Qt::ItemIsEditable;
+	return result;
 }
 
 
