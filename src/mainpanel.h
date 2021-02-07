@@ -84,9 +84,9 @@ private:
 	void createProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);
 	void duplicateProfile(const profiles::profile &profile);
-	void renameProfile(const profiles::profile &profile);
 	void deleteProfile(const profiles::profile &profile);
 	void focusOnNewProfile(QString &&new_profile_path);
+	void editSelection(QAbstractItemView &itemView);
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	MachineFolderTreeModel &machineFolderTreeModel();

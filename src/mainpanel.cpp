@@ -454,18 +454,6 @@ void MainPanel::duplicateProfile(const profiles::profile &profile)
 
 
 //-------------------------------------------------
-//  renameProfile
-//-------------------------------------------------
-
-void MainPanel::renameProfile(const profiles::profile &profile)
-{
-	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
-	for (const QModelIndex &modelIndex : selection)
-		m_ui->profilesTableView->edit(modelIndex);
-}
-
-
-//-------------------------------------------------
 //  deleteProfile
 //-------------------------------------------------
 
@@ -506,6 +494,18 @@ void MainPanel::focusOnNewProfile(QString &&new_profile_path)
 
 		m_ui->profilesTableView->edit(actualIndex);
 	});
+}
+
+
+//-------------------------------------------------
+//  editSelection
+//-------------------------------------------------
+
+void MainPanel::editSelection(QAbstractItemView &itemView)
+{
+	QModelIndexList selection = itemView.selectionModel()->selectedIndexes();
+	for (const QModelIndex &modelIndex : selection)
+		itemView.edit(modelIndex);
 }
 
 
@@ -765,8 +765,8 @@ void MainPanel::on_profilesTableView_customContextMenuRequested(const QPoint &po
 	QMenu popupMenu;
 	popupMenu.addAction(QString("Run \"%1\"").arg(profile->name()), [this, &profile]() { run(std::move(profile)); });
 	popupMenu.addAction("Duplicate", [this, &profile]() { duplicateProfile(*profile); });
-	popupMenu.addAction("Rename", [this, &profile]() { renameProfile(*profile); });
-	popupMenu.addAction("Delete", [this, &profile]() { deleteProfile(*profile); });
+	popupMenu.addAction("Rename", [this]()				{ editSelection(*m_ui->profilesTableView); });
+	popupMenu.addAction("Delete", [this, &profile]()	{ deleteProfile(*profile); });
 	popupMenu.addSeparator();
 	popupMenu.addAction("Show in folder", [this, &profile]() { showInGraphicalShell(profile->path()); });
 	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
