@@ -28,9 +28,10 @@ class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
 class info::database;
+class MachineFolderTreeModel;
+class ProfileListItemModel;
 class SessionBehavior;
 class SoftwareListItemModel;
-class ProfileListItemModel;
 
 
 // ======================> MainWindow
@@ -88,6 +89,7 @@ private:
 	void focusOnNewProfile(QString &&new_profile_path);
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
+	MachineFolderTreeModel &machineFolderTreeModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
 	void persistMachineSplitterSizes();

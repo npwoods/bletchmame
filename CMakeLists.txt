@@ -139,6 +139,9 @@ add_library(BletchMAME_core
 	src/dialogs/loading.cpp
 	src/dialogs/loading.h
 	src/dialogs/loading.ui
+	src/dialogs/newcustomfolder.cpp
+	src/dialogs/newcustomfolder.h
+	src/dialogs/newcustomfolder.ui
 	src/dialogs/paths.cpp
 	src/dialogs/paths.h
 	src/dialogs/paths.ui

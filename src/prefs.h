@@ -14,6 +14,7 @@
 #include <array>
 #include <ostream>
 #include <map>
+#include <set>
 
 #include <QDataStream>
 #include <QSize>
@@ -112,6 +113,9 @@ public:
 	const QList<int> &GetMachineSplitterSizes() const											{ return m_machine_splitter_sizes; }
 	void SetMachineSplitterSizes(QList<int> &&sizes)											{ m_machine_splitter_sizes = std::move(sizes); }
 
+	const std::map<QString, std::set<QString>> &GetCustomFolders() const						{ return m_custom_folders; }
+	std::map<QString, std::set<QString>> &GetCustomFolders()									{ return m_custom_folders; }
+
 	const std::unordered_map<std::string, ColumnPrefs> &GetColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
 	void SetColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
@@ -159,6 +163,7 @@ private:
 	list_view_type																			m_selected_tab;
 	QString																					m_machine_folder_tree_selection;
 	QList<int>																				m_machine_splitter_sizes;
+	std::map<QString, std::set<QString>>													m_custom_folders;
     std::unordered_map<QString, QString>													m_list_view_selection;
 	mutable std::unordered_map<QString, QString>											m_list_view_filter;
 	bool																					m_menu_bar_shown;

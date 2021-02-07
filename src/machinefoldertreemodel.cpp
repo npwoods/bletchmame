@@ -10,6 +10,7 @@
 #include <QPixmap>
 
 #include "machinefoldertreemodel.h"
+#include "prefs.h"
 
 
 //**************************************************************************
@@ -28,9 +29,10 @@
 //  ctor
 //-------------------------------------------------
 
-MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &infoDb)
+MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &infoDb, Preferences &prefs)
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
+	, m_prefs(prefs)
 {
 	// load all folder icons
 	auto folderIconResourceNames = getFolderIconResourceNames();
@@ -45,6 +47,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	// root folder
 	m_root.emplace_back("all",			FolderIcon::Folder,		"All Machines",		std::function<bool(const info::machine &machine)>());
 	m_root.emplace_back("clones",		FolderIcon::Folder,		"Clones",			[](const info::machine &machine) { return !machine.clone_of().isEmpty(); });
+	m_root.emplace_back("custom",		FolderIcon::Folder,		"Custom",			m_custom);
 	m_root.emplace_back("originals",	FolderIcon::Folder,		"Originals",		[](const info::machine &machine) { return machine.clone_of().isEmpty(); });
 	m_root.emplace_back("source",		FolderIcon::Folder,		"Source",			m_source);
 	m_root.emplace_back("year",			FolderIcon::Folder,		"Year",				m_year);
@@ -52,9 +55,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	// a number of folders are variable, and depend on info DB info; populate them separately
 	m_infoDb.addOnChangedHandler([this]
 	{
-		beginResetModel();
-		populateVariableFolders();
-		endResetModel();
+		refresh();
 	});
 }
 
@@ -118,6 +119,18 @@ const std::vector<MachineFolderTreeModel::FolderEntry> &MachineFolderTreeModel::
 
 
 //-------------------------------------------------
+//  refresh
+//-------------------------------------------------
+
+void MachineFolderTreeModel::refresh()
+{
+	beginResetModel();
+	populateVariableFolders();
+	endResetModel();
+}
+
+
+//-------------------------------------------------
 //  populateVariableFolders
 //-------------------------------------------------
 
@@ -137,6 +150,18 @@ void MachineFolderTreeModel::populateVariableFolders()
 			years.emplace(machine.year());
 		}
 	}
+
+	// set up the custom folder
+	const auto &customFolders = m_prefs.GetCustomFolders();
+	m_custom.clear();
+	m_custom.reserve(customFolders.size());
+	for (const auto &pair : customFolders)
+	{
+		const QString &folderName = pair.first;
+		const std::set<QString> &folderContents = pair.second;
+		auto predicate = [&folderContents](const info::machine &machine) { return util::contains(folderContents, machine.name()); };
+		m_custom.emplace_back(QString(folderName), FolderIcon::Folder, QString(folderName), std::move(predicate));
+	}	
 
 	// set up the manufacturers folder
 	m_manufacturer.clear();
@@ -228,6 +253,23 @@ QModelIndex MachineFolderTreeModel::modelIndexFromPath(const QString &path) cons
 		// dive down the hierarchy
 		result = index(iter - entries->begin(), 0, result);
 		entries = iter->children();
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  customFolderForModelIndex
+//-------------------------------------------------
+
+QString MachineFolderTreeModel::customFolderForModelIndex(const QModelIndex &index) const
+{
+	QString result;
+	if (index.isValid() && m_custom.size() > 0)
+	{
+		const FolderEntry &entry = folderEntryFromModelIndex(index);
+		if ((&entry - &m_custom[0] >= 0) && (&entry - &m_custom[0] < m_custom.size()))
+			result = entry.id();
 	}
 	return result;
 }
