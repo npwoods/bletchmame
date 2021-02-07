@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    dialogs/newcustomfolder.h
+    dialogs/newcustomfolder.cpp
 
     Dialog for adding custom folders
 
