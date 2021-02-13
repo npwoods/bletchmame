@@ -75,6 +75,7 @@ private:
 	software_list_collection														m_softwareListCollection;
 	IconLoader																		m_iconLoader;
 	QPixmap																			m_currentSnapshot;
+	std::vector<QString>															m_expandedTreeItems;
 
 	// methods
 	void run(const info::machine &machine, const software_list::software *software = nullptr);
@@ -99,6 +100,8 @@ private:
 	void persistMachineSplitterSizes();
 	void updateInfoPanel(const QString &machineName);
 	void updateSnapshot();
+	void identifyExpandedFolderTreeItems();
+	static void iterateItemModelIndexes(QAbstractItemModel &model, const std::function<void(const QModelIndex &)> &func, const QModelIndex &index = QModelIndex());
 };
 
 
