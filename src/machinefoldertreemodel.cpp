@@ -33,24 +33,26 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
 	, m_prefs(prefs)
+	, m_rootFolderList({
+		RootFolderDesc("all",			"All Machines"),
+		RootFolderDesc("clones",		"Clones"),
+		RootFolderDesc("custom",		"Custom"),
+		RootFolderDesc("originals",		"Originals"),
+		RootFolderDesc("source",		"Source"),
+		RootFolderDesc("year",			"Year") })
 {
-	// load all folder icons
-	auto folderIconResourceNames = getFolderIconResourceNames();
-	if (folderIconResourceNames.size() != m_folderIcons.size())
-		throw false;
-	for (int i = 0; i < folderIconResourceNames.size(); i++)
+	// load all folder icons (if parent is nullptr we're probably in a unit test)
+	if (parent)
 	{
-		QPixmap pixmap(folderIconResourceNames[i]);
-		m_folderIcons[i] = pixmap.scaled(ICON_SIZE_X, ICON_SIZE_Y);
+		auto folderIconResourceNames = getFolderIconResourceNames();
+		if (folderIconResourceNames.size() != m_folderIcons.size())
+			throw false;
+		for (int i = 0; i < folderIconResourceNames.size(); i++)
+		{
+			QPixmap pixmap(folderIconResourceNames[i]);
+			m_folderIcons[i] = pixmap.scaled(ICON_SIZE_X, ICON_SIZE_Y);
+		}
 	}
-
-	// root folder
-	m_root.emplace_back("all",			FolderIcon::Folder,		"All Machines",		std::function<bool(const info::machine &machine)>());
-	m_root.emplace_back("clones",		FolderIcon::Folder,		"Clones",			[](const info::machine &machine) { return !machine.clone_of().isEmpty(); });
-	m_root.emplace_back("custom",		FolderIcon::Folder,		"Custom",			m_custom);
-	m_root.emplace_back("originals",	FolderIcon::Folder,		"Originals",		[](const info::machine &machine) { return machine.clone_of().isEmpty(); });
-	m_root.emplace_back("source",		FolderIcon::Folder,		"Source",			m_source);
-	m_root.emplace_back("year",			FolderIcon::Folder,		"Year",				m_year);
 
 	// a number of folders are variable, and depend on info DB info; populate them separately
 	m_infoDb.addOnChangedHandler([this]
@@ -136,6 +138,30 @@ void MachineFolderTreeModel::refresh()
 
 void MachineFolderTreeModel::populateVariableFolders()
 {
+	// set up root folder based on prototypes
+	m_root.clear();
+	for (const RootFolderDesc &desc : m_rootFolderList)
+	{
+		FolderPrefs folderPrefs = m_prefs.GetFolderPrefs(desc.id());
+		if (folderPrefs.m_shown)
+		{
+			if (!strcmp(desc.id(), "all"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
+			else if (!strcmp(desc.id(), "clones"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of().isEmpty(); });
+			else if (!strcmp(desc.id(), "custom"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_custom);
+			else if (!strcmp(desc.id(), "originals"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.clone_of().isEmpty(); });
+			else if (!strcmp(desc.id(), "source"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_source);
+			else if (!strcmp(desc.id(), "year"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_year);
+			else
+				throw false;
+		}
+	}
+
 	// iterate through all machines and accumulate the pertinent data; because
 	// this can be expensive we're using reference wrappers
 	std::set<std::reference_wrapper<const QString>> manufacturers;
@@ -160,7 +186,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 		const QString &folderName = pair.first;
 		const std::set<QString> &folderContents = pair.second;
 		auto predicate = [&folderContents](const info::machine &machine) { return util::contains(folderContents, machine.name()); };
-		m_custom.emplace_back(QString(folderName), FolderIcon::Folder, QString(folderName), std::move(predicate));
+		m_custom.emplace_back(folderName, FolderIcon::Folder, folderName, std::move(predicate));
 	}	
 
 	// set up the manufacturers folder
@@ -169,7 +195,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	for (const QString &manufacturer : manufacturers)
 	{
 		auto predicate = [&manufacturer](const info::machine &machine) { return machine.manufacturer() == manufacturer; };
-		m_manufacturer.emplace_back(QString(manufacturer), FolderIcon::Manufacturer, QString(manufacturer), std::move(predicate));
+		m_manufacturer.emplace_back(manufacturer, FolderIcon::Manufacturer, manufacturer, std::move(predicate));
 	}
 
 	// set up the sources folder
@@ -178,7 +204,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	for (const QString &sourceFile : sourceFiles)
 	{
 		auto predicate = [&sourceFile](const info::machine &machine) { return machine.sourcefile() == sourceFile; };
-		m_source.emplace_back(QString(sourceFile), FolderIcon::Source, QString(sourceFile), std::move(predicate));
+		m_source.emplace_back(sourceFile, FolderIcon::Source, sourceFile, std::move(predicate));
 	}
 
 	// set up the years folder
@@ -187,7 +213,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	for (const QString &year : years)
 	{
 		auto predicate = [&year](const info::machine &machine) { return machine.year() == year; };
-		m_year.emplace_back(QString(year), FolderIcon::Year, QString(year), std::move(predicate));
+		m_year.emplace_back(year, FolderIcon::Year, year, std::move(predicate));
 	}
 }
 
@@ -472,8 +498,8 @@ Qt::ItemFlags MachineFolderTreeModel::flags(const QModelIndex &index) const
 //  FolderEntry ctor
 //-------------------------------------------------
 
-MachineFolderTreeModel::FolderEntry::FolderEntry(QString &&id, FolderIcon icon, QString &&text, std::function<bool(const info::machine &machine)> &&filter)
-	: FolderEntry(std::move(id), icon, std::move(text), std::move(filter), nullptr)
+MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, std::function<bool(const info::machine &machine)> &&filter)
+	: FolderEntry(id, icon, text, std::move(filter), nullptr)
 {
 }
 
@@ -482,8 +508,8 @@ MachineFolderTreeModel::FolderEntry::FolderEntry(QString &&id, FolderIcon icon, 
 //  FolderEntry ctor
 //-------------------------------------------------
 
-MachineFolderTreeModel::FolderEntry::FolderEntry(QString &&id, FolderIcon icon, QString &&text, const std::vector<FolderEntry> &children)
-	: FolderEntry(std::move(id), icon, std::move(text), { }, &children)
+MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, const std::vector<FolderEntry> &children)
+	: FolderEntry(id, icon, text, { }, &children)
 {
 }
 
@@ -492,11 +518,22 @@ MachineFolderTreeModel::FolderEntry::FolderEntry(QString &&id, FolderIcon icon, 
 //  FolderEntry ctor
 //-------------------------------------------------
 
-MachineFolderTreeModel::FolderEntry::FolderEntry(QString &&id, FolderIcon icon, QString &&text, std::function<bool(const info::machine &machine)> &&filter, const std::vector<FolderEntry> *children)
+MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, std::function<bool(const info::machine &machine)> &&filter, const std::vector<FolderEntry> *children)
 	: m_id(id)
 	, m_icon(icon)
-	, m_text(std::move(text))
-	, m_filter(std::move(filter))
+	, m_text(text)
+	, m_filter(filter)
 	, m_children(children)
+{
+}
+
+
+//-------------------------------------------------
+//  RootFolderDesc ctor
+//-------------------------------------------------
+
+MachineFolderTreeModel::RootFolderDesc::RootFolderDesc(const char *id, QString &&displayName)
+	: m_id(id)
+	, m_displayName(std::move(displayName))
 {
 }

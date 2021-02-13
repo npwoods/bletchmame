@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.6 (TBD)
+	- Added a "Show Folders" contextual menu to the folder tree
 	- Added support for custom folders
 
 - 2.5 (2021-Jan-31)

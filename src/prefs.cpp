@@ -139,6 +139,26 @@ static std::string stringFromIntList(const QList<int> &list)
 
 
 //-------------------------------------------------
+//  FolderPrefs ctor
+//-------------------------------------------------
+
+FolderPrefs::FolderPrefs()
+	: m_shown(true)
+{
+}
+
+
+//-------------------------------------------------
+//  FolderPrefs ctor
+//-------------------------------------------------
+
+bool FolderPrefs::operator==(const FolderPrefs &that) const
+{
+	return m_shown == that.m_shown;
+}
+
+
+//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -326,6 +346,32 @@ const QString &Preferences::GetMachinePath(const QString &machine_name, machine_
 
 
 //-------------------------------------------------
+//  GetFolderPrefs
+//-------------------------------------------------
+
+FolderPrefs Preferences::GetFolderPrefs(const QString &folder) const
+{
+	auto iter = m_folder_prefs.find(folder);
+	return iter != m_folder_prefs.end()
+		? iter->second
+		: FolderPrefs();
+}
+
+
+//-------------------------------------------------
+//  GetListViewSelection
+//-------------------------------------------------
+
+void Preferences::SetFolderPrefs(const QString &folder, FolderPrefs &&prefs)
+{
+	if (prefs == FolderPrefs())
+		m_folder_prefs.erase(folder);
+	else
+		m_folder_prefs[folder] = std::move(prefs);
+}
+
+
+//-------------------------------------------------
 //  GetListViewSelection
 //-------------------------------------------------
 
@@ -482,15 +528,25 @@ bool Preferences::Load(QDataStream &input)
 			SetSize(size);
 		}
 	});	
-	xml.onElementEnd({ "preferences", "machinefoldertreeselection" }, [&](QString &&content)
-	{
-		SetMachineFolderTreeSelection(std::move(content));
-	});
 	xml.onElementEnd({ "preferences", "machinelistsplitters" }, [&](QString &&content)
 	{
 		QList<int> splitterSizes = intListFromString(content);
 		if (!splitterSizes.isEmpty())
 			SetMachineSplitterSizes(std::move(splitterSizes));
+	});
+	xml.onElementBegin({ "preferences", "folder" }, [&](const XmlParser::Attributes &attributes)
+	{
+		QString id;
+		if (attributes.get("id", id))
+		{
+			bool isShown, isSelected;
+			FolderPrefs folderPrefs = GetFolderPrefs(id);
+			if (attributes.get("shown", isShown))
+				folderPrefs.m_shown = isShown;
+			SetFolderPrefs(id, std::move(folderPrefs));
+			if (attributes.get("selected", isSelected) && isSelected)
+				SetMachineFolderTreeSelection(std::move(id));
+		}
 	});
 	xml.onElementBegin({ "preferences", "customfolder" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -602,10 +658,19 @@ void Preferences::Save(std::ostream &output)
 	if (!m_mame_extra_arguments.isEmpty())
 		output << "\t<mameextraarguments>" << util::to_utf8_string(m_mame_extra_arguments) << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.width() << "\" height=\"" << m_size.height() << "\"/>" << std::endl;
-	if (!m_machine_folder_tree_selection.isEmpty())
-		output << "\t<machinefoldertreeselection>" << util::to_utf8_string(m_machine_folder_tree_selection) << "</machinefoldertreeselection>" << std::endl;
 	if (!m_machine_splitter_sizes.isEmpty())
 		output << "\t<machinelistsplitters>" << stringFromIntList(m_machine_splitter_sizes) << "</machinelistsplitters>" << std::endl;
+
+	// folder prefs
+	if (!m_machine_folder_tree_selection.isEmpty() && m_folder_prefs.find(m_machine_folder_tree_selection) == m_folder_prefs.end())
+		m_folder_prefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
+	for (const auto &pair : m_folder_prefs)
+	{
+		output << "\t<folder id=\"" << util::to_utf8_string(pair.first) << '\"'
+			<< " shown=\"" << (pair.second.m_shown ? "true" : "false") << '\"'
+			<< (pair.first == m_machine_folder_tree_selection ? " selected=\"true\"" : "")
+			<< "/>" << std::endl;
+	}
 
 	// custom folders
 	for (const auto &pair : m_custom_folders)
