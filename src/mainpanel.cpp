@@ -718,9 +718,27 @@ void MainPanel::on_machinesFolderTreeView_customContextMenuRequested(const QPoin
 	}
 	bool isEditable = selection.size() > 0 && selection.size() == editableCount;
 
+	// main popup menu
 	QMenu popupMenu;
 	popupMenu.addAction("Rename", [this]()	{ editSelection(*m_ui->machinesFolderTreeView); })->setEnabled(isEditable);
 	popupMenu.addAction("Delete", [this]()	{ deleteSelectedFolder(); })->setEnabled(isEditable);
+	popupMenu.addSeparator();
+	QMenu &showFoldersMenu = *popupMenu.addMenu("Show Folders");
+
+	// show folders menu
+	for (const MachineFolderTreeModel::RootFolderDesc &desc : machineFolderTreeModel().getRootFolderList())
+	{
+		QAction &action = *showFoldersMenu.addAction(desc.displayName(), [this, &desc]()
+		{
+			FolderPrefs folderPrefs = m_prefs.GetFolderPrefs(desc.id());
+			folderPrefs.m_shown = !folderPrefs.m_shown;
+			m_prefs.SetFolderPrefs(desc.id(), std::move(folderPrefs));
+			machineFolderTreeModel().refresh();
+		});
+		action.setCheckable(true);
+		action.setChecked(m_prefs.GetFolderPrefs(desc.id()).m_shown);
+	}
+
 	popupMenu.exec(m_ui->machinesFolderTreeView->mapToGlobal(pos));
 }
 
