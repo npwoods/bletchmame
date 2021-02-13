@@ -34,7 +34,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	, m_infoDb(infoDb)
 	, m_prefs(prefs)
 	, m_rootFolderList({
-		RootFolderDesc("all",			"All Machines"),
+		RootFolderDesc("all",			"All Systems"),
 		RootFolderDesc("clones",		"Clones"),
 		RootFolderDesc("custom",		"Custom"),
 		RootFolderDesc("originals",		"Originals"),
