@@ -128,12 +128,23 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, std::function<v
 	{
 		machineFoldersTreeViewSelectionChanged(newSelection, oldSelection);
 	});
+	connect(&machineFolderTreeModel, &QAbstractItemModel::modelAboutToBeReset, this, [this]()
+	{
+		identifyExpandedFolderTreeItems();
+	});
 	connect(&machineFolderTreeModel, &QAbstractItemModel::modelReset, this, [this, &machineFolderTreeModel]()
 	{
 		const QString &selectionPath = m_prefs.GetMachineFolderTreeSelection();
 		QModelIndex selectionIndex = machineFolderTreeModel.modelIndexFromPath(!selectionPath.isEmpty() ? selectionPath : "all");
 		m_ui->machinesFolderTreeView->selectionModel()->select(selectionIndex, QItemSelectionModel::Select);
 		m_ui->machinesFolderTreeView->scrollTo(selectionIndex);
+
+		// reexpand any items that may have changed
+		for (const QString &path : m_expandedTreeItems)
+		{
+			QModelIndex index = machineFolderTreeModel.modelIndexFromPath(path);
+			m_ui->machinesFolderTreeView->setExpanded(index, true);
+		}
 	});
 
 	// set up software list view
@@ -700,6 +711,49 @@ void MainPanel::updateSnapshot()
 		Qt::KeepAspectRatio,
 		Qt::SmoothTransformation);
 	m_ui->machinesSnapLabel->setPixmap(scaledSnapshot);
+}
+
+
+//-------------------------------------------------
+//  identifyExpandedFolderTreeItems
+//-------------------------------------------------
+
+void MainPanel::identifyExpandedFolderTreeItems()
+{
+	m_expandedTreeItems.clear();
+
+	iterateItemModelIndexes(*m_ui->machinesFolderTreeView->model(), [this](const QModelIndex &index)
+	{
+		if (m_ui->machinesFolderTreeView->isExpanded(index))
+		{
+			QString path = machineFolderTreeModel().pathFromModelIndex(index);
+			m_expandedTreeItems.push_back(std::move(path));
+		}
+	});
+}
+
+
+//-------------------------------------------------
+//  iterateItemModelIndexes
+//-------------------------------------------------
+
+void MainPanel::iterateItemModelIndexes(QAbstractItemModel &model, const std::function<void(const QModelIndex &)> &func, const QModelIndex &index)
+{
+	if (index.isValid())
+		func(index);
+
+	if (model.hasChildren(index) && !(index.flags() & Qt::ItemNeverHasChildren))
+	{
+		int rows = model.rowCount(index);
+		int columns = model.columnCount(index);
+		for (int row = 0; row < rows; row++)
+		{
+			for (int col = 0; col < columns; col++)
+			{
+				iterateItemModelIndexes(model, func, model.index(row, col, index));
+			}
+		}
+	}
 }
 
 
