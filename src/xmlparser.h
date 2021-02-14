@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <optional>
 
-#include <QDataStream>
+#include <QIODevice>
 
 #include "utility.h"
 
@@ -158,7 +158,6 @@ public:
 	}
 
 	bool parse(QIODevice &input);
-	bool parse(QDataStream &input);
 	bool parse(const QString &file_name);
 	bool parseBytes(const void *ptr, size_t sz);
 	QString errorMessagesSingleString() const;
@@ -185,7 +184,7 @@ private:
 	QString						m_currentContent;
 	std::vector<Error>			m_errors;
 
-	bool internalParse(QDataStream &input);
+	bool internalParse(QIODevice &input);
 	void startElement(const char *name, const char **attributes);
 	void endElement(const char *name);
 	void characterData(const char *s, int len);

@@ -10,6 +10,8 @@
 #include <inttypes.h>
 #include <string>
 
+#include <QBuffer>
+
 #include "xmlparser.h"
 
 #ifdef _MSC_VER
@@ -134,17 +136,6 @@ XmlParser::~XmlParser()
 
 bool XmlParser::parse(QIODevice &input)
 {
-	QDataStream dataStream(&input);
-	return parse(dataStream);
-}
-
-
-//-------------------------------------------------
-//  parse
-//-------------------------------------------------
-
-bool XmlParser::parse(QDataStream &input)
-{
 	m_currentNode = m_root;
 	m_skippingDepth = 0;
 
@@ -175,9 +166,10 @@ bool XmlParser::parse(const QString &file_name)
 
 bool XmlParser::parseBytes(const void *ptr, size_t sz)
 {
-	QByteArray byte_array((const char *) ptr, (int)sz);
-	QDataStream input(byte_array);
-	return parse(input);
+	QByteArray byteArray((const char *) ptr, (int)sz);
+	QBuffer input(&byteArray);
+	return input.open(QIODevice::ReadOnly)
+		&& parse(input);
 }
 
 
@@ -185,7 +177,7 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 //  internalParse
 //-------------------------------------------------
 
-bool XmlParser::internalParse(QDataStream &input)
+bool XmlParser::internalParse(QIODevice &input)
 {
 	bool done = false;
 	char buffer[8192];
@@ -196,10 +188,10 @@ bool XmlParser::internalParse(QDataStream &input)
 	while (!done)
 	{
 		// this seems to be necssary when reading from a QProcess
-		input.device()->waitForReadyRead(-1);
+		input.waitForReadyRead(-1);
 
 		// read data
-		int lastRead = input.readRawData(buffer, sizeof(buffer));
+		int lastRead = input.read(buffer, sizeof(buffer));
 		if (LOG_XML)
 			qDebug("XmlParser::internalParse(): input.readRawData() returned %d", lastRead);
 
