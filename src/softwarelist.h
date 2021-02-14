@@ -66,7 +66,7 @@ private:
 	software_list() = default;
 
 	// methods
-	bool load(QDataStream &stream, QString &error_message);
+	bool load(QIODevice &stream, QString &error_message);
 };
 
 
