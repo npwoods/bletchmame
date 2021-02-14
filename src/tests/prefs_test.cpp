@@ -15,9 +15,9 @@ class Preferences::Test : public QObject
 
 private slots:
 	void general();
-	void path_names();
-	void global_get_path_category();
-	void machine_get_path_category();
+	void pathNames();
+	void globalGetPathCategory();
+	void machineGetPathCategory();
 	void substitutions1();
 	void substitutions2();
 	void substitutions3();
@@ -97,10 +97,10 @@ void Preferences::Test::general()
 
 
 //-------------------------------------------------
-//  path_names
+//  pathNames
 //-------------------------------------------------
 
-void Preferences::Test::path_names()
+void Preferences::Test::pathNames()
 {
 	auto iter = std::find(s_path_names.begin(), s_path_names.end(), nullptr);
 	QVERIFY(iter == s_path_names.end());
@@ -108,10 +108,10 @@ void Preferences::Test::path_names()
 
 
 //-------------------------------------------------
-//  global_get_path_category
+//  globalGetPathCategory
 //-------------------------------------------------
 
-void Preferences::Test::global_get_path_category()
+void Preferences::Test::globalGetPathCategory()
 {
 	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
 		Preferences::GetPathCategory(type);
@@ -119,10 +119,10 @@ void Preferences::Test::global_get_path_category()
 
 
 //-------------------------------------------------
-//  machine_get_path_category
+//  machineGetPathCategory
 //-------------------------------------------------
 
-void Preferences::Test::machine_get_path_category()
+void Preferences::Test::machineGetPathCategory()
 {
 	for (Preferences::machine_path_type type : util::all_enums<Preferences::machine_path_type>())
 		Preferences::GetPathCategory(type);
