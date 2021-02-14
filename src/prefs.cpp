@@ -452,18 +452,15 @@ bool Preferences::Load()
 {
 	using namespace std::placeholders;
 
-	QString file_name = GetFileName(false);
+	QString fileName = GetFileName(false);
 
 	// first check to see if the file exists
 	bool success = false;
-	if (wxFileExists(file_name))
+	if (QFileInfo(fileName).exists())
 	{
-		QFile file(file_name);
+		QFile file(fileName);
 		if (file.open(QFile::ReadOnly))
-		{
-			QDataStream file_stream(&file);
-			success = Load(file_stream);
-		}
+			success = Load(file);
 	}
 	return success;
 }
@@ -473,7 +470,7 @@ bool Preferences::Load()
 //  Load
 //-------------------------------------------------
 
-bool Preferences::Load(QDataStream &input)
+bool Preferences::Load(QIODevice &input)
 {
 	XmlParser xml;
 	global_path_type type = global_path_type::COUNT;

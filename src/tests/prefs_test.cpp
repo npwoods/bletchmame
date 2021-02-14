@@ -6,6 +6,8 @@
 
 ***************************************************************************/
 
+#include <QBuffer>
+
 #include "prefs.h"
 #include "test.h"
 
@@ -68,7 +70,8 @@ void Preferences::Test::general()
 		"</preferences>";
 
 	QByteArray byte_array(xml, util::safe_static_cast<int>(strlen(xml)));
-	QDataStream input(byte_array);
+	QBuffer input(&byte_array);
+	QVERIFY(input.open(QIODevice::ReadOnly));
 	Preferences prefs;
 	prefs.Load(input);
 

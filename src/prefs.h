@@ -154,7 +154,7 @@ public:
     static QString GetConfigDirectory(bool ensure_directory_exists = false);
 
 	bool Load();
-	bool Load(QDataStream &input);
+	bool Load(QIODevice &input);
 	void Save();
 
 private:
