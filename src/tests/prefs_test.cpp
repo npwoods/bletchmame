@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include <QBuffer>
+#include <QTextStream>
 
 #include "prefs.h"
 #include "test.h"
@@ -25,6 +26,7 @@ private slots:
 	void substitutions3();
 
 private:
+	static QString fixPaths(QString &&s);
 	void substitutions(const char *input, const char *expected);
 };
 
@@ -39,63 +41,62 @@ private:
 
 void Preferences::Test::general()
 {
-	const char *xml =
-		"<preferences menu_bar_shown=\"1\">"
-#ifdef Q_OS_WIN32
-		"<path type=\"emu\">C:\\mame64.exe</path>"
-		"<path type=\"roms\">C:\\roms</path>"
-		"<path type=\"samples\">C:\\samples</path>"
-		"<path type=\"config\">C:\\cfg</path>"
-		"<path type=\"nvram\">C:\\nvram</path>"
-#else
-                "<path type=\"emu\">/mame64</path>"
-                "<path type=\"roms\">/roms</path>"
-                "<path type=\"samples\">/samples</path>"
-                "<path type=\"config\">/cfg</path>"
-                "<path type=\"nvram\">/nvram</path>"
-#endif
+	// read the prefs.xml test case into a QString and fix it
+	QString text;
+	{
+		QFile file(":/resources/prefs.xml");
+		QVERIFY(file.open(QIODevice::ReadOnly));
+		QTextStream textStream(&file);
+		text = fixPaths(textStream.readAll());
+	}
 
-		"<size width=\"1230\" height=\"765\"/>"
-		"<selectedmachine>nes</selectedmachine>"
-		"<column id=\"name\" width=\"84\" order=\"0\" />"
-		"<column id=\"description\" width=\"165\" order=\"1\" />"
-		"<column id=\"year\" width=\"50\" order=\"2\" />"
-		"<column id=\"manufacturer\" width=\"320\" order=\"3\" />"
+	// and put the text back into a buffer
+	QBuffer buffer;
+	QVERIFY(buffer.open(QIODevice::ReadWrite));
+	{
+		QTextStream textStream(&buffer);
+		textStream << text;
+	}
+	QVERIFY(buffer.seek(0));
 
-#ifdef Q_OS_WIN32
-		"<machine name=\"echo\" working_directory=\"C:\\MyEchoGames\" last_save_state=\"C:\\MyLastState.sta\" />"
-#else
-		"<machine name=\"echo\" working_directory=\"/MyEchoGames\" last_save_state=\"/MyLastState.sta\" />"
-#endif
-		"</preferences>";
-
-	QByteArray byte_array(xml, util::safe_static_cast<int>(strlen(xml)));
-	QBuffer input(&byte_array);
-	QVERIFY(input.open(QIODevice::ReadOnly));
+	// read the prefs
 	Preferences prefs;
-	prefs.Load(input);
+	prefs.Load(buffer);
 
-#ifdef Q_OS_WIN32
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE) == "C:\\mame64.exe");
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::ROMS) == "C:\\roms\\");
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES) == "C:\\samples\\");
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG) == "C:\\cfg\\");
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM) == "C:\\nvram\\");
+	// validate the results
+	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)					== fixPaths("C:\\mame64.exe"));
+	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)							== fixPaths("C:\\roms\\"));
+	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)							== fixPaths("C:\\samples\\"));
+	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)							== fixPaths("C:\\cfg\\"));
+	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)							== fixPaths("C:\\nvram\\"));
+	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== fixPaths("C:\\MyEchoGames\\"));
+	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== fixPaths("C:\\MyLastState.sta"));
+	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== fixPaths(""));
+	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)	== fixPaths(""));
+}
 
-	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY) == "C:\\MyEchoGames\\");
-	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE) == "C:\\MyLastState.sta");
+
+//-------------------------------------------------
+//  fixPaths - make it easier to write a test case
+//	that doesn't involve a lot of path nonsense
+//-------------------------------------------------
+
+QString Preferences::Test::fixPaths(QString &&s)
+{
+#ifdef Qd_OS_WIN32
+	bool applyFix = false;
 #else
-        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE) == "/mame64");
-        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::ROMS) == "/roms/");
-        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES) == "/samples/");
-        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG) == "/cfg/");
-        QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM) == "/nvram/");
-
-        QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY) == "/MyEchoGames/");
-        QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE) == "/MyLastState.sta");
+	bool applyFix = true;
 #endif
-	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY) == "");
-	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE) == "");
+
+	if (applyFix)
+	{
+		// this is hacky, but it works in practice
+		s = s.replace("C:\\", "/");
+		s = s.replace("\\", "/");
+		s = s.replace(".exe", "");
+	}
+	return s;
 }
 
 
