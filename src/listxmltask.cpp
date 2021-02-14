@@ -104,9 +104,8 @@ void ListXmlTask::internalProcess(QIODevice &process)
 	info::database_builder builder;
 
 	// first process the XML
-	QDataStream input(&process);
 	QString error_message;
-	bool success = builder.process_xml(input, error_message);
+	bool success = builder.process_xml(process, error_message);
 
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected

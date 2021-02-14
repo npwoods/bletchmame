@@ -746,7 +746,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
-	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
+	for (size_t i = 0; i < std::size(s_throttle_rates); i++)
 	{
 		float throttle_rate = s_throttle_rates[i];
 		QString text = QString::number((int)(throttle_rate * 100)) + "%";
@@ -1354,7 +1354,7 @@ bool MainWindow::event(QEvent *event)
 bool MainWindow::IsMameExecutablePresent() const
 {
 	const QString &path = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-	return !path.isEmpty() && wxFileExists(path);
+	return !path.isEmpty() && QFileInfo(path).exists();
 }
 
 

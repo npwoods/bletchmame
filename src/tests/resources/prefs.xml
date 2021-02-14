@@ -1,0 +1,19 @@
+<!-- Preferences for BletchMAME -->
+<preferences menu_bar_shown="1" selected_tab="machine">
+
+	<!-- Paths -->
+	<path type="emu">C:\mame64.exe</path>
+	<path type="roms">C:\roms\</path>
+	<path type="samples">C:\samples\</path>
+	<path type="config">C:\cfg\</path>
+	<path type="nvram">C:\nvram\</path>
+	<path type="hash">C:\hash\</path>
+
+	<!-- Miscellaneous -->
+	<size width="1230" height="765"/>
+	<machinelistsplitters>168,556,330</machinelistsplitters>
+	<selection view="machine">nes</selection>
+
+	<!-- Machines -->
+  <machine name="echo" working_directory="C:\MyEchoGames\" last_save_state="C:\MyLastState.sta" />
+</preferences>

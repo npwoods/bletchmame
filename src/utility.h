@@ -380,13 +380,6 @@ QString build_command_line(const QString &executable, const std::vector<QString>
 //  WXWIDGETS IMPERSONATION
 //**************************************************************************
 
-inline bool wxFileExists(const QString &path)
-{
-	QFileInfo check_file(path);
-	return check_file.exists() && check_file.isFile();
-}
-
-
 class wxFileName
 {
 public:

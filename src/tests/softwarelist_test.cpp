@@ -35,10 +35,9 @@ void software_list::test::general()
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
 	// and read it
-	QDataStream stream(&testAsset);
 	software_list softlist;
 	QString error_message;
-	bool success = softlist.load(stream, error_message);
+	bool success = softlist.load(testAsset, error_message);
 
 	// did we succeed?
 	if (!success || !error_message.isEmpty())

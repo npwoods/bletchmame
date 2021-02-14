@@ -19,7 +19,7 @@
 //  load
 //-------------------------------------------------
 
-bool software_list::load(QDataStream &stream, QString &error_message)
+bool software_list::load(QIODevice &stream, QString &error_message)
 {
 	XmlParser xml;
 	std::string current_device_extensions;
@@ -89,9 +89,8 @@ std::optional<software_list> software_list::try_load(const QStringList &hash_pat
 		{
 			software_list softlist;
 			QString error_message;
-			QDataStream file_stream(&file);
 
-			if (file_stream.status() == QDataStream::Status::Ok && softlist.load(file_stream, error_message))
+			if (softlist.load(file, error_message))
 				return std::move(softlist);
 		}
 	}
