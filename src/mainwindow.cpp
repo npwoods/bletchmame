@@ -1354,7 +1354,7 @@ bool MainWindow::event(QEvent *event)
 bool MainWindow::IsMameExecutablePresent() const
 {
 	const QString &path = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-	return !path.isEmpty() && wxFileExists(path);
+	return !path.isEmpty() && QFileInfo(path).exists();
 }
 
 
