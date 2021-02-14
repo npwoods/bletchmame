@@ -8,6 +8,7 @@
 
 #include <QBuffer>
 #include <QTextStream>
+#include <sstream>
 
 #include "prefs.h"
 #include "test.h"
@@ -17,7 +18,8 @@ class Preferences::Test : public QObject
     Q_OBJECT
 
 private slots:
-	void general();
+	void generalWithRegurgitate()		{ general(true); }
+	void generalWithoutRegurgitate()	{ general(false); }
 	void pathNames();
 	void globalGetPathCategory();
 	void machineGetPathCategory();
@@ -27,6 +29,7 @@ private slots:
 
 private:
 	static QString fixPaths(QString &&s);
+	void general(bool regurgitate);
 	void substitutions(const char *input, const char *expected);
 };
 
@@ -39,7 +42,7 @@ private:
 //  general
 //-------------------------------------------------
 
-void Preferences::Test::general()
+void Preferences::Test::general(bool regurgitate)
 {
 	// read the prefs.xml test case into a QString and fix it
 	QString text;
@@ -59,9 +62,29 @@ void Preferences::Test::general()
 	}
 	QVERIFY(buffer.seek(0));
 
-	// read the prefs
 	Preferences prefs;
-	prefs.Load(buffer);
+	if (regurgitate)
+	{
+		// we're regurgitatating; read the prefs into a separate Preferences object
+		Preferences prefs2;
+		prefs2.Load(buffer);
+
+		// and save it out
+		std::stringstream stringStream;
+		prefs2.Save(stringStream);
+		std::string str = stringStream.str();
+
+		// and read the saved out bytes back
+		QByteArray byteArray(str.c_str(), str.size());
+		QBuffer buffer2(&byteArray);
+		QVERIFY(buffer2.open(QIODevice::ReadOnly));
+		QVERIFY(prefs.Load(buffer2));
+	}
+	else
+	{
+		// read the prefs directly; no regurgitation
+		QVERIFY(prefs.Load(buffer));
+	}
 
 	// validate the results
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)					== fixPaths("C:\\mame64.exe"));
