@@ -67,17 +67,6 @@ static void writeVectorData(QIODevice &stream, const std::vector<T> &vector)
 
 bool info::database_builder::process_xml(QIODevice &input, QString &error_message)
 {
-	QDataStream dataStream(&input);
-	return process_xml(dataStream, error_message);
-}
-
-
-//-------------------------------------------------
-//  process_xml()
-//-------------------------------------------------
-
-bool info::database_builder::process_xml(QDataStream &input, QString &error_message)
-{
 	// sanity check; ensure we're fresh
 	assert(m_machines.empty());
 	assert(m_devices.empty());
