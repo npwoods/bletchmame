@@ -648,12 +648,12 @@ void Preferences::Save(std::ostream &output)
 
 	output << "\t<!-- Paths -->" << std::endl;
 	for (size_t i = 0; i < m_paths.size(); i++)
-		output << "\t<path type=\"" << s_path_names[i] << "\">" << util::to_utf8_string(GetGlobalPath(static_cast<global_path_type>(i))) << "</path>" << std::endl;
+		output << "\t<path type=\"" << s_path_names[i] << "\">" << XmlParser::escape(GetGlobalPath(static_cast<global_path_type>(i))) << "</path>" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Miscellaneous -->" << std::endl;
 	if (!m_mame_extra_arguments.isEmpty())
-		output << "\t<mameextraarguments>" << util::to_utf8_string(m_mame_extra_arguments) << "</mameextraarguments>" << std::endl;
+		output << "\t<mameextraarguments>" << XmlParser::escape(m_mame_extra_arguments) << "</mameextraarguments>" << std::endl;
 	output << "\t<size width=\"" << m_size.width() << "\" height=\"" << m_size.height() << "\"/>" << std::endl;
 	if (!m_machine_splitter_sizes.isEmpty())
 		output << "\t<machinelistsplitters>" << stringFromIntList(m_machine_splitter_sizes) << "</machinelistsplitters>" << std::endl;
@@ -663,7 +663,7 @@ void Preferences::Save(std::ostream &output)
 		m_folder_prefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
 	for (const auto &pair : m_folder_prefs)
 	{
-		output << "\t<folder id=\"" << util::to_utf8_string(pair.first) << '\"'
+		output << "\t<folder id=\"" << XmlParser::escape(pair.first) << '\"'
 			<< " shown=\"" << (pair.second.m_shown ? "true" : "false") << '\"'
 			<< (pair.first == m_machine_folder_tree_selection ? " selected=\"true\"" : "")
 			<< "/>" << std::endl;
@@ -672,9 +672,9 @@ void Preferences::Save(std::ostream &output)
 	// custom folders
 	for (const auto &pair : m_custom_folders)
 	{
-		output << "\t<customfolder name=\"" << util::to_utf8_string(pair.first) << "\">" << std::endl;
+		output << "\t<customfolder name=\"" << XmlParser::escape(pair.first) << "\">" << std::endl;
 		for (const QString &system : pair.second)
-			output << "\t\t<system>" << util::to_utf8_string(system) << "</system>" << std::endl;
+			output << "\t\t<system>" << XmlParser::escape(system) << "</system>" << std::endl;
 		output << "\t</customfolder>" << std::endl;
 	}
 
@@ -683,9 +683,9 @@ void Preferences::Save(std::ostream &output)
 		if (!pair.second.isEmpty())
 		{
 			auto [view_type, softlist] = SplitListViewSelectionKey(pair.first);
-			output << "\t<selection view=\"" << util::to_utf8_string(QString(view_type));
+			output << "\t<selection view=\"" << XmlParser::escape(QString(view_type));
 			if (softlist)
-				output << "\" softlist=\"" + util::to_utf8_string(QString(softlist));
+				output << "\" softlist=\"" + XmlParser::escape(QString(softlist));
 			output << "\">" << XmlParser::escape(pair.second) << "</selection>" << std::endl;
 		}
 	}

@@ -15,5 +15,5 @@
 	<selection view="machine">nes</selection>
 
 	<!-- Machines -->
-  <machine name="echo" working_directory="C:\MyEchoGames\" last_save_state="C:\MyLastState.sta" />
+  <machine name="echo" working_directory="C:\My&#x20AC;choGames\" last_save_state="C:\MyLastSt&#x03B1;te.sta" />
 </preferences>
