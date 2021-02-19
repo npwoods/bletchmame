@@ -29,6 +29,7 @@ private slots:
 
 private:
 	static QString fixPaths(QString &&s);
+	static QString fixPaths(const char16_t *s);
 	void general(bool regurgitate);
 	void substitutions(const char *input, const char *expected);
 };
@@ -92,8 +93,8 @@ void Preferences::Test::general(bool regurgitate)
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)							== fixPaths("C:\\samples\\"));
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)							== fixPaths("C:\\cfg\\"));
 	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)							== fixPaths("C:\\nvram\\"));
-	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== fixPaths("C:\\MyEchoGames\\"));
-	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== fixPaths("C:\\MyLastState.sta"));
+	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== fixPaths(u"C:\\My\u20ACchoGames\\"));
+	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== fixPaths(u"C:\\MyLastSt\u03B1te.sta"));
 	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== fixPaths(""));
 	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)	== fixPaths(""));
 }
@@ -120,6 +121,17 @@ QString Preferences::Test::fixPaths(QString &&s)
 		s = s.replace(".exe", "");
 	}
 	return s;
+}
+
+
+//-------------------------------------------------
+//  fixPaths
+//-------------------------------------------------
+
+QString Preferences::Test::fixPaths(const char16_t *s)
+{
+	QString str = QString::fromUtf16(s);
+	return fixPaths(std::move(str));
 }
 
 
