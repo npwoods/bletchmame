@@ -27,7 +27,7 @@ jobs:
   
     # Install GCC 10
     - name: Install GCC 10
-      run: sudo apt-get install gcc-10 g++-10 -y
+      run: sudo apt install gcc-10 g++-10 -y
   
     # Install Qt
     - name: Install Qt
