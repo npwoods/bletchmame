@@ -12,6 +12,7 @@
 #define BINDATA_H
 
 #include <QString>
+#include <compare>
 #include <optional>
 
 
@@ -91,7 +92,7 @@ namespace bindata
 			return *this;
 		}
 
-		bool operator==(const view &that) const = default;
+		bool operator==(const view &) const = default;
 
 		TPublic operator[](std::uint32_t position) const
 		{
