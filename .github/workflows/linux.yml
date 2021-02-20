@@ -62,7 +62,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_C_COMPILER=gcc-10.0 -D CMAKE_CXX_COMPILER=g++-10.0
+        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++
         make -j 8
         strip ./BletchMAME
 
