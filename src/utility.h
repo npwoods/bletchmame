@@ -22,22 +22,6 @@
 
 
 //**************************************************************************
-//  MACROS
-//**************************************************************************
-
-// workaround for GCC bug fixed in 7.4
-#ifdef __GNUC__
-#if __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#define SHOULD_BE_DELETE	default
-#endif	// __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#endif // __GNUC__
-
-#ifndef SHOULD_BE_DELETE
-#define SHOULD_BE_DELETE	delete
-#endif // !SHOULD_BE_DELETE
-
-
-//**************************************************************************
 //  HASHES AND EQUIVALENCY
 //**************************************************************************
 
@@ -209,9 +193,7 @@ public:
 		iterator &operator--() { bump(-1); return *this; }
 		iterator operator++(int) { iterator result = *this; bump(+1); return result; }
 		iterator operator--(int) { iterator result = *this; bump(-1); return result; }
-		bool operator==(const iterator &that) const { return m_value == that.m_value; }
-		bool operator!=(const iterator &that) const { return m_value != that.m_value; }
-		bool operator<(const iterator &that) const { return m_value < that.m_value; }
+		auto operator<=>(const iterator &that) const = default;
 
 	private:
 		T m_value;

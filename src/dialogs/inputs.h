@@ -109,11 +109,7 @@ private:
 		{
 		}
 
-		bool operator==(const InputFieldRef &that) const
-		{
-			return m_port_tag == that.m_port_tag
-				&& m_mask == that.m_mask;
-		}
+		bool operator==(const InputFieldRef &that) const = default;
 	};
 
 	// ======================> QuickItem

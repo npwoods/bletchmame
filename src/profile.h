@@ -27,7 +27,7 @@ namespace profiles
 		QString		m_name;
 		QString		m_value;
 
-		bool operator==(const slot &that) const;
+		bool operator==(const slot &that) const = default;
 	};
 
 	struct image
@@ -35,7 +35,7 @@ namespace profiles
 		QString		m_tag;
 		QString		m_path;
 
-		bool operator==(const image &that) const;
+		bool operator==(const image &that) const = default;
 		bool is_valid() const;
 	};
 

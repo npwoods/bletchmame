@@ -12,6 +12,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Added a "Show Folders" contextual menu to the folder tree
 	- Added support for custom folders
 	- Fixed a unicode issue in preferences handling
+	- Updated to C++20
 
 - 2.5 (2021-Jan-31)
 	- Beginings of a MAMEUI-style machine folder and snapshot view

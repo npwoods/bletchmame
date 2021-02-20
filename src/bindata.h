@@ -12,6 +12,7 @@
 #define BINDATA_H
 
 #include <QString>
+#include <compare>
 #include <optional>
 
 
@@ -91,12 +92,7 @@ namespace bindata
 			return *this;
 		}
 
-		bool operator==(const view &that) const
-		{
-			return m_db == that.m_db
-				&& m_offset == that.m_offset
-				&& m_count == that.m_count;
-		}
+		bool operator==(const view &) const = default;
 
 		TPublic operator[](std::uint32_t position) const
 		{
@@ -137,22 +133,22 @@ namespace bindata
 			TPublic operator*() const { return m_view[m_position]; }
 			std::optional<TPublic> operator->() const { return m_view[m_position]; }
 
-			bool operator<(const iterator &that)
+			auto operator<=>(const iterator &that) const
 			{
 				asset_compatible_iterator(that);
-				return m_position < that.m_position;
+				return m_position <=> that.m_position;
 			}
 
-			bool operator==(const iterator &that)
+			bool operator==(const iterator &that) const
 			{
-				asset_compatible_iterator(that);
-				return m_position == that.m_position;
+				// not sure why the compiler can't deduce this
+				return (*this <=> that) == 0;
 			}
 
-			bool operator!=(const iterator &that)
+			bool operator!=(const iterator &that) const
 			{
-				asset_compatible_iterator(that);
-				return m_position != that.m_position;
+				// not sure why the compiler can't deduce this
+				return (*this <=> that) != 0;
 			}
 
 			iterator &operator=(const iterator &that)
@@ -204,7 +200,7 @@ namespace bindata
 			view				m_view;
 			uint32_t			m_position;
 
-			void asset_compatible_iterator(const iterator &that)
+			void asset_compatible_iterator(const iterator &that) const
 			{
 				assert(m_view == that.m_view);
 				(void)that;

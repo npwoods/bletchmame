@@ -33,7 +33,7 @@ struct ColumnPrefs
 struct FolderPrefs
 {
 	FolderPrefs();
-	bool operator==(const FolderPrefs &that) const;
+	bool operator==(const FolderPrefs &that) const = default;
 
 	bool							m_shown;
 };
