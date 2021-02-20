@@ -42,7 +42,7 @@ namespace status
 	struct image_format
 	{
 		image_format() = default;
-		image_format(const image_format &) = SHOULD_BE_DELETE;
+		image_format(const image_format &) = delete;
 		image_format(image_format &&) = default;
 
 		QString					m_name;
@@ -58,7 +58,7 @@ namespace status
 	struct image
 	{
 		image() = default;
-		image(const image &) = SHOULD_BE_DELETE;
+		image(const image &) = delete;
 		image(image &&) = default;
 
 		QString				m_tag;
@@ -80,7 +80,7 @@ namespace status
 	struct slot
 	{
 		slot() = default;
-		slot(const slot &) = SHOULD_BE_DELETE;
+		slot(const slot &) = delete;
 		slot(slot &&) = default;
 
 		QString				m_name;
@@ -96,7 +96,7 @@ namespace status
 	struct input_seq
 	{
 		input_seq() = default;
-		input_seq(const input_seq &that) = SHOULD_BE_DELETE;
+		input_seq(const input_seq &that) = delete;
 		input_seq(input_seq &&) = default;
 
 		enum class type
@@ -117,7 +117,7 @@ namespace status
 	struct input
 	{
 		input() = default;
-		input(const input &) = SHOULD_BE_DELETE;
+		input(const input &) = delete;
 		input(input &&) = default;
 
 		enum class input_class
@@ -151,7 +151,7 @@ namespace status
 	struct input_device_item
 	{
 		input_device_item() = default;
-		input_device_item(const input_device_item &) = SHOULD_BE_DELETE;
+		input_device_item(const input_device_item &) = delete;
 		input_device_item(input_device_item &&) = default;
 
 		QString		m_name;
@@ -167,7 +167,7 @@ namespace status
 	struct input_device
 	{
 		input_device() = default;
-		input_device(const input_device &) = SHOULD_BE_DELETE;
+		input_device(const input_device &) = delete;
 		input_device(input_device &&) = default;
 
 		QString							m_name;
@@ -184,7 +184,7 @@ namespace status
 	struct input_class
 	{
 		input_class() = default;
-		input_class(const input_class &) = SHOULD_BE_DELETE;
+		input_class(const input_class &) = delete;
 		input_class(input_class &&) = default;
 
 		QString							m_name;
@@ -212,7 +212,7 @@ namespace status
 	struct cheat_parameter
 	{
 		cheat_parameter() = default;
-		cheat_parameter(const cheat_parameter &) = SHOULD_BE_DELETE;
+		cheat_parameter(const cheat_parameter &) = delete;
 		cheat_parameter(cheat_parameter &&) = default;
 
 		std::uint64_t						m_value;
@@ -228,7 +228,7 @@ namespace status
 	struct cheat
 	{
 		cheat() = default;
-		cheat(const cheat &) = SHOULD_BE_DELETE;
+		cheat(const cheat &) = delete;
 		cheat(cheat &&) = default;
 
 		QString							m_id;
