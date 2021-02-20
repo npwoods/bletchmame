@@ -149,16 +149,6 @@ FolderPrefs::FolderPrefs()
 
 
 //-------------------------------------------------
-//  FolderPrefs ctor
-//-------------------------------------------------
-
-bool FolderPrefs::operator==(const FolderPrefs &that) const
-{
-	return m_shown == that.m_shown;
-}
-
-
-//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 

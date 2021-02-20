@@ -51,7 +51,7 @@ namespace status
 		std::vector<QString>	m_extensions;
 
 		image_format &operator=(image_format &&that) = default;
-		bool operator==(const image_format & that) const;
+		bool operator==(const image_format &that) const = default;
 	};
 
 	// ======================> image
@@ -72,7 +72,7 @@ namespace status
 		std::optional<std::vector<image_format>>	m_formats;
 
 		image &operator=(image &&that) = default;
-		bool operator==(const image &that) const;
+		bool operator==(const image &that) const = default;
 	};
 
 
@@ -88,7 +88,7 @@ namespace status
 		bool				m_fixed;
 
 		slot &operator=(slot &&that) = default;
-		bool operator==(const slot &that) const;
+		bool operator==(const slot &that) const = default;
 	};
 
 
@@ -109,7 +109,7 @@ namespace status
 		type					m_type;
 		QString				m_tokens;
 
-		bool operator==(const input_seq &that) const;
+		bool operator==(const input_seq &that) const = default;
 	};
 
 
@@ -143,7 +143,7 @@ namespace status
 		std::vector<input_seq>	m_seqs;
 
 		input &operator=(input &&that) = default;
-		bool operator==(const input &that) const;
+		bool operator==(const input &that) const = default;
 	};
 
 
@@ -159,7 +159,7 @@ namespace status
 		QString		m_code;
 
 		input_device_item &operator=(input_device_item &&that) = default;
-		bool operator==(const input_device_item &that) const;
+		bool operator==(const input_device_item &that) const = default;
 	};
 
 
@@ -176,7 +176,7 @@ namespace status
 		std::vector<input_device_item>	m_items;
 		
 		input_device &operator=(input_device &&that) = default;
-		bool operator==(const input_device &that) const;
+		bool operator==(const input_device &that) const = default;
 	};
 
 
@@ -193,7 +193,7 @@ namespace status
 		std::vector<input_device>		m_devices;
 
 		input_class &operator=(input_class &&that) = default;
-		bool operator==(const input_class &that) const;
+		bool operator==(const input_class &that) const = default;
 	};
 
 
@@ -221,7 +221,7 @@ namespace status
 		std::uint64_t						m_step;
 		std::map<std::uint64_t, QString>	m_items;
 
-		bool operator==(const cheat_parameter &that) const;
+		bool operator==(const cheat_parameter &that) const = default;
 	};
 
 	// ======================> cheat
@@ -241,7 +241,7 @@ namespace status
 		QString							m_comment;
 		std::optional<cheat_parameter>	m_parameter;
 
-		bool operator==(const cheat &that) const;
+		bool operator==(const cheat &that) const = default;
 	};
 
 	// ======================> update
