@@ -92,7 +92,12 @@ namespace bindata
 			return *this;
 		}
 
-		bool operator==(const view &) const = default;
+		bool operator==(const view &that) const
+		{
+			return m_db == that.m_db
+				&& m_offset == that.m_offset
+				&& m_count == that.m_count;
+		}
 
 		TPublic operator[](std::uint32_t position) const
 		{
