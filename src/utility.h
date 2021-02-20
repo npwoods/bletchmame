@@ -209,9 +209,7 @@ public:
 		iterator &operator--() { bump(-1); return *this; }
 		iterator operator++(int) { iterator result = *this; bump(+1); return result; }
 		iterator operator--(int) { iterator result = *this; bump(-1); return result; }
-		bool operator==(const iterator &that) const { return m_value == that.m_value; }
-		bool operator!=(const iterator &that) const { return m_value != that.m_value; }
-		bool operator<(const iterator &that) const { return m_value < that.m_value; }
+		auto operator<=>(const iterator &that) const = default;
 
 	private:
 		T m_value;
