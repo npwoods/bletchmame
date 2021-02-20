@@ -43,15 +43,15 @@ namespace status
 	{
 		image_format() = default;
 		image_format(const image_format &) = SHOULD_BE_DELETE;
-		image_format(image_format && that) = default;
+		image_format(image_format &&) = default;
 
 		QString					m_name;
 		QString					m_description;
 		QString					m_option_spec;
 		std::vector<QString>	m_extensions;
 
-		image_format &operator=(image_format &&that) = default;
-		bool operator==(const image_format &that) const = default;
+		image_format &operator=(image_format &&) = default;
+		bool operator==(const image_format &) const = default;
 	};
 
 	// ======================> image
@@ -59,7 +59,7 @@ namespace status
 	{
 		image() = default;
 		image(const image &) = SHOULD_BE_DELETE;
-		image(image &&that) = default;
+		image(image &&) = default;
 
 		QString				m_tag;
 		QString				m_instance_name;
@@ -71,8 +71,8 @@ namespace status
 		QString				m_display;
 		std::optional<std::vector<image_format>>	m_formats;
 
-		image &operator=(image &&that) = default;
-		bool operator==(const image &that) const = default;
+		image &operator=(image &&) = default;
+		bool operator==(const image &) const = default;
 	};
 
 
@@ -81,14 +81,14 @@ namespace status
 	{
 		slot() = default;
 		slot(const slot &) = SHOULD_BE_DELETE;
-		slot(slot &&that) = default;
+		slot(slot &&) = default;
 
 		QString				m_name;
 		QString				m_current_option;
 		bool				m_fixed;
 
-		slot &operator=(slot &&that) = default;
-		bool operator==(const slot &that) const = default;
+		slot &operator=(slot &&) = default;
+		bool operator==(const slot &) const = default;
 	};
 
 
@@ -97,7 +97,7 @@ namespace status
 	{
 		input_seq() = default;
 		input_seq(const input_seq &that) = SHOULD_BE_DELETE;
-		input_seq(input_seq &&that) = default;
+		input_seq(input_seq &&) = default;
 
 		enum class type
 		{
@@ -109,7 +109,7 @@ namespace status
 		type					m_type;
 		QString				m_tokens;
 
-		bool operator==(const input_seq &that) const = default;
+		bool operator==(const input_seq &) const = default;
 	};
 
 
@@ -118,7 +118,7 @@ namespace status
 	{
 		input() = default;
 		input(const input &) = SHOULD_BE_DELETE;
-		input(input &&that) = default;
+		input(input &&) = default;
 
 		enum class input_class
 		{
@@ -142,8 +142,8 @@ namespace status
 		ioport_value			m_value;
 		std::vector<input_seq>	m_seqs;
 
-		input &operator=(input &&that) = default;
-		bool operator==(const input &that) const = default;
+		input &operator=(input &&) = default;
+		bool operator==(const input &) const = default;
 	};
 
 
@@ -152,14 +152,14 @@ namespace status
 	{
 		input_device_item() = default;
 		input_device_item(const input_device_item &) = SHOULD_BE_DELETE;
-		input_device_item(input_device_item &&that) = default;
+		input_device_item(input_device_item &&) = default;
 
 		QString		m_name;
 		QString		m_token;
 		QString		m_code;
 
-		input_device_item &operator=(input_device_item &&that) = default;
-		bool operator==(const input_device_item &that) const = default;
+		input_device_item &operator=(input_device_item &&) = default;
+		bool operator==(const input_device_item &) const = default;
 	};
 
 
@@ -168,15 +168,15 @@ namespace status
 	{
 		input_device() = default;
 		input_device(const input_device &) = SHOULD_BE_DELETE;
-		input_device(input_device &&that) = default;
+		input_device(input_device &&) = default;
 
 		QString							m_name;
 		QString							m_id;
 		int								m_index;
 		std::vector<input_device_item>	m_items;
 		
-		input_device &operator=(input_device &&that) = default;
-		bool operator==(const input_device &that) const = default;
+		input_device &operator=(input_device &&) = default;
+		bool operator==(const input_device &) const = default;
 	};
 
 
@@ -185,15 +185,15 @@ namespace status
 	{
 		input_class() = default;
 		input_class(const input_class &) = SHOULD_BE_DELETE;
-		input_class(input_class &&that) = default;
+		input_class(input_class &&) = default;
 
 		QString							m_name;
 		bool							m_enabled;
 		bool							m_multi;
 		std::vector<input_device>		m_devices;
 
-		input_class &operator=(input_class &&that) = default;
-		bool operator==(const input_class &that) const = default;
+		input_class &operator=(input_class &&) = default;
+		bool operator==(const input_class &) const = default;
 	};
 
 
@@ -221,7 +221,7 @@ namespace status
 		std::uint64_t						m_step;
 		std::map<std::uint64_t, QString>	m_items;
 
-		bool operator==(const cheat_parameter &that) const = default;
+		bool operator==(const cheat_parameter &) const = default;
 	};
 
 	// ======================> cheat
@@ -241,7 +241,7 @@ namespace status
 		QString							m_comment;
 		std::optional<cheat_parameter>	m_parameter;
 
-		bool operator==(const cheat &that) const = default;
+		bool operator==(const cheat &) const = default;
 	};
 
 	// ======================> update
@@ -249,7 +249,7 @@ namespace status
 	{
 		update();
 		update(const update &that) = delete;
-		update(update &&that) = default;
+		update(update &&) = default;
 		~update();
 
 		// did we have problems reading the response from MAME?
@@ -279,7 +279,7 @@ namespace status
 
 		static update read(QIODevice &input);
 
-		update &operator=(update &&that) = default;
+		update &operator=(update &&) = default;
 	};
 
 
@@ -290,7 +290,7 @@ namespace status
 		// ctor/dtor
 		state();
 		state(const state &that) = delete;
-		state(state &&that) = default;
+		state(state &&) = default;
 		~state();
 
 		// update with new state
