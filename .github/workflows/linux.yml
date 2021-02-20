@@ -38,8 +38,8 @@ jobs:
     # Install GCC 10
     - name: Install GCC 10
       run: |
-        apt-get update
-        apt-get install git cmake build-essential tar curl g++ gcc-10 clang-10
+        sudo apt-get update
+        sudo apt-get install git cmake build-essential tar curl g++ gcc-10 clang-10
 
     # Install Qt
     - name: Install Qt
