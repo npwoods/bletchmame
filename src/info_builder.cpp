@@ -32,6 +32,61 @@ static const util::enum_parser<info::configuration_condition::relation_t> s_rela
 };
 
 
+static const util::enum_parser<info::feature::type_t> s_feature_type_parser =
+{
+	{ "protection",	info::feature::type_t::PROTECTION },
+	{ "timing",		info::feature::type_t::TIMING },
+	{ "graphics",	info::feature::type_t::GRAPHICS },
+	{ "palette",	info::feature::type_t::PALETTE },
+	{ "sound",		info::feature::type_t::SOUND },
+	{ "capture",	info::feature::type_t::CAPTURE },
+	{ "camera",		info::feature::type_t::CAMERA },
+	{ "microphone",	info::feature::type_t::MICROPHONE },
+	{ "controls",	info::feature::type_t::CONTROLS },
+	{ "keyboard",	info::feature::type_t::KEYBOARD },
+	{ "mouse",		info::feature::type_t::MOUSE },
+	{ "media",		info::feature::type_t::MEDIA },
+	{ "disk",		info::feature::type_t::DISK },
+	{ "printer",	info::feature::type_t::PRINTER },
+	{ "tape",		info::feature::type_t::TAPE },
+	{ "punch",		info::feature::type_t::PUNCH },
+	{ "drum",		info::feature::type_t::DRUM },
+	{ "rom",		info::feature::type_t::ROM },
+	{ "comms",		info::feature::type_t::COMMS },
+	{ "lan",		info::feature::type_t::LAN },
+	{ "wan",		info::feature::type_t::WAN },
+};
+
+
+static const util::enum_parser<info::feature::quality_t> s_feature_quality_parser =
+{
+	{ "unemulated",	info::feature::quality_t::UNEMULATED },
+	{ "imperfect",	info::feature::quality_t::IMPERFECT }
+};
+
+
+static const util::enum_parser<info::chip::type_t> s_chip_type_parser =
+{
+	{ "cpu", info::chip::type_t::CPU },
+	{ "audio", info::chip::type_t::AUDIO }
+};
+
+
+static const util::enum_parser<info::machine::driver_quality_t> s_driver_quality_parser =
+{
+	{ "good", info::machine::driver_quality_t::GOOD },
+	{ "imperfect", info::machine::driver_quality_t::IMPERFECT },
+	{ "preliminary", info::machine::driver_quality_t::PRELIMINARY }
+};
+
+
+static const util::enum_parser<bool> s_supported_parser =
+{
+	{ "supported", true },
+	{ "unsupported", false }
+};
+
+
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
@@ -76,14 +131,17 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	header.m_magic = info::binaries::MAGIC_HDR;
 	header.m_sizes_hash = info::database::calculate_sizes_hash();
 
-	// reserve space based on what we know about MAME 0.213
-	m_machines.reserve(40000);					// 36111 machines
-	m_devices.reserve(9000);					// 8211 devices
-	m_configurations.reserve(500000);			// 474840 configurations
-	m_configuration_conditions.reserve(6000);	// 5910 conditions
-	m_configuration_settings.reserve(1500000);	// 1454273 settings
-	m_software_lists.reserve(4200);				// 3977 software lists
-	m_ram_options.reserve(3800);				// 3616 ram options
+	// reserve space based on what we know about MAME 0.228
+	m_machines.reserve(45000);					// 43152 machines
+	m_devices.reserve(11000);					// 10252 devices
+	m_features.reserve(21000);					// 20003 features
+	m_chips.reserve(180000);					// 169981 chips
+	m_samples.reserve(20000);					// 18520 samples
+	m_configurations.reserve(600000);			// 548468 configurations
+	m_configuration_conditions.reserve(7500);	// 6761 conditions
+	m_configuration_settings.reserve(1700000);	// 1618800 settings
+	m_software_lists.reserve(6200);				// 5674 software lists
+	m_ram_options.reserve(6500);				// 5718 ram options
 
 	// parse the -listxml output
 	XmlParser xml;
@@ -95,7 +153,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
-		bool runnable;
+		bool runnable, is_mechanical;
+
 		std::string data;
 		info::binaries::machine &machine = m_machines.emplace_back();
 		machine.m_runnable				= attributes.get("runnable", runnable) && !runnable ? 0 : 1;
@@ -103,6 +162,13 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_sourcefile_strindex	= attributes.get("sourcefile", data) ? m_strings.get(data) : 0;
 		machine.m_clone_of_strindex		= attributes.get("cloneof", data) ? m_strings.get(data) : 0;
 		machine.m_rom_of_strindex		= attributes.get("romof", data) ? m_strings.get(data) : 0;
+		machine.m_is_mechanical			= attributes.get("ismechanical", is_mechanical) ? (is_mechanical ? 1 : 0) : 0xFF;
+		machine.m_features_index		= to_uint32(m_features.size());
+		machine.m_features_count		= 0;
+		machine.m_chips_index			= to_uint32(m_chips.size());
+		machine.m_chips_count			= 0;
+		machine.m_samples_index			= to_uint32(m_samples.size());
+		machine.m_samples_count			= 0;
 		machine.m_configurations_index	= to_uint32(m_configurations.size());
 		machine.m_configurations_count	= 0;
 		machine.m_software_lists_index	= to_uint32(m_software_lists.size());
@@ -116,6 +182,12 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_description_strindex	= 0;
 		machine.m_year_strindex			= 0;
 		machine.m_manufacturer_strindex = 0;
+		machine.m_quality_status		= 0;
+		machine.m_quality_emulation		= 0;
+		machine.m_quality_cocktail		= 0;
+		machine.m_save_state_supported	= 0xFF;
+		machine.m_unofficial			= 0xFF;
+		machine.m_incomplete			= 0xFF;
 	});
 	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{
@@ -128,6 +200,37 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
+	});
+	xml.onElementBegin({ "mame", "machine", "feature" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	{
+		info::feature::type_t feature_type;
+		info::feature::quality_t feature_status, feature_overall;
+
+		info::binaries::feature &feature = m_features.emplace_back();
+		feature.m_type		= (uint8_t) (attributes.get("type", feature_type, s_feature_type_parser) ? feature_type : info::feature::type_t::UNKNOWN);
+		feature.m_status	= (uint8_t) (attributes.get("status", feature_status, s_feature_quality_parser) ? feature_status : info::feature::quality_t::UNKNOWN);
+		feature.m_overall	= (uint8_t) (attributes.get("overall", feature_overall, s_feature_quality_parser) ? feature_overall : info::feature::quality_t::UNKNOWN);
+		util::last(m_machines).m_features_count++;
+	});
+	xml.onElementBegin({ "mame", "machine", "chip" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		info::chip::type_t chip_type;
+		std::uint64_t clock;
+		info::binaries::chip &chip = m_chips.emplace_back();
+		chip.m_type = (uint8_t)(attributes.get("type", chip_type, s_chip_type_parser) ? chip_type : info::chip::type_t::UNKNOWN);
+		chip.m_name_strindex	= attributes.get("name", data) ? m_strings.get(data) : 0;
+		chip.m_tag_strindex		= attributes.get("tag", data) ? m_strings.get(data) : 0;
+		chip.m_clock			= attributes.get("clock", clock) ? clock : 0;
+
+		util::last(m_machines).m_chips_count++;
+	});
+	xml.onElementBegin({ "mame", "machine", "sample" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		info::binaries::sample &sample = m_samples.emplace_back();
+		sample.m_name_strindex = attributes.get("name", data) ? m_strings.get(data) : 0;
+		util::last(m_machines).m_samples_count++;
 	});
 	xml.onElementBegin({ { "mame", "machine", "configuration" },
 						 { "mame", "machine", "dipswitch" } }, [this](const XmlParser::Attributes &attributes)
@@ -199,6 +302,25 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	{
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
+	});
+	xml.onElementBegin({ "mame", "machine", "driver" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	{
+		bool supported, unofficial, incomplete;
+		info::machine::driver_quality_t quality;
+		info::binaries::machine &machine = util::last(m_machines);
+
+		if (attributes.get("status", quality, s_driver_quality_parser))
+			machine.m_quality_status = (uint8_t) quality;
+		if (attributes.get("emulation", quality, s_driver_quality_parser))
+			machine.m_quality_emulation = (uint8_t)quality;
+		if (attributes.get("cocktail", quality, s_driver_quality_parser))
+			machine.m_quality_cocktail = (uint8_t)quality;
+		if (attributes.get("savestate", supported, s_supported_parser))
+			machine.m_save_state_supported = supported ? 1 : 0;
+		if (attributes.get("unofficial", unofficial))
+			machine.m_unofficial = unofficial ? 1 : 0;
+		if (attributes.get("incomplete", incomplete))
+			machine.m_incomplete = incomplete ? 1 : 0;
 	});
 	xml.onElementBegin({ "mame", "machine", "slot" }, [this](const XmlParser::Attributes &attributes)
 	{
@@ -274,6 +396,9 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	header.m_devices_count					= to_uint32(m_devices.size());
 	header.m_slots_count					= to_uint32(m_slots.size());
 	header.m_slot_options_count				= to_uint32(m_slot_options.size());
+	header.m_features_count					= to_uint32(m_features.size());
+	header.m_chips_count					= to_uint32(m_chips.size());
+	header.m_samples_count					= to_uint32(m_samples.size());
 	header.m_configurations_count			= to_uint32(m_configurations.size());
 	header.m_configuration_settings_count	= to_uint32(m_configuration_settings.size());
 	header.m_configuration_conditions_count	= to_uint32(m_configuration_conditions.size());
@@ -311,6 +436,9 @@ void info::database_builder::emit_info(QIODevice &output) const
 	writeVectorData(output, m_devices);
 	writeVectorData(output, m_slots);
 	writeVectorData(output, m_slot_options);
+	writeVectorData(output, m_features);
+	writeVectorData(output, m_chips);
+	writeVectorData(output, m_samples);
 	writeVectorData(output, m_configurations);
 	writeVectorData(output, m_configuration_settings);
 	writeVectorData(output, m_configuration_conditions);

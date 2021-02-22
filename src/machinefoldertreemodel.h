@@ -69,9 +69,11 @@ public:
 private:
 	enum class FolderIcon
 	{
+		Cpu,
 		Folder,
 		FolderOpen,
 		Manufacturer,
+		Sound,
 		Source,
 		Year,
 		Count
@@ -104,10 +106,12 @@ private:
 
 	info::database &							m_infoDb;
 	Preferences &								m_prefs;
-	std::array<RootFolderDesc, 6>				m_rootFolderList;
+	std::array<RootFolderDesc, 13>				m_rootFolderList;
 	std::vector<FolderEntry>					m_root;
+	std::vector<FolderEntry>					m_cpu;
 	std::vector<FolderEntry>					m_custom;
 	std::vector<FolderEntry>					m_manufacturer;
+	std::vector<FolderEntry>					m_sound;
 	std::vector<FolderEntry>					m_source;
 	std::vector<FolderEntry>					m_year;
 	std::array<QPixmap, (int)FolderIcon::Count> m_folderIcons;

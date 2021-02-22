@@ -36,9 +36,16 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	, m_rootFolderList({
 		RootFolderDesc("all",			"All Systems"),
 		RootFolderDesc("clones",		"Clones"),
+		RootFolderDesc("cpu",			"CPU"),
 		RootFolderDesc("custom",		"Custom"),
+		RootFolderDesc("mechanical",	"Mechanical"),
+		RootFolderDesc("nonmechanical",	"Non Mechanical"),
 		RootFolderDesc("originals",		"Originals"),
+		RootFolderDesc("samples",		"Samples"),
+		RootFolderDesc("savestate",		"Save State"),
+		RootFolderDesc("sound",			"Sound"),
 		RootFolderDesc("source",		"Source"),
+		RootFolderDesc("unofficial",	"Unofficial"),
 		RootFolderDesc("year",			"Year") })
 {
 	// load all folder icons (if parent is nullptr we're probably in a unit test)
@@ -70,9 +77,11 @@ std::array<const char *, (int)MachineFolderTreeModel::FolderIcon::Count> Machine
 {
 	std::array<const char *, (int)MachineFolderTreeModel::FolderIcon::Count> result;
 	std::fill(result.begin(), result.end(), nullptr);
+	result[(int)FolderIcon::Cpu]			= ":/resources/cpu.ico";
 	result[(int)FolderIcon::Folder]			= ":/resources/folder.ico";
 	result[(int)FolderIcon::FolderOpen]		= ":/resources/foldopen.ico";
 	result[(int)FolderIcon::Manufacturer]	= ":/resources/manufact.ico";
+	result[(int)FolderIcon::Sound]			= ":/resources/sound.ico";
 	result[(int)FolderIcon::Source]			= ":/resources/source.ico";
 	result[(int)FolderIcon::Year]			= ":/resources/year.ico";
 	return result;
@@ -149,12 +158,26 @@ void MachineFolderTreeModel::populateVariableFolders()
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
 			else if (!strcmp(desc.id(), "clones"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of().isEmpty(); });
+			else if (!strcmp(desc.id(), "cpu"))
+				m_root.emplace_back(desc.id(), FolderIcon::Cpu, desc.displayName(), m_cpu);
 			else if (!strcmp(desc.id(), "custom"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_custom);
+			else if (!strcmp(desc.id(), "mechanical"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.is_mechanical() == true; });
+			else if (!strcmp(desc.id(), "nonmechanical"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.is_mechanical() == false; });
 			else if (!strcmp(desc.id(), "originals"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.clone_of().isEmpty(); });
+			else if (!strcmp(desc.id(), "samples"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.samples().size() > 0; });
+			else if (!strcmp(desc.id(), "savestate"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.save_state_supported() == true; });
+			else if (!strcmp(desc.id(), "sound"))
+				m_root.emplace_back(desc.id(), FolderIcon::Sound, desc.displayName(), m_sound);
 			else if (!strcmp(desc.id(), "source"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_source);
+			else if (!strcmp(desc.id(), "unofficial"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.unofficial() == true; });
 			else if (!strcmp(desc.id(), "year"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_year);
 			else
@@ -164,7 +187,9 @@ void MachineFolderTreeModel::populateVariableFolders()
 
 	// iterate through all machines and accumulate the pertinent data; because
 	// this can be expensive we're using reference wrappers
+	std::set<std::reference_wrapper<const QString>> cpus;
 	std::set<std::reference_wrapper<const QString>> manufacturers;
+	std::set<std::reference_wrapper<const QString>> sounds;
 	std::set<std::reference_wrapper<const QString>> sourceFiles;
 	std::set<std::reference_wrapper<const QString>> years;
 	for (info::machine machine : m_infoDb.machines())
@@ -174,7 +199,29 @@ void MachineFolderTreeModel::populateVariableFolders()
 			manufacturers.emplace(machine.manufacturer());
 			sourceFiles.emplace(machine.sourcefile());
 			years.emplace(machine.year());
+
+			for (info::chip chip : machine.chips())
+			{
+				switch (chip.type())
+				{
+				case info::chip::type_t::CPU:
+					cpus.emplace(chip.name());
+					break;
+				case info::chip::type_t::AUDIO:
+					sounds.emplace(chip.name());
+					break;
+				}
+			}
 		}
+	}
+
+	// set up the CPUs folder
+	m_cpu.clear();
+	m_cpu.reserve(cpus.size());
+	for (const QString &cpu : cpus)
+	{
+		auto predicate = [&cpu](const info::machine &machine) { return machine.find_chip(cpu).has_value(); };
+		m_cpu.emplace_back(cpu, FolderIcon::Cpu, cpu, std::move(predicate));
 	}
 
 	// set up the custom folder
@@ -196,6 +243,15 @@ void MachineFolderTreeModel::populateVariableFolders()
 	{
 		auto predicate = [&manufacturer](const info::machine &machine) { return machine.manufacturer() == manufacturer; };
 		m_manufacturer.emplace_back(manufacturer, FolderIcon::Manufacturer, manufacturer, std::move(predicate));
+	}
+
+	// set up the CPUs folder
+	m_sound.clear();
+	m_sound.reserve(sounds.size());
+	for (const QString &sound : sounds)
+	{
+		auto predicate = [&sound](const info::machine &machine) { return machine.find_chip(sound).has_value(); };
+		m_sound.emplace_back(sound, FolderIcon::Sound, sound, std::move(predicate));
 	}
 
 	// set up the sources folder
