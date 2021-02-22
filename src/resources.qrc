@@ -1,11 +1,13 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource>
+        <file>resources/cpu.ico</file>
         <file>resources/folderstoggle.png</file>
         <file>resources/infotoggle.png</file>
         <file>resources/folder.ico</file>
         <file>resources/foldopen.ico</file>
         <file>resources/manufact.ico</file>
+        <file>resources/sound.ico</file>
         <file>resources/source.ico</file>
         <file>resources/year.ico</file>
     </qresource>

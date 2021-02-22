@@ -40,6 +40,9 @@ namespace info
 			std::uint32_t	m_devices_count;
 			std::uint32_t	m_slots_count;
 			std::uint32_t	m_slot_options_count;
+			std::uint32_t	m_features_count;
+			std::uint32_t	m_chips_count;
+			std::uint32_t	m_samples_count;
 			std::uint32_t	m_configurations_count;
 			std::uint32_t	m_configuration_settings_count;
 			std::uint32_t	m_configuration_conditions_count;
@@ -56,6 +59,12 @@ namespace info
 			std::uint32_t	m_description_strindex;
 			std::uint32_t	m_year_strindex;
 			std::uint32_t	m_manufacturer_strindex;
+			std::uint32_t	m_features_index;
+			std::uint32_t	m_features_count;
+			std::uint32_t	m_chips_index;
+			std::uint32_t	m_chips_count;
+			std::uint32_t	m_samples_index;
+			std::uint32_t	m_samples_count;
 			std::uint32_t	m_configurations_index;
 			std::uint32_t	m_configurations_count;
 			std::uint32_t	m_software_lists_index;
@@ -67,6 +76,33 @@ namespace info
 			std::uint32_t	m_slots_index;
 			std::uint32_t	m_slots_count;
 			std::uint8_t	m_runnable;
+			std::uint8_t	m_is_mechanical;
+			std::uint8_t	m_quality_status;
+			std::uint8_t	m_quality_emulation;
+			std::uint8_t	m_quality_cocktail;
+			std::uint8_t	m_save_state_supported;
+			std::uint8_t	m_unofficial;
+			std::uint8_t	m_incomplete;
+		};
+
+		struct feature
+		{
+			std::uint8_t	m_type;
+			std::uint8_t	m_status;
+			std::uint8_t	m_overall;
+		};
+
+		struct chip
+		{
+			std::uint64_t	m_clock;
+			std::uint32_t	m_tag_strindex;
+			std::uint32_t	m_name_strindex;
+			std::uint8_t	m_type;
+		};
+
+		struct sample
+		{
+			std::uint32_t	m_name_strindex;
 		};
 
 		struct configuration
@@ -243,6 +279,42 @@ namespace info
 	};
 
 
+	// ======================> chip
+	class chip : public bindata::entry<database, chip, binaries::chip>
+	{
+	public:
+		enum class type_t
+		{
+			UNKNOWN,
+			CPU,
+			AUDIO
+		};
+
+		chip(const database &db, const binaries::chip &inner)
+			: entry(db, inner)
+		{
+		}
+
+		type_t type() const			{ return (type_t) inner().m_type; }
+		const QString &name() const	{ return get_string(inner().m_name_strindex); }
+		const QString &tag() const	{ return get_string(inner().m_tag_strindex); }
+		std::uint64_t clock() const	{ return inner().m_clock; }
+	};
+
+
+	// ======================> sample
+	class sample : public bindata::entry<database, sample, binaries::sample>
+	{
+	public:
+		sample(const database &db, const binaries::sample &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+	};
+
+
 	// ======================> configuration
 	class configuration : public bindata::entry<database, configuration, binaries::configuration>
 	{
@@ -301,10 +373,67 @@ namespace info
 	};
 
 
+	// ======================> feature
+	class feature : public bindata::entry<database, feature, binaries::feature>
+	{
+	public:
+		enum class type_t
+		{
+			UNKNOWN,
+			PROTECTION,
+			TIMING,
+			GRAPHICS,
+			PALETTE,
+			SOUND,
+			CAPTURE,
+			CAMERA,
+			MICROPHONE,
+			CONTROLS,
+			KEYBOARD,
+			MOUSE,
+			MEDIA,
+			DISK,
+			PRINTER,
+			TAPE,
+			PUNCH,
+			DRUM,
+			ROM,
+			COMMS,
+			LAN,
+			WAN,
+			COUNT
+		};
+
+		enum class quality_t
+		{
+			UNKNOWN,
+			UNEMULATED,
+			IMPERFECT
+		};
+
+		feature(const database &db, const binaries::feature &inner)
+			: entry(db, inner)
+		{
+		}
+
+		// properties
+		type_t type() const { return (type_t) inner().m_type; }
+		quality_t status() const { return (quality_t) inner().m_status; }
+		quality_t overall() const { return (quality_t) inner().m_overall; }
+	};
+
 	// ======================> machine
 	class machine : public bindata::entry<database, machine, binaries::machine>
 	{
 	public:
+		enum class driver_quality_t
+		{
+			UNKNOWN,
+			GOOD,
+			IMPERFECT,
+			PRELIMINARY
+		};
+
 		machine(const database &db, const binaries::machine &inner)
 			: entry(db, inner)
 		{
@@ -312,23 +441,37 @@ namespace info
 
 		// methods
 		std::optional<info::device> find_device(const QString &tag) const;
+		std::optional<info::chip> find_chip(const QString &chipName) const;
 
 		// properties
-		bool runnable() const				{ return inner().m_runnable; }
-		const QString &name() const			{ return get_string(inner().m_name_strindex); }
-		const QString &sourcefile() const	{ return get_string(inner().m_sourcefile_strindex); }
-		const QString &clone_of() const		{ return get_string(inner().m_clone_of_strindex); }
-		const QString &rom_of() const		{ return get_string(inner().m_rom_of_strindex); }
-		const QString &description() const	{ return get_string(inner().m_description_strindex); }
-		const QString &year() const			{ return get_string(inner().m_year_strindex); }
-		const QString &manufacturer() const	{ return get_string(inner().m_manufacturer_strindex); }
+		bool runnable() const								{ return inner().m_runnable; }
+		std::optional<bool> is_mechanical() const			{ return decode_optional_bool(inner().m_is_mechanical); }
+		std::optional<bool> unofficial() const				{ return decode_optional_bool(inner().m_unofficial); }
+		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
+		const QString &name() const							{ return get_string(inner().m_name_strindex); }
+		const QString &sourcefile() const					{ return get_string(inner().m_sourcefile_strindex); }
+		const QString &clone_of() const						{ return get_string(inner().m_clone_of_strindex); }
+		const QString &rom_of() const						{ return get_string(inner().m_rom_of_strindex); }
+		const QString &description() const					{ return get_string(inner().m_description_strindex); }
+		const QString &year() const							{ return get_string(inner().m_year_strindex); }
+		const QString &manufacturer() const					{ return get_string(inner().m_manufacturer_strindex); }
 
 		// views
 		device::view 				devices() const;
 		slot::view					devslots() const;
+		chip::view					chips() const;
+		sample::view				samples() const;
 		configuration::view			configurations() const;
 		software_list::view			software_lists() const;
 		ram_option::view			ram_options() const;
+
+	private:
+		static std::optional<bool> decode_optional_bool(std::uint8_t b)
+		{
+			return b <= 1
+				? std::optional<bool>(b)
+				: std::nullopt;
+		}
 	};
 
 
@@ -357,6 +500,8 @@ namespace info
 		auto devices() const					{ return device::view(*this, m_state.m_devices_position); }
 		auto devslots() const					{ return slot::view(*this, m_state.m_slots_position); }
 		auto slot_options() const				{ return slot_option::view(*this, m_state.m_slot_options_position); }
+		auto chips() const						{ return chip::view(*this, m_state.m_chips_position); }
+		auto samples() const					{ return sample::view(*this, m_state.m_samples_position); }
 		auto configurations() const				{ return configuration::view(*this, m_state.m_configurations_position); }
 		auto configuration_settings() const		{ return configuration_setting::view(*this, m_state.m_configuration_settings_position); }
 		auto configuration_conditions() const	{ return configuration_condition::view(*this, m_state.m_configuration_conditions_position); }
@@ -379,6 +524,9 @@ namespace info
 			bindata::view_position							m_devices_position;
 			bindata::view_position							m_slots_position;
 			bindata::view_position							m_slot_options_position;
+			bindata::view_position							m_features_position;
+			bindata::view_position							m_chips_position;
+			bindata::view_position							m_samples_position;
 			bindata::view_position							m_configurations_position;
 			bindata::view_position							m_configuration_settings_position;
 			bindata::view_position							m_configuration_conditions_position;
@@ -401,6 +549,8 @@ namespace info
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
 	inline slot::view					machine::devslots() const		{ return db().devslots().subview(inner().m_slots_index, inner().m_slots_count); }
 	inline slot_option::view			slot::options() const			{ return db().slot_options().subview(inner().m_slot_options_index, inner().m_slot_options_count); }
+	inline chip::view					machine::chips() const			{ return db().chips().subview(inner().m_chips_index, inner().m_chips_count); }
+	inline sample::view					machine::samples() const		{ return db().samples().subview(inner().m_samples_index, inner().m_samples_count); }
 	inline configuration::view			machine::configurations() const	{ return db().configurations().subview(inner().m_configurations_index, inner().m_configurations_count); }
 	inline configuration_setting::view	configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }
 	inline software_list::view			machine::software_lists() const	{ return db().software_lists().subview(inner().m_software_lists_index, inner().m_software_lists_count); }

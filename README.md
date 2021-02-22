@@ -9,8 +9,10 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.6 (TBD)
-	- Added a "Show Folders" contextual menu to the folder tree
+	- Added a number of MAMEUI-style builtin folders 
+		- CPU, Mechanical, Non Mechanical, Samples, Save State, Sound, Unofficial
 	- Added support for custom folders
+	- Added a "Show Folders" contextual menu to the folder tree
 	- Fixed a unicode issue in preferences handling
 	- Updated to C++20
 

@@ -125,7 +125,10 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	newState.m_machines_position					= getPosition<binaries::machine>(cursor, hdr.m_machines_count);
 	newState.m_devices_position						= getPosition<binaries::device>(cursor, hdr.m_devices_count);
 	newState.m_slots_position						= getPosition<binaries::slot>(cursor, hdr.m_slots_count);
-	newState.m_slot_options_position				= getPosition<binaries::slot>(cursor, hdr.m_slot_options_count);
+	newState.m_slot_options_position				= getPosition<binaries::slot_option>(cursor, hdr.m_slot_options_count);
+	newState.m_features_position					= getPosition<binaries::feature>(cursor, hdr.m_features_count);
+	newState.m_chips_position						= getPosition<binaries::chip>(cursor, hdr.m_chips_count);
+	newState.m_samples_position						= getPosition<binaries::sample>(cursor, hdr.m_samples_count);
 	newState.m_configurations_position				= getPosition<binaries::configuration>(cursor, hdr.m_configurations_count);
 	newState.m_configuration_settings_position		= getPosition<binaries::configuration_setting>(cursor, hdr.m_configuration_settings_count);
 	newState.m_configuration_conditions_position	= getPosition<binaries::configuration_condition>(cursor, hdr.m_configuration_conditions_count);
@@ -178,6 +181,9 @@ uint64_t info::database::calculate_sizes_hash()
 		sizeof(info::binaries::device),
 		sizeof(info::binaries::slot),
 		sizeof(info::binaries::slot_option),
+		sizeof(info::binaries::feature),
+		sizeof(info::binaries::chip),
+		sizeof(info::binaries::sample),
 		sizeof(info::binaries::configuration),
 		sizeof(info::binaries::configuration_setting),
 		sizeof(info::binaries::configuration_condition),
@@ -280,6 +286,25 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 	return iter != devices().cend()
 		? *iter
 		: std::optional<info::device>();
+}
+
+
+//-------------------------------------------------
+//  machine::find_chip
+//-------------------------------------------------
+
+std::optional<info::chip> info::machine::find_chip(const QString &chipName) const
+{
+	// find the device
+	auto iter = std::find_if(
+		chips().cbegin(),
+		chips().cend(),
+		[&chipName](info::chip chip) { return chipName == chip.name(); });
+
+	// if we found a device, return the interface
+	return iter != chips().cend()
+		? *iter
+		: std::optional<info::chip>();
 }
 
 
