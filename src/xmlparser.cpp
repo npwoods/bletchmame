@@ -36,32 +36,48 @@ namespace
 	class strtoll_parser
 	{
 	public:
+		strtoll_parser(int radix)
+			: m_radix(radix)
+		{
+		}
+
 		bool operator()(const std::string &text, T &value) const
 		{
 			char *endptr;
-			long long l = strtoll(text.c_str(), &endptr, 10);
+			long long l = strtoll(text.c_str(), &endptr, m_radix);
 			if (endptr != text.c_str() + text.size())
 				return false;
 
 			value = (T)l;
 			return value == l;
 		}
+
+	private:
+		int m_radix;
 	};
 
 	template<typename T>
 	class strtoull_parser
 	{
 	public:
+		strtoull_parser(int radix)
+			: m_radix(radix)
+		{
+		}
+
 		bool operator()(const std::string &text, T &value) const
 		{
 			char *endptr;
-			unsigned long long l = strtoull(text.c_str(), &endptr, 10);
+			unsigned long long l = strtoull(text.c_str(), &endptr, m_radix);
 			if (endptr != text.c_str() + text.size())
 				return false;
 
 			value = (T)l;
 			return value == l;
 		}
+
+	private:
+		int m_radix;
 	};
 
 
@@ -538,9 +554,9 @@ XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
 //  Attributes::get<int>
 //-------------------------------------------------
 
-template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute, int radix) const
 {
-	return get<int>(attribute, strtoll_parser<int>());
+	return get<int>(attribute, strtoll_parser<int>(radix));
 }
 
 
@@ -548,9 +564,9 @@ template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attrib
 //  Attributes::get<std::uint32_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute, int radix) const
 {
-	return get<std::uint32_t>(attribute, strtoull_parser<std::uint32_t>());
+	return get<std::uint32_t>(attribute, strtoull_parser<std::uint32_t>(radix));
 }
 
 
@@ -558,9 +574,9 @@ template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *a
 //  Attributes::get<std::uint64_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute, int radix) const
 {
-	return get<std::uint64_t>(attribute, strtoull_parser<std::uint64_t>());
+	return get<std::uint64_t>(attribute, strtoull_parser<std::uint64_t>(radix));
 }
 
 
