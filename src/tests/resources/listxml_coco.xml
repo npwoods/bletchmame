@@ -126,6 +126,10 @@
 			<!ATTLIST driver emulation (good|imperfect|preliminary) #REQUIRED>
 			<!ATTLIST driver cocktail (good|imperfect|preliminary) #IMPLIED>
 			<!ATTLIST driver savestate (supported|unsupported) #REQUIRED>
+			<!ATTLIST driver requiresartwork (yes|no) "no">
+			<!ATTLIST driver unofficial (yes|no) "no">
+			<!ATTLIST driver nosoundhardware (yes|no) "no">
+			<!ATTLIST driver incomplete (yes|no) "no">
 		<!ELEMENT feature EMPTY>
 			<!ATTLIST feature type (protection|timing|graphics|palette|sound|capture|camera|microphone|controls|keyboard|mouse|media|disk|printer|tape|punch|drum|rom|comms|lan|wan) #REQUIRED>
 			<!ATTLIST feature status (unemulated|imperfect) #IMPLIED>
@@ -148,6 +152,7 @@
 				<!ATTLIST slotoption devname CDATA #REQUIRED>
 				<!ATTLIST slotoption default (yes|no) "no">
 		<!ELEMENT softwarelist EMPTY>
+			<!ATTLIST softwarelist tag CDATA #REQUIRED>
 			<!ATTLIST softwarelist name CDATA #REQUIRED>
 			<!ATTLIST softwarelist status (original|compatible) #REQUIRED>
 			<!ATTLIST softwarelist filter CDATA #IMPLIED>
@@ -156,24 +161,25 @@
 			<!ATTLIST ramoption default CDATA #IMPLIED>
 ]>
 
-<mame build="0.213 (mame0213)" debug="no" mameconfig="10">
+<mame build="0.229 (mame0229)" debug="no" mameconfig="10">
 	<machine name="coco" sourcefile="coco12.cpp">
 		<description>Color Computer</description>
 		<year>1980</year>
 		<manufacturer>Tandy Radio Shack</manufacturer>
 		<rom name="bas10.rom" size="8192" crc="00b50aaa" sha1="1f08455cd48ce6a06132aea15c4778f264e19539" region="maincpu" offset="2000"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="cocopak"/>
@@ -192,13 +198,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="1"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -255,28 +261,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -285,11 +298,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -313,16 +322,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -340,15 +349,13 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
@@ -358,7 +365,7 @@
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -368,35 +375,40 @@
 			<extension name="rom"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak" default="yes"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -409,17 +421,18 @@
 		<rom name="bas12.rom" size="8192" crc="54368805" sha1="0f14dc46c647510eb0b7bd3f53e33da07907d04f" region="maincpu" offset="2000"/>
 		<rom name="extbas11.rom" size="8192" crc="a82a6254" sha1="ad927fb4f30746d820cb8b860ebb585e7f095dea" region="maincpu" offset="0"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -436,6 +449,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="screen"/>
 		<device_ref name="mc6847_ntsc"/>
 		<device_ref name="ram"/>
@@ -457,13 +471,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -516,28 +530,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -546,11 +567,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -572,16 +589,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -599,15 +616,13 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
@@ -617,7 +632,7 @@
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -677,31 +692,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -715,9 +735,9 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -730,17 +750,18 @@
 		<rom name="bas13.rom" size="8192" crc="d8f4d15e" sha1="28b92bebe35fa4f026a084416d6ea3b1552b63d3" region="maincpu" offset="2000"/>
 		<rom name="extbas11.rom" size="8192" crc="a82a6254" sha1="ad927fb4f30746d820cb8b860ebb585e7f095dea" region="maincpu" offset="0"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -757,6 +778,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="screen"/>
 		<device_ref name="mc6847t1_ntsc"/>
 		<device_ref name="ram"/>
@@ -778,13 +800,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -837,28 +859,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -867,11 +896,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -893,16 +918,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -920,15 +945,13 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
@@ -938,7 +961,7 @@
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -998,31 +1021,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -1036,9 +1064,9 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -1051,17 +1079,18 @@
 		<rom name="bas13.rom" size="8192" crc="d8f4d15e" sha1="28b92bebe35fa4f026a084416d6ea3b1552b63d3" region="maincpu" offset="2000"/>
 		<rom name="extbas11.rom" size="8192" crc="a82a6254" sha1="ad927fb4f30746d820cb8b860ebb585e7f095dea" region="maincpu" offset="0"/>
 		<device_ref name="hd6309e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -1078,6 +1107,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="screen"/>
 		<device_ref name="mc6847t1_ntsc"/>
 		<device_ref name="ram"/>
@@ -1099,13 +1129,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -1158,28 +1188,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -1188,11 +1225,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -1214,16 +1247,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -1241,25 +1274,23 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
-		<driver status="good" emulation="good" savestate="unsupported"/>
+		<driver status="good" emulation="good" savestate="unsupported" unofficial="yes"/>
 		<device type="cassette" tag="cassette">
 			<instance name="cassette" briefname="cass"/>
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -1319,31 +1350,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -1357,9 +1393,9 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -1372,17 +1408,18 @@
 		<rom name="bas12.rom" size="8192" crc="54368805" sha1="0f14dc46c647510eb0b7bd3f53e33da07907d04f" region="maincpu" offset="2000"/>
 		<rom name="extbas11.rom" size="8192" crc="a82a6254" sha1="ad927fb4f30746d820cb8b860ebb585e7f095dea" region="maincpu" offset="0"/>
 		<device_ref name="hd6309e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -1399,6 +1436,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="screen"/>
 		<device_ref name="mc6847_ntsc"/>
 		<device_ref name="ram"/>
@@ -1420,13 +1458,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -1479,28 +1517,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -1509,11 +1554,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -1535,16 +1576,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -1562,25 +1603,23 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
-		<driver status="good" emulation="good" savestate="unsupported"/>
+		<driver status="good" emulation="good" savestate="unsupported" unofficial="yes"/>
 		<device type="cassette" tag="cassette">
 			<instance name="cassette" briefname="cass"/>
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -1640,31 +1679,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -1678,9 +1722,9 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -1692,16 +1736,17 @@
 		<manufacturer>Tandy Radio Shack</manufacturer>
 		<rom name="coco3.rom" size="32768" crc="b4c88d6c" sha1="e0d82953fb6fd03768604933df1ce8bc51fc427d" region="maincpu" offset="0"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -1718,6 +1763,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="gime_ntsc"/>
@@ -1740,16 +1786,16 @@
 		<display tag="rgb" type="raster" rotate="0" width="640" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="lightgun" player="1" minimum="116" maximum="242" sensitivity="100" keydelta="1"/>
 			<control type="mouse" player="1" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 			<control type="keyboard" player="1" buttons="56"/>
-			<control type="stick" player="2" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="mouse" player="2" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -1807,28 +1853,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -1837,11 +1890,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -1874,16 +1923,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":rat_mouse_buttons">
 		</port>
@@ -1915,15 +1964,13 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<driver status="good" emulation="good" savestate="unsupported"/>
 		<device type="cassette" tag="cassette">
@@ -1931,7 +1978,7 @@
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -1991,31 +2038,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -2029,8 +2081,8 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO3"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO3"/>
+		<softwarelist tag="cart_list" name="coco_cart" status="original" filter="COCO3"/>
+		<softwarelist tag="flop_list" name="coco_flop" status="original" filter="COCO3"/>
 		<ramoption name="128K">131072</ramoption>
 		<ramoption name="2M">2097152</ramoption>
 		<ramoption name="8M">8388608</ramoption>
@@ -2042,16 +2094,17 @@
 		<manufacturer>Tandy Radio Shack</manufacturer>
 		<rom name="coco3.rom" size="32768" crc="b4c88d6c" sha1="e0d82953fb6fd03768604933df1ce8bc51fc427d" region="maincpu" offset="0"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco3_hdb1"/>
@@ -2068,6 +2121,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="gime_ntsc"/>
@@ -2090,11 +2144,11 @@
 		<display tag="rgb" type="raster" rotate="0" width="640" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="lightgun" player="1" minimum="116" maximum="242" sensitivity="100" keydelta="1"/>
 			<control type="mouse" player="1" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 			<control type="keyboard" player="1" buttons="56"/>
-			<control type="stick" player="2" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="mouse" player="2" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
@@ -2157,28 +2211,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -2187,11 +2248,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -2224,16 +2281,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":rat_mouse_buttons">
 		</port>
@@ -2265,23 +2322,21 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
-		</port>
-		<driver status="good" emulation="good" savestate="unsupported"/>
+		<driver status="good" emulation="good" savestate="unsupported" unofficial="yes"/>
 		<device type="cassette" tag="cassette">
 			<instance name="cassette" briefname="cass"/>
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -2341,31 +2396,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1" default="yes"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1" default="yes"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:cc3hdb1:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -2379,8 +2439,8 @@
 		<slot name="ext:cc3hdb1:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO3"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO3"/>
+		<softwarelist tag="cart_list" name="coco_cart" status="original" filter="COCO3"/>
+		<softwarelist tag="flop_list" name="coco_flop" status="original" filter="COCO3"/>
 		<ramoption name="128K">131072</ramoption>
 		<ramoption name="2M">2097152</ramoption>
 		<ramoption name="8M">8388608</ramoption>
@@ -2392,16 +2452,17 @@
 		<manufacturer>Tandy Radio Shack</manufacturer>
 		<rom name="coco3.rom" size="32768" crc="b4c88d6c" sha1="e0d82953fb6fd03768604933df1ce8bc51fc427d" region="maincpu" offset="0"/>
 		<device_ref name="hd6309e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -2418,6 +2479,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="gime_ntsc"/>
@@ -2440,16 +2502,16 @@
 		<display tag="rgb" type="raster" rotate="0" width="640" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="lightgun" player="1" minimum="116" maximum="242" sensitivity="100" keydelta="1"/>
 			<control type="mouse" player="1" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 			<control type="keyboard" player="1" buttons="56"/>
-			<control type="stick" player="2" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="mouse" player="2" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -2507,28 +2569,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -2537,11 +2606,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -2574,16 +2639,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":rat_mouse_buttons">
 		</port>
@@ -2615,23 +2680,21 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
-		</port>
-		<driver status="good" emulation="good" savestate="unsupported"/>
+		<driver status="good" emulation="good" savestate="unsupported" unofficial="yes"/>
 		<device type="cassette" tag="cassette">
 			<instance name="cassette" briefname="cass"/>
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -2691,31 +2754,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -2729,8 +2797,8 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO3"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO3"/>
+		<softwarelist tag="cart_list" name="coco_cart" status="original" filter="COCO3"/>
+		<softwarelist tag="flop_list" name="coco_flop" status="original" filter="COCO3"/>
 		<ramoption name="128K">131072</ramoption>
 		<ramoption name="2M">2097152</ramoption>
 		<ramoption name="8M">8388608</ramoption>
@@ -2742,16 +2810,17 @@
 		<manufacturer>Tandy Radio Shack</manufacturer>
 		<rom name="coco3p.rom" size="32768" crc="ff050d80" sha1="631e383068b1f52a8f419f4114b69501b21cf379" region="maincpu" offset="0"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc_v11"/>
@@ -2768,6 +2837,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="coco_vhd_image"/>
 		<device_ref name="gime_pal"/>
@@ -2790,16 +2860,16 @@
 		<display tag="rgb" type="raster" rotate="0" width="640" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="lightgun" player="1" minimum="116" maximum="242" sensitivity="100" keydelta="1"/>
 			<control type="mouse" player="1" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 			<control type="keyboard" player="1" buttons="56"/>
-			<control type="stick" player="2" buttons="2" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="2" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="mouse" player="2" minimum="0" maximum="3" sensitivity="100" keydelta="1"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -2857,28 +2927,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -2887,11 +2964,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -2924,16 +2997,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":rat_mouse_buttons">
 		</port>
@@ -2965,15 +3038,13 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<driver status="good" emulation="good" savestate="unsupported"/>
 		<device type="cassette" tag="cassette">
@@ -2981,7 +3052,7 @@
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -3041,31 +3112,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdcv11:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -3079,8 +3155,8 @@
 		<slot name="ext:fdcv11:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO3"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO3"/>
+		<softwarelist tag="cart_list" name="coco_cart" status="original" filter="COCO3"/>
+		<softwarelist tag="flop_list" name="coco_flop" status="original" filter="COCO3"/>
 		<ramoption name="128K">131072</ramoption>
 		<ramoption name="2M">2097152</ramoption>
 		<ramoption name="8M">8388608</ramoption>
@@ -3093,17 +3169,18 @@
 		<rom name="bas11.rom" size="8192" crc="6270955a" sha1="cecb7c24ff1e0ab5836e4a7a8eb1b8e01f1fded3" region="maincpu" offset="2000"/>
 		<rom name="extbas10.rom" size="8192" crc="6111a086" sha1="8aa58f2eb3e8bcfd5470e3e35e2b359e9a72848e" region="maincpu" offset="0"/>
 		<device_ref name="mc6809e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc"/>
@@ -3120,6 +3197,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="screen"/>
 		<device_ref name="mc6847_ntsc"/>
 		<device_ref name="ram"/>
@@ -3141,13 +3219,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -3200,28 +3278,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -3230,11 +3315,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -3256,16 +3337,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -3283,15 +3364,13 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
@@ -3301,7 +3380,7 @@
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -3361,31 +3440,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc" default="yes"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc" default="yes"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdc:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -3399,9 +3483,9 @@
 		<slot name="ext:fdc:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -3414,17 +3498,18 @@
 		<rom name="bas11.rom" size="8192" crc="6270955a" sha1="cecb7c24ff1e0ab5836e4a7a8eb1b8e01f1fded3" region="maincpu" offset="2000"/>
 		<rom name="extbas10.rom" size="8192" crc="6111a086" sha1="8aa58f2eb3e8bcfd5470e3e35e2b359e9a72848e" region="maincpu" offset="0"/>
 		<device_ref name="hd6309e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="coco_fdc"/>
@@ -3441,6 +3526,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<device_ref name="screen"/>
 		<device_ref name="mc6847_ntsc"/>
 		<device_ref name="ram"/>
@@ -3462,13 +3548,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="3"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -3521,28 +3607,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -3551,11 +3644,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -3577,16 +3666,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -3604,25 +3693,23 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
-		<driver status="good" emulation="good" savestate="unsupported"/>
+		<driver status="good" emulation="good" savestate="unsupported" unofficial="yes"/>
 		<device type="cassette" tag="cassette">
 			<instance name="cassette" briefname="cass"/>
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -3682,31 +3769,36 @@
 			<extension name="vhd"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc" default="yes"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc" default="yes"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 		<slot name="ext:fdc:wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
@@ -3720,9 +3812,9 @@
 		<slot name="ext:fdc:wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -3734,17 +3826,18 @@
 		<manufacturer>Tandy Radio Shack</manufacturer>
 		<rom name="bas10.rom" merge="bas10.rom" size="8192" crc="00b50aaa" sha1="1f08455cd48ce6a06132aea15c4778f264e19539" region="maincpu" offset="2000"/>
 		<device_ref name="hd6309e"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="pia6821"/>
 		<device_ref name="sam6883"/>
 		<device_ref name="coco_dwsock"/>
 		<device_ref name="speaker"/>
 		<device_ref name="dac_6bit_bw"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="dac"/>
 		<device_ref name="cassette_image"/>
 		<device_ref name="rs232"/>
-		<device_ref name="serial_printer"/>
+		<device_ref name="rs_serial_printer"/>
 		<device_ref name="printer_image"/>
 		<device_ref name="cococart_slot"/>
 		<device_ref name="cocopak"/>
@@ -3763,13 +3856,13 @@
 		<display tag="screen" type="raster" rotate="0" width="320" height="240" refresh="60.000000" />
 		<sound channels="1"/>
 		<input players="2">
-			<control type="stick" player="1" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="1" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 			<control type="keyboard" player="1" buttons="52"/>
-			<control type="stick" player="2" buttons="1" minimum="0" maximum="255" sensitivity="100" keydelta="10"/>
+			<control type="stick" player="2" buttons="1" minimum="0" maximum="640" sensitivity="100" keydelta="10"/>
 		</input>
 		<configuration name="Becker Port" tag="beckerport" mask="1">
-			<confsetting name="Off" value="0"/>
-			<confsetting name="On" value="1" default="yes"/>
+			<confsetting name="Off" value="0" default="yes"/>
+			<confsetting name="On" value="1"/>
 		</configuration>
 		<configuration name="Right Controller Port (P1)" tag="ctrl_sel" mask="15">
 			<confsetting name="Unconnected" value="0"/>
@@ -3826,28 +3919,35 @@
 			<confsetting name="Disto" value="0" default="yes"/>
 			<confsetting name="Cloud-9" value="1"/>
 		</configuration>
-		<configuration name="Data Bits" tag="rs232:printer:RS232_DATABITS" mask="255">
+		<configuration name="Data Bits" tag="rs232:rs_printer:RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
 			<confsetting name="6" value="1"/>
 			<confsetting name="7" value="2"/>
 			<confsetting name="8" value="3" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag="rs232:printer:RS232_PARITY" mask="255">
+		<configuration name="Parity" tag="rs232:rs_printer:RS232_PARITY" mask="255">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag="rs232:printer:RS232_RXBAUD" mask="255">
+		<configuration name="RX Baud" tag="rs232:rs_printer:RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3" default="yes"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -3856,11 +3956,7 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag="rs232:printer:RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
-		<configuration name="Stop Bits" tag="rs232:printer:RS232_STOPBITS" mask="255">
+		<configuration name="Stop Bits" tag="rs232:rs_printer:RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
 			<confsetting name="1.5" value="2"/>
@@ -3884,16 +3980,16 @@
 		<port tag=":joystick_buttons">
 		</port>
 		<port tag=":joystick_lx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ly">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_rx">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":joystick_ry">
-			<analog mask="255"/>
+			<analog mask="1023"/>
 		</port>
 		<port tag=":real_time_clock">
 		</port>
@@ -3911,25 +4007,23 @@
 		</port>
 		<port tag=":row6">
 		</port>
-		<port tag=":rs232:printer:RS232_DATABITS">
+		<port tag=":rs232:rs_printer:RS232_DATABITS">
 		</port>
-		<port tag=":rs232:printer:RS232_PARITY">
+		<port tag=":rs232:rs_printer:RS232_PARITY">
 		</port>
-		<port tag=":rs232:printer:RS232_RXBAUD">
+		<port tag=":rs232:rs_printer:RS232_RXBAUD">
 		</port>
-		<port tag=":rs232:printer:RS232_STARTBITS">
-		</port>
-		<port tag=":rs232:printer:RS232_STOPBITS">
+		<port tag=":rs232:rs_printer:RS232_STOPBITS">
 		</port>
 		<port tag=":vdg:artifacting">
 		</port>
-		<driver status="good" emulation="good" savestate="unsupported"/>
+		<driver status="good" emulation="good" savestate="unsupported" unofficial="yes"/>
 		<device type="cassette" tag="cassette">
 			<instance name="cassette" briefname="cass"/>
 			<extension name="wav"/>
 			<extension name="cas"/>
 		</device>
-		<device type="printout" tag="rs232:printer:printer">
+		<device type="printout" tag="rs232:rs_printer:printer">
 			<instance name="printout" briefname="prin"/>
 			<extension name="prn"/>
 		</device>
@@ -3939,35 +4033,40 @@
 			<extension name="rom"/>
 		</device>
 		<slot name="rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer" default="yes"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="printer" devname="serial_printer"/>
 			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 			<slotoption name="null_modem" devname="null_modem"/>
-			<slotoption name="printer" devname="serial_printer" default="yes"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 		<slot name="ext">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="pak" devname="cocopak" default="yes"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
-			<slotoption name="multi" devname="coco_multipack"/>
-			<slotoption name="fdc" devname="coco_fdc"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
-			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
 			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
 			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
+			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="multi" devname="coco_multipack"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
-		<softwarelist name="coco_cart" status="original" filter="COCO"/>
-		<softwarelist name="coco_flop" status="original" filter="COCO"/>
-		<softwarelist name="dragon_cart" status="compatible"/>
+		<softwarelist tag="coco_cart_list" name="coco_cart" status="original" filter="COCO"/>
+		<softwarelist tag="coco_flop_list" name="coco_flop" status="original" filter="COCO"/>
+		<softwarelist tag="dragon_cart_list" name="dragon_cart" status="compatible"/>
 		<ramoption name="4K">4096</ramoption>
 		<ramoption name="16K">16384</ramoption>
 		<ramoption name="32K">32768</ramoption>
@@ -3994,10 +4093,10 @@
 		<device_ref name="nl_stream_in"/>
 		<device_ref name="nl_stream_in"/>
 		<device_ref name="nl_stream_out"/>
-		<chip type="cpu" tag="maincpu" name="MOS Technology M6502" clock="1250000"/>
+		<chip type="cpu" tag="maincpu" name="MOS Technology 6502" clock="1250000"/>
 		<chip type="audio" tag="mono" name="Speaker"/>
 		<chip type="audio" tag="ay8910" name="AY-3-8910A PSG" clock="2500000"/>
-		<chip type="audio" tag="snd_nl" name="Netlist Sound Device" clock="48000"/>
+		<chip type="audio" tag="snd_nl" name="Netlist Sound Device"/>
 		<display tag="screen" type="raster" rotate="90" width="256" height="256" refresh="49.697837" pixclock="5000000" htotal="384" hbend="0" hbstart="256" vtotal="262" vbend="0" vbstart="256" />
 		<sound channels="1"/>
 		<input players="1" coins="1">
@@ -4084,10 +4183,10 @@
 		<device_ref name="nl_stream_in"/>
 		<device_ref name="nl_stream_in"/>
 		<device_ref name="nl_stream_out"/>
-		<chip type="cpu" tag="maincpu" name="MOS Technology M6502" clock="1250000"/>
+		<chip type="cpu" tag="maincpu" name="MOS Technology 6502" clock="1250000"/>
 		<chip type="audio" tag="mono" name="Speaker"/>
 		<chip type="audio" tag="ay8910" name="AY-3-8910A PSG" clock="2500000"/>
-		<chip type="audio" tag="snd_nl" name="Netlist Sound Device" clock="48000"/>
+		<chip type="audio" tag="snd_nl" name="Netlist Sound Device"/>
 		<display tag="screen" type="raster" rotate="90" width="256" height="256" refresh="49.697837" pixclock="5000000" htotal="384" hbend="0" hbstart="256" vtotal="262" vbend="0" vbstart="256" />
 		<sound channels="1"/>
 		<input players="1" coins="1">
@@ -4176,10 +4275,10 @@
 		<device_ref name="nl_stream_in"/>
 		<device_ref name="nl_stream_in"/>
 		<device_ref name="nl_stream_out"/>
-		<chip type="cpu" tag="maincpu" name="MOS Technology M6502" clock="1250000"/>
+		<chip type="cpu" tag="maincpu" name="MOS Technology 6502" clock="1250000"/>
 		<chip type="audio" tag="mono" name="Speaker"/>
 		<chip type="audio" tag="ay8910" name="AY-3-8910A PSG" clock="2500000"/>
-		<chip type="audio" tag="snd_nl" name="Netlist Sound Device" clock="48000"/>
+		<chip type="audio" tag="snd_nl" name="Netlist Sound Device"/>
 		<display tag="screen" type="raster" rotate="90" width="256" height="256" refresh="49.697837" pixclock="5000000" htotal="384" hbend="0" hbstart="256" vtotal="262" vbend="0" vbstart="256" />
 		<sound channels="1"/>
 		<input players="1" coins="1">
@@ -4245,6 +4344,9 @@
 		</port>
 		<driver status="good" emulation="good" savestate="supported"/>
 	</machine>
+	<machine name="acia6850" sourcefile="src/devices/machine/6850acia.cpp" isdevice="yes" runnable="no">
+		<description>MC6850 ACIA</description>
+	</machine>
 	<machine name="address_map_bank" sourcefile="src/devices/machine/bankdev.cpp" isdevice="yes" runnable="no">
 		<description>Address Map Bank</description>
 	</machine>
@@ -4277,6 +4379,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<slot name=":wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
 		</slot>
@@ -4303,6 +4406,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<slot name=":wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
 		</slot>
@@ -4326,6 +4430,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<slot name=":wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
 		</slot>
@@ -4346,15 +4451,17 @@
 		<device_ref name="clock"/>
 		<device_ref name="rs232"/>
 		<slot name=":port">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
-			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
-			<slotoption name="null_modem" devname="null_modem"/>
 			<slotoption name="printer" devname="serial_printer"/>
+			<slotoption name="keyboard" devname="serial_keyboard"/>
+			<slotoption name="null_modem" devname="null_modem"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 	</machine>
 	<machine name="coco_dwsock" sourcefile="src/devices/bus/coco/coco_dwsock.cpp" isdevice="yes" runnable="no">
@@ -4382,6 +4489,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<slot name=":wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
 		</slot>
@@ -4405,6 +4513,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<slot name=":wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
 		</slot>
@@ -4416,6 +4525,23 @@
 		</slot>
 		<slot name=":wd17xx:3">
 			<slotoption name="qd" devname="floppy_525_qd"/>
+		</slot>
+	</machine>
+	<machine name="coco_midi" sourcefile="src/devices/bus/coco/coco_midi.cpp" isdevice="yes" runnable="no">
+		<description>CoCo MIDI PAK</description>
+		<device_ref name="acia6850"/>
+		<device_ref name="midi_port"/>
+		<device_ref name="midi_port"/>
+		<device_ref name="midi_port"/>
+		<device_ref name="clock"/>
+		<slot name=":mdin">
+			<slotoption name="midiin" devname="midiin_port" default="yes"/>
+		</slot>
+		<slot name=":mdthru">
+			<slotoption name="midiout" devname="midiout_port" default="yes"/>
+		</slot>
+		<slot name=":mdout">
+			<slotoption name="midiout" devname="midiout_port" default="yes"/>
 		</slot>
 	</machine>
 	<machine name="coco_multipack" sourcefile="src/devices/bus/coco/coco_multi.cpp" isdevice="yes" runnable="no">
@@ -4451,43 +4577,58 @@
 			<extension name="rom"/>
 		</device>
 		<slot name=":slot1">
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
 			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
 			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
 		</slot>
 		<slot name=":slot2">
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
 			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
 			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
 		</slot>
 		<slot name=":slot3">
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
 			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
 			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="rs232" devname="coco_rs232"/>
 		</slot>
 		<slot name=":slot4">
-			<slotoption name="banked_16k" devname="cocopak_banked"/>
-			<slotoption name="games_master" devname="cocopakgmc"/>
-			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="cp450_fdc" devname="cp450_fdc"/>
+			<slotoption name="cd6809_fdc" devname="cd6809_fdc"/>
+			<slotoption name="fdc" devname="coco_fdc"/>
 			<slotoption name="cc3hdb1" devname="coco3_hdb1"/>
-			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 			<slotoption name="rs232" devname="coco_rs232"/>
-			<slotoption name="dcmodem" devname="coco_dcmodem"/>
-			<slotoption name="pak" devname="cocopak"/>
-			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
 			<slotoption name="orch90" devname="coco_orch90"/>
+			<slotoption name="dcmodem" devname="coco_dcmodem"/>
+			<slotoption name="sym12" devname="coco_symphony_twelve"/>
+			<slotoption name="fdcv11" devname="coco_fdc_v11" default="yes"/>
+			<slotoption name="games_master" devname="cocopakgmc"/>
+			<slotoption name="midi" devname="coco_midi"/>
+			<slotoption name="ram" devname="cocopakram"/>
+			<slotoption name="ssc" devname="coco_ssc"/>
+			<slotoption name="stecomp" devname="coco_stereo_composer"/>
+			<slotoption name="ccpsg" devname="coco_psg"/>
+			<slotoption name="cc2hdb1" devname="coco2_hdb1"/>
 		</slot>
 	</machine>
 	<machine name="coco_orch90" sourcefile="src/devices/bus/coco/coco_orch90.cpp" isdevice="yes" runnable="no">
@@ -4497,12 +4638,25 @@
 		<device_ref name="speaker"/>
 		<device_ref name="dac_8bit_r2r"/>
 		<device_ref name="dac_8bit_r2r"/>
-		<device_ref name="volt_reg"/>
 		<chip type="audio" tag=":lspeaker" name="Speaker"/>
 		<chip type="audio" tag=":rspeaker" name="Speaker"/>
 		<chip type="audio" tag=":ldac" name="8-Bit R-2R DAC"/>
 		<chip type="audio" tag=":rdac" name="8-Bit R-2R DAC"/>
 		<sound channels="2"/>
+	</machine>
+	<machine name="coco_psg" sourcefile="src/devices/bus/coco/coco_psg.cpp" isdevice="yes" runnable="no">
+		<description>CoCo PSG</description>
+		<rom name="psg_firmware_v1.bin" size="524288" crc="5de614f8" sha1="9c7c8a5cc419ca1aca4d1c5e9f1195997c2bc95c" region="flash" offset="0"/>
+		<device_ref name="speaker"/>
+		<device_ref name="ym2149"/>
+		<device_ref name="sst_39sf040"/>
+		<chip type="audio" tag=":speaker" name="Speaker"/>
+		<chip type="audio" tag=":psg" name="YM2149 SSG" clock="1000000"/>
+		<sound channels="1"/>
+		<input players="2">
+			<control type="joy" player="1" buttons="2" ways="8"/>
+			<control type="joy" player="2" buttons="2" ways="8"/>
+		</input>
 	</machine>
 	<machine name="coco_rs232" sourcefile="src/devices/bus/coco/coco_rs232.cpp" isdevice="yes" runnable="no">
 		<description>CoCo Deluxe RS-232 PAK</description>
@@ -4511,15 +4665,17 @@
 		<device_ref name="clock"/>
 		<device_ref name="rs232"/>
 		<slot name=":port">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
-			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
-			<slotoption name="null_modem" devname="null_modem"/>
 			<slotoption name="printer" devname="serial_printer"/>
+			<slotoption name="keyboard" devname="serial_keyboard"/>
+			<slotoption name="null_modem" devname="null_modem"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 	</machine>
 	<machine name="coco_ssc" sourcefile="src/devices/bus/coco/coco_ssc.cpp" isdevice="yes" runnable="no">
@@ -4538,6 +4694,36 @@
 		<chip type="audio" tag=":cocossc_ay" name="AY-3-8913 PSG"/>
 		<chip type="audio" tag=":coco_sac_tag" name="CoCo SSC Sound Activity Circuit"/>
 		<sound channels="1"/>
+	</machine>
+	<machine name="coco_stereo_composer" sourcefile="src/devices/bus/coco/coco_stecomp.cpp" isdevice="yes" runnable="no">
+		<description>Speech Systems Stereo Composer</description>
+		<device_ref name="speaker"/>
+		<device_ref name="speaker"/>
+		<device_ref name="dac_8bit_r2r"/>
+		<device_ref name="dac_8bit_r2r"/>
+		<device_ref name="pia6821"/>
+		<chip type="audio" tag=":sc_lspeaker" name="Speaker"/>
+		<chip type="audio" tag=":sc_rspeaker" name="Speaker"/>
+		<chip type="audio" tag=":sc_ldac" name="8-Bit R-2R DAC"/>
+		<chip type="audio" tag=":sc_rdac" name="8-Bit R-2R DAC"/>
+		<sound channels="2"/>
+	</machine>
+	<machine name="coco_symphony_twelve" sourcefile="src/devices/bus/coco/coco_sym12.cpp" isdevice="yes" runnable="no">
+		<description>Speech Systems Symphony Twelve</description>
+		<device_ref name="pia6821"/>
+		<device_ref name="speaker"/>
+		<device_ref name="speaker"/>
+		<device_ref name="ay8910"/>
+		<device_ref name="ay8910"/>
+		<device_ref name="ay8910"/>
+		<device_ref name="ay8910"/>
+		<chip type="audio" tag=":s12_l" name="Speaker"/>
+		<chip type="audio" tag=":s12_r" name="Speaker"/>
+		<chip type="audio" tag=":s12_ay8910.1" name="AY-3-8910A PSG"/>
+		<chip type="audio" tag=":s12_ay8910.2" name="AY-3-8910A PSG"/>
+		<chip type="audio" tag=":s12_ay8910.3" name="AY-3-8910A PSG"/>
+		<chip type="audio" tag=":s12_ay8910.4" name="AY-3-8910A PSG"/>
+		<sound channels="2"/>
 	</machine>
 	<machine name="coco_t4426" sourcefile="src/devices/bus/coco/coco_t4426.cpp" isdevice="yes" runnable="no">
 		<description>Terco CNC Programming Station 4426 multi cart</description>
@@ -4573,15 +4759,17 @@
 			<confsetting name="110" value="12"/>
 		</configuration>
 		<slot name=":ser2">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="terminal" devname="serial_terminal"/>
+			<slotoption name="swtpc8212" devname="swtpc8212_terminal"/>
+			<slotoption name="rs_printer" devname="rs_serial_printer"/>
 			<slotoption name="pty" devname="pseudo_terminal"/>
 			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
-			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
-			<slotoption name="null_modem" devname="null_modem"/>
 			<slotoption name="printer" devname="serial_printer"/>
+			<slotoption name="keyboard" devname="serial_keyboard"/>
+			<slotoption name="null_modem" devname="null_modem"/>
+			<slotoption name="ie15" devname="ie15_terminal"/>
+			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
+			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
 		</slot>
 	</machine>
 	<machine name="coco_vhd_image" sourcefile="src/mame/machine/coco_vhd.cpp" isdevice="yes" runnable="no">
@@ -4616,6 +4804,10 @@
 			<confsetting name="On" value="1" default="yes"/>
 		</configuration>
 	</machine>
+	<machine name="cocopakram" sourcefile="src/devices/bus/coco/coco_ram.cpp" isdevice="yes" runnable="no">
+		<description>Disto 1024K RAM Cartridge</description>
+		<device_ref name="ram"/>
+	</machine>
 	<machine name="cocossc_sac" sourcefile="src/devices/bus/coco/coco_ssc.cpp" isdevice="yes" runnable="no">
 		<description>CoCo SSC Sound Activity Circuit</description>
 		<sound channels="0"/>
@@ -4630,6 +4822,7 @@
 		<device_ref name="floppy_connector"/>
 		<device_ref name="msm6242"/>
 		<device_ref name="ds1315"/>
+		<device_ref name="ram"/>
 		<slot name=":wd17xx:0">
 			<slotoption name="qd" devname="floppy_525_qd" default="yes"/>
 		</slot>
@@ -4751,8 +4944,8 @@
 	<machine name="ie15_cpu" sourcefile="src/devices/cpu/ie15/ie15.cpp" isdevice="yes" runnable="no">
 		<description>ie15 CPU</description>
 	</machine>
-	<machine name="ie15_terminal" sourcefile="src/devices/bus/rs232/ie15.cpp" isdevice="yes" runnable="no">
-		<description>IE15 Terminal</description>
+	<machine name="ie15_device" sourcefile="src/devices/machine/ie15.cpp" isdevice="yes" runnable="no">
+		<description>IE15</description>
 		<biosset name="5chip" description="5-chip firmware (newer)" default="yes"/>
 		<biosset name="6chip" description="6-chip firmware (older)"/>
 		<rom name="dump1.bin" bios="5chip" size="4096" crc="14b82284" sha1="5ac4159fbb1c3b81445605e26cd97a713ae12b5f" region="maincpu" offset="0"/>
@@ -4761,7 +4954,6 @@
 		<device_ref name="screen"/>
 		<device_ref name="ie15_cpu"/>
 		<device_ref name="ie15kbd"/>
-		<device_ref name="rs232"/>
 		<device_ref name="speaker"/>
 		<device_ref name="beep"/>
 		<device_ref name="gfxdecode"/>
@@ -4786,74 +4978,103 @@
 			<dipvalue name="Off" value="0"/>
 			<dipvalue name="On" value="16" default="yes"/>
 		</dipswitch>
-		<configuration name="Data Bits" tag=":RS232_DATABITS" mask="255">
-			<confsetting name="5" value="0"/>
-			<confsetting name="6" value="1"/>
-			<confsetting name="7" value="2"/>
-			<confsetting name="8" value="3" default="yes"/>
+		<configuration name="Data Bits" tag=":RS232_DATABITS" mask="15">
+			<confsetting name="7" value="7"/>
+			<confsetting name="8" value="8" default="yes"/>
 		</configuration>
-		<configuration name="Parity" tag=":RS232_PARITY" mask="255">
+		<configuration name="Parity" tag=":RS232_PARITY" mask="7">
 			<confsetting name="None" value="0" default="yes"/>
 			<confsetting name="Odd" value="1"/>
 			<confsetting name="Even" value="2"/>
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="255">
-			<confsetting name="110" value="0"/>
-			<confsetting name="150" value="1"/>
-			<confsetting name="300" value="2"/>
-			<confsetting name="600" value="3"/>
-			<confsetting name="1200" value="4"/>
-			<confsetting name="2400" value="5"/>
-			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
-			<confsetting name="9600" value="7" default="yes"/>
-			<confsetting name="14400" value="8"/>
-			<confsetting name="19200" value="9"/>
-			<confsetting name="28800" value="10"/>
-			<confsetting name="38400" value="11"/>
-			<confsetting name="57600" value="12"/>
-			<confsetting name="115200" value="13"/>
+		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="65535">
+			<confsetting name="300" value="300"/>
+			<confsetting name="600" value="600"/>
+			<confsetting name="1200" value="1200"/>
+			<confsetting name="2400" value="2400"/>
+			<confsetting name="4800" value="4800"/>
+			<confsetting name="9600" value="9600" default="yes"/>
+			<confsetting name="19200" value="19200"/>
 		</configuration>
-		<configuration name="Start Bits" tag=":RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
+		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="3">
 			<confsetting name="1" value="1" default="yes"/>
+			<confsetting name="2" value="2"/>
 		</configuration>
-		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
-			<confsetting name="0" value="0"/>
+		<configuration name="TX Baud" tag=":RS232_TXBAUD" mask="65535">
+			<confsetting name="300" value="300"/>
+			<confsetting name="600" value="600"/>
+			<confsetting name="1200" value="1200"/>
+			<confsetting name="2400" value="2400"/>
+			<confsetting name="4800" value="4800"/>
+			<confsetting name="9600" value="9600" default="yes"/>
+			<confsetting name="19200" value="19200"/>
+		</configuration>
+	</machine>
+	<machine name="ie15_terminal" sourcefile="src/devices/bus/rs232/ie15.cpp" isdevice="yes" runnable="no">
+		<description>IE15 Terminal</description>
+		<device_ref name="ie15_device"/>
+		<device_ref name="screen"/>
+		<device_ref name="ie15_cpu"/>
+		<device_ref name="ie15kbd"/>
+		<device_ref name="speaker"/>
+		<device_ref name="beep"/>
+		<device_ref name="gfxdecode"/>
+		<device_ref name="palette"/>
+		<chip type="cpu" tag=":ie15:maincpu" name="ie15 CPU" clock="3080000"/>
+		<chip type="audio" tag=":ie15:mono" name="Speaker"/>
+		<chip type="audio" tag=":ie15:beeper" name="Beep" clock="2400"/>
+		<display tag=":ie15:screen" type="raster" rotate="0" width="800" height="275" refresh="50.000000" pixclock="15400000" htotal="1000" hbend="200" hbstart="1000" vtotal="308" vbend="22" vbstart="297" />
+		<sound channels="1"/>
+		<input players="1">
+			<control type="keyboard" buttons="91"/>
+		</input>
+		<dipswitch name="RED (Interpret controls)" tag=":ie15:io_keyboard" mask="1">
+			<dipvalue name="Off" value="0"/>
+			<dipvalue name="On" value="1" default="yes"/>
+		</dipswitch>
+		<dipswitch name="DUP (Full duplex)" tag=":ie15:io_keyboard" mask="8">
+			<dipvalue name="Off" value="0"/>
+			<dipvalue name="On" value="8" default="yes"/>
+		</dipswitch>
+		<dipswitch name="LIN (Online)" tag=":ie15:io_keyboard" mask="16">
+			<dipvalue name="Off" value="0"/>
+			<dipvalue name="On" value="16" default="yes"/>
+		</dipswitch>
+		<configuration name="Data Bits" tag=":ie15:RS232_DATABITS" mask="15">
+			<confsetting name="7" value="7"/>
+			<confsetting name="8" value="8" default="yes"/>
+		</configuration>
+		<configuration name="Parity" tag=":ie15:RS232_PARITY" mask="7">
+			<confsetting name="None" value="0" default="yes"/>
+			<confsetting name="Odd" value="1"/>
+			<confsetting name="Even" value="2"/>
+			<confsetting name="Mark" value="3"/>
+			<confsetting name="Space" value="4"/>
+		</configuration>
+		<configuration name="RX Baud" tag=":ie15:RS232_RXBAUD" mask="65535">
+			<confsetting name="300" value="300"/>
+			<confsetting name="600" value="600"/>
+			<confsetting name="1200" value="1200"/>
+			<confsetting name="2400" value="2400"/>
+			<confsetting name="4800" value="4800"/>
+			<confsetting name="9600" value="9600" default="yes"/>
+			<confsetting name="19200" value="19200"/>
+		</configuration>
+		<configuration name="Stop Bits" tag=":ie15:RS232_STOPBITS" mask="3">
 			<confsetting name="1" value="1" default="yes"/>
-			<confsetting name="1.5" value="2"/>
-			<confsetting name="2" value="3"/>
+			<confsetting name="2" value="2"/>
 		</configuration>
-		<configuration name="TX Baud" tag=":RS232_TXBAUD" mask="255">
-			<confsetting name="110" value="0"/>
-			<confsetting name="150" value="1"/>
-			<confsetting name="300" value="2"/>
-			<confsetting name="600" value="3"/>
-			<confsetting name="1200" value="4"/>
-			<confsetting name="2400" value="5"/>
-			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
-			<confsetting name="9600" value="7" default="yes"/>
-			<confsetting name="14400" value="8"/>
-			<confsetting name="19200" value="9"/>
-			<confsetting name="28800" value="10"/>
-			<confsetting name="38400" value="11"/>
-			<confsetting name="57600" value="12"/>
-			<confsetting name="115200" value="13"/>
+		<configuration name="TX Baud" tag=":ie15:RS232_TXBAUD" mask="65535">
+			<confsetting name="300" value="300"/>
+			<confsetting name="600" value="600"/>
+			<confsetting name="1200" value="1200"/>
+			<confsetting name="2400" value="2400"/>
+			<confsetting name="4800" value="4800"/>
+			<confsetting name="9600" value="9600" default="yes"/>
+			<confsetting name="19200" value="19200"/>
 		</configuration>
-		<slot name=":rs232">
-			<slotoption name="ie15" devname="ie15_terminal"/>
-			<slotoption name="sunkbd" devname="sunkbd_adaptor"/>
-			<slotoption name="pty" devname="pseudo_terminal"/>
-			<slotoption name="loopback" devname="rs232_loopback"/>
-			<slotoption name="terminal" devname="serial_terminal"/>
-			<slotoption name="keyboard" devname="serial_keyboard"/>
-			<slotoption name="dec_loopback" devname="dec_rs232_loopback"/>
-			<slotoption name="null_modem" devname="null_modem" default="yes"/>
-			<slotoption name="printer" devname="serial_printer"/>
-		</slot>
 	</machine>
 	<machine name="ie15kbd" sourcefile="src/devices/machine/ie15_kbd.cpp" isdevice="yes" runnable="no">
 		<description>15WWW-97-006 Keyboard</description>
@@ -4862,11 +5083,23 @@
 			<control type="keyboard" buttons="91"/>
 		</input>
 	</machine>
+	<machine name="ins8250" sourcefile="src/devices/machine/ins8250.cpp" isdevice="yes" runnable="no">
+		<description>National Semiconductor INS8250 UART</description>
+	</machine>
+	<machine name="ipt_merge_any_hi" sourcefile="src/devices/machine/input_merger.cpp" isdevice="yes" runnable="no">
+		<description>Input Merger (any high)</description>
+	</machine>
 	<machine name="m6502" sourcefile="src/devices/cpu/m6502/m6502.cpp" isdevice="yes" runnable="no">
-		<description>MOS Technology M6502</description>
+		<description>MOS Technology 6502</description>
+	</machine>
+	<machine name="m6802" sourcefile="src/devices/cpu/m6800/m6800.cpp" isdevice="yes" runnable="no">
+		<description>Motorola MC6802</description>
 	</machine>
 	<machine name="mc6809e" sourcefile="src/devices/cpu/m6809/m6809.cpp" isdevice="yes" runnable="no">
 		<description>Motorola MC6809E</description>
+	</machine>
+	<machine name="mc6845" sourcefile="src/devices/video/mc6845.cpp" isdevice="yes" runnable="no">
+		<description>Motorola MC6845 CRTC</description>
 	</machine>
 	<machine name="mc6847_ntsc" sourcefile="src/devices/video/mc6847.cpp" isdevice="yes" runnable="no">
 		<description>Motorola MC6847 VDG (NTSC)</description>
@@ -4883,6 +5116,9 @@
 			<confsetting name="Standard" value="1" default="yes"/>
 			<confsetting name="Reverse" value="2"/>
 		</configuration>
+	</machine>
+	<machine name="midi_port" sourcefile="src/devices/bus/midi/midi.cpp" isdevice="yes" runnable="no">
+		<description>MIDI port</description>
 	</machine>
 	<machine name="mos6551" sourcefile="src/devices/machine/mos6551.cpp" isdevice="yes" runnable="no">
 		<description>MOS 6551 ACIA</description>
@@ -4904,9 +5140,11 @@
 	<machine name="null_modem" sourcefile="src/devices/bus/rs232/null_modem.cpp" isdevice="yes" runnable="no">
 		<description>RS232 Null Modem</description>
 		<device_ref name="bitbanger"/>
-		<configuration name="Flow Control" tag=":FLOW_CONTROL" mask="1">
+		<configuration name="Flow Control" tag=":FLOW_CONTROL" mask="7">
 			<confsetting name="Off" value="0" default="yes"/>
-			<confsetting name="On" value="1"/>
+			<confsetting name="RTS" value="1"/>
+			<confsetting name="DTR" value="2"/>
+			<confsetting name="XON/XOFF" value="4"/>
 		</configuration>
 		<configuration name="Data Bits" tag=":RS232_DATABITS" mask="255">
 			<confsetting name="5" value="0"/>
@@ -4922,14 +5160,21 @@
 			<confsetting name="Space" value="4"/>
 		</configuration>
 		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -4938,10 +5183,6 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag=":RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
 		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
@@ -4949,14 +5190,21 @@
 			<confsetting name="2" value="3"/>
 		</configuration>
 		<configuration name="TX Baud" tag=":RS232_TXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -4995,14 +5243,21 @@
 			<confsetting name="Space" value="4"/>
 		</configuration>
 		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -5011,10 +5266,6 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag=":RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
 		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
@@ -5022,14 +5273,21 @@
 			<confsetting name="2" value="3"/>
 		</configuration>
 		<configuration name="TX Baud" tag=":RS232_TXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -5047,6 +5305,57 @@
 	</machine>
 	<machine name="rs232_loopback" sourcefile="src/devices/bus/rs232/loopback.cpp" isdevice="yes" runnable="no">
 		<description>RS232 Loopback</description>
+	</machine>
+	<machine name="rs_serial_printer" sourcefile="src/devices/bus/rs232/printer.cpp" isdevice="yes" runnable="no">
+		<description>Radio Shack Serial Printer</description>
+		<device_ref name="printer_image"/>
+		<configuration name="Data Bits" tag=":RS232_DATABITS" mask="255">
+			<confsetting name="5" value="0"/>
+			<confsetting name="6" value="1"/>
+			<confsetting name="7" value="2"/>
+			<confsetting name="8" value="3" default="yes"/>
+		</configuration>
+		<configuration name="Parity" tag=":RS232_PARITY" mask="255">
+			<confsetting name="None" value="0" default="yes"/>
+			<confsetting name="Odd" value="1"/>
+			<confsetting name="Even" value="2"/>
+			<confsetting name="Mark" value="3"/>
+			<confsetting name="Space" value="4"/>
+		</configuration>
+		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
+			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
+			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
+			<confsetting name="300" value="2"/>
+			<confsetting name="600" value="3"/>
+			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
+			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
+			<confsetting name="4800" value="6"/>
+			<confsetting name="7200" value="21"/>
+			<confsetting name="9600" value="7" default="yes"/>
+			<confsetting name="14400" value="8"/>
+			<confsetting name="19200" value="9"/>
+			<confsetting name="28800" value="10"/>
+			<confsetting name="38400" value="11"/>
+			<confsetting name="57600" value="12"/>
+			<confsetting name="115200" value="13"/>
+		</configuration>
+		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
+			<confsetting name="0" value="0"/>
+			<confsetting name="1" value="1" default="yes"/>
+			<confsetting name="1.5" value="2"/>
+			<confsetting name="2" value="3"/>
+		</configuration>
+		<device type="printout" tag=":printer">
+			<instance name="printout" briefname="prin"/>
+			<extension name="prn"/>
+		</device>
 	</machine>
 	<machine name="sam6883" sourcefile="src/mame/machine/6883sam.cpp" isdevice="yes" runnable="no">
 		<description>MC6883 SAM</description>
@@ -5116,10 +5425,6 @@
 			<confsetting name="Mark" value="3"/>
 			<confsetting name="Space" value="4"/>
 		</configuration>
-		<configuration name="Start Bits" tag=":RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
 		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
@@ -5127,14 +5432,21 @@
 			<confsetting name="2" value="3"/>
 		</configuration>
 		<configuration name="TX Baud" tag=":RS232_TXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -5161,14 +5473,21 @@
 			<confsetting name="Space" value="4"/>
 		</configuration>
 		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -5176,10 +5495,6 @@
 			<confsetting name="38400" value="11"/>
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
-		</configuration>
-		<configuration name="Start Bits" tag=":RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
 		</configuration>
 		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
@@ -5219,14 +5534,21 @@
 			<confsetting name="Space" value="4"/>
 		</configuration>
 		<configuration name="RX Baud" tag=":RS232_RXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -5235,10 +5557,6 @@
 			<confsetting name="57600" value="12"/>
 			<confsetting name="115200" value="13"/>
 		</configuration>
-		<configuration name="Start Bits" tag=":RS232_STARTBITS" mask="255">
-			<confsetting name="0" value="0"/>
-			<confsetting name="1" value="1" default="yes"/>
-		</configuration>
 		<configuration name="Stop Bits" tag=":RS232_STOPBITS" mask="255">
 			<confsetting name="0" value="0"/>
 			<confsetting name="1" value="1" default="yes"/>
@@ -5246,14 +5564,21 @@
 			<confsetting name="2" value="3"/>
 		</configuration>
 		<configuration name="TX Baud" tag=":RS232_TXBAUD" mask="255">
+			<confsetting name="50" value="14"/>
+			<confsetting name="75" value="15"/>
 			<confsetting name="110" value="0"/>
+			<confsetting name="134.5" value="16"/>
 			<confsetting name="150" value="1"/>
+			<confsetting name="200" value="17"/>
 			<confsetting name="300" value="2"/>
 			<confsetting name="600" value="3"/>
 			<confsetting name="1200" value="4"/>
+			<confsetting name="1800" value="18"/>
+			<confsetting name="2000" value="19"/>
 			<confsetting name="2400" value="5"/>
+			<confsetting name="3600" value="20"/>
 			<confsetting name="4800" value="6"/>
-			<confsetting name="7200" value="14"/>
+			<confsetting name="7200" value="21"/>
 			<confsetting name="9600" value="7" default="yes"/>
 			<confsetting name="14400" value="8"/>
 			<confsetting name="19200" value="9"/>
@@ -5355,6 +5680,9 @@
 		<description>Speaker</description>
 		<sound channels="1"/>
 	</machine>
+	<machine name="sst_39sf040" sourcefile="src/devices/machine/intelfsh.cpp" isdevice="yes" runnable="no">
+		<description>SST 39SF040 Flash</description>
+	</machine>
 	<machine name="sunkbd" sourcefile="src/devices/bus/sunkbd/sunkbd.cpp" isdevice="yes" runnable="no">
 		<description>Sun Keyboard Port</description>
 	</machine>
@@ -5363,21 +5691,276 @@
 		<device_ref name="sunkbd"/>
 		<slot name=":keyboard">
 			<slotoption name="type5jphle" devname="kbd_type5_hle_jp"/>
-			<slotoption name="type5gbhle" devname="kbd_type5_hle_gb"/>
-			<slotoption name="type5hle" devname="kbd_type5_hle_us"/>
 			<slotoption name="type5sehle" devname="kbd_type5_hle_se"/>
-			<slotoption name="type3hle" devname="kbd_type3_hle"/>
+			<slotoption name="type5hle" devname="kbd_type5_hle_us"/>
 			<slotoption name="type4hle" devname="kbd_type4_hle"/>
+			<slotoption name="type5gbhle" devname="kbd_type5_hle_gb"/>
+			<slotoption name="type3hle" devname="kbd_type3_hle"/>
 		</slot>
+	</machine>
+	<machine name="swtpc8212_device" sourcefile="src/devices/machine/swtpc8212.cpp" isdevice="yes" runnable="no">
+		<description>SWTPC8212</description>
+		<rom name="8224g_ver.1.1_6oct80.ic1" size="2048" crc="7d7f3c21" sha1="f7e6e20b36a1c724a4e348bc784d0b7b5fb462a3" region="program" offset="0"/>
+		<rom name="8224g_ver.1.1_6oct80.ic2" size="2048" crc="2b118c22" sha1="5fa031c834c7c582d5715764941499fcef51f477" region="program" offset="800"/>
+		<rom name="mcm66750.rom" size="2048" crc="aedc2830" sha1="49ce17d5b5cefb24e89ed3fd59887a652501b919" region="chargen1" offset="0"/>
+		<rom name="grafix_8x12_22aug80.bin" size="2048" crc="a525ed65" sha1="813d2e85ddb258c5b032b959e695ad33200cbcc4" region="chargen2" offset="0"/>
+		<device_ref name="m6802"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="pia6821"/>
+		<device_ref name="pia6821"/>
+		<device_ref name="ins8250"/>
+		<device_ref name="screen"/>
+		<device_ref name="mc6845"/>
+		<device_ref name="generic_keyboard"/>
+		<device_ref name="speaker"/>
+		<device_ref name="beep"/>
+		<device_ref name="printer_image"/>
+		<chip type="cpu" tag=":maincpu" name="Motorola MC6802" clock="1843200"/>
+		<chip type="audio" tag=":bell" name="Speaker"/>
+		<chip type="audio" tag=":beeper" name="Beep" clock="2000"/>
+		<display tag=":screen" type="raster" rotate="0" width="738" height="280" refresh="60.000000" pixclock="17074800" htotal="918" hbend="0" hbstart="738" vtotal="310" vbend="0" vbstart="280" />
+		<sound channels="1"/>
+		<input players="1">
+			<control type="keypad" buttons="16"/>
+			<control type="keyboard" buttons="73"/>
+		</input>
+		<dipswitch name="Baud Rate" tag=":DIP_SWITCHES" mask="31">
+			<diplocation name="DIP" number="4"/>
+			<diplocation name="DIP" number="3"/>
+			<diplocation name="DIP" number="2"/>
+			<diplocation name="DIP" number="1"/>
+			<diplocation name="DIP" number="0"/>
+			<dipvalue name="110" value="4"/>
+			<dipvalue name="300" value="10"/>
+			<dipvalue name="600" value="13"/>
+			<dipvalue name="1200" value="15"/>
+			<dipvalue name="2400" value="18"/>
+			<dipvalue name="4800" value="22"/>
+			<dipvalue name="7200" value="24"/>
+			<dipvalue name="9600" value="25" default="yes"/>
+			<dipvalue name="19200" value="28"/>
+			<dipvalue name="38400" value="31"/>
+		</dipswitch>
+		<dipswitch name="Mode switch" tag=":DIP_SWITCHES" mask="32">
+			<diplocation name="DIP" number="5"/>
+			<dipvalue name="Conversational" value="0" default="yes"/>
+			<dipvalue name="Page edit" value="32"/>
+		</dipswitch>
+		<dipswitch name="No Parity" tag=":DIP_SWITCHES" mask="64">
+			<diplocation name="DIP" number="6"/>
+			<dipvalue name="No Parity" value="0" default="yes"/>
+			<dipvalue name="Parity" value="64"/>
+		</dipswitch>
+		<dipswitch name="Parity Select" tag=":DIP_SWITCHES" mask="128">
+			<diplocation name="DIP" number="7"/>
+			<dipvalue name="Odd or Mark" value="0" default="yes"/>
+			<dipvalue name="Even or Space" value="128"/>
+		</dipswitch>
+		<configuration name="Duplex" tag=":CONFIG" mask="1">
+			<confsetting name="Full duplex" value="0"/>
+			<confsetting name="Half duplex" value="1" default="yes"/>
+		</configuration>
+		<configuration name="Option ROM (Not used)" tag=":CONFIG" mask="2">
+			<confsetting name="On" value="0" default="yes"/>
+			<confsetting name="Off" value="2"/>
+		</configuration>
+		<configuration name="Parity Select (Jumper B)" tag=":CONFIG" mask="4">
+			<confsetting name="Odd or Even (On)" value="0"/>
+			<confsetting name="Mark or Space (Off)" value="4" default="yes"/>
+		</configuration>
+		<configuration name="Data bits (Jumper A)" tag=":CONFIG" mask="8">
+			<confsetting name="7 bit data (On)" value="0"/>
+			<confsetting name="8 bit data (Off)" value="8" default="yes"/>
+		</configuration>
+		<configuration name="One stop bit patch" tag=":ONE_STOP_BIT" mask="1">
+			<confsetting name="No" value="0"/>
+			<confsetting name="Yes - apply patch" value="1" default="yes"/>
+		</configuration>
+		<configuration name="Layout" tag=":keyboard:GENKBD_CFG" mask="1">
+			<confsetting name="ANSI" value="0" default="yes"/>
+			<confsetting name="JIS" value="1"/>
+		</configuration>
+		<configuration name="Typematic Delay" tag=":keyboard:GENKBD_CFG" mask="6">
+			<confsetting name="0.25s" value="0"/>
+			<confsetting name="0.5s" value="2"/>
+			<confsetting name="0.75s" value="4" default="yes"/>
+			<confsetting name="1.0s" value="6"/>
+		</configuration>
+		<configuration name="Typematic Rate" tag=":keyboard:GENKBD_CFG" mask="248">
+			<confsetting name="2.0cps" value="0"/>
+			<confsetting name="2.1cps" value="8"/>
+			<confsetting name="2.5cps" value="16"/>
+			<confsetting name="2.7cps" value="24"/>
+			<confsetting name="2.0cps" value="32"/>
+			<confsetting name="2.1cps" value="40"/>
+			<confsetting name="2.5cps" value="48"/>
+			<confsetting name="2.7cps" value="56"/>
+			<confsetting name="3.3cps" value="64"/>
+			<confsetting name="3.8cps" value="72"/>
+			<confsetting name="4.0cps" value="80"/>
+			<confsetting name="4.3cps" value="88"/>
+			<confsetting name="4.6cps" value="96"/>
+			<confsetting name="5.0cps" value="104"/>
+			<confsetting name="5.5cps" value="112"/>
+			<confsetting name="6.0cps" value="120"/>
+			<confsetting name="8.0cps" value="128"/>
+			<confsetting name="8.6cps" value="136"/>
+			<confsetting name="9.2cps" value="144"/>
+			<confsetting name="10.0cps" value="152" default="yes"/>
+			<confsetting name="10.9cps" value="160"/>
+			<confsetting name="12.0cps" value="168"/>
+			<confsetting name="13.3cps" value="176"/>
+			<confsetting name="15.0cps" value="184"/>
+			<confsetting name="16.0cps" value="192"/>
+			<confsetting name="17.1cps" value="200"/>
+			<confsetting name="18.5cps" value="208"/>
+			<confsetting name="20.0cps" value="216"/>
+			<confsetting name="21.8cps" value="224"/>
+			<confsetting name="24.0cps" value="232"/>
+			<confsetting name="26.7cps" value="240"/>
+			<confsetting name="30.0cps" value="248"/>
+		</configuration>
+		<device type="printout" tag=":printer">
+			<instance name="printout" briefname="prin"/>
+			<extension name="prn"/>
+		</device>
+	</machine>
+	<machine name="swtpc8212_terminal" sourcefile="src/devices/bus/rs232/swtpc8212.cpp" isdevice="yes" runnable="no">
+		<description>SWTPC8212 Terminal</description>
+		<device_ref name="swtpc8212_device"/>
+		<device_ref name="m6802"/>
+		<device_ref name="ipt_merge_any_hi"/>
+		<device_ref name="pia6821"/>
+		<device_ref name="pia6821"/>
+		<device_ref name="ins8250"/>
+		<device_ref name="screen"/>
+		<device_ref name="mc6845"/>
+		<device_ref name="generic_keyboard"/>
+		<device_ref name="speaker"/>
+		<device_ref name="beep"/>
+		<device_ref name="printer_image"/>
+		<chip type="cpu" tag=":swtpc8212:maincpu" name="Motorola MC6802" clock="1843200"/>
+		<chip type="audio" tag=":swtpc8212:bell" name="Speaker"/>
+		<chip type="audio" tag=":swtpc8212:beeper" name="Beep" clock="2000"/>
+		<display tag=":swtpc8212:screen" type="raster" rotate="0" width="738" height="280" refresh="60.000000" pixclock="17074800" htotal="918" hbend="0" hbstart="738" vtotal="310" vbend="0" vbstart="280" />
+		<sound channels="1"/>
+		<input players="1">
+			<control type="keypad" buttons="16"/>
+			<control type="keyboard" buttons="73"/>
+		</input>
+		<dipswitch name="Baud Rate" tag=":swtpc8212:DIP_SWITCHES" mask="31">
+			<diplocation name="DIP" number="4"/>
+			<diplocation name="DIP" number="3"/>
+			<diplocation name="DIP" number="2"/>
+			<diplocation name="DIP" number="1"/>
+			<diplocation name="DIP" number="0"/>
+			<dipvalue name="110" value="4"/>
+			<dipvalue name="300" value="10"/>
+			<dipvalue name="600" value="13"/>
+			<dipvalue name="1200" value="15"/>
+			<dipvalue name="2400" value="18"/>
+			<dipvalue name="4800" value="22"/>
+			<dipvalue name="7200" value="24"/>
+			<dipvalue name="9600" value="25" default="yes"/>
+			<dipvalue name="19200" value="28"/>
+			<dipvalue name="38400" value="31"/>
+		</dipswitch>
+		<dipswitch name="Mode switch" tag=":swtpc8212:DIP_SWITCHES" mask="32">
+			<diplocation name="DIP" number="5"/>
+			<dipvalue name="Conversational" value="0" default="yes"/>
+			<dipvalue name="Page edit" value="32"/>
+		</dipswitch>
+		<dipswitch name="No Parity" tag=":swtpc8212:DIP_SWITCHES" mask="64">
+			<diplocation name="DIP" number="6"/>
+			<dipvalue name="No Parity" value="0" default="yes"/>
+			<dipvalue name="Parity" value="64"/>
+		</dipswitch>
+		<dipswitch name="Parity Select" tag=":swtpc8212:DIP_SWITCHES" mask="128">
+			<diplocation name="DIP" number="7"/>
+			<dipvalue name="Odd or Mark" value="0" default="yes"/>
+			<dipvalue name="Even or Space" value="128"/>
+		</dipswitch>
+		<configuration name="Flow control" tag=":FLOW_CONTROL" mask="1">
+			<confsetting name="None" value="0"/>
+			<confsetting name="Terminal DTR to remote CTS" value="1" default="yes"/>
+		</configuration>
+		<configuration name="Duplex" tag=":swtpc8212:CONFIG" mask="1">
+			<confsetting name="Full duplex" value="0"/>
+			<confsetting name="Half duplex" value="1" default="yes"/>
+		</configuration>
+		<configuration name="Option ROM (Not used)" tag=":swtpc8212:CONFIG" mask="2">
+			<confsetting name="On" value="0" default="yes"/>
+			<confsetting name="Off" value="2"/>
+		</configuration>
+		<configuration name="Parity Select (Jumper B)" tag=":swtpc8212:CONFIG" mask="4">
+			<confsetting name="Odd or Even (On)" value="0"/>
+			<confsetting name="Mark or Space (Off)" value="4" default="yes"/>
+		</configuration>
+		<configuration name="Data bits (Jumper A)" tag=":swtpc8212:CONFIG" mask="8">
+			<confsetting name="7 bit data (On)" value="0"/>
+			<confsetting name="8 bit data (Off)" value="8" default="yes"/>
+		</configuration>
+		<configuration name="One stop bit patch" tag=":swtpc8212:ONE_STOP_BIT" mask="1">
+			<confsetting name="No" value="0"/>
+			<confsetting name="Yes - apply patch" value="1" default="yes"/>
+		</configuration>
+		<configuration name="Layout" tag=":swtpc8212:keyboard:GENKBD_CFG" mask="1">
+			<confsetting name="ANSI" value="0" default="yes"/>
+			<confsetting name="JIS" value="1"/>
+		</configuration>
+		<configuration name="Typematic Delay" tag=":swtpc8212:keyboard:GENKBD_CFG" mask="6">
+			<confsetting name="0.25s" value="0"/>
+			<confsetting name="0.5s" value="2"/>
+			<confsetting name="0.75s" value="4" default="yes"/>
+			<confsetting name="1.0s" value="6"/>
+		</configuration>
+		<configuration name="Typematic Rate" tag=":swtpc8212:keyboard:GENKBD_CFG" mask="248">
+			<confsetting name="2.0cps" value="0"/>
+			<confsetting name="2.1cps" value="8"/>
+			<confsetting name="2.5cps" value="16"/>
+			<confsetting name="2.7cps" value="24"/>
+			<confsetting name="2.0cps" value="32"/>
+			<confsetting name="2.1cps" value="40"/>
+			<confsetting name="2.5cps" value="48"/>
+			<confsetting name="2.7cps" value="56"/>
+			<confsetting name="3.3cps" value="64"/>
+			<confsetting name="3.8cps" value="72"/>
+			<confsetting name="4.0cps" value="80"/>
+			<confsetting name="4.3cps" value="88"/>
+			<confsetting name="4.6cps" value="96"/>
+			<confsetting name="5.0cps" value="104"/>
+			<confsetting name="5.5cps" value="112"/>
+			<confsetting name="6.0cps" value="120"/>
+			<confsetting name="8.0cps" value="128"/>
+			<confsetting name="8.6cps" value="136"/>
+			<confsetting name="9.2cps" value="144"/>
+			<confsetting name="10.0cps" value="152" default="yes"/>
+			<confsetting name="10.9cps" value="160"/>
+			<confsetting name="12.0cps" value="168"/>
+			<confsetting name="13.3cps" value="176"/>
+			<confsetting name="15.0cps" value="184"/>
+			<confsetting name="16.0cps" value="192"/>
+			<confsetting name="17.1cps" value="200"/>
+			<confsetting name="18.5cps" value="208"/>
+			<confsetting name="20.0cps" value="216"/>
+			<confsetting name="21.8cps" value="224"/>
+			<confsetting name="24.0cps" value="232"/>
+			<confsetting name="26.7cps" value="240"/>
+			<confsetting name="30.0cps" value="248"/>
+		</configuration>
+		<device type="printout" tag=":swtpc8212:printer">
+			<instance name="printout" briefname="prin"/>
+			<extension name="prn"/>
+		</device>
 	</machine>
 	<machine name="tms7040" sourcefile="src/devices/cpu/tms7000/tms7000.cpp" isdevice="yes" runnable="no">
 		<description>Texas Instruments TMS7040</description>
 	</machine>
-	<machine name="volt_reg" sourcefile="src/devices/sound/volt_reg.cpp" isdevice="yes" runnable="no">
-		<description>Voltage Regulator</description>
-		<sound channels="0"/>
-	</machine>
 	<machine name="wd1773" sourcefile="src/devices/machine/wd_fdc.cpp" isdevice="yes" runnable="no">
 		<description>Western Digital WD1773 FDC</description>
+	</machine>
+	<machine name="ym2149" sourcefile="src/devices/sound/ay8910.cpp" isdevice="yes" runnable="no">
+		<description>YM2149 SSG</description>
+		<sound channels="0"/>
 	</machine>
 </mame>
