@@ -18,10 +18,10 @@ namespace
         Q_OBJECT
 
     private slots:
-        void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 88, 15, 1221, 32, 48, 97, 413); }
-		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 88, 15, 1221, 32, 48, 97, 413); }
-        void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 14, 1, 0, 0, 0, 0, 0); }
-        void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 14, 1, 0, 0, 0, 0, 0); }
+		void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 104, 15, 1501, 32, 48, 99, 488); }
+		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 104, 15, 1501, 32, 48, 99, 488); }
+		void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 13, 1, 0, 0, 0, 0, 0); }
+		void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 13, 1, 0, 0, 0, 0, 0); }
 		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
 		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
 		void deviceLookup_coco2b()		{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }

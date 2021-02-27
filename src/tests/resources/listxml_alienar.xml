@@ -126,6 +126,10 @@
 			<!ATTLIST driver emulation (good|imperfect|preliminary) #REQUIRED>
 			<!ATTLIST driver cocktail (good|imperfect|preliminary) #IMPLIED>
 			<!ATTLIST driver savestate (supported|unsupported) #REQUIRED>
+			<!ATTLIST driver requiresartwork (yes|no) "no">
+			<!ATTLIST driver unofficial (yes|no) "no">
+			<!ATTLIST driver nosoundhardware (yes|no) "no">
+			<!ATTLIST driver incomplete (yes|no) "no">
 		<!ELEMENT feature EMPTY>
 			<!ATTLIST feature type (protection|timing|graphics|palette|sound|capture|camera|microphone|controls|keyboard|mouse|media|disk|printer|tape|punch|drum|rom|comms|lan|wan) #REQUIRED>
 			<!ATTLIST feature status (unemulated|imperfect) #IMPLIED>
@@ -157,7 +161,7 @@
 			<!ATTLIST ramoption default CDATA #IMPLIED>
 ]>
 
-<mame build="0.225 (mame0225-66-g82e4776323e)" debug="no" mameconfig="10">
+<mame build="0.229 (mame0229)" debug="no" mameconfig="10">
 	<machine name="alienar" sourcefile="williams.cpp">
 		<description>Alien Arena</description>
 		<year>1985</year>
@@ -184,7 +188,6 @@
 		<device_ref name="palette"/>
 		<device_ref name="speaker"/>
 		<device_ref name="mc1408"/>
-		<device_ref name="volt_reg"/>
 		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="ipt_merge_any_hi"/>
 		<device_ref name="pia6821"/>
@@ -195,7 +198,7 @@
 		<chip type="cpu" tag="maincpu" name="Motorola MC6809E" clock="1000000"/>
 		<chip type="cpu" tag="soundcpu" name="Motorola MC6808" clock="3579545"/>
 		<chip type="audio" tag="speaker" name="Speaker"/>
-		<chip type="audio" tag="dac" name="MC1408"/>
+		<chip type="audio" tag="dac" name="MC1408 DAC"/>
 		<display tag="screen" type="raster" rotate="0" width="292" height="240" refresh="60.096154" pixclock="8000000" htotal="512" hbend="6" hbstart="298" vtotal="260" vbend="7" vbstart="247" />
 		<sound channels="1"/>
 		<input players="2" coins="3" service="yes" tilt="yes">
@@ -228,7 +231,7 @@
 		<description>Motorola MC6808</description>
 	</machine>
 	<machine name="mc1408" sourcefile="src/devices/sound/dac.h" isdevice="yes" runnable="no">
-		<description>MC1408</description>
+		<description>MC1408 DAC</description>
 		<sound channels="0"/>
 	</machine>
 	<machine name="mc6809e" sourcefile="src/devices/cpu/m6809/m6809.cpp" isdevice="yes" runnable="no">
@@ -252,10 +255,6 @@
 	</machine>
 	<machine name="timer" sourcefile="src/devices/machine/timer.cpp" isdevice="yes" runnable="no">
 		<description>Timer</description>
-	</machine>
-	<machine name="volt_reg" sourcefile="src/devices/sound/volt_reg.cpp" isdevice="yes" runnable="no">
-		<description>Voltage Regulator</description>
-		<sound channels="0"/>
 	</machine>
 	<machine name="watchdog" sourcefile="src/devices/machine/watchdog.cpp" isdevice="yes" runnable="no">
 		<description>Watchdog Timer</description>
