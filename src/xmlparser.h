@@ -58,7 +58,7 @@ public:
 	public:
 		Attributes(XmlParser &parser, const char **attributes);
 
-		// main attribute getters
+		// main attribute getter
 		template<class T> std::optional<T> get(const char *attribute) const;
 
 		// alternate radices

@@ -123,6 +123,9 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	// positions
 	size_t cursor = 0;
 	newState.m_machines_position					= getPosition<binaries::machine>(cursor, hdr.m_machines_count);
+	newState.m_biossets_position					= getPosition<binaries::biosset>(cursor, hdr.m_biossets_count);
+	newState.m_roms_position						= getPosition<binaries::rom>(cursor, hdr.m_roms_count);
+	newState.m_disks_position						= getPosition<binaries::disk>(cursor, hdr.m_disks_count);
 	newState.m_devices_position						= getPosition<binaries::device>(cursor, hdr.m_devices_count);
 	newState.m_slots_position						= getPosition<binaries::slot>(cursor, hdr.m_slots_count);
 	newState.m_slot_options_position				= getPosition<binaries::slot_option>(cursor, hdr.m_slot_options_count);
@@ -178,6 +181,9 @@ uint64_t info::database::calculate_sizes_hash()
 	{
 		sizeof(info::binaries::header),
 		sizeof(info::binaries::machine),
+		sizeof(info::binaries::biosset),
+		sizeof(info::binaries::rom),
+		sizeof(info::binaries::disk),
 		sizeof(info::binaries::device),
 		sizeof(info::binaries::slot),
 		sizeof(info::binaries::slot_option),

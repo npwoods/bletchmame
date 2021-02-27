@@ -56,6 +56,9 @@ namespace info
 
 		info::binaries::header									m_salted_header;
 		std::vector<info::binaries::machine>					m_machines;
+		std::vector<info::binaries::biosset>					m_biossets;
+		std::vector<info::binaries::rom>						m_roms;
+		std::vector<info::binaries::disk>						m_disks;
 		std::vector<info::binaries::device>						m_devices;
 		std::vector<info::binaries::slot>						m_slots;
 		std::vector<info::binaries::slot_option>				m_slot_options;
