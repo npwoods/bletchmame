@@ -60,19 +60,9 @@ public:
 
 		// main attribute getters
 		template<class T> std::optional<T> get(const char *attribute) const;
-		template<> std::optional<int>			get<int>			(const char *attribute) const { return get<int>(attribute, 10); }
-		template<> std::optional<bool>			get<bool>			(const char *attribute) const;
-		template<> std::optional<float>			get<float>			(const char *attribute) const;
-		template<> std::optional<QString>		get<QString>		(const char *attribute) const;
-		template<> std::optional<std::string>	get<std::string>	(const char *attribute) const;
-		template<> std::optional<std::uint32_t>	get<std::uint32_t>	(const char *attribute) const { return get<std::uint32_t>(attribute, 10); }
-		template<> std::optional<std::uint64_t>	get<std::uint64_t>	(const char *attribute) const { return get<std::uint64_t>(attribute, 10); }
 
 		// alternate radices
 		template<class T> std::optional<T> get(const char *attribute, int radix) const;
-		template<> std::optional<int>			get<int>(const char *attribute, int radix) const;
-		template<> std::optional<std::uint32_t>	get<std::uint32_t>(const char *attribute, int radix) const;
-		template<> std::optional<std::uint64_t>	get<std::uint64_t>(const char *attribute, int radix) const;
 
 		// generic getter with a parser function
 		template<typename T, typename TFunc>
@@ -190,5 +180,23 @@ private:
 	static void endElementHandler(void *user_data, const char *name);
 	static void characterDataHandler(void *user_data, const char *s, int len);
 };
+
+
+//**************************************************************************
+//  TEMPLATE SPECIALIZATIONS
+//**************************************************************************
+
+template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute) const;
+template<> std::optional<bool>			XmlParser::Attributes::get<bool>(const char *attribute) const;
+template<> std::optional<float>			XmlParser::Attributes::get<float>(const char *attribute) const;
+template<> std::optional<QString>		XmlParser::Attributes::get<QString>(const char *attribute) const;
+template<> std::optional<std::string>	XmlParser::Attributes::get<std::string>(const char *attribute) const;
+template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
+template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;
+
+template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute, int radix) const;
+template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const;
+template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const;
+
 
 #endif // XMLPARSER_H

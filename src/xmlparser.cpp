@@ -554,6 +554,16 @@ XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
 //  Attributes::get<int>
 //-------------------------------------------------
 
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const
+{
+	return get<int>(attribute, 10);
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<int>
+//-------------------------------------------------
+
 template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute, int radix) const
 {
 	return get<int>(attribute, strtoll_parser<int>(radix));
@@ -564,9 +574,29 @@ template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attrib
 //  Attributes::get<std::uint32_t>
 //-------------------------------------------------
 
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const
+{
+	return get<std::uint32_t>(attribute, 10);
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<std::uint32_t>
+//-------------------------------------------------
+
 template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute, int radix) const
 {
 	return get<std::uint32_t>(attribute, strtoull_parser<std::uint32_t>(radix));
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<std::uint64_t>
+//-------------------------------------------------
+
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const
+{
+	return get<std::uint64_t>(attribute, 10);
 }
 
 
