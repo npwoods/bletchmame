@@ -58,47 +58,27 @@ public:
 	public:
 		Attributes(XmlParser &parser, const char **attributes);
 
-		bool get(const char *attribute, int &value) const;
-		bool get(const char *attribute, std::uint32_t &value) const;
-		bool get(const char *attribute, std::uint64_t &value) const;
-		bool get(const char *attribute, bool &value) const;
-		bool get(const char *attribute, float &value) const;
-		bool get(const char *attribute, QString &value) const;
-		bool get(const char *attribute, std::string &value) const;
+		// main attribute getters
+		template<class T> std::optional<T> get(const char *attribute) const;
 
-		template<typename T>
-		bool get(const char *attribute, T &value, T &&default_value) const
-		{
-			bool result = get(attribute, value);
-			if (!result)
-				value = std::move(default_value);
-			return result;
-		}
+		// alternate radices
+		template<class T> std::optional<T> get(const char *attribute, int radix) const;
 
+		// generic getter with a parser function
 		template<typename T, typename TFunc>
-		bool get(const char *attribute, T &value, TFunc func) const
+		std::optional<T> get(const char *attribute, TFunc func) const
 		{
-			std::string text;
-			bool result = get(attribute, text);
-			if (result)
+			std::optional<T> result = { };
+			std::optional<std::string> text = get<std::string>(attribute);
+			if (text.has_value())
 			{
-				result = func(text, value);
-				if (!result)
-					reportAttributeParsingError(attribute, text);
+				T funcResult;
+				if (func(text.value(), funcResult))
+					result = std::move(funcResult);
+				else
+					reportAttributeParsingError(attribute, text.value());
 			}
-			if (!result)
-				value = T();
 			return result;
-		}
-
-		template<typename T>
-		void get(const char *attribute, std::optional<T> &value) const
-		{
-			T temp_value;
-			bool result = get(attribute, temp_value);
-			value = result
-				? std::move(temp_value)
-				: std::optional<T>();
 		}
 
 	private:
@@ -200,5 +180,23 @@ private:
 	static void endElementHandler(void *user_data, const char *name);
 	static void characterDataHandler(void *user_data, const char *s, int len);
 };
+
+
+//**************************************************************************
+//  TEMPLATE SPECIALIZATIONS
+//**************************************************************************
+
+template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute) const;
+template<> std::optional<bool>			XmlParser::Attributes::get<bool>(const char *attribute) const;
+template<> std::optional<float>			XmlParser::Attributes::get<float>(const char *attribute) const;
+template<> std::optional<QString>		XmlParser::Attributes::get<QString>(const char *attribute) const;
+template<> std::optional<std::string>	XmlParser::Attributes::get<std::string>(const char *attribute) const;
+template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
+template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;
+
+template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute, int radix) const;
+template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const;
+template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const;
+
 
 #endif // XMLPARSER_H

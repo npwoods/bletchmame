@@ -7,7 +7,6 @@
 ***************************************************************************/
 
 #include "info_builder.h"
-#include "xmlparser.h"
 
 
 //**************************************************************************
@@ -117,6 +116,31 @@ static void writeVectorData(QIODevice &stream, const std::vector<T> &vector)
 
 
 //-------------------------------------------------
+//  encodeBool
+//-------------------------------------------------
+
+static constexpr std::uint8_t encodeBool(std::optional<bool> b, std::uint8_t defaultValue = 0xFF)
+{
+	return b.has_value()
+		? (*b ? 0x01 : 0x00)
+		: defaultValue;
+}
+
+
+//-------------------------------------------------
+//  encodeEnum
+//-------------------------------------------------
+
+template<typename T>
+static constexpr std::uint8_t encodeEnum(std::optional<T> &&value, std::uint8_t defaultValue = 0)
+{
+	return value.has_value()
+		? (std::uint8_t) value.value()
+		: defaultValue;
+}
+
+
+//-------------------------------------------------
 //  process_xml()
 //-------------------------------------------------
 
@@ -148,21 +172,17 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	std::string current_device_extensions;
 	xml.onElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
 	{
-		std::string build;
-		header.m_build_strindex = attributes.get("build", build) ? m_strings.get(build) : 0;		
+		header.m_build_strindex = m_strings.get(attributes, "build");
 	});
 	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
-		bool runnable, is_mechanical;
-
-		std::string data;
 		info::binaries::machine &machine = m_machines.emplace_back();
-		machine.m_runnable				= attributes.get("runnable", runnable) && !runnable ? 0 : 1;
-		machine.m_name_strindex			= attributes.get("name", data) ? m_strings.get(data) : 0;
-		machine.m_sourcefile_strindex	= attributes.get("sourcefile", data) ? m_strings.get(data) : 0;
-		machine.m_clone_of_strindex		= attributes.get("cloneof", data) ? m_strings.get(data) : 0;
-		machine.m_rom_of_strindex		= attributes.get("romof", data) ? m_strings.get(data) : 0;
-		machine.m_is_mechanical			= attributes.get("ismechanical", is_mechanical) ? (is_mechanical ? 1 : 0) : 0xFF;
+		machine.m_runnable				= encodeBool(attributes.get<bool>("runnable").value_or(true));
+		machine.m_name_strindex			= m_strings.get(attributes, "name");
+		machine.m_sourcefile_strindex	= m_strings.get(attributes, "sourcefile");
+		machine.m_clone_of_strindex		= m_strings.get(attributes, "cloneof");
+		machine.m_rom_of_strindex		= m_strings.get(attributes, "romof");
+		machine.m_is_mechanical			= encodeBool(attributes.get<bool>("ismechanical"));
 		machine.m_features_index		= to_uint32(m_features.size());
 		machine.m_features_count		= 0;
 		machine.m_chips_index			= to_uint32(m_chips.size());
@@ -185,9 +205,9 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_quality_status		= 0;
 		machine.m_quality_emulation		= 0;
 		machine.m_quality_cocktail		= 0;
-		machine.m_save_state_supported	= 0xFF;
-		machine.m_unofficial			= 0xFF;
-		machine.m_incomplete			= 0xFF;
+		machine.m_save_state_supported	= encodeBool(std::nullopt);
+		machine.m_unofficial			= encodeBool(std::nullopt);
+		machine.m_incomplete			= encodeBool(std::nullopt);
 	});
 	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{
@@ -203,56 +223,47 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "feature" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		info::feature::type_t feature_type;
-		info::feature::quality_t feature_status, feature_overall;
-
 		info::binaries::feature &feature = m_features.emplace_back();
-		feature.m_type		= (uint8_t) (attributes.get("type", feature_type, s_feature_type_parser) ? feature_type : info::feature::type_t::UNKNOWN);
-		feature.m_status	= (uint8_t) (attributes.get("status", feature_status, s_feature_quality_parser) ? feature_status : info::feature::quality_t::UNKNOWN);
-		feature.m_overall	= (uint8_t) (attributes.get("overall", feature_overall, s_feature_quality_parser) ? feature_overall : info::feature::quality_t::UNKNOWN);
+		feature.m_type		= encodeEnum(attributes.get<info::feature::type_t>		("type", s_feature_type_parser));
+		feature.m_status	= encodeEnum(attributes.get<info::feature::quality_t>	("status", s_feature_quality_parser));
+		feature.m_overall	= encodeEnum(attributes.get<info::feature::quality_t>	("overall", s_feature_quality_parser));
 		util::last(m_machines).m_features_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "chip" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
-		info::chip::type_t chip_type;
-		std::uint64_t clock;
 		info::binaries::chip &chip = m_chips.emplace_back();
-		chip.m_type = (uint8_t)(attributes.get("type", chip_type, s_chip_type_parser) ? chip_type : info::chip::type_t::UNKNOWN);
-		chip.m_name_strindex	= attributes.get("name", data) ? m_strings.get(data) : 0;
-		chip.m_tag_strindex		= attributes.get("tag", data) ? m_strings.get(data) : 0;
-		chip.m_clock			= attributes.get("clock", clock) ? clock : 0;
+		chip.m_type				= encodeEnum(attributes.get<info::chip::type_t>("type", s_chip_type_parser));
+		chip.m_name_strindex	= m_strings.get(attributes, "name");
+		chip.m_tag_strindex		= m_strings.get(attributes, "tag");
+		chip.m_clock			= attributes.get<std::uint64_t>("clock").value_or(0);
 
 		util::last(m_machines).m_chips_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "sample" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
 		info::binaries::sample &sample = m_samples.emplace_back();
-		sample.m_name_strindex = attributes.get("name", data) ? m_strings.get(data) : 0;
+		sample.m_name_strindex	= m_strings.get(attributes, "name");
 		util::last(m_machines).m_samples_count++;
 	});
 	xml.onElementBegin({ { "mame", "machine", "configuration" },
 						 { "mame", "machine", "dipswitch" } }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
 		info::binaries::configuration &configuration = m_configurations.emplace_back();
-		configuration.m_name_strindex					= attributes.get("name", data) ? m_strings.get(data) : 0;
-		configuration.m_tag_strindex					= attributes.get("tag", data) ? m_strings.get(data) : 0;
+		configuration.m_name_strindex					= m_strings.get(attributes, "name");
+		configuration.m_tag_strindex					= m_strings.get(attributes, "tag");
+		configuration.m_mask							= attributes.get<std::uint32_t>("mask").value_or(0);
 		configuration.m_configuration_settings_index	= to_uint32(m_configuration_settings.size());
 		configuration.m_configuration_settings_count	= 0;
-		attributes.get("mask", configuration.m_mask);
 	
 		util::last(m_machines).m_configurations_count++;
 	});
 	xml.onElementBegin({ { "mame", "machine", "configuration", "confsetting" },
 						 { "mame", "machine", "dipswitch", "dipvalue" } }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
 		info::binaries::configuration_setting &configuration_setting = m_configuration_settings.emplace_back();
-		configuration_setting.m_name_strindex		= attributes.get("name", data) ? m_strings.get(data) : 0;
+		configuration_setting.m_name_strindex		= m_strings.get(attributes, "name");
 		configuration_setting.m_conditions_index	= to_uint32(m_configuration_conditions.size());
-		attributes.get("value", configuration_setting.m_value);
+		configuration_setting.m_value				= attributes.get<std::uint32_t>("value").value_or(0);
 
 		util::last(m_configurations).m_configuration_settings_count++;
 	});
@@ -261,21 +272,18 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = m_configuration_conditions.emplace_back();
-		configuration_condition::relation_t relation;
-		configuration_condition.m_tag_strindex			= attributes.get("tag", data) ? m_strings.get(data) : 0;
-		configuration_condition.m_relation				= (uint8_t)(attributes.get("relation", relation, s_relation_parser) ? relation : info::configuration_condition::relation_t::UNKNOWN);
-		attributes.get("mask", configuration_condition.m_mask);
-		attributes.get("value", configuration_condition.m_value);
+		configuration_condition.m_tag_strindex			= m_strings.get(attributes, "tag");
+		configuration_condition.m_relation				= encodeEnum(attributes.get<info::configuration_condition::relation_t>("relation", s_relation_parser));
+		configuration_condition.m_mask					= attributes.get<std::uint32_t>("mask").value_or(0);
+		configuration_condition.m_value					= attributes.get<std::uint32_t>("value").value_or(0);
 	});
 	xml.onElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
-		bool mandatory;
 		info::binaries::device &device = m_devices.emplace_back();
-		device.m_type_strindex			= attributes.get("type", data) ? m_strings.get(data) : 0;
-		device.m_tag_strindex			= attributes.get("tag", data) ? m_strings.get(data) : 0;
-		device.m_interface_strindex		= attributes.get("interface", data) ? m_strings.get(data) : 0;
-		device.m_mandatory				= attributes.get("mandatory", mandatory) && mandatory ? 1 : 0;
+		device.m_type_strindex			= m_strings.get(attributes, "type");
+		device.m_tag_strindex			= m_strings.get(attributes, "tag");
+		device.m_interface_strindex		= m_strings.get(attributes, "interface");
+		device.m_mandatory				= encodeBool(attributes.get<bool>("mandatory").value_or(false));
 		device.m_instance_name_strindex	= 0;
 		device.m_extensions_strindex	= 0;
 
@@ -285,16 +293,14 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "device", "instance" }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
-		if (attributes.get("name", data))
-			util::last(m_devices).m_instance_name_strindex = m_strings.get(data);
+		util::last(m_devices).m_instance_name_strindex = m_strings.get(attributes, "name");
 	});
 	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		std::string name;
-		if (attributes.get("name", name))
+		std::optional<std::string> name = attributes.get<std::string>("name");
+		if (name)
 		{
-			current_device_extensions.append(name);
+			current_device_extensions.append(*name);
 			current_device_extensions.append(",");
 		}
 	});
@@ -305,59 +311,43 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "driver" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		bool supported, unofficial, incomplete;
-		info::machine::driver_quality_t quality;
 		info::binaries::machine &machine = util::last(m_machines);
-
-		if (attributes.get("status", quality, s_driver_quality_parser))
-			machine.m_quality_status = (uint8_t) quality;
-		if (attributes.get("emulation", quality, s_driver_quality_parser))
-			machine.m_quality_emulation = (uint8_t)quality;
-		if (attributes.get("cocktail", quality, s_driver_quality_parser))
-			machine.m_quality_cocktail = (uint8_t)quality;
-		if (attributes.get("savestate", supported, s_supported_parser))
-			machine.m_save_state_supported = supported ? 1 : 0;
-		if (attributes.get("unofficial", unofficial))
-			machine.m_unofficial = unofficial ? 1 : 0;
-		if (attributes.get("incomplete", incomplete))
-			machine.m_incomplete = incomplete ? 1 : 0;
+		machine.m_quality_status		= encodeEnum(attributes.get<info::machine::driver_quality_t>("status",		s_driver_quality_parser),	machine.m_quality_status);
+		machine.m_quality_emulation		= encodeEnum(attributes.get<info::machine::driver_quality_t>("emulation",	s_driver_quality_parser),	machine.m_quality_emulation);
+		machine.m_quality_cocktail		= encodeEnum(attributes.get<info::machine::driver_quality_t>("cocktail",	s_driver_quality_parser),	machine.m_quality_cocktail);
+		machine.m_save_state_supported	= encodeBool(attributes.get<bool>							("savestate",	s_supported_parser),		machine.m_save_state_supported);
+		machine.m_unofficial			= encodeBool(attributes.get<bool>							("unofficial"),								machine.m_unofficial);
+		machine.m_incomplete			= encodeBool(attributes.get<bool>							("incomplete"),								machine.m_incomplete);
 	});
 	xml.onElementBegin({ "mame", "machine", "slot" }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
 		info::binaries::slot &slot = m_slots.emplace_back();
-		slot.m_name_strindex					= attributes.get("name", data) ? m_strings.get(data) : 0;
+		slot.m_name_strindex					= m_strings.get(attributes, "name");
 		slot.m_slot_options_index				= to_uint32(m_slot_options.size());
 		slot.m_slot_options_count				= 0;
 		util::last(m_machines).m_slots_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "slot", "slotoption" }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
-		bool isDefault = false;
 		info::binaries::slot_option &slot_option = m_slot_options.emplace_back();
-		slot_option.m_name_strindex				= attributes.get("name", data) ? m_strings.get(data) : 0;
-		slot_option.m_devname_strindex			= attributes.get("devname", data) ? m_strings.get(data) : 0;
-		slot_option.m_is_default				= attributes.get("default", isDefault) && isDefault;
+		slot_option.m_name_strindex				= m_strings.get(attributes, "name");
+		slot_option.m_devname_strindex			= m_strings.get(attributes, "devname");
+		slot_option.m_is_default				= encodeBool(attributes.get<bool>("default").value_or(false));
 		util::last(m_slots).m_slot_options_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
-		info::software_list::status_type status;
 		info::binaries::software_list &software_list = m_software_lists.emplace_back();
-		software_list.m_name_strindex			= attributes.get("name", data) ? m_strings.get(data) : 0;
-		software_list.m_filter_strindex			= attributes.get("filter", data) ? m_strings.get(data) : 0;
-		software_list.m_status					= (uint8_t) (attributes.get("status", status, s_status_parser) ? status : info::software_list::status_type::ORIGINAL);
+		software_list.m_name_strindex			= m_strings.get(attributes, "name");
+		software_list.m_filter_strindex			= m_strings.get(attributes, "filter");
+		software_list.m_status					= encodeEnum(attributes.get<info::software_list::status_type>("status", s_status_parser));
 		util::last(m_machines).m_software_lists_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
 	{
-		std::string data;
-		bool b;
 		info::binaries::ram_option &ram_option = m_ram_options.emplace_back();
-		ram_option.m_name_strindex				= attributes.get("name", data) ? m_strings.get(data) : 0;
-		ram_option.m_is_default					= attributes.get("default", b) && b;
+		ram_option.m_name_strindex				= m_strings.get(attributes, "name");
+		ram_option.m_is_default					= encodeBool(attributes.get<bool>("default").value_or(false));
 		ram_option.m_value						= 0;
 		util::last(m_machines).m_ram_options_count++;
 	});
@@ -467,7 +457,7 @@ info::database_builder::string_table::string_table()
 
 
 //-------------------------------------------------
-//  string_table::get
+//  string_table::get(const std::string &s)
 //-------------------------------------------------
 
 std::uint32_t info::database_builder::string_table::get(const std::string &s)
@@ -491,9 +481,24 @@ std::uint32_t info::database_builder::string_table::get(const std::string &s)
 }
 
 
+//-------------------------------------------------
+//  string_table::get(const QString &s)
+//-------------------------------------------------
+
 std::uint32_t info::database_builder::string_table::get(const QString &s)
 {
 	return get(s.toStdString());
+}
+
+
+//-------------------------------------------------
+//  string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
+//-------------------------------------------------
+
+std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
+{
+	std::optional<QString> attributeValue = attributes.get<QString>(attribute);
+	return attributeValue ? get(*attributeValue) : 0;
 }
 
 
