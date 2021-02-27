@@ -72,7 +72,7 @@ jobs:
             mame0224
             mame0226
             mame0227
-            mame0228
+            mame0229
         EOF
 
     # Install PanDoc
