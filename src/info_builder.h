@@ -14,6 +14,7 @@
 class QDataStream;
 
 #include "info.h"
+#include "xmlparser.h"
 
 namespace info
 {
@@ -38,6 +39,7 @@ namespace info
 			string_table();
 			std::uint32_t get(const std::string &string);
 			std::uint32_t get(const QString &string);
+			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char> &data() const;
 			const char *lookup(std::uint32_t value) const;
 

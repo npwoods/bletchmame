@@ -105,9 +105,9 @@ static std::optional<MameVersion> getScriptRequiredMameVersion(const QString &sc
     XmlParser xml;
     xml.onElementBegin({ "script" }, [&result](const XmlParser::Attributes &attributes)
     {
-        QString requiredVersionString;
-        if (attributes.get("requiredVersion", requiredVersionString))
-            result = MameVersion(requiredVersionString);
+        std::optional<QString> requiredVersionString = attributes.get<QString>("requiredVersion");
+        if (requiredVersionString)
+            result = MameVersion(*requiredVersionString);
     });
 
     if (!xml.parse(scriptFileName))

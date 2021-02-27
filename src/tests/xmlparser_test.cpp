@@ -45,35 +45,28 @@ void XmlParser::Test::test()
 	const bool INVALID_BOOL_VALUE = (bool)42;
 
 	XmlParser xml;
-	QString charlie_value;
-	bool charlie_value_parsed = INVALID_BOOL_VALUE;
-	int foxtrot_value = 0;
-	bool foxtrot_value_parsed = INVALID_BOOL_VALUE;
-	bool golf_value = INVALID_BOOL_VALUE;
-	bool golf_value_parsed = INVALID_BOOL_VALUE;
-	bool hotel_value = INVALID_BOOL_VALUE;
-	bool hotel_value_parsed = INVALID_BOOL_VALUE;
-	bool india_value = INVALID_BOOL_VALUE;
-	bool india_value_parsed = INVALID_BOOL_VALUE;
-	std::uint32_t julliet_value = INVALID_BOOL_VALUE;
-	bool julliet_value_parsed = INVALID_BOOL_VALUE;
-	float kilo_value = INVALID_BOOL_VALUE;
-	bool kilo_value_parsed = INVALID_BOOL_VALUE;
-	std::uint64_t lima_value = 0;
-	bool lima_value_parsed = INVALID_BOOL_VALUE;
+	std::optional<QString> charlie_value = { };
+	std::optional<int> foxtrot_value = { };
+	std::optional<bool> golf_value = INVALID_BOOL_VALUE;
+	std::optional<bool> hotel_value = INVALID_BOOL_VALUE;
+	std::optional<bool> india_value = INVALID_BOOL_VALUE;
+	std::optional<std::uint32_t> julliet_value = { };
+	std::optional<float> kilo_value = { };
+	std::optional<std::uint64_t> lima_value = 0;
+
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		charlie_value_parsed = attributes.get("charlie", charlie_value);
+		charlie_value = attributes.get<QString>("charlie");
 	});
 	xml.onElementBegin({ "alpha", "echo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		foxtrot_value_parsed = attributes.get("foxtrot", foxtrot_value);
-		golf_value_parsed = attributes.get("golf", golf_value);
-		hotel_value_parsed = attributes.get("hotel", hotel_value);
-		india_value_parsed = attributes.get("india", india_value);
-		julliet_value_parsed = attributes.get("julliet", julliet_value);
-		kilo_value_parsed = attributes.get("kilo", kilo_value);
-		lima_value_parsed = attributes.get("lima", lima_value);
+		foxtrot_value = attributes.get<int>("foxtrot");
+		golf_value = attributes.get<bool>("golf");
+		hotel_value = attributes.get<bool>("hotel");
+		india_value = attributes.get<bool>("india");
+		julliet_value = attributes.get<std::uint32_t>("julliet");
+		kilo_value = attributes.get<float>("kilo");
+		lima_value = attributes.get<std::uint64_t>("lima");
 	});
 
 	const char *xml_text =
@@ -85,21 +78,13 @@ void XmlParser::Test::test()
 
 	QVERIFY(result);
 	QVERIFY(charlie_value == "delta");
-	QVERIFY(charlie_value_parsed);
 	QVERIFY(foxtrot_value == 42);
-	QVERIFY(foxtrot_value_parsed);
-	QVERIFY(!golf_value);
-	QVERIFY(!golf_value_parsed);
-	QVERIFY(hotel_value);
-	QVERIFY(hotel_value_parsed);
-	QVERIFY(!india_value);
-	QVERIFY(india_value_parsed);
+	QVERIFY(golf_value == std::nullopt);
+	QVERIFY(hotel_value == true);
+	QVERIFY(india_value == false);
 	QVERIFY(julliet_value == 2500000000);
-	QVERIFY(julliet_value_parsed);
-	QVERIFY(abs(kilo_value - 3.14159f) < 0.000000001);
-	QVERIFY(kilo_value_parsed);
+	QVERIFY(abs(kilo_value.value() - 3.14159f) < 0.000000001);
 	QVERIFY(lima_value == 0x10DEADBEEF);
-	QVERIFY(lima_value_parsed);
 }
 
 
@@ -111,11 +96,10 @@ void XmlParser::Test::unicode()
 {
 	XmlParser xml;
 	QString bravo_value;
-	QString charlie_value;
+	std::optional<QString> charlie_value;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		bool result = attributes.get("charlie", charlie_value);
-		QVERIFY(result);
+		charlie_value = attributes.get<QString>("charlie");
 	});
 	xml.onElementEnd({ "alpha", "bravo" }, [&](QString &&value)
 	{
@@ -126,7 +110,8 @@ void XmlParser::Test::unicode()
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
 	QVERIFY(bravo_value.toStdWString() == L"\u60AA");
-	QVERIFY(charlie_value.toStdWString() == L"\u6B7B");
+	QVERIFY(charlie_value.has_value());
+	QVERIFY(charlie_value->toStdWString() == L"\u6B7B");
 }
 
 
@@ -141,8 +126,7 @@ void XmlParser::Test::skipping()
 	int unexpected_invocations = 0;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		bool skip_value;
-		attributes.get("skip", skip_value);
+		bool skip_value = attributes.get<bool>("skip").value();
 		return skip_value ? XmlParser::ElementResult::Skip : XmlParser::ElementResult::Ok;
 	});
 	xml.onElementBegin({ "alpha", "bravo", "expected" }, [&](const XmlParser::Attributes &)
@@ -177,11 +161,10 @@ void XmlParser::Test::multiple()
 	xml.onElementBegin({ { "alpha", "bravo" },
 						 { "alpha", "charlie" },
 						 { "alpha", "delta" } }, [&](const XmlParser::Attributes &attributes)
-		{
-			int value;
-			attributes.get("value", value);
-			total += value;
-		});
+	{
+		int value = attributes.get<int>("value").value();
+		total += value;
+	});
 
 	const char *xml_text =
 		"<alpha>"
@@ -206,8 +189,7 @@ void XmlParser::Test::xmlParsingError()
 	std::vector<int> values;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		int value;
-		attributes.get("value", value);
+		int value = attributes.get<int>("value").value();
 		values.push_back(value);
 	});
 
@@ -231,9 +213,7 @@ void XmlParser::Test::attributeParsingError(const char *xmlText)
 	std::optional<T> value;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		T x;
-		if (attributes.get("value", x))
-			value = x;
+		value = attributes.get<T>("value");
 	});
 
 	QVERIFY(!xml.parseBytes(xmlText, strlen(xmlText)));

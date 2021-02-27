@@ -58,47 +58,29 @@ public:
 	public:
 		Attributes(XmlParser &parser, const char **attributes);
 
-		bool get(const char *attribute, int &value) const;
-		bool get(const char *attribute, std::uint32_t &value) const;
-		bool get(const char *attribute, std::uint64_t &value) const;
-		bool get(const char *attribute, bool &value) const;
-		bool get(const char *attribute, float &value) const;
-		bool get(const char *attribute, QString &value) const;
-		bool get(const char *attribute, std::string &value) const;
-
-		template<typename T>
-		bool get(const char *attribute, T &value, T &&default_value) const
-		{
-			bool result = get(attribute, value);
-			if (!result)
-				value = std::move(default_value);
-			return result;
-		}
+		template<class T> std::optional<T> get(const char *attribute) const;
+		template<> std::optional<int>			get<int>			(const char *attribute) const;
+		template<> std::optional<bool>			get<bool>			(const char *attribute) const;
+		template<> std::optional<float>			get<float>			(const char *attribute) const;
+		template<> std::optional<QString>		get<QString>		(const char *attribute) const;
+		template<> std::optional<std::string>	get<std::string>	(const char *attribute) const;
+		template<> std::optional<std::uint32_t>	get<std::uint32_t>	(const char *attribute) const;
+		template<> std::optional<std::uint64_t>	get<std::uint64_t>	(const char *attribute) const;
 
 		template<typename T, typename TFunc>
-		bool get(const char *attribute, T &value, TFunc func) const
+		std::optional<T> get(const char *attribute, TFunc func) const
 		{
-			std::string text;
-			bool result = get(attribute, text);
-			if (result)
+			std::optional<T> result = { };
+			std::optional<std::string> text = get<std::string>(attribute);
+			if (text.has_value())
 			{
-				result = func(text, value);
-				if (!result)
-					reportAttributeParsingError(attribute, text);
+				T funcResult;
+				if (func(text.value(), funcResult))
+					result = std::move(funcResult);
+				else
+					reportAttributeParsingError(attribute, text.value());
 			}
-			if (!result)
-				value = T();
 			return result;
-		}
-
-		template<typename T>
-		void get(const char *attribute, std::optional<T> &value) const
-		{
-			T temp_value;
-			bool result = get(attribute, temp_value);
-			value = result
-				? std::move(temp_value)
-				: std::optional<T>();
 		}
 
 	private:

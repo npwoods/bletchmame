@@ -535,82 +535,78 @@ XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<int>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, int &value) const
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const
 {
-	return get(attribute, value, strtoll_parser<int>());
+	return get<int>(attribute, strtoll_parser<int>());
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::uint32_t>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, std::uint32_t &value) const
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const
 {
-	return get(attribute, value, strtoull_parser<std::uint32_t>());
+	return get<std::uint32_t>(attribute, strtoull_parser<std::uint32_t>());
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::uint64_t>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, std::uint64_t &value) const
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const
 {
-	return get(attribute, value, strtoull_parser<std::uint64_t>());
+	return get<std::uint64_t>(attribute, strtoull_parser<std::uint64_t>());
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<bool>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, bool &value) const
+template<> std::optional<bool> XmlParser::Attributes::get<bool>(const char *attribute) const
 {
-	return get(attribute, value, s_bool_parser);
+	return get<bool>(attribute, s_bool_parser);
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<float>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, float &value) const
+template<> std::optional<float> XmlParser::Attributes::get<float>(const char *attribute) const
 {
-	return get(attribute, value, strtof_parser<float>());
+	return get<float>(attribute, strtof_parser<float>());
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<QString>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, QString &value) const
+template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char *attribute) const
 {
 	const char *s = internalGet(attribute, true);
-	if (s)
-		value = QString::fromUtf8(s);
-	else
-		value.clear();
-	return s != nullptr;
+	return s
+		? QString::fromUtf8(s)
+		: std::optional<QString>();
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::string>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, std::string &value) const
+template<> std::optional<std::string> XmlParser::Attributes::get<std::string>(const char *attribute) const
 {
 	const char *s = internalGet(attribute, true);
-	if (s)
-		value = s;
-	else
-		value.clear();
-	return s != nullptr;
+	return s
+		? s
+		: std::optional<std::string>();
 }
 
 

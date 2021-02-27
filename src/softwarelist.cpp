@@ -25,13 +25,13 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 	std::string current_device_extensions;
 	xml.onElementBegin({ "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
-		attributes.get("name", m_name);
-		attributes.get("description", m_description);
+		m_name			= attributes.get<QString>("name").value_or("");
+		m_description	= attributes.get<QString>("description").value_or("");
 	});
 	xml.onElementBegin({ "softwarelist", "software" }, [this](const XmlParser::Attributes &attributes)
 	{
 		software &s = m_software.emplace_back();
-		attributes.get("name", s.m_name);
+		s.m_name		= attributes.get<QString>("name").value_or("");
 		s.m_parts.reserve(16);
 	});
 	xml.onElementEnd({ "softwarelist", "software" }, [this](QString &&)
@@ -53,8 +53,8 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 	xml.onElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
 	{
 		part &p = util::last(m_software).m_parts.emplace_back();
-		attributes.get("name", p.m_name);
-		attributes.get("interface", p.m_interface);
+		p.m_name		= attributes.get<QString>("name").value_or("");
+		p.m_interface	= attributes.get<QString>("interface").value_or("");
 	});
 
 	// parse the XML, but be bold and try to reserve lots of space

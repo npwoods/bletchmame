@@ -131,20 +131,20 @@ std::optional<profiles::profile> profiles::profile::load(QIODevice & stream, QSt
 	XmlParser xml;
 	xml.onElementBegin({ "profile" }, [&](const XmlParser::Attributes &attributes)
 	{
-		attributes.get("machine", result.m_machine);
-		attributes.get("software", result.m_software);
+		result.m_machine	= attributes.get<QString>("machine").value_or("");
+		result.m_software	= attributes.get<QString>("software").value_or("");
 	});
 	xml.onElementBegin({ "profile", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
 		image &i = result.m_images.emplace_back();
-		attributes.get("tag",	i.m_tag);
-		attributes.get("path",	i.m_path);
+		i.m_tag				= attributes.get<QString>("tag").value_or("");
+		i.m_path			= attributes.get<QString>("path").value_or("");
 	});
 	xml.onElementBegin({ "profile", "slot" }, [&](const XmlParser::Attributes &attributes)
 	{
 		slot &s = result.m_slots.emplace_back();
-		attributes.get("name",	s.m_name);
-		attributes.get("value",	s.m_value);
+		s.m_name			= attributes.get<QString>("name").value_or("");
+		s.m_value			= attributes.get<QString>("value").value_or("");
 	});
 
 	return xml.parse(stream) && result.is_valid()

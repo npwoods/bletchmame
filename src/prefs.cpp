@@ -475,20 +475,20 @@ bool Preferences::Load(QIODevice &input)
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
-		bool menu_bar_shown;
-		if (attributes.get("menu_bar_shown", menu_bar_shown))
-			SetMenuBarShown(menu_bar_shown);
+		std::optional<bool> menu_bar_shown = attributes.get<bool>("menu_bar_shown");
+		if (menu_bar_shown)
+			SetMenuBarShown(*menu_bar_shown);
 
-		list_view_type selected_tab;
-		if (attributes.get("selected_tab", selected_tab, s_list_view_type_parser))
-			SetSelectedTab(selected_tab);			
+		std::optional<list_view_type> selected_tab = attributes.get<list_view_type>("selected_tab", s_list_view_type_parser);
+		if (selected_tab)
+			SetSelectedTab(*selected_tab);
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
-		QString type_string;
-		if (attributes.get("type", type_string))
+		std::optional<QString> type_string = attributes.get<QString>("type");
+		if (type_string)
 		{
-			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), type_string);
+			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), *type_string);
 			type = iter != s_path_names.cend()
 				? static_cast<global_path_type>(iter - s_path_names.cbegin())
 				: global_path_type::COUNT;
@@ -506,12 +506,14 @@ bool Preferences::Load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
 	{
-		int width, height;
-		if (attributes.get("width", width) && attributes.get("height", height) && IsValidDimension(width) && IsValidDimension(height))
+		std::optional<int> width = attributes.get<int>("width");
+		std::optional<int> height = attributes.get<int>("height");
+
+		if (width && height && IsValidDimension(*width) && IsValidDimension(*height))
 		{
 			QSize size;
-			size.setWidth(width);
-			size.setHeight(height);
+			size.setWidth(*width);
+			size.setHeight(*height);
 			SetSize(size);
 		}
 	});	
@@ -523,23 +525,24 @@ bool Preferences::Load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "folder" }, [&](const XmlParser::Attributes &attributes)
 	{
-		QString id;
-		if (attributes.get("id", id))
+		std::optional<QString> id = attributes.get<QString>("id");
+		if (id)
 		{
-			bool isShown, isSelected;
-			FolderPrefs folderPrefs = GetFolderPrefs(id);
-			if (attributes.get("shown", isShown))
-				folderPrefs.m_shown = isShown;
-			SetFolderPrefs(id, std::move(folderPrefs));
-			if (attributes.get("selected", isSelected) && isSelected)
-				SetMachineFolderTreeSelection(std::move(id));
+			FolderPrefs folderPrefs = GetFolderPrefs(*id);
+			std::optional<bool> isShown = attributes.get<bool>("shown");
+			if (isShown)
+				folderPrefs.m_shown = *isShown;
+			SetFolderPrefs(*id, std::move(folderPrefs));
+			
+			if (attributes.get<bool>("selected") == true)
+				SetMachineFolderTreeSelection(std::move(id.value()));
 		}
 	});
 	xml.onElementBegin({ "preferences", "customfolder" }, [&](const XmlParser::Attributes &attributes)
 	{
-		QString name;
-		if (attributes.get("name", name))
-			current_custom_folder = &m_custom_folders.emplace(name, std::set<QString>()).first->second;
+		std::optional<QString> name = attributes.get<QString>("name");
+		if (name)
+			current_custom_folder = &m_custom_folders.emplace(name.value(), std::set<QString>()).first->second;
 	});
 	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
 	{
@@ -552,20 +555,17 @@ bool Preferences::Load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::string list_view;
-		std::string softlist;
-		if (attributes.get("view", list_view))
+		std::optional<std::string> list_view = attributes.get<std::string>("view");
+		if (list_view)
 		{
-			attributes.get("softlist", softlist);
-			QString key = GetListViewSelectionKey(list_view.c_str(), QString::fromStdString(softlist));
+			std::string softlist = attributes.get<std::string>("softlist").value_or("");
+			QString key = GetListViewSelectionKey(list_view->c_str(), QString::fromStdString(softlist));
 			current_list_view_parameter = &m_list_view_selection[key];
 		}
 	});
 	xml.onElementBegin({ "preferences", "searchboxtext" }, [&](const XmlParser::Attributes &attributes)
 	{
-		QString list_view;
-		if (!attributes.get("view", list_view))
-			list_view = "machine";
+		QString list_view = attributes.get<QString>("view").value_or("machine");
 		current_list_view_parameter = &m_list_view_filter[list_view];
 	});
 	xml.onElementEnd({{ "preferences", "selection" },
@@ -577,32 +577,41 @@ bool Preferences::Load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::string view_type, id;
-		if (attributes.get("type", view_type) && attributes.get("id", id))
+		std::optional<std::string> view_type = attributes.get<std::string>("type");
+		std::optional<std::string> id = attributes.get<std::string>("id");
+		if (view_type && id)
 		{
-			ColumnPrefs &col_prefs = m_column_prefs[view_type][id];
-			attributes.get("width", col_prefs.m_width);
-			attributes.get("order", col_prefs.m_order);
-			attributes.get("sort", col_prefs.m_sort, s_column_sort_type_parser);
+			ColumnPrefs &col_prefs = m_column_prefs[*view_type][*id];
+			col_prefs.m_width = attributes.get<int>("width").value_or(col_prefs.m_width);
+			col_prefs.m_order = attributes.get<int>("order").value_or(col_prefs.m_order);
+			col_prefs.m_sort = attributes.get<Qt::SortOrder>("sort", s_column_sort_type_parser);
 		}
 	});
 	xml.onElementBegin({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
 	{
-		if (!attributes.get("name", current_machine_name))
+		std::optional<QString> name = attributes.get<QString>("name");
+		if (!name)
 			return XmlParser::ElementResult::Skip;
+		current_machine_name = *name;
 
-		QString path;
-		if (attributes.get("working_directory", path))
-			SetMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(path));
-		if (attributes.get("last_save_state", path))
-			SetMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(path));
+		std::optional<QString> workingDirectory = attributes.get<QString>("working_directory");
+		if (workingDirectory)
+			SetMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(*workingDirectory));
+
+		std::optional<QString> lastSaveState = attributes.get<QString>("last_save_state");
+		if (lastSaveState)
+			SetMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(*lastSaveState));
+
 		return XmlParser::ElementResult::Ok;
 	});
 	xml.onElementBegin({ "preferences", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
-		return attributes.get("type", current_device_type)
-			? XmlParser::ElementResult::Ok
-			: XmlParser::ElementResult::Skip;
+		std::optional<QString> type = attributes.get<QString>("type");
+		if (!type)
+			return XmlParser::ElementResult::Skip;
+
+		current_device_type = std::move(*type);
+		return XmlParser::ElementResult::Ok;
 	});
 	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](QString &&content)
 	{
