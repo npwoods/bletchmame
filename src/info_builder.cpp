@@ -477,8 +477,9 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		m_machines.end(),
 		[this](const binaries::machine &a, const binaries::machine &b)
 		{
-			const char *aText = m_strings.lookup(a.m_name_strindex);
-			const char *bText = m_strings.lookup(b.m_name_strindex);
+			std::array<char, 6> ssoBufferA, ssoBufferB;
+			const char *aText = m_strings.lookup(a.m_name_strindex, ssoBufferA);
+			const char *bText = m_strings.lookup(b.m_name_strindex, ssoBufferB);
 			return strcmp(aText, bText) < 0;
 		});
 
@@ -524,9 +525,6 @@ info::database_builder::string_table::string_table()
 	m_data.reserve(2400000);		// 2001943 bytes
 	m_map.reserve(105000);			// 96686 entries
 
-	// special case; prime empty string to be #0
-	get(std::string());
-
 	// embed the initial magic bytes
 	embed_value(info::binaries::MAGIC_STRINGTABLE_BEGIN);
 }
@@ -538,6 +536,11 @@ info::database_builder::string_table::string_table()
 
 std::uint32_t info::database_builder::string_table::get(const std::string &s)
 {
+	// try encoding as a small string
+	std::optional<std::uint32_t> ssoResult = info::database::tryEncodeAsSmallString(s);
+	if (ssoResult)
+		return *ssoResult;
+
 	// if we've already cached this value, look it up
 	auto iter = m_map.find(s);
 	if (iter != m_map.end())
@@ -563,6 +566,7 @@ std::uint32_t info::database_builder::string_table::get(const std::string &s)
 
 std::uint32_t info::database_builder::string_table::get(const QString &s)
 {
+	// this is safe because QString::toStdString() specified UTF-8
 	return get(s.toStdString());
 }
 
@@ -574,7 +578,7 @@ std::uint32_t info::database_builder::string_table::get(const QString &s)
 std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
 {
 	std::optional<QString> attributeValue = attributes.get<QString>(attribute);
-	return attributeValue ? get(*attributeValue) : 0;
+	return get(attributeValue ? *attributeValue : QString());
 }
 
 
@@ -592,9 +596,21 @@ const std::vector<char> &info::database_builder::string_table::data() const
 //  string_table::lookup
 //-------------------------------------------------
 
-const char *info::database_builder::string_table::lookup(std::uint32_t value) const
+const char *info::database_builder::string_table::lookup(std::uint32_t value, std::array<char, 6> &ssoBuffer) const
 {
-	assert(value < m_data.size());
-	assert(value + strlen(&m_data[value]) < m_data.size());
-	return &m_data[value];
+	const char *result;
+
+	std::optional<std::array<char, 6>> sso = info::database::tryDecodeAsSmallString(value);
+	if (sso)
+	{
+		ssoBuffer = std::move(*sso);
+		result = &ssoBuffer[0];
+	}
+	else
+	{
+		assert(value < m_data.size());
+		assert(value + strlen(&m_data[value]) < m_data.size());
+		result = &m_data[value];
+	}
+	return result;
 }
