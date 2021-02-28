@@ -315,6 +315,40 @@ std::optional<info::chip> info::machine::find_chip(const QString &chipName) cons
 
 
 //-------------------------------------------------
+//  machine::clone_of
+//-------------------------------------------------
+
+std::optional<info::machine> info::machine::clone_of() const
+{
+	std::optional<info::machine> result = { };
+	if (inner().m_clone_of_strindex > 0)
+	{
+		const QString &cloneOfString = get_string(inner().m_clone_of_strindex);
+		if (!cloneOfString.isEmpty())
+			result = db().find_machine(cloneOfString);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  machine::rom_of
+//-------------------------------------------------
+
+std::optional<info::machine> info::machine::rom_of() const
+{
+	std::optional<info::machine> result = { };
+	if (inner().m_rom_of_strindex > 0)
+	{
+		const QString &romOfString = get_string(inner().m_rom_of_strindex);
+		if (!romOfString.isEmpty())
+			result = db().find_machine(romOfString);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  slot_option::machine
 //-------------------------------------------------
 

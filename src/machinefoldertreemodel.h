@@ -106,8 +106,9 @@ private:
 
 	info::database &							m_infoDb;
 	Preferences &								m_prefs;
-	std::array<RootFolderDesc, 13>				m_rootFolderList;
+	std::array<RootFolderDesc, 14>				m_rootFolderList;
 	std::vector<FolderEntry>					m_root;
+	std::vector<FolderEntry>					m_bios;
 	std::vector<FolderEntry>					m_cpu;
 	std::vector<FolderEntry>					m_custom;
 	std::vector<FolderEntry>					m_manufacturer;

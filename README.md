@@ -10,7 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.6 (TBD)
 	- Added a number of MAMEUI-style builtin folders 
-		- CPU, Mechanical, Non Mechanical, Samples, Save State, Sound, Unofficial
+		- BIOS, CPU, Mechanical, Non Mechanical, Samples, Save State, Sound, Unofficial
 	- Added support for custom folders
 	- Added a "Show Folders" contextual menu to the folder tree
 	- Fixed a unicode issue in preferences handling

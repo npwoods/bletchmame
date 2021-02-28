@@ -554,6 +554,8 @@ namespace info
 		// methods
 		std::optional<info::device> find_device(const QString &tag) const;
 		std::optional<info::chip> find_chip(const QString &chipName) const;
+		std::optional<info::machine> clone_of() const;
+		std::optional<info::machine> rom_of() const;
 
 		// properties
 		bool runnable() const								{ return inner().m_runnable; }
@@ -564,11 +566,15 @@ namespace info
 		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
 		const QString &name() const							{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const					{ return get_string(inner().m_sourcefile_strindex); }
-		const QString &clone_of() const						{ return get_string(inner().m_clone_of_strindex); }
-		const QString &rom_of() const						{ return get_string(inner().m_rom_of_strindex); }
 		const QString &description() const					{ return get_string(inner().m_description_strindex); }
 		const QString &year() const							{ return get_string(inner().m_year_strindex); }
 		const QString &manufacturer() const					{ return get_string(inner().m_manufacturer_strindex); }
+
+		// operators
+		bool operator==(const info::machine &that) const
+		{
+			return name() == that.name();
+		}
 
 		// views
 		biosset::view				biossets() const;

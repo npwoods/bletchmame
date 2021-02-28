@@ -35,6 +35,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	, m_prefs(prefs)
 	, m_rootFolderList({
 		RootFolderDesc("all",			"All Systems"),
+		RootFolderDesc("bios",			"BIOS"),
 		RootFolderDesc("clones",		"Clones"),
 		RootFolderDesc("cpu",			"CPU"),
 		RootFolderDesc("custom",		"Custom"),
@@ -142,6 +143,21 @@ void MachineFolderTreeModel::refresh()
 
 
 //-------------------------------------------------
+//  getBiosMachine
+//-------------------------------------------------
+
+static std::optional<info::machine> getBiosMachine(info::machine machine)
+{
+	std::optional<info::machine> cloneOf;
+	while ((cloneOf = machine.clone_of()).has_value())
+		machine = *cloneOf;
+
+	std::optional<info::machine> romOf = machine.rom_of();
+	return romOf && romOf->is_bios() ? romOf : std::nullopt;
+}
+
+
+//-------------------------------------------------
 //  populateVariableFolders
 //-------------------------------------------------
 
@@ -156,8 +172,10 @@ void MachineFolderTreeModel::populateVariableFolders()
 		{
 			if (!strcmp(desc.id(), "all"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
+			else if (!strcmp(desc.id(), "bios"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_bios);
 			else if (!strcmp(desc.id(), "clones"))
-				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of().isEmpty(); });
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.clone_of().has_value(); });
 			else if (!strcmp(desc.id(), "cpu"))
 				m_root.emplace_back(desc.id(), FolderIcon::Cpu, desc.displayName(), m_cpu);
 			else if (!strcmp(desc.id(), "custom"))
@@ -167,7 +185,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 			else if (!strcmp(desc.id(), "nonmechanical"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.is_mechanical() == false; });
 			else if (!strcmp(desc.id(), "originals"))
-				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.clone_of().isEmpty(); });
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of().has_value(); });
 			else if (!strcmp(desc.id(), "samples"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.samples().size() > 0; });
 			else if (!strcmp(desc.id(), "savestate"))
@@ -187,6 +205,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 
 	// iterate through all machines and accumulate the pertinent data; because
 	// this can be expensive we're using reference wrappers
+	std::set<std::reference_wrapper<const QString>> bioses;
 	std::set<std::reference_wrapper<const QString>> cpus;
 	std::set<std::reference_wrapper<const QString>> manufacturers;
 	std::set<std::reference_wrapper<const QString>> sounds;
@@ -196,10 +215,12 @@ void MachineFolderTreeModel::populateVariableFolders()
 	{
 		if (machine.runnable())
 		{
+			// manufacturer/source/year folders
 			manufacturers.emplace(machine.manufacturer());
 			sourceFiles.emplace(machine.sourcefile());
 			years.emplace(machine.year());
 
+			// cpu/sound folders
 			for (info::chip chip : machine.chips())
 			{
 				switch (chip.type())
@@ -212,7 +233,22 @@ void MachineFolderTreeModel::populateVariableFolders()
 					break;
 				}
 			}
+
+			// bios folder
+			std::optional<info::machine> biosMachine = getBiosMachine(machine);
+			if (biosMachine)
+				bioses.emplace(biosMachine->name());
 		}
+	}
+
+	// set up the BIOSes folder
+	m_bios.clear();
+	m_bios.reserve(bioses.size());
+	for (const QString &bios : bioses)
+	{
+		info::machine biosMachine = *m_infoDb.find_machine(bios);
+		auto predicate = [biosMachine](const info::machine &machine) { return getBiosMachine(machine) == biosMachine; };
+		m_bios.emplace_back(biosMachine.name(), FolderIcon::Folder, biosMachine.description(), std::move(predicate));
 	}
 
 	// set up the CPUs folder
