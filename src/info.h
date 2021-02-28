@@ -58,8 +58,8 @@ namespace info
 		{
 			std::uint32_t	m_name_strindex;
 			std::uint32_t	m_sourcefile_strindex;
-			std::uint32_t	m_clone_of_strindex;
-			std::uint32_t	m_rom_of_strindex;
+			std::uint32_t	m_clone_of_machindex;
+			std::uint32_t	m_rom_of_machindex;
 			std::uint32_t	m_description_strindex;
 			std::uint32_t	m_year_strindex;
 			std::uint32_t	m_manufacturer_strindex;

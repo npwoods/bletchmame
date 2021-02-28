@@ -36,12 +36,14 @@ namespace info
 		class string_table
 		{
 		public:
+			typedef std::array<char, 6> SsoBuffer;
+
 			string_table();
 			std::uint32_t get(const std::string &string);
 			std::uint32_t get(const QString &string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char> &data() const;
-			const char *lookup(std::uint32_t value, std::array<char, 6> &ssoBuffer) const;
+			const char *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
 
 			template<typename T> void embed_value(T value)
 			{
