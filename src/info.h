@@ -233,6 +233,7 @@ namespace info
 namespace info
 {
 	class database;
+	class database_builder;
 	class machine;
 
 	// ======================> biosset
@@ -603,6 +604,7 @@ namespace info
 	{
 		template<typename TDatabase, typename TPublic, typename TBinary>
 		friend class ::bindata::view;
+		friend class database_builder;
 	public:
 		database()
 			: m_version(&util::g_empty_string)
@@ -673,6 +675,9 @@ namespace info
 		// private functions
 		void onChanged();
 		static const char *getStringFromData(const State &state, std::uint32_t offset);
+		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char ch);
+		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::string_view s);
+		static std::optional<std::array<char, 6>> tryDecodeAsSmallString(std::uint32_t value);
 	};
 
 	inline biosset::view				machine::biossets() const		{ return db().biossets().subview(inner().m_biossets_index, inner().m_biossets_count); }

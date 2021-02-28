@@ -41,7 +41,7 @@ namespace info
 			std::uint32_t get(const QString &string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char> &data() const;
-			const char *lookup(std::uint32_t value) const;
+			const char *lookup(std::uint32_t value, std::array<char, 6> &ssoBuffer) const;
 
 			template<typename T> void embed_value(T value)
 			{

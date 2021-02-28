@@ -17,6 +17,13 @@
 
 
 //**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+static const char *s_smallStringChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ";
+
+
+//**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
 
@@ -142,9 +149,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	// sanity check the string table
 	if (newState.m_data.size() < (size_t)newState.m_string_table_offset + 1)
 		return false;
-	if (newState.m_data[newState.m_string_table_offset] != '\0')
-		return false;
-	if (!unaligned_check(&newState.m_data[(size_t)newState.m_string_table_offset + 1], binaries::MAGIC_STRINGTABLE_BEGIN))
+	if (!unaligned_check(&newState.m_data[(size_t)newState.m_string_table_offset], binaries::MAGIC_STRINGTABLE_BEGIN))
 		return false;
 	if (newState.m_data[newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
 		return false;
@@ -247,15 +252,32 @@ void info::database::onChanged()
 
 const QString &info::database::get_string(std::uint32_t offset) const
 {
-	if ((size_t)m_state.m_string_table_offset + offset >= m_state.m_data.size())
-		throw false;
-
+	// do we have this string in our loaded string cache?
 	auto iter = m_loaded_strings.find(offset);
 	if (iter != m_loaded_strings.end())
 		return iter->second;
 
-	const char *string = getStringFromData(m_state, util::safe_static_cast<std::uint32_t>(offset));
-	m_loaded_strings.emplace(offset, QString::fromUtf8(string));
+	QString string;
+	std::optional<std::array<char, 6>> smallString = tryDecodeAsSmallString(offset);
+	if (smallString)
+	{
+		// this was a small string
+		string = QString::fromUtf8(&(*smallString)[0]);
+	}
+	else
+	{
+		// perform a string table lookup, but perform bounds checking first
+		if ((size_t)m_state.m_string_table_offset + offset >= m_state.m_data.size())
+			throw false;
+
+		const char *utf8String = getStringFromData(m_state, util::safe_static_cast<std::uint32_t>(offset));
+		string = QString::fromUtf8(utf8String);
+	}
+
+	// deposit this image in our cache
+	m_loaded_strings.emplace(offset, std::move(string));
+
+	// and return a reference out of our cache
 	return m_loaded_strings.find(offset)->second;
 }
 
@@ -273,6 +295,72 @@ const char *info::database::getStringFromData(const State &state, std::uint32_t 
 
 	// access the data
 	return reinterpret_cast<const char *>(&state.m_data.data()[state.m_string_table_offset + offset]);
+}
+
+
+//-------------------------------------------------
+//  database::tryEncodeSmallStringChar
+//-------------------------------------------------
+
+std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(char ch)
+{
+	const char *p = (const char *) memchr(s_smallStringChars, ch, strlen(s_smallStringChars) + 1);
+	return p
+		? (std::uint32_t)(p - s_smallStringChars)
+		: std::optional<std::uint32_t>();
+}
+
+
+//-------------------------------------------------
+//  database::tryEncodeAsSmallString
+//-------------------------------------------------
+
+std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::string_view s)
+{
+	if (s.size() > 5)
+		return { };
+
+	std::optional<std::uint32_t> parts[5] =
+	{
+		tryEncodeSmallStringChar(s.size() >= 1 ? s[0] : '\0'),
+		tryEncodeSmallStringChar(s.size() >= 2 ? s[1] : '\0'),
+		tryEncodeSmallStringChar(s.size() >= 3 ? s[2] : '\0'),
+		tryEncodeSmallStringChar(s.size() >= 4 ? s[3] : '\0'),
+		tryEncodeSmallStringChar(s.size() >= 5 ? s[4] : '\0')
+	};
+
+	std::uint32_t result = 0xC0000000;
+	for (int i = 0; i < std::size(parts); i++)
+	{
+		if (!parts[i])
+			return { };
+		result |= *(parts[i]) << i * 6;
+	}
+
+	return result;
+}
+
+
+//-------------------------------------------------
+//  database::tryDecodeAsSmallString
+//-------------------------------------------------
+
+std::optional<std::array<char, 6>> info::database::tryDecodeAsSmallString(std::uint32_t value)
+{
+	std::optional<std::array<char, 6>> result = { };
+
+	// small strings have the high two bits set; check for that first
+	if ((value & 0xC0000000) == 0xC0000000)
+	{
+		// unpack this into a buffer
+		char buffer[6] = { 0, };
+		for (int i = 0; i < 5; i++)
+			buffer[i] = s_smallStringChars[(value >> (i * 6)) & 0x3F];
+
+		// and get the string
+		result = std::to_array(buffer);
+	}
+	return result;
 }
 
 
