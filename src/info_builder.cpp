@@ -201,8 +201,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_runnable				= encodeBool(attributes.get<bool>("runnable").value_or(true));
 		machine.m_name_strindex			= m_strings.get(attributes, "name");
 		machine.m_sourcefile_strindex	= m_strings.get(attributes, "sourcefile");
-		machine.m_clone_of_strindex		= m_strings.get(attributes, "cloneof");
-		machine.m_rom_of_strindex		= m_strings.get(attributes, "romof");
+		machine.m_clone_of_machindex	= m_strings.get(attributes, "cloneof");		// string index for now; changes to machine index later
+		machine.m_rom_of_machindex		= m_strings.get(attributes, "romof");		// string index for now; changes to machine index later
 		machine.m_is_bios				= encodeBool(attributes.get<bool>("isbios"));
 		machine.m_is_device				= encodeBool(attributes.get<bool>("isdevice"));
 		machine.m_is_mechanical			= encodeBool(attributes.get<bool>("ismechanical"));
@@ -477,11 +477,36 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		m_machines.end(),
 		[this](const binaries::machine &a, const binaries::machine &b)
 		{
-			std::array<char, 6> ssoBufferA, ssoBufferB;
+			string_table::SsoBuffer ssoBufferA, ssoBufferB;
 			const char *aText = m_strings.lookup(a.m_name_strindex, ssoBufferA);
 			const char *bText = m_strings.lookup(b.m_name_strindex, ssoBufferB);
 			return strcmp(aText, bText) < 0;
 		});
+
+	// build a machine index map
+	std::unordered_map<std::uint32_t, std::uint32_t> machineIndexMap;
+	machineIndexMap.reserve(m_machines.size() + 1);
+	machineIndexMap.emplace(m_strings.get(std::string()), ~0);
+	for (auto iter = m_machines.begin(); iter != m_machines.end(); iter++)
+	{
+		machineIndexMap.emplace(iter->m_name_strindex, iter - m_machines.begin());
+	}
+
+	// helper to perform machine index lookups
+	auto machineIndexFromStringIndex = [&machineIndexMap](std::uint32_t stringIndex)
+	{
+		auto iter = machineIndexMap.find(stringIndex);
+		return iter != machineIndexMap.end()
+			? iter->second
+			: ~0;	// should never happen unless -listxml is returning bad results
+	};
+
+	// and change clone_of and rom_of to be machine indexes, using the map we have above
+	for (info::binaries::machine &machine : m_machines)
+	{
+		machine.m_clone_of_machindex = machineIndexFromStringIndex(machine.m_clone_of_machindex);
+		machine.m_rom_of_machindex = machineIndexFromStringIndex(machine.m_rom_of_machindex);
+	}
 
 	// success!
 	error_message.clear();
@@ -596,7 +621,7 @@ const std::vector<char> &info::database_builder::string_table::data() const
 //  string_table::lookup
 //-------------------------------------------------
 
-const char *info::database_builder::string_table::lookup(std::uint32_t value, std::array<char, 6> &ssoBuffer) const
+const char *info::database_builder::string_table::lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const
 {
 	const char *result;
 
