@@ -11,6 +11,7 @@
 #ifndef INFO_H
 #define INFO_H
 
+#include <array>
 #include <vector>
 #include <unordered_map>
 #include <iterator>
@@ -37,6 +38,9 @@ namespace info
 			std::uint64_t	m_sizes_hash;
 			std::uint32_t	m_build_strindex;
 			std::uint32_t	m_machines_count;
+			std::uint32_t	m_biossets_count;
+			std::uint32_t	m_roms_count;
+			std::uint32_t	m_disks_count;
 			std::uint32_t	m_devices_count;
 			std::uint32_t	m_slots_count;
 			std::uint32_t	m_slot_options_count;
@@ -59,6 +63,12 @@ namespace info
 			std::uint32_t	m_description_strindex;
 			std::uint32_t	m_year_strindex;
 			std::uint32_t	m_manufacturer_strindex;
+			std::uint32_t	m_biossets_index;
+			std::uint32_t	m_biossets_count;
+			std::uint32_t	m_roms_index;
+			std::uint32_t	m_roms_count;
+			std::uint32_t	m_disks_index;
+			std::uint32_t	m_disks_count;
 			std::uint32_t	m_features_index;
 			std::uint32_t	m_features_count;
 			std::uint32_t	m_chips_index;
@@ -76,6 +86,8 @@ namespace info
 			std::uint32_t	m_slots_index;
 			std::uint32_t	m_slots_count;
 			std::uint8_t	m_runnable;
+			std::uint8_t	m_is_bios;
+			std::uint8_t	m_is_device;
 			std::uint8_t	m_is_mechanical;
 			std::uint8_t	m_quality_status;
 			std::uint8_t	m_quality_emulation;
@@ -83,6 +95,39 @@ namespace info
 			std::uint8_t	m_save_state_supported;
 			std::uint8_t	m_unofficial;
 			std::uint8_t	m_incomplete;
+		};
+
+		struct biosset
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint32_t	m_description_strindex;
+			std::uint8_t	m_default;
+		};
+
+		struct rom
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint32_t	m_bios_strindex;
+			std::uint32_t	m_size;
+			std::uint8_t	m_crc[4];
+			std::uint8_t	m_sha1[20];
+			std::uint32_t	m_merge_strindex;
+			std::uint32_t	m_region_strindex;
+			std::uint32_t	m_offset;
+			std::uint8_t	m_status;
+			std::uint8_t	m_optional;
+		};
+
+		struct disk
+		{
+			std::uint32_t	m_name_strindex;
+			std::uint8_t	m_sha1[20];
+			std::uint32_t	m_merge_strindex;
+			std::uint32_t	m_region_strindex;
+			std::uint32_t	m_index;
+			std::uint8_t	m_writable;
+			std::uint8_t	m_status;
+			std::uint8_t	m_optional;
 		};
 
 		struct feature
@@ -189,6 +234,73 @@ namespace info
 {
 	class database;
 	class machine;
+
+	// ======================> biosset
+	class biosset : public bindata::entry<database, biosset, binaries::biosset>
+	{
+	public:
+		biosset(const database &db, const binaries::biosset &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &description() const { return get_string(inner().m_description_strindex); }
+		bool is_default() const { return inner().m_default != 0; }
+	};
+
+
+	// ======================> rom
+	class rom : public bindata::entry<database, rom, binaries::rom>
+	{
+	public:
+		enum class dump_status_t
+		{
+			UNKNOWN,
+			BADDUMP,
+			NODUMP,
+			GOOD
+		};
+
+		rom(const database &db, const binaries::rom &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		const QString &bios() const { return get_string(inner().m_bios_strindex); }
+		std::uint32_t size() const { return inner().m_size; }
+		std::array<uint8_t, 4> crc() const { return std::to_array(inner().m_crc); }
+		std::array<uint8_t, 20> sha1() const { return std::to_array(inner().m_sha1); }
+		const QString &merge() const { return get_string(inner().m_merge_strindex); }
+		const QString &region() const { return get_string(inner().m_region_strindex); }
+		std::uint32_t offset() const { return inner().m_offset; }
+		dump_status_t status() const { return (dump_status_t)inner().m_status; }
+		bool optional() const { return inner().m_optional != 0; }
+	};
+
+
+	// ======================> disk
+	class disk : public bindata::entry<database, disk, binaries::disk>
+	{
+	public:
+		typedef rom::dump_status_t dump_status_t;
+
+		disk(const database &db, const binaries::disk &inner)
+			: entry(db, inner)
+		{
+		}
+
+		const QString &name() const { return get_string(inner().m_name_strindex); }
+		std::array<uint8_t, 20> sha1() const { return std::to_array(inner().m_sha1); }
+		const QString &merge() const { return get_string(inner().m_merge_strindex); }
+		const QString &region() const { return get_string(inner().m_region_strindex); }
+		std::uint32_t index() const { return inner().m_index; }
+		bool writable() const { return inner().m_writable != 0; }
+		dump_status_t status() const { return (dump_status_t)inner().m_status; }
+		bool optional() const { return inner().m_optional != 0; }
+	};
+
 
 	// ======================> device
 	class device : public bindata::entry<database, device, binaries::device>
@@ -442,21 +554,32 @@ namespace info
 		// methods
 		std::optional<info::device> find_device(const QString &tag) const;
 		std::optional<info::chip> find_chip(const QString &chipName) const;
+		std::optional<info::machine> clone_of() const;
+		std::optional<info::machine> rom_of() const;
 
 		// properties
 		bool runnable() const								{ return inner().m_runnable; }
+		std::optional<bool> is_bios() const					{ return decode_optional_bool(inner().m_is_bios); }
+		std::optional<bool> is_device() const				{ return decode_optional_bool(inner().m_is_device); }
 		std::optional<bool> is_mechanical() const			{ return decode_optional_bool(inner().m_is_mechanical); }
 		std::optional<bool> unofficial() const				{ return decode_optional_bool(inner().m_unofficial); }
 		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
 		const QString &name() const							{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const					{ return get_string(inner().m_sourcefile_strindex); }
-		const QString &clone_of() const						{ return get_string(inner().m_clone_of_strindex); }
-		const QString &rom_of() const						{ return get_string(inner().m_rom_of_strindex); }
 		const QString &description() const					{ return get_string(inner().m_description_strindex); }
 		const QString &year() const							{ return get_string(inner().m_year_strindex); }
 		const QString &manufacturer() const					{ return get_string(inner().m_manufacturer_strindex); }
 
+		// operators
+		bool operator==(const info::machine &that) const
+		{
+			return name() == that.name();
+		}
+
 		// views
+		biosset::view				biossets() const;
+		rom::view					roms() const;
+		disk::view					disks() const;
 		device::view 				devices() const;
 		slot::view					devslots() const;
 		chip::view					chips() const;
@@ -497,6 +620,9 @@ namespace info
 
 		// views
 		auto machines() const					{ return machine::view(*this, m_state.m_machines_position); }
+		auto biossets() const					{ return biosset::view(*this, m_state.m_biossets_position); }
+		auto roms() const						{ return rom::view(*this, m_state.m_roms_position); }
+		auto disks() const						{ return disk::view(*this, m_state.m_disks_position); }
 		auto devices() const					{ return device::view(*this, m_state.m_devices_position); }
 		auto devslots() const					{ return slot::view(*this, m_state.m_slots_position); }
 		auto slot_options() const				{ return slot_option::view(*this, m_state.m_slot_options_position); }
@@ -521,6 +647,9 @@ namespace info
 
 			std::vector<std::uint8_t>						m_data;
 			bindata::view_position							m_machines_position;
+			bindata::view_position							m_biossets_position;
+			bindata::view_position							m_roms_position;
+			bindata::view_position							m_disks_position;
 			bindata::view_position							m_devices_position;
 			bindata::view_position							m_slots_position;
 			bindata::view_position							m_slot_options_position;
@@ -546,6 +675,9 @@ namespace info
 		static const char *getStringFromData(const State &state, std::uint32_t offset);
 	};
 
+	inline biosset::view				machine::biossets() const		{ return db().biossets().subview(inner().m_biossets_index, inner().m_biossets_count); }
+	inline rom::view					machine::roms() const			{ return db().roms().subview(inner().m_roms_index, inner().m_roms_count); }
+	inline disk::view					machine::disks() const			{ return db().disks().subview(inner().m_disks_index, inner().m_disks_count); }
 	inline device::view					machine::devices() const		{ return db().devices().subview(inner().m_devices_index, inner().m_devices_count); }
 	inline slot::view					machine::devslots() const		{ return db().devslots().subview(inner().m_slots_index, inner().m_slots_count); }
 	inline slot_option::view			slot::options() const			{ return db().slot_options().subview(inner().m_slot_options_index, inner().m_slot_options_count); }

@@ -18,6 +18,7 @@ namespace
     private slots:
 		void string_split_string() { string_split<std::string>(); }
 		void string_split_wstring() { string_split<std::wstring>(); }
+		void binaryFromHex();
 
 		void enum_parser();
 		void return_value_substitutor();
@@ -103,6 +104,32 @@ void Test::return_value_substitutor()
 	QVERIFY(rc == 42);
 	QVERIFY(func_called);
 }
+
+
+//-------------------------------------------------
+//  binaryFromHex
+//-------------------------------------------------
+
+void Test::binaryFromHex()
+{
+	std::uint8_t buffer[10];
+
+	std::size_t rc = util::binaryFromHex(buffer, "BaaDF00DDEADBeeF12345678");
+	QVERIFY(rc == 10);
+	QVERIFY(buffer[0] == 0xBA);
+	QVERIFY(buffer[1] == 0xAD);
+	QVERIFY(buffer[2] == 0xF0);
+	QVERIFY(buffer[3] == 0x0D);
+	QVERIFY(buffer[4] == 0xDE);
+	QVERIFY(buffer[5] == 0xAD);
+	QVERIFY(buffer[6] == 0xBE);
+	QVERIFY(buffer[7] == 0xEF);
+	QVERIFY(buffer[8] == 0x12);
+	QVERIFY(buffer[9] == 0x34);
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<Test> fixture;
 #include "utility_test.moc"

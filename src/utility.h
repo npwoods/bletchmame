@@ -14,7 +14,9 @@
 #include <unordered_map>
 #include <optional>
 #include <functional>
+#include <span>
 #include <stdexcept>
+#include <string_view>
 #include <wctype.h>
 
 #include <QFileInfo>
@@ -344,6 +346,20 @@ template<class T> T safe_static_cast(size_t sz)
 	if (sz != result)
 		throw std::overflow_error("Overflow");
 	return result;
+}
+
+
+//-------------------------------------------------
+//  binaryFromHex
+//-------------------------------------------------
+
+std::size_t binaryFromHex(std::span<uint8_t> &dest, std::string_view hex);
+
+template<std::size_t N>
+std::size_t binaryFromHex(uint8_t (&dest)[N], std::string_view hex)
+{
+	std::span<uint8_t> destSpan(dest);
+	return binaryFromHex(destSpan, hex);
 }
 
 

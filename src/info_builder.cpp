@@ -13,6 +13,14 @@
 //  LOCALS
 //**************************************************************************
 
+static const util::enum_parser<info::rom::dump_status_t> s_dump_status_parser =
+{
+	{ "baddump", info::rom::dump_status_t::BADDUMP },
+	{ "nodump", info::rom::dump_status_t::NODUMP },
+	{ "good", info::rom::dump_status_t::GOOD }
+};
+
+
 static const util::enum_parser<info::software_list::status_type> s_status_parser =
 {
 	{ "original", info::software_list::status_type::ORIGINAL, },
@@ -141,6 +149,19 @@ static constexpr std::uint8_t encodeEnum(std::optional<T> &&value, std::uint8_t 
 
 
 //-------------------------------------------------
+//  binaryFromHex
+//-------------------------------------------------
+
+template<int N>
+static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::string> &hex)
+{
+	std::size_t pos = hex.has_value() ? util::binaryFromHex(dest, *hex) : 0;
+	std::fill(dest + pos, dest + N, 0);
+	return pos == N;
+};
+
+
+//-------------------------------------------------
 //  process_xml()
 //-------------------------------------------------
 
@@ -182,7 +203,15 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_sourcefile_strindex	= m_strings.get(attributes, "sourcefile");
 		machine.m_clone_of_strindex		= m_strings.get(attributes, "cloneof");
 		machine.m_rom_of_strindex		= m_strings.get(attributes, "romof");
+		machine.m_is_bios				= encodeBool(attributes.get<bool>("isbios"));
+		machine.m_is_device				= encodeBool(attributes.get<bool>("isdevice"));
 		machine.m_is_mechanical			= encodeBool(attributes.get<bool>("ismechanical"));
+		machine.m_biossets_index		= to_uint32(m_biossets.size());
+		machine.m_biossets_count		= 0;
+		machine.m_roms_index			= to_uint32(m_roms.size());
+		machine.m_roms_count			= 0;
+		machine.m_disks_index			= to_uint32(m_disks.size());
+		machine.m_disks_count			= 0;
 		machine.m_features_index		= to_uint32(m_features.size());
 		machine.m_features_count		= 0;
 		machine.m_chips_index			= to_uint32(m_chips.size());
@@ -220,6 +249,47 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](QString &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
+	});
+	xml.onElementBegin({ "mame", "machine", "biosset" }, [this](const XmlParser::Attributes &attributes)
+	{
+		info::binaries::biosset &biosset = m_biossets.emplace_back();
+		biosset.m_name_strindex				= m_strings.get(attributes, "name");
+		biosset.m_description_strindex		= m_strings.get(attributes, "description");
+		biosset.m_default					= encodeBool(attributes.get<bool>("default").value_or(false));
+		util::last(m_machines).m_biossets_count++;
+	});
+	xml.onElementBegin({ "mame", "machine", "rom" }, [this](const XmlParser::Attributes &attributes)
+	{
+		info::binaries::rom &rom = m_roms.emplace_back();
+		rom.m_name_strindex					= m_strings.get(attributes, "name");
+		rom.m_bios_strindex					= m_strings.get(attributes, "bios");
+		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
+		binaryFromHex(rom.m_crc,			  attributes.get<std::string>("crc"));
+		binaryFromHex(rom.m_sha1,			  attributes.get<std::string>("sha1"));
+		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
+		rom.m_merge_strindex				= m_strings.get(attributes, "merge");
+		rom.m_region_strindex				= m_strings.get(attributes, "region");
+		rom.m_offset						= attributes.get<std::uint64_t>("offset", 16).value_or(0);
+		rom.m_status						= encodeEnum(attributes.get<info::rom::dump_status_t>("status", s_dump_status_parser));
+		rom.m_optional						= encodeBool(attributes.get<bool>("optional").value_or(false));
+		util::last(m_machines).m_roms_count++;
+	});
+	xml.onElementBegin({ "mame", "machine", "disk" }, [this](const XmlParser::Attributes &attributes)
+	{
+		std::string data;
+		bool b;
+		info::disk::dump_status_t dump_status;
+
+		info::binaries::disk &disk = m_disks.emplace_back();
+		disk.m_name_strindex				= m_strings.get(attributes, "name");
+		binaryFromHex(disk.m_sha1,			  attributes.get<std::string>("sha1"));
+		disk.m_merge_strindex				= m_strings.get(attributes, "merge");
+		disk.m_region_strindex				= m_strings.get(attributes, "region");
+		disk.m_index						= attributes.get<std::uint32_t>("index").value_or(0);
+		disk.m_writable						= encodeBool(attributes.get<bool>("writable").value_or(false));
+		disk.m_status						= encodeEnum(attributes.get<info::rom::dump_status_t>("status", s_dump_status_parser));
+		disk.m_optional						= encodeBool(attributes.get<bool>("optional").value_or(false));
+		util::last(m_machines).m_disks_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "feature" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
@@ -383,6 +453,9 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 
 	// finalize the header
 	header.m_machines_count					= to_uint32(m_machines.size());
+	header.m_biossets_count					= to_uint32(m_biossets.size());
+	header.m_roms_count						= to_uint32(m_roms.size());
+	header.m_disks_count					= to_uint32(m_disks.size());
 	header.m_devices_count					= to_uint32(m_devices.size());
 	header.m_slots_count					= to_uint32(m_slots.size());
 	header.m_slot_options_count				= to_uint32(m_slot_options.size());
@@ -423,6 +496,9 @@ void info::database_builder::emit_info(QIODevice &output) const
 {
 	output.write((const char *) &m_salted_header, sizeof(m_salted_header));
 	writeVectorData(output, m_machines);
+	writeVectorData(output, m_biossets);
+	writeVectorData(output, m_roms);
+	writeVectorData(output, m_disks);
 	writeVectorData(output, m_devices);
 	writeVectorData(output, m_slots);
 	writeVectorData(output, m_slot_options);
