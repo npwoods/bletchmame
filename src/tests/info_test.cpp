@@ -34,6 +34,9 @@ namespace
 		void loadFailuresDontMutate();
 		void readsAllBytes();
 		void sortable();
+		void scrutinize_alienar();
+		void scrutinize_coco();
+		void scrutinize_coco2b();
 
 	private:
 		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount,
@@ -376,6 +379,85 @@ void Test::sortable()
 	}
 }
 
+
+//-------------------------------------------------
+//  scrutinize_alienar
+//-------------------------------------------------
+
+void Test::scrutinize_alienar()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_alienar.xml")));
+
+	std::optional<info::machine> machine = db.find_machine("alienar");
+	QVERIFY(machine.has_value());
+	QVERIFY(machine->name() == "alienar");
+	QVERIFY(machine->description() == "Alien Arena");
+	QVERIFY(machine->manufacturer() == "Duncan Brown");
+	QVERIFY(!machine->clone_of().has_value());
+	QVERIFY(!machine->rom_of().has_value());
+
+	QVERIFY(machine->roms().size() == 12);
+	QVERIFY(machine->roms()[ 0].name() == "aarom10");
+	QVERIFY(machine->roms()[ 1].name() == "aarom11");
+	QVERIFY(machine->roms()[ 2].name() == "aarom12");
+	QVERIFY(machine->roms()[ 3].name() == "aarom01");
+	QVERIFY(machine->roms()[ 4].name() == "aarom02");
+	QVERIFY(machine->roms()[ 5].name() == "aarom03");
+	QVERIFY(machine->roms()[ 6].name() == "aarom04");
+	QVERIFY(machine->roms()[ 7].name() == "aarom05");
+	QVERIFY(machine->roms()[ 8].name() == "aarom06");
+	QVERIFY(machine->roms()[ 9].name() == "aarom07");
+	QVERIFY(machine->roms()[10].name() == "aarom08");
+	QVERIFY(machine->roms()[11].name() == "aarom09");
+
+	for (info::rom rom : machine->roms())
+	{
+		QVERIFY(rom.bios().isEmpty());
+		QVERIFY(rom.merge().isEmpty());
+	}
+}
+
+
+//-------------------------------------------------
+//  scrutinize_coco
+//-------------------------------------------------
+
+void Test::scrutinize_coco()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
+
+	std::optional<info::machine> machine = db.find_machine("coco");
+	QVERIFY(machine.has_value());
+	QVERIFY(machine->name() == "coco");
+	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
+	QVERIFY(!machine->clone_of().has_value());
+	QVERIFY(!machine->rom_of().has_value());
+}
+
+
+//-------------------------------------------------
+//  scrutinize_coco2b
+//-------------------------------------------------
+
+void Test::scrutinize_coco2b()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
+
+	std::optional<info::machine> machine = db.find_machine("coco2b");
+	QVERIFY(machine.has_value());
+	QVERIFY(machine->name() == "coco2b");
+	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
+	QVERIFY(machine->clone_of().has_value());
+	QVERIFY(machine->clone_of()->name() == "coco");
+	QVERIFY(machine->rom_of().has_value());
+	QVERIFY(machine->rom_of()->name() == "coco");
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<Test> fixture;
 #include "info_test.moc"
