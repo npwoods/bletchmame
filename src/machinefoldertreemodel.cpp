@@ -37,6 +37,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 		RootFolderDesc("all",			"All Systems"),
 		RootFolderDesc("bios",			"BIOS"),
 		RootFolderDesc("clones",		"Clones"),
+		RootFolderDesc("chd",			"CHD"),
 		RootFolderDesc("cpu",			"CPU"),
 		RootFolderDesc("custom",		"Custom"),
 		RootFolderDesc("mechanical",	"Mechanical"),
@@ -81,6 +82,7 @@ std::array<const char *, (int)MachineFolderTreeModel::FolderIcon::Count> Machine
 	result[(int)FolderIcon::Cpu]			= ":/resources/cpu.ico";
 	result[(int)FolderIcon::Folder]			= ":/resources/folder.ico";
 	result[(int)FolderIcon::FolderOpen]		= ":/resources/foldopen.ico";
+	result[(int)FolderIcon::HardDisk]		= ":/resources/harddisk.ico";
 	result[(int)FolderIcon::Manufacturer]	= ":/resources/manufact.ico";
 	result[(int)FolderIcon::Sound]			= ":/resources/sound.ico";
 	result[(int)FolderIcon::Source]			= ":/resources/source.ico";
@@ -174,6 +176,8 @@ void MachineFolderTreeModel::populateVariableFolders()
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
 			else if (!strcmp(desc.id(), "bios"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_bios);
+			else if (!strcmp(desc.id(), "chd"))
+				m_root.emplace_back(desc.id(), FolderIcon::HardDisk, desc.displayName(), [](const info::machine &machine) { return machine.disks().size() > 0; });
 			else if (!strcmp(desc.id(), "clones"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.clone_of().has_value(); });
 			else if (!strcmp(desc.id(), "cpu"))
