@@ -207,9 +207,15 @@ void MachineFolderTreeModel::populateVariableFolders()
 		}
 	}
 
+	// sort function for machines
+	auto compareMachineDesc = [](const info::machine &lhs, const info::machine &rhs)
+	{
+		return lhs.description() < rhs.description();
+	};
+
 	// iterate through all machines and accumulate the pertinent data; because
 	// this can be expensive we're using reference wrappers
-	std::set<std::reference_wrapper<const QString>> bioses;
+	std::set<info::machine, decltype(compareMachineDesc)> bioses;
 	std::set<std::reference_wrapper<const QString>> cpus;
 	std::set<std::reference_wrapper<const QString>> manufacturers;
 	std::set<std::reference_wrapper<const QString>> sounds;
@@ -241,18 +247,17 @@ void MachineFolderTreeModel::populateVariableFolders()
 			// bios folder
 			std::optional<info::machine> biosMachine = getBiosMachine(machine);
 			if (biosMachine)
-				bioses.emplace(biosMachine->name());
+				bioses.emplace(*biosMachine);
 		}
 	}
 
 	// set up the BIOSes folder
 	m_bios.clear();
 	m_bios.reserve(bioses.size());
-	for (const QString &bios : bioses)
+	for (const info::machine &bios : bioses)
 	{
-		info::machine biosMachine = *m_infoDb.find_machine(bios);
-		auto predicate = [biosMachine](const info::machine &machine) { return getBiosMachine(machine) == biosMachine; };
-		m_bios.emplace_back(biosMachine.name(), FolderIcon::Folder, biosMachine.description(), std::move(predicate));
+		auto predicate = [bios](const info::machine &machine) { return getBiosMachine(machine) == bios; };
+		m_bios.emplace_back(bios.name(), FolderIcon::Folder, bios.description(), std::move(predicate));
 	}
 
 	// set up the CPUs folder
