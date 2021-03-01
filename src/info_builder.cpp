@@ -176,16 +176,19 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	header.m_magic = info::binaries::MAGIC_HDR;
 	header.m_sizes_hash = info::database::calculate_sizes_hash();
 
-	// reserve space based on what we know about MAME 0.228
-	m_machines.reserve(45000);					// 43152 machines
-	m_devices.reserve(11000);					// 10252 devices
-	m_features.reserve(21000);					// 20003 features
-	m_chips.reserve(180000);					// 169981 chips
-	m_samples.reserve(20000);					// 18520 samples
-	m_configurations.reserve(600000);			// 548468 configurations
-	m_configuration_conditions.reserve(7500);	// 6761 conditions
-	m_configuration_settings.reserve(1700000);	// 1618800 settings
-	m_software_lists.reserve(6200);				// 5674 software lists
+	// reserve space based on what we know about MAME 0.229
+	m_biossets.reserve(36000);					// 33456 bios sets
+	m_roms.reserve(350000);						// 324459 roms
+	m_disks.reserve(1400);						// 1132 disks
+	m_machines.reserve(48000);					// 44609 machines
+	m_devices.reserve(11000);					// 10272 devices
+	m_features.reserve(22000);					// 20022 features
+	m_chips.reserve(180000);					// 170244 chips
+	m_samples.reserve(20000);					// 18538 samples
+	m_configurations.reserve(600000);			// 548738 configurations
+	m_configuration_conditions.reserve(7500);	// 6769 conditions
+	m_configuration_settings.reserve(1700000);	// 1623524 settings
+	m_software_lists.reserve(6200);				// 5684 software lists
 	m_ram_options.reserve(6500);				// 5718 ram options
 
 	// parse the -listxml output
@@ -547,8 +550,8 @@ void info::database_builder::emit_info(QIODevice &output) const
 info::database_builder::string_table::string_table()
 {
 	// reserve space based on expected size (see comments above)
-	m_data.reserve(2400000);		// 2001943 bytes
-	m_map.reserve(105000);			// 96686 entries
+	m_data.reserve(4500000);		// 4326752 bytes
+	m_map.reserve(300000);			// 264907 entries
 
 	// embed the initial magic bytes
 	embed_value(info::binaries::MAGIC_STRINGTABLE_BEGIN);
