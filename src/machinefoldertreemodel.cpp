@@ -44,11 +44,13 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 		RootFolderDesc("mechanical",	"Mechanical"),
 		RootFolderDesc("nonmechanical",	"Non Mechanical"),
 		RootFolderDesc("originals",		"Originals"),
+		RootFolderDesc("raster",		"Raster"),
 		RootFolderDesc("samples",		"Samples"),
 		RootFolderDesc("savestate",		"Save State"),
 		RootFolderDesc("sound",			"Sound"),
 		RootFolderDesc("source",		"Source"),
 		RootFolderDesc("unofficial",	"Unofficial"),
+		RootFolderDesc("vector",		"Vector"),
 		RootFolderDesc("year",			"Year") })
 {
 	// load all folder icons (if parent is nullptr we're probably in a unit test)
@@ -172,6 +174,19 @@ static std::optional<info::machine> getBiosMachine(info::machine machine)
 
 
 //-------------------------------------------------
+//  containsDisplayType
+//-------------------------------------------------
+
+static bool containsDisplayType(info::machine machine, info::display::type_t t)
+{
+	return util::contains_if(machine.displays(), [t](info::display d)
+	{
+		return d.type() == t;
+	});
+}
+
+
+//-------------------------------------------------
 //  populateVariableFolders
 //-------------------------------------------------
 
@@ -204,6 +219,8 @@ void MachineFolderTreeModel::populateVariableFolders()
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.is_mechanical() == false; });
 			else if (!strcmp(desc.id(), "originals"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of().has_value(); });
+			else if (!strcmp(desc.id(), "raster"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return containsDisplayType(machine, info::display::type_t::RASTER); });
 			else if (!strcmp(desc.id(), "samples"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.samples().size() > 0; });
 			else if (!strcmp(desc.id(), "savestate"))
@@ -214,6 +231,8 @@ void MachineFolderTreeModel::populateVariableFolders()
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_source);
 			else if (!strcmp(desc.id(), "unofficial"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.unofficial() == true; });
+			else if (!strcmp(desc.id(), "vector"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return containsDisplayType(machine, info::display::type_t::VECTOR); });
 			else if (!strcmp(desc.id(), "year"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_year);
 			else
