@@ -66,6 +66,7 @@ namespace info
 		std::vector<info::binaries::slot_option>				m_slot_options;
 		std::vector<info::binaries::feature>					m_features;
 		std::vector<info::binaries::chip>						m_chips;
+		std::vector<info::binaries::display>					m_displays;
 		std::vector<info::binaries::sample>						m_samples;
 		std::vector<info::binaries::configuration>				m_configurations;
 		std::vector<info::binaries::configuration_condition>	m_configuration_conditions;

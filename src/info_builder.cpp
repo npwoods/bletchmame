@@ -79,6 +79,25 @@ static const util::enum_parser<info::chip::type_t> s_chip_type_parser =
 };
 
 
+static const util::enum_parser<info::display::type_t> s_display_type_parser =
+{
+	{ "unknown", info::display::type_t::UNKNOWN },
+	{ "raster", info::display::type_t::RASTER },
+	{ "vector", info::display::type_t::VECTOR },
+	{ "lcd", info::display::type_t::LCD },
+	{ "svg", info::display::type_t::SVG }
+};
+
+
+static const util::enum_parser<info::display::rotation_t> s_display_rotation_parser =
+{
+	{ "0", info::display::rotation_t::ROT0 },
+	{ "90", info::display::rotation_t::ROT90 },
+	{ "180", info::display::rotation_t::ROT180 },
+	{ "270", info::display::rotation_t::ROT270 }
+};
+
+
 static const util::enum_parser<info::machine::driver_quality_t> s_driver_quality_parser =
 {
 	{ "good", info::machine::driver_quality_t::GOOD },
@@ -184,6 +203,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	m_devices.reserve(11000);					// 10272 devices
 	m_features.reserve(22000);					// 20022 features
 	m_chips.reserve(180000);					// 170244 chips
+	m_displays.reserve(0);						// TODO displays
 	m_samples.reserve(20000);					// 18538 samples
 	m_configurations.reserve(600000);			// 548738 configurations
 	m_configuration_conditions.reserve(7500);	// 6769 conditions
@@ -219,6 +239,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_features_count		= 0;
 		machine.m_chips_index			= to_uint32(m_chips.size());
 		machine.m_chips_count			= 0;
+		machine.m_displays_index		= to_uint32(m_displays.size());
+		machine.m_displays_count		= 0;
 		machine.m_samples_index			= to_uint32(m_samples.size());
 		machine.m_samples_count			= 0;
 		machine.m_configurations_index	= to_uint32(m_configurations.size());
@@ -311,6 +333,25 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		chip.m_clock			= attributes.get<std::uint64_t>("clock").value_or(0);
 
 		util::last(m_machines).m_chips_count++;
+	});
+	xml.onElementBegin({ "mame", "machine", "display" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	{
+		info::binaries::display &display = m_displays.emplace_back();
+		display.m_tag_strindex	= m_strings.get(attributes, "tag");
+		display.m_width			= attributes.get<std::uint32_t>("width").value_or(~0);
+		display.m_height		= attributes.get<std::uint32_t>("height").value_or(~0);
+		display.m_refresh		= attributes.get<float>("refresh").value_or(NAN);
+		display.m_pixclock		= attributes.get<std::uint64_t>("pixclock").value_or(~0);
+		display.m_htotal		= attributes.get<std::uint32_t>("htotal").value_or(~0);
+		display.m_hbend			= attributes.get<std::uint32_t>("hbend").value_or(~0);
+		display.m_hbstart		= attributes.get<std::uint32_t>("hbstart").value_or(~0);
+		display.m_vtotal		= attributes.get<std::uint32_t>("vtotal").value_or(~0);
+		display.m_vbend			= attributes.get<std::uint32_t>("vbend").value_or(~0);
+		display.m_vbstart		= attributes.get<std::uint32_t>("vbstart").value_or(~0);
+		display.m_type			= encodeEnum(attributes.get<info::display::type_t>("type", s_display_type_parser));
+		display.m_rotate		= encodeEnum(attributes.get<info::display::rotation_t>("rotate", s_display_rotation_parser));
+		display.m_flipx			= encodeBool(attributes.get<bool>("flipx"));
+		util::last(m_machines).m_displays_count++;
 	});
 	xml.onElementBegin({ "mame", "machine", "sample" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
@@ -464,6 +505,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	header.m_slot_options_count				= to_uint32(m_slot_options.size());
 	header.m_features_count					= to_uint32(m_features.size());
 	header.m_chips_count					= to_uint32(m_chips.size());
+	header.m_displays_count					= to_uint32(m_displays.size());
 	header.m_samples_count					= to_uint32(m_samples.size());
 	header.m_configurations_count			= to_uint32(m_configurations.size());
 	header.m_configuration_settings_count	= to_uint32(m_configuration_settings.size());
@@ -533,6 +575,7 @@ void info::database_builder::emit_info(QIODevice &output) const
 	writeVectorData(output, m_slot_options);
 	writeVectorData(output, m_features);
 	writeVectorData(output, m_chips);
+	writeVectorData(output, m_displays);
 	writeVectorData(output, m_samples);
 	writeVectorData(output, m_configurations);
 	writeVectorData(output, m_configuration_settings);

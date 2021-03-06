@@ -138,6 +138,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	newState.m_slot_options_position				= getPosition<binaries::slot_option>(cursor, hdr.m_slot_options_count);
 	newState.m_features_position					= getPosition<binaries::feature>(cursor, hdr.m_features_count);
 	newState.m_chips_position						= getPosition<binaries::chip>(cursor, hdr.m_chips_count);
+	newState.m_displays_position					= getPosition<binaries::display>(cursor, hdr.m_displays_count);
 	newState.m_samples_position						= getPosition<binaries::sample>(cursor, hdr.m_samples_count);
 	newState.m_configurations_position				= getPosition<binaries::configuration>(cursor, hdr.m_configurations_count);
 	newState.m_configuration_settings_position		= getPosition<binaries::configuration_setting>(cursor, hdr.m_configuration_settings_count);
@@ -194,6 +195,7 @@ uint64_t info::database::calculate_sizes_hash()
 		sizeof(info::binaries::slot_option),
 		sizeof(info::binaries::feature),
 		sizeof(info::binaries::chip),
+		sizeof(info::binaries::display),
 		sizeof(info::binaries::sample),
 		sizeof(info::binaries::configuration),
 		sizeof(info::binaries::configuration_setting),
