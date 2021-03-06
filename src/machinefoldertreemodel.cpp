@@ -40,6 +40,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 		RootFolderDesc("chd",			"CHD"),
 		RootFolderDesc("cpu",			"CPU"),
 		RootFolderDesc("custom",		"Custom"),
+		RootFolderDesc("dumping",		"Dumping"),
 		RootFolderDesc("mechanical",	"Mechanical"),
 		RootFolderDesc("nonmechanical",	"Non Mechanical"),
 		RootFolderDesc("originals",		"Originals"),
@@ -62,6 +63,17 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 			m_folderIcons[i] = pixmap.scaled(ICON_SIZE_X, ICON_SIZE_Y);
 		}
 	}
+
+	// set up the dumping folder
+	m_dumping.reserve(2);
+	m_dumping.emplace_back("bad", FolderIcon::Folder, "Bad Dump", [](const info::machine &machine)
+	{
+		return util::contains_if(machine.roms(), [](info::rom rom) { return rom.status() == info::rom::dump_status_t::BADDUMP; });
+	});
+	m_dumping.emplace_back("no", FolderIcon::Folder, "No Dump", [](const info::machine &machine)
+	{
+		return util::contains_if(machine.roms(), [](info::rom rom) { return rom.status() == info::rom::dump_status_t::NODUMP; });
+	});
 
 	// a number of folders are variable, and depend on info DB info; populate them separately
 	m_infoDb.addOnChangedHandler([this]
@@ -184,6 +196,8 @@ void MachineFolderTreeModel::populateVariableFolders()
 				m_root.emplace_back(desc.id(), FolderIcon::Cpu, desc.displayName(), m_cpu);
 			else if (!strcmp(desc.id(), "custom"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_custom);
+			else if (!strcmp(desc.id(), "dumping"))
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_dumping);
 			else if (!strcmp(desc.id(), "mechanical"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.is_mechanical() == true; });
 			else if (!strcmp(desc.id(), "nonmechanical"))
