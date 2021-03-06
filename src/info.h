@@ -98,6 +98,7 @@ namespace info
 			std::uint8_t	m_save_state_supported;
 			std::uint8_t	m_unofficial;
 			std::uint8_t	m_incomplete;
+			std::uint8_t	m_sound_channels;
 		};
 
 		struct biosset
@@ -617,6 +618,7 @@ namespace info
 		std::optional<bool> is_mechanical() const			{ return decode_optional_bool(inner().m_is_mechanical); }
 		std::optional<bool> unofficial() const				{ return decode_optional_bool(inner().m_unofficial); }
 		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
+		std::optional<int> sound_channels() const			{ return inner().m_sound_channels != ~0 ? inner().m_sound_channels : std::optional<int>(); }
 		const QString &name() const							{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const					{ return get_string(inner().m_sourcefile_strindex); }
 		const QString &description() const					{ return get_string(inner().m_description_strindex); }

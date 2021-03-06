@@ -262,6 +262,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_save_state_supported	= encodeBool(std::nullopt);
 		machine.m_unofficial			= encodeBool(std::nullopt);
 		machine.m_incomplete			= encodeBool(std::nullopt);
+		machine.m_sound_channels		= ~0;
 	});
 	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
 	{
@@ -470,6 +471,11 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		bool ok;
 		unsigned long val = content.toULong(&ok);
 		util::last(m_ram_options).m_value = ok ? val : 0;
+	});
+	xml.onElementBegin({ "mame", "machine", "sound" }, [this](const XmlParser::Attributes &attributes)
+	{
+		info::binaries::machine &machine = util::last(m_machines);
+		machine.m_sound_channels		= attributes.get<std::uint8_t>("channels").value_or(~0);
 	});
 
 	// parse!

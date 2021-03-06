@@ -191,10 +191,12 @@ template<> std::optional<bool>			XmlParser::Attributes::get<bool>(const char *at
 template<> std::optional<float>			XmlParser::Attributes::get<float>(const char *attribute) const;
 template<> std::optional<QString>		XmlParser::Attributes::get<QString>(const char *attribute) const;
 template<> std::optional<std::string>	XmlParser::Attributes::get<std::string>(const char *attribute) const;
+template<> std::optional<std::uint8_t>	XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const;
 template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
 template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;
 
 template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute, int radix) const;
+template<> std::optional<std::uint8_t>	XmlParser::Attributes::get<std::uint8_t>(const char *attribute, int radix) const;
 template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const;
 template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const;
 
