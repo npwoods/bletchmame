@@ -46,6 +46,7 @@ namespace info
 			std::uint32_t	m_slot_options_count;
 			std::uint32_t	m_features_count;
 			std::uint32_t	m_chips_count;
+			std::uint32_t	m_displays_count;
 			std::uint32_t	m_samples_count;
 			std::uint32_t	m_configurations_count;
 			std::uint32_t	m_configuration_settings_count;
@@ -73,6 +74,8 @@ namespace info
 			std::uint32_t	m_features_count;
 			std::uint32_t	m_chips_index;
 			std::uint32_t	m_chips_count;
+			std::uint32_t	m_displays_index;
+			std::uint32_t	m_displays_count;
 			std::uint32_t	m_samples_index;
 			std::uint32_t	m_samples_count;
 			std::uint32_t	m_configurations_index;
@@ -95,6 +98,7 @@ namespace info
 			std::uint8_t	m_save_state_supported;
 			std::uint8_t	m_unofficial;
 			std::uint8_t	m_incomplete;
+			std::uint8_t	m_sound_channels;
 		};
 
 		struct biosset
@@ -143,6 +147,24 @@ namespace info
 			std::uint32_t	m_tag_strindex;
 			std::uint32_t	m_name_strindex;
 			std::uint8_t	m_type;
+		};
+
+		struct display
+		{
+			std::uint32_t	m_tag_strindex;
+			std::uint32_t	m_width;
+			std::uint32_t	m_height;
+			float			m_refresh;
+			std::uint64_t	m_pixclock;
+			std::uint32_t	m_htotal;
+			std::uint32_t	m_hbend;
+			std::uint32_t	m_hbstart;
+			std::uint32_t	m_vtotal;
+			std::uint32_t	m_vbend;
+			std::uint32_t	m_vbstart;
+			std::uint8_t	m_type;
+			std::uint8_t	m_rotate;
+			std::uint8_t	m_flipx;
 		};
 
 		struct sample
@@ -415,6 +437,37 @@ namespace info
 	};
 
 
+	// ======================> display
+	class display : public bindata::entry<database, display, binaries::display>
+	{
+	public:
+		enum class type_t
+		{
+			UNKNOWN,
+			RASTER,
+			VECTOR,
+			LCD,
+			SVG
+		};
+
+		enum class rotation_t
+		{
+			UNKNOWN,
+			ROT0,
+			ROT90,
+			ROT180,
+			ROT270
+		};
+
+		display(const database &db, const binaries::display &inner)
+			: entry(db, inner)
+		{
+		}
+
+		type_t type() const { return (type_t)inner().m_type; }
+	};
+
+
 	// ======================> sample
 	class sample : public bindata::entry<database, sample, binaries::sample>
 	{
@@ -565,6 +618,7 @@ namespace info
 		std::optional<bool> is_mechanical() const			{ return decode_optional_bool(inner().m_is_mechanical); }
 		std::optional<bool> unofficial() const				{ return decode_optional_bool(inner().m_unofficial); }
 		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
+		std::optional<int> sound_channels() const			{ return inner().m_sound_channels != ~0 ? inner().m_sound_channels : std::optional<int>(); }
 		const QString &name() const							{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const					{ return get_string(inner().m_sourcefile_strindex); }
 		const QString &description() const					{ return get_string(inner().m_description_strindex); }
@@ -584,6 +638,7 @@ namespace info
 		device::view 				devices() const;
 		slot::view					devslots() const;
 		chip::view					chips() const;
+		display::view				displays() const;
 		sample::view				samples() const;
 		configuration::view			configurations() const;
 		software_list::view			software_lists() const;
@@ -629,6 +684,7 @@ namespace info
 		auto devslots() const					{ return slot::view(*this, m_state.m_slots_position); }
 		auto slot_options() const				{ return slot_option::view(*this, m_state.m_slot_options_position); }
 		auto chips() const						{ return chip::view(*this, m_state.m_chips_position); }
+		auto displays() const					{ return display::view(*this, m_state.m_displays_position); }
 		auto samples() const					{ return sample::view(*this, m_state.m_samples_position); }
 		auto configurations() const				{ return configuration::view(*this, m_state.m_configurations_position); }
 		auto configuration_settings() const		{ return configuration_setting::view(*this, m_state.m_configuration_settings_position); }
@@ -657,6 +713,7 @@ namespace info
 			bindata::view_position							m_slot_options_position;
 			bindata::view_position							m_features_position;
 			bindata::view_position							m_chips_position;
+			bindata::view_position							m_displays_position;
 			bindata::view_position							m_samples_position;
 			bindata::view_position							m_configurations_position;
 			bindata::view_position							m_configuration_settings_position;
@@ -687,6 +744,7 @@ namespace info
 	inline slot::view					machine::devslots() const		{ return db().devslots().subview(inner().m_slots_index, inner().m_slots_count); }
 	inline slot_option::view			slot::options() const			{ return db().slot_options().subview(inner().m_slot_options_index, inner().m_slot_options_count); }
 	inline chip::view					machine::chips() const			{ return db().chips().subview(inner().m_chips_index, inner().m_chips_count); }
+	inline display::view				machine::displays() const		{ return db().displays().subview(inner().m_displays_index, inner().m_displays_count); }
 	inline sample::view					machine::samples() const		{ return db().samples().subview(inner().m_samples_index, inner().m_samples_count); }
 	inline configuration::view			machine::configurations() const	{ return db().configurations().subview(inner().m_configurations_index, inner().m_configurations_count); }
 	inline configuration_setting::view	configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }

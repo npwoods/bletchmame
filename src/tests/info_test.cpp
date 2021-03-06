@@ -396,6 +396,7 @@ void Test::scrutinize_alienar()
 	QVERIFY(machine->manufacturer() == "Duncan Brown");
 	QVERIFY(!machine->clone_of().has_value());
 	QVERIFY(!machine->rom_of().has_value());
+	QVERIFY(machine->sound_channels() == 1);
 
 	QVERIFY(machine->roms().size() == 12);
 	QVERIFY(machine->roms()[ 0].name() == "aarom10");
@@ -434,6 +435,7 @@ void Test::scrutinize_coco()
 	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
 	QVERIFY(!machine->clone_of().has_value());
 	QVERIFY(!machine->rom_of().has_value());
+	QVERIFY(machine->sound_channels() == 1);
 }
 
 
@@ -454,6 +456,7 @@ void Test::scrutinize_coco2b()
 	QVERIFY(machine->clone_of()->name() == "coco");
 	QVERIFY(machine->rom_of().has_value());
 	QVERIFY(machine->rom_of()->name() == "coco");
+	QVERIFY(machine->sound_channels() == 3);
 }
 
 
