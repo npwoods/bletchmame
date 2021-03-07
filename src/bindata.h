@@ -84,14 +84,7 @@ namespace bindata
 		view(const view &that) = default;
 		view(view &&that) = default;
 
-		view &operator=(const view &that)
-		{
-			m_db = that.m_db;
-			m_offset = that.m_offset;
-			m_count = that.m_count;
-			return *this;
-		}
-
+		view &operator=(const view &that) = default;
 		bool operator==(const view &) const = default;
 
 		TPublic operator[](std::uint32_t position) const
