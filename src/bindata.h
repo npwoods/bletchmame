@@ -14,6 +14,7 @@
 #include <QString>
 #include <compare>
 #include <optional>
+#include <span>
 
 
 //**************************************************************************
@@ -91,8 +92,8 @@ namespace bindata
 		{
 			if (position >= m_count)
 				throw false;
-			const std::uint8_t *ptr = &m_db->m_state.m_data.data()[m_offset + position * sizeof(TBinary)];
-			return TPublic(*m_db, *reinterpret_cast<const TBinary *>(ptr));
+			std::span<const TBinary> span = m_db->getDataSpan<TBinary>(m_offset, m_count);
+			return TPublic(*m_db, span[position]);
 		}
 
 		size_t size() const { return m_count; }

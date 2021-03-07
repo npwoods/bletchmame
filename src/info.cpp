@@ -41,6 +41,32 @@ static bool unaligned_check(const void *ptr, T value)
 
 
 //-------------------------------------------------
+//  tryGetQStringFromCharSpan
+//-------------------------------------------------
+
+static std::optional<QString> tryGetQStringFromCharSpan(const std::span<const char> &span)
+{
+	auto iter = std::find(span.begin(), span.end(), '\0');
+	if (iter == span.end())
+		return { };
+	return QString::fromUtf8(&span[0], iter - span.begin());
+}
+
+
+//-------------------------------------------------
+//  getQStringFromCharSpan
+//-------------------------------------------------
+
+static QString getQStringFromCharSpan(const std::span<const char> &span)
+{
+	std::optional<QString> result = tryGetQStringFromCharSpan(span);
+	if (!result)
+		throw false;
+	return std::move(*result);
+}
+
+
+//-------------------------------------------------
 //  load_data
 //-------------------------------------------------
 
@@ -158,7 +184,10 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 		return false;
 
 	// version check if appropriate
-	if (!expected_version.isEmpty() && expected_version != getStringFromData(newState, hdr.m_build_strindex))
+	std::optional<std::span<const char>> buildVersion = tryGetDataSpan<char>(newState, hdr.m_build_strindex);
+	if (!buildVersion)
+		return false;
+	if (!expected_version.isEmpty() && expected_version != tryGetQStringFromCharSpan(*buildVersion))
 		return false;
 
 	// finally things look good - first shrink the data array to drop the ending magic bytes
@@ -268,12 +297,9 @@ const QString &info::database::get_string(std::uint32_t offset) const
 	}
 	else
 	{
-		// perform a string table lookup, but perform bounds checking first
-		if ((size_t)m_state.m_string_table_offset + offset >= m_state.m_data.size())
-			throw false;
-
-		const char *utf8String = getStringFromData(m_state, util::safe_static_cast<std::uint32_t>(offset));
-		string = QString::fromUtf8(utf8String);
+		// perform a string table lookup
+		std::span<const char> utf8String = getDataSpan<char>(m_state.m_string_table_offset + offset);
+		string = getQStringFromCharSpan(utf8String);
 	}
 
 	// deposit this image in our cache
@@ -281,22 +307,6 @@ const QString &info::database::get_string(std::uint32_t offset) const
 
 	// and return a reference out of our cache
 	return m_loaded_strings.find(offset)->second;
-}
-
-
-//-------------------------------------------------
-//  database::getStringFromData - raw string
-//	retrieval that bypasses loaded strings
-//-------------------------------------------------
-
-const char *info::database::getStringFromData(const State &state, std::uint32_t offset)
-{
-	// sanity check
-	if (offset >= state.m_data.size() || (state.m_string_table_offset + offset) >= state.m_data.size())
-		return "";	// should not happen with a valid info DB
-
-	// access the data
-	return reinterpret_cast<const char *>(&state.m_data.data()[state.m_string_table_offset + offset]);
 }
 
 

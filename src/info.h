@@ -729,9 +729,28 @@ namespace info
 		const QString *										m_version;
 		std::vector<std::function<void()>>					m_onChangedHandlers;
 
+		// data access
+		template<typename T>
+		std::span<const T> getDataSpan(size_t offset, std::optional<size_t> count = { }) const
+		{
+			std::optional<std::span<const T>> span = tryGetDataSpan<T>(m_state, offset, count);
+			if (!span)
+				throw false;
+			return *span;
+		}
+
+		template<typename T>
+		static std::optional<std::span<const T>> tryGetDataSpan(const State &state, size_t offset, std::optional<size_t> count = { })
+		{
+			size_t actualCount = count.value_or(state.m_data.size() - offset);
+			if (offset > state.m_data.size() || (offset + actualCount * sizeof(T) > state.m_data.size()))
+				return { };
+			const T *ptr = reinterpret_cast<const T *>(&state.m_data.data()[offset]);
+			return std::span(ptr, ptr + actualCount);
+		}
+
 		// private functions
 		void onChanged();
-		static const char *getStringFromData(const State &state, std::uint32_t offset);
 		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char ch);
 		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::string_view s);
 		static std::optional<std::array<char, 6>> tryDecodeAsSmallString(std::uint32_t value);
