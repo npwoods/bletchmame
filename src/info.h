@@ -731,6 +731,13 @@ namespace info
 
 		// data access
 		template<typename T>
+		void getDataSpan(std::span<const T> &span, size_t offset, std::optional<size_t> count = { }) const
+		{
+			span = getDataSpan<T>(offset, count);
+		}
+
+		// data access
+		template<typename T>
 		std::span<const T> getDataSpan(size_t offset, std::optional<size_t> count = { }) const
 		{
 			std::optional<std::span<const T>> span = tryGetDataSpan<T>(m_state, offset, count);
@@ -739,6 +746,7 @@ namespace info
 			return *span;
 		}
 
+		// data access
 		template<typename T>
 		static std::optional<std::span<const T>> tryGetDataSpan(const State &state, size_t offset, std::optional<size_t> count = { })
 		{

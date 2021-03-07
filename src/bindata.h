@@ -92,7 +92,8 @@ namespace bindata
 		{
 			if (position >= m_count)
 				throw false;
-			std::span<const TBinary> span = m_db->getDataSpan<TBinary>(m_offset, m_count);
+			std::span<const TBinary> span;
+			m_db->getDataSpan(span, m_offset, m_count);
 			return TPublic(*m_db, span[position]);
 		}
 
