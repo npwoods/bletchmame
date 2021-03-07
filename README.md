@@ -8,6 +8,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.7 (TBD)
+
 - 2.6 (2021-Mar-6)
 	- Added a number of MAMEUI-style builtin folders 
 		- BIOS, CHD, CPU, Dumping, Mechanical, Non Mechanical, Raster, Samples, Save State, Sound, Unofficial, Vector
