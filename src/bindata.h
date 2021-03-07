@@ -14,6 +14,7 @@
 #include <QString>
 #include <compare>
 #include <optional>
+#include <span>
 
 
 //**************************************************************************
@@ -84,22 +85,16 @@ namespace bindata
 		view(const view &that) = default;
 		view(view &&that) = default;
 
-		view &operator=(const view &that)
-		{
-			m_db = that.m_db;
-			m_offset = that.m_offset;
-			m_count = that.m_count;
-			return *this;
-		}
-
+		view &operator=(const view &that) = default;
 		bool operator==(const view &) const = default;
 
 		TPublic operator[](std::uint32_t position) const
 		{
 			if (position >= m_count)
 				throw false;
-			const std::uint8_t *ptr = &m_db->m_state.m_data.data()[m_offset + position * sizeof(TBinary)];
-			return TPublic(*m_db, *reinterpret_cast<const TBinary *>(ptr));
+			std::span<const TBinary> span;
+			m_db->getDataSpan(span, m_offset, m_count);
+			return TPublic(*m_db, span[position]);
 		}
 
 		size_t size() const { return m_count; }
@@ -107,7 +102,7 @@ namespace bindata
 
 		view subview(std::uint32_t index, std::uint32_t count) const
 		{
-			if (index > m_count || (index + count > m_count))
+			if (index > size() || ((size_t)index + count > size()))
 				throw false;
 			return count > 0
 				? view(*m_db, view_position(m_offset + index * sizeof(TBinary), count))
