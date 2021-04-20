@@ -35,10 +35,21 @@ Win32Job::Win32Job()
 
 
 //-------------------------------------------------
+//  dtor
+//-------------------------------------------------
+
+Win32Job::~Win32Job()
+{
+	if (m_handle)
+		CloseHandle(m_handle);
+}
+
+
+//-------------------------------------------------
 //  AddProcess
 //-------------------------------------------------
 
-void Win32Job::AddProcess(qint64 processId)
+void Win32Job::addProcess(qint64 processId)
 {
 	HANDLE process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)processId);
 	AssignProcessToJobObject(m_handle, process_handle);

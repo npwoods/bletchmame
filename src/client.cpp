@@ -105,7 +105,7 @@ void MameClient::taskThreadProc()
 	}
 
 	// add the process to the job
-	s_job.AddProcess(processId);
+	s_job.addProcess(processId);
 
 	// we're done setting up; signal to the main thread
 	m_taskStartSemaphore.release();
