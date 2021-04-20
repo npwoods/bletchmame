@@ -184,7 +184,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 		return false;
 
 	// version check if appropriate
-	std::optional<std::span<const char>> buildVersion = tryGetDataSpan<char>(newState, hdr.m_build_strindex);
+	std::optional<std::span<const char>> buildVersion = tryGetDataSpan<char>(newState, newState.m_string_table_offset + hdr.m_build_strindex);
 	if (!buildVersion)
 		return false;
 	if (!expected_version.isEmpty() && expected_version != tryGetQStringFromCharSpan(*buildVersion))
