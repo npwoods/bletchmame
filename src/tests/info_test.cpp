@@ -18,19 +18,21 @@ namespace
         Q_OBJECT
 
     private slots:
-		void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 104, 15, 1501, 32, 48, 99, 488); }
-		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 104, 15, 1501, 32, 48, 99, 488); }
-		void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 13, 1, 0, 0, 0, 0, 0); }
-		void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 13, 1, 0, 0, 0, 0, 0); }
-		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
-		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
-		void deviceLookup_coco2b()		{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }
-		void deviceLookup_coco3()		{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
+		void general_coco_dtd()				{ general(":/resources/listxml_coco.xml", false, 104, 15, 1501, 32, 48, 99, 488); }
+		void general_coco_noDtd()			{ general(":/resources/listxml_coco.xml", true, 104, 15, 1501, 32, 48, 99, 488); }
+		void general_alienar_dtd()			{ general(":/resources/listxml_alienar.xml", false, 13, 1, 0, 0, 0, 0, 0); }
+		void general_alienar_noDtd()		{ general(":/resources/listxml_alienar.xml", true, 13, 1, 0, 0, 0, 0, 0); }
+		void machineLookup_coco()			{ machineLookup(":/resources/listxml_coco.xml"); }
+		void machineLookup_alienar()		{ machineLookup(":/resources/listxml_alienar.xml"); }
+		void deviceLookup_coco2b()			{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }
+		void deviceLookup_coco3()			{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
+		void loadExpectedVersion_coco()		{ loadExpectedVersion(":/resources/listxml_coco.xml", "0.229 (mame0229)"); }
+		void loadExpectedVersion_alienar()	{ loadExpectedVersion(":/resources/listxml_alienar.xml", "0.229 (mame0229)"); }
 		void viewIterators();
-		void loadGarbage_0_0()			{ loadGarbage(0, 0); }
-		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
-		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
-		void loadGarbage_1000_1000()	{ loadGarbage(1000, 1000); }
+		void loadGarbage_0_0()				{ loadGarbage(0, 0); }
+		void loadGarbage_0_1000()			{ loadGarbage(0, 1000); }
+		void loadGarbage_1000_0()			{ loadGarbage(1000, 0); }
+		void loadGarbage_1000_1000()		{ loadGarbage(1000, 1000); }
 		void loadFailuresDontMutate();
 		void readsAllBytes();
 		void sortable();
@@ -44,6 +46,7 @@ namespace
 		void machineLookup(const QString &filename);
 		void deviceLookup(const QString &fileName, const QString &machineName);
 		void loadGarbage(int legitBytes, int garbageBytes);
+		void loadExpectedVersion(const QString &fileName, const QString &expectedVersion);
 		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
 };
@@ -258,6 +261,19 @@ void Test::loadGarbage(int legitBytes, int garbageBytes)
 	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
 	QVERIFY(!db.load(byteArray));
 	QVERIFY(!dbChanged);
+}
+
+
+//-------------------------------------------------
+//  loadExpectedVersion - tests that
+//	info::database::load() with an expected version
+//	functions properly
+//-------------------------------------------------
+
+void Test::loadExpectedVersion(const QString &fileName, const QString &expectedVersion)
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(fileName), expectedVersion));
 }
 
 
