@@ -97,14 +97,15 @@ void MameClient::taskThreadProc()
 
 	// launch the process
 	m_process->start(program, arguments);
-	if (!m_process->pid() || !m_process->waitForStarted() || !m_process->waitForReadyRead())
+	qint64 processId = m_process->processId();
+	if (!processId || !m_process->waitForStarted() || !m_process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
 		throw false;
 	}
 
 	// add the process to the job
-	s_job.AddProcess(m_process->pid());
+	s_job.addProcess(processId);
 
 	// we're done setting up; signal to the main thread
 	m_taskStartSemaphore.release();
