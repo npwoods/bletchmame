@@ -705,7 +705,8 @@ MainWindow::MainWindow(QWidget *parent)
 		m_prefs,
 		[this](const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) { run(machine, std::move(sessionBehavior)); },
 		m_ui->rootWidget);
-	m_ui->verticalLayout->addWidget(m_mainPanel);
+	m_ui->stackedLayout->addWidget(m_mainPanel);
+	m_ui->stackedLayout->setCurrentWidget(m_mainPanel);
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
@@ -713,36 +714,33 @@ MainWindow::MainWindow(QWidget *parent)
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// setup properties that pertain to runtime behavior
-	// FIXME
-	setupPropSyncAspect((QWidget &) *m_mainPanel,				&QWidget::isEnabled,	&QWidget::setEnabled,		{ },								false);
-	setupPropSyncAspect((QWidget &) *m_mainPanel,				&QWidget::isHidden,		&QWidget::setHidden,		{ },								true);
-	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		{ },								[this]() { return !attachToRootPanel(); });
-	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	&status::state::paused,				[this]() { return getTitleBarText(); });
+	setupPropSyncAspect(*m_ui->stackedLayout,					&QStackedLayout::currentWidget,	&QStackedLayout::setCurrentWidget,	{ },								[this]() { return attachToMainWindow() ? nullptr : m_ui->emulationPanel; });
+	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,			&QWidget::setWindowTitle,			&status::state::paused,				[this]() { return getTitleBarText(); });
 
 	// actions
-	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,	&QAction::setChecked,		&status::state::paused,				[this]() { return m_state->paused().get(); });
-	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::images,				[this]() { return m_state->images().get().size() > 0;});
-	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		&status::state::sound_attenuation,	[this]() { return m_state->sound_attenuation().get() != SOUND_ATTENUATION_OFF; });
-	setupPropSyncAspect(*m_ui->actionCheats,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::cheats,				[this]() { return m_state->cheats().get().size() > 0; });
-	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONTROLLER); });
-	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::KEYBOARD); });
-	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::MISC); });
-	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONFIG); });
-	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::DIPSWITCH); });
+	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,			&QAction::setChecked,				&status::state::paused,				[this]() { return m_state->paused().get(); });
+	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::images,				[this]() { return m_state->images().get().size() > 0;});
+	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,			&QAction::setChecked,				&status::state::sound_attenuation,	[this]() { return m_state->sound_attenuation().get() != SOUND_ATTENUATION_OFF; });
+	setupPropSyncAspect(*m_ui->actionCheats,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::cheats,				[this]() { return m_state->cheats().get().size() > 0; });
+	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONTROLLER); });
+	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::KEYBOARD); });
+	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::MISC); });
+	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONFIG); });
+	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::DIPSWITCH); });
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
@@ -1504,10 +1502,10 @@ info::machine MainWindow::getRunningMachine() const
 
 
 //-------------------------------------------------
-//  attachToRootPanel
+//  attachToMainWindow
 //-------------------------------------------------
 
-bool MainWindow::attachToRootPanel() const
+bool MainWindow::attachToMainWindow() const
 {
 	bool result = false;
 	if (HAS_ATTACH_WINDOW)
@@ -1516,9 +1514,22 @@ bool MainWindow::attachToRootPanel() const
 		const MameVersion REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW = MameVersion(0, 217, true);
 
 		// Are we the required version?
-		result = isMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
+		result = !isMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  attachWidget
+//-------------------------------------------------
+
+QWidget &MainWindow::attachWidget()
+{
+	QWidget *result = attachToMainWindow()
+		? (QWidget *)this
+		: m_ui->emulationPanel;
+	return *result;
 }
 
 
@@ -1552,7 +1563,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 		machine,
 		std::move(software_name),
 		m_sessionBehavior->getOptions(),
-		attachToRootPanel() ? *m_ui->rootWidget : *this);
+		attachWidget());
 	m_client.launch(std::move(task));
 
 	// set up running state and subscribe to events
@@ -2100,7 +2111,7 @@ void MainWindow::ensureProperFocus()
 	// In absence of a better way to handle this, we have some Windows specific
 	// code below.  Eventually this code should be retired once there is an understanding
 	// of the proper Qt techniques to apply here
-	if (attachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
+	if (!attachToMainWindow() && m_client.GetCurrentTask<RunMachineTask>())
 	{
 		if (::GetFocus() == (HWND)winId())
 			::SetFocus((HWND)m_ui->rootWidget->winId());

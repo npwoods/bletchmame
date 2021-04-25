@@ -105,12 +105,14 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		"-cheatpath",
 		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS),
 		"-window",
+#if HAS_DINPUT
 		"-keyboardprovider",
 		"dinput",
 		"-mouseprovider",
 		"dinput",
 		"-lightgunprovider",
 		"dinput",
+#endif // HAS_DINPUT
 #if HAS_ATTACH_WINDOW
 		"-attach_window",
 		m_attachWindowParameter,
