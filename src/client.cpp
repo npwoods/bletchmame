@@ -6,8 +6,7 @@
 
 ***************************************************************************/
 
-#include "client.h"
-
+#include <QDebug>
 #include <QThread>
 
 #include <iostream>
@@ -16,6 +15,13 @@
 #include "client.h"
 #include "prefs.h"
 #include "utility.h"
+
+
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+#define LOG_LAUNCH_COMMAND	0
 
 
 //**************************************************************************
@@ -94,6 +100,10 @@ void MameClient::taskThreadProc()
 	};
 	connect(m_process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
 	m_process->setReadChannel(QProcess::StandardOutput);
+
+	// log the command line (if appropriate)
+	if (LOG_LAUNCH_COMMAND)
+		qDebug() << "MameClient::taskThreadProc(): program=" << program << " arguments=" << arguments;
 
 	// launch the process
 	m_process->start(program, arguments);
