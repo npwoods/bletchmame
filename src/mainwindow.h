@@ -188,7 +188,7 @@ private:
 	void PlaceInRecentFiles(const QString &tag, const QString &path);
 	info::machine getRunningMachine() const;
 	bool attachToMainWindow() const;
-	QWidget &attachWidget();
+	QString attachWidgetId() const;
 	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
