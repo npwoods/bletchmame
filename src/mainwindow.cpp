@@ -40,9 +40,6 @@
 //  CONSTANTS
 //**************************************************************************
 
-// BletchMAME requires MAME 0.213 or later
-const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
-
 #ifdef min
 #undef min
 #endif // min
@@ -981,14 +978,11 @@ void MainWindow::on_actionSaveScreenshot_triggered()
 
 void MainWindow::on_actionToggleRecordMovie_triggered()
 {
-	// recording movies by specifying absolute paths was introduced in MAME 0.221
-	const MameVersion REQUIRED_MAME_VERSION_TOGGLE_MOVIE = MameVersion(0, 220, true);
-
 	// Are we the required version? 
-	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
+	if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_TOGGLE_MOVIE))
 	{
 		QString message = QString("Recording movies requires MAME %1 or newer to function")
-			.arg(REQUIRED_MAME_VERSION_TOGGLE_MOVIE.nextCleanVersion().toString());
+			.arg(MameVersion::Capabilities::HAS_TOGGLE_MOVIE.toString());
 		messageBox(message);
 		return;
 	}
@@ -1507,29 +1501,31 @@ info::machine MainWindow::getRunningMachine() const
 
 bool MainWindow::attachToMainWindow() const
 {
-	bool result = false;
-	if (HAS_ATTACH_WINDOW)
-	{
-		// Targetting subwindows with -attach_window was introduced in between MAME 0.217 and MAME 0.218
-		const MameVersion REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW = MameVersion(0, 217, true);
-
-		// Are we the required version?
-		result = !isMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
-	}
-	return result;
+	return !MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.has_value()
+		|| !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.value());
 }
 
 
 //-------------------------------------------------
-//  attachWidget
+//  attachWidgetId
 //-------------------------------------------------
 
-QWidget &MainWindow::attachWidget()
+QString MainWindow::attachWidgetId() const
 {
-	QWidget *result = attachToMainWindow()
-		? (QWidget *)this
-		: m_ui->emulationPanel;
-	return *result;
+	QString result;
+
+	if (MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.has_value()
+		&& isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.value()))
+	{
+		QWidget *attachWidget = attachToMainWindow()
+			? (QWidget *)this
+			: m_ui->emulationPanel;
+
+		// the documentation for QWidget::WId() says that this value can change any
+		// time; this is probably not true on Windows (where this returns the HWND)
+		result = QString::number(attachWidget->winId());
+	}
+	return result;
 }
 
 
@@ -1563,7 +1559,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 		machine,
 		std::move(software_name),
 		m_sessionBehavior->getOptions(),
-		attachWidget());
+		attachWidgetId());
 	m_client.launch(std::move(task));
 
 	// set up running state and subscribe to events
@@ -1804,20 +1800,35 @@ bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 
 //-------------------------------------------------
 //  onVersionCompleted
-//-------------------------------------------------
+//-------------------------------------------------m
 
 bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 {
+	// get the MAME version
 	m_mame_version = std::move(event.m_version);
 
-	// warn the user if this is version of MAME is not supported
-	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION))
+	// if the current MAME version is problematic, generate a warning
+	QString message;
+	if (!isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
-		QString message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
-			QString::number(REQUIRED_MAME_VERSION.major()),
-			QString::number(REQUIRED_MAME_VERSION.minor()));
-		messageBox(message);
+		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
+			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.major()),
+			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.minor()));
 	}
+	else if (!MameVersion::Capabilities::HAS_ATTACH_WINDOW.has_value())
+	{
+		message = "MAME on this platform does not support -attach_window, and the MAME window will not properly be embedded within BletchMAME";
+	}
+	else if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
+	{
+		message = QString("MAME on this platform requires version of %1.%2 for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
+			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().major()),
+			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().minor()));
+	}
+
+	// ...and display the warning if appropriate
+	if (!message.isEmpty())
+		messageBox(message);
 
 	m_client.waitForCompletion();
 	return true;

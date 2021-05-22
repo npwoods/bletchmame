@@ -27,21 +27,6 @@
 // the name of the worker_ui plugin
 #define WORKER_UI_PLUGIN_NAME	"worker_ui"
 
-// MAME requires different arguments on different platforms
-#if defined(Q_OS_WIN32)
-
-// Win32 declarations
-#define HAS_ATTACH_WINDOW	1
-#define HAS_DINPUT			1
-
-#else
-
-// Everything else
-#define HAS_ATTACH_WINDOW	0
-#define HAS_DINPUT			0
-
-#endif
-
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -106,7 +91,7 @@ class RunMachineTask : public Task
 public:
 	class Test;
 
-	RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QWidget &targetWindow);
+	RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QString &&attachWindowParameter);
 
 	void issue(const std::vector<QString> &args);
 	void issueFullCommandLine(QString &&full_command);
@@ -145,7 +130,6 @@ private:
 	mutable bool					m_startedWithHashPaths;
 
 	static QString buildCommand(const std::vector<QString> &args);
-	static QString getAttachWindowParameter(const QWidget &targetWindow);
 
 	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
 	static MameWorkerController::Response receiveResponseAndHandleUpdates(MameWorkerController &controller, QObject &handler);
