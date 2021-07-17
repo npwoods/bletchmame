@@ -11,6 +11,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.7 (TBD)
 	- Supporting -attach_window on SDLMAME 0.232 and higher
 	- Omitting -attach_window when MAME identified as lacking support
+	- Various changes to build on Linux [Davide Cavalca]
 
 - 2.6 (2021-Mar-6)
 	- Added a number of MAMEUI-style builtin folders 
