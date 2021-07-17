@@ -33,6 +33,14 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt5Test REQUIRED)
 
+# QuaZip
+find_package(QuaZip5)
+if (NOT QUAZIP_FOUND)
+set(QUAZIP_INCLUDE_DIRS lib/quazip)
+set(QUAZIP_LIBRARIES QuaZip)
+endif()
+include_directories(${QUAZIP_INCLUDE_DIRS})
+
 # Yes, we're unit testing
 enable_testing(true)
 
@@ -155,7 +163,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
+target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets ${QUAZIP_LIBRARIES})
 
 
 #############################################################################
@@ -207,6 +215,7 @@ target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5:
 # QuaZib																	#
 #############################################################################
 
+if (NOT QUAZIP_FOUND)
 add_library(QuaZip
 	lib/quazip/ioapi.h
 	lib/quazip/JlCompress.cpp
@@ -241,7 +250,7 @@ add_library(QuaZip
 target_include_directories(QuaZip PRIVATE lib/quazip)
 target_link_libraries(QuaZip PRIVATE Qt5::Widgets ${ZLIB_LIBRARIES})
 add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
-
+endif()
 
 #############################################################################
 # Translations                                                              #
