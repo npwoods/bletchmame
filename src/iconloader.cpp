@@ -8,8 +8,8 @@
 
 #include "iconloader.h"
 #include "prefs.h"
-#include "quazip/quazip.h"
-#include "quazip/quazipfile.h"
+#include <quazip.h>
+#include <quazipfile.h>
 
 
 //**************************************************************************
