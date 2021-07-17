@@ -45,6 +45,8 @@ MESSAGE(STATUS "buildversion.gen.cpp UNAVAILABLE")
 add_definitions(-DHAS_BUILDVERSION_GEN_CPP=0)
 endif()
 
+# Define installation directories
+include(GNUInstallDirs)
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #
@@ -163,6 +165,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets QuaZip)
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
 #############################################################################
