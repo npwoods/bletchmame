@@ -11,7 +11,10 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(USE_SHARED_LIBS "Use shared libraries" OFF)
+if (NOT USE_SHARED_LIBS)
 SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+endif()
 
 # Threads
 find_package( Threads )
