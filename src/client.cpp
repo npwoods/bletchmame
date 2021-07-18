@@ -111,6 +111,7 @@ void MameClient::taskThreadProc()
 	if (!processId || !m_process->waitForStarted() || !m_process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
+		qInfo() << "Failed to run MAME!\nstdout=" << m_process->readAllStandardOutput() << "\nstderr=" << m_process->readAllStandardError();
 		throw false;
 	}
 
