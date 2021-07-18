@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>bletchmame</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <name>BletchMAME</name>
+  <summary>MAME emulator frontend</summary>
+
+  <description>
+    <p>
+      BletchMAME is a new experimental front end for MAME. Unlike existing 
+      front ends (which function as launchers, keeping MAME's internal UI),
+      BletchMAME replaces the internal MAME UI with a more conventional point
+      and click GUI to provide a friendlier experience in a number of areas
+      (such as profiles, input configuration and a number of others). While
+      BletchMAME is intended to support all machines supported by MAME, it
+      should be particularly suitable to computer emulation.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">bletchmame.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://www.bletchmame.org/images/screenshot1.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot2.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot3.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot4.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot5.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot6.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot7.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot8.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot9.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot10.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot11.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot12.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot13.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot14.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot15.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot16.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.bletchmame.org/images/screenshot17.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://www.bletchmame.org/</url>
+  <content_rating type="oars-1.1" />
+
+  <provides>
+    <binary>BletchMAME</binary>
+  </provides>
+</component>
