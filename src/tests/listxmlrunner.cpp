@@ -78,7 +78,7 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
             process.waitForFinished();
             listXmlBytes = process.readAll();
         }
-        auto listXmlDuration = std::chrono::milliseconds(listXmlStopwatch.elapsedDuration());
+        auto listXmlDuration = std::chrono::duration_cast<std::chrono::milliseconds>(listXmlStopwatch.elapsedDuration());
 
         // report -listxml status
         std::cout << "MAME -listxml invocation complete (XML size " << listXmlBytes.size() << " bytes; elapsed duration " << listXmlDuration.count() << "ms)" << std::endl;
@@ -112,7 +112,7 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
         QVERIFY(buffer.open(QIODevice::WriteOnly));
         builder.emit_info(buffer);
     }   
-    auto buildInfoDbDuration = std::chrono::milliseconds(buildInfoDbStopwatch.elapsedDuration());
+    auto buildInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(buildInfoDbStopwatch.elapsedDuration());
     listXmlSource.reset();
 
     // report our status and sanity checks
@@ -132,7 +132,7 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
         QVERIFY(db.load(buffer));
         QVERIFY(dbChanged);
     }
-    auto readInfoDbDuration = std::chrono::milliseconds(readInfoDbStopwatch.elapsedDuration());
+    auto readInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(readInfoDbStopwatch.elapsedDuration());
 
     // report our status and sanity checks
     std::cout << "Info DB read complete (" << db.machines().size() << " total machines; elapsed duration " << readInfoDbDuration.count() << "ms)" << std::endl;
