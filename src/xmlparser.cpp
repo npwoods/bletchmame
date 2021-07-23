@@ -424,8 +424,11 @@ void XmlParser::startElement(const char *element, const char **attributes)
 		break;
 	}
 
-	// finally clear out content
-	m_currentContent.clear();
+	// set up content, but only if we expect to emit it later
+	if (m_skippingDepth == 0 && m_currentNode->m_endFunc)
+		m_currentContent.emplace();
+	else
+		m_currentContent.reset();
 }
 
 
@@ -444,7 +447,10 @@ void XmlParser::endElement(const char *)
 	{
 		// call back the end func, if appropriate
 		if (m_currentNode->m_endFunc)
-			m_currentNode->m_endFunc(std::move(m_currentContent));
+		{
+			m_currentNode->m_endFunc(std::move(m_currentContent.value_or("")));
+			m_currentContent.reset();
+		}
 
 		// and go up the tree
 		m_currentNode = m_currentNode->m_parent;
@@ -458,8 +464,11 @@ void XmlParser::endElement(const char *)
 
 void XmlParser::characterData(const char *s, int len)
 {
-	QString text = QString::fromUtf8(s, len);
-	m_currentContent.append(std::move(text));
+	if (m_currentContent.has_value())
+	{
+		QString text = QString::fromUtf8(s, len);
+		m_currentContent.value().append(std::move(text));
+	}
 }
 
 

@@ -167,7 +167,7 @@ private:
 	Node::ptr					m_root;
 	Node *						m_currentNode;
 	int							m_skippingDepth;
-	QString						m_currentContent;
+	std::optional<QString>		m_currentContent;
 	std::vector<Error>			m_errors;
 
 	bool internalParse(QIODevice &input);
