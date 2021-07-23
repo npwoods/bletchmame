@@ -147,19 +147,25 @@ public:
 private:
 	struct Node
 	{
-		typedef std::shared_ptr<Node> ptr;
-		typedef std::weak_ptr<Node> weak_ptr;
+		typedef std::unique_ptr<Node> ptr;
 		typedef std::unordered_map<const char *, Node::ptr> Map;
 
+		// ctor/dtor
+		Node(Node *parent);
+		Node(const Node &) = delete;
+		Node(Node &&) = delete;
+		~Node();
+
+		// fields
 		OnBeginElementCallback	m_beginFunc;
 		OnEndElementCallback	m_endFunc;
-		Node::weak_ptr			m_parent;
+		Node *					m_parent;
 		Map						m_map;
 	};
 
 	struct XML_ParserStruct *	m_parser;
 	Node::ptr					m_root;
-	Node::ptr					m_currentNode;
+	Node *						m_currentNode;
 	int							m_skippingDepth;
 	QString						m_currentContent;
 	std::vector<Error>			m_errors;
@@ -174,7 +180,7 @@ private:
 	static QString errorContext(const char *contextString, int contextOffset, int contextSize);
 	static bool isLineEnding(char ch);
 	static bool isWhitespace(char ch);
-	Node::ptr getNode(const std::initializer_list<const char *> &elements);
+	Node *getNode(const std::initializer_list<const char *> &elements);
 
 	static void startElementHandler(void *user_data, const char *name, const char **attributes);
 	static void endElementHandler(void *user_data, const char *name);

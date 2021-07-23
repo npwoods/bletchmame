@@ -125,7 +125,7 @@ static const util::enum_parser<bool> s_bool_parser =
 //-------------------------------------------------
 
 XmlParser::XmlParser()
-	: m_root(std::make_unique<Node>())
+	: m_root(std::make_unique<Node>(nullptr))
 	, m_skippingDepth(0)
 {
 	m_parser = XML_ParserCreate(nullptr);
@@ -152,7 +152,7 @@ XmlParser::~XmlParser()
 
 bool XmlParser::parse(QIODevice &input)
 {
-	m_currentNode = m_root;
+	m_currentNode = m_root.get();
 	m_skippingDepth = 0;
 
 	bool success = internalParse(input);
@@ -348,21 +348,19 @@ bool XmlParser::isWhitespace(char ch)
 //  getNode
 //-------------------------------------------------
 
-XmlParser::Node::ptr XmlParser::getNode(const std::initializer_list<const char *> &elements)
+XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &elements)
 {
-	Node::ptr node = m_root;
+	Node *node = m_root.get();
 
 	for (auto iter = elements.begin(); iter != elements.end(); iter++)
 	{
 		Node::ptr &child(node->m_map[*iter]);
 
+		// create the child node if it is not present
 		if (!child)
-		{
-			child = std::make_unique<Node>();
-			child->m_parent = node;
-		}
+			child = std::make_unique<Node>(node);
 
-		node = child;
+		node = child.get();
 	}
 	return node;
 }
@@ -375,12 +373,12 @@ XmlParser::Node::ptr XmlParser::getNode(const std::initializer_list<const char *
 void XmlParser::startElement(const char *element, const char **attributes)
 {
 	// only try to find this node in our tables if we are not skipping
-	Node::ptr child;
+	Node *child = nullptr;
 	if (m_skippingDepth == 0)
 	{
 		auto iter = m_currentNode->m_map.find(element);
 		if (iter != m_currentNode->m_map.end())
-			child = iter->second;
+			child = iter->second.get();
 	}
 
 	// figure out how to handle this element
@@ -449,7 +447,7 @@ void XmlParser::endElement(const char *)
 			m_currentNode->m_endFunc(std::move(m_currentContent));
 
 		// and go up the tree
-		m_currentNode = m_currentNode->m_parent.lock();
+		m_currentNode = m_currentNode->m_parent;
 	}
 }
 
@@ -702,4 +700,24 @@ void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, c
 		QString(attribute),
 		QString::fromStdString(value));
 	m_parser.appendError(std::move(message));
+}
+
+
+//-------------------------------------------------
+//  Node ctor
+//-------------------------------------------------
+
+XmlParser::Node::Node(Node *parent)
+	: m_parent(parent)
+{
+
+}
+
+
+//-------------------------------------------------
+//  Node dtor
+//-------------------------------------------------
+
+XmlParser::Node::~Node()
+{
 }
