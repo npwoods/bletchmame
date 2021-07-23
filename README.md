@@ -14,6 +14,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Various changes for running under Linux [Davide Cavalca]
 		- CMake and build tweaks to link with dependencies non-statically
 		- Created basic desktop and metadata files for GNOME
+	- Small optimizations to the building of MAME Info Database (-listxml handling)
 
 - 2.6 (2021-Mar-6)
 	- Added a number of MAMEUI-style builtin folders 
