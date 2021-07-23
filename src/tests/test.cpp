@@ -93,7 +93,11 @@ int main(int argc, char *argv[])
     }
     else if (argc >= 2 && !strcmp(argv[1], "--runlistxml"))
     {
-        result = runAndExcerciseListXml(argc - 2, argv + 2);
+        result = runAndExcerciseListXml(argc - 2, argv + 2, false);
+    }
+    else if (argc >= 2 && !strcmp(argv[1], "--runlistxml-sequential"))
+    {
+        result = runAndExcerciseListXml(argc - 2, argv + 2, true);
     }
     else
     {
