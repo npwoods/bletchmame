@@ -22,13 +22,9 @@ class Win32Job
 {
 public:
 	Win32Job();
-    ~Win32Job()
-    {
-        if (m_handle)
-            CloseHandle(m_handle);
-    }
+    ~Win32Job();
 
-    void AddProcess(qint64 process_id);
+    void addProcess(qint64 processId);
 
 private:
     HANDLE          m_handle;
@@ -42,7 +38,7 @@ private:
 class NullJob
 {
 public:
-    void AddProcess(qint64 process_id) { (void)process_id; }
+    void addProcess(qint64 processId) { (void)processId; }
 };
 
 

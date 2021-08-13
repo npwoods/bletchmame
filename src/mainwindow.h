@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainwindow.h
 
@@ -14,16 +14,19 @@
 #include <QFileDialog>
 #include <memory.h>
 
-#include "profile.h"
+#include "sessionbehavior.h"
 #include "prefs.h"
 #include "client.h"
-#include "iconloader.h"
 #include "info.h"
 #include "softwarelist.h"
 #include "tableviewmanager.h"
 #include "status.h"
 #include "dialogs/console.h"
 
+
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,8 +36,7 @@ class QAbstractItemModel;
 class QTableView;
 QT_END_NAMESPACE
 
-class SoftwareListItemModel;
-class ProfileListItemModel;
+class MainPanel;
 class MameVersion;
 class VersionResultEvent;
 class ListXmlResultEvent;
@@ -59,6 +61,8 @@ private slots:
 	void on_actionStop_triggered();
 	void on_actionPause_triggered();
 	void on_actionImages_triggered();
+	void on_actionQuickLoadState_triggered();
+	void on_actionQuickSaveState_triggered();
 	void on_actionLoadState_triggered();
 	void on_actionSaveState_triggered();
 	void on_actionSaveScreenshot_triggered();
@@ -83,13 +87,6 @@ private slots:
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
-	void on_machinesTableView_activated(const QModelIndex &index);
-	void on_machinesTableView_customContextMenuRequested(const QPoint &pos);
-	void on_softwareTableView_activated(const QModelIndex &index);
-	void on_softwareTableView_customContextMenuRequested(const QPoint &pos);
-	void on_profilesTableView_activated(const QModelIndex &index);
-	void on_profilesTableView_customContextMenuRequested(const QPoint &pos);
-	void on_tabWidget_currentChanged(int index);
 
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
@@ -105,10 +102,11 @@ private:
 	};
 
 	class Pauser;
-	class ImagesHost;
+	class ConfigurableDevicesDialogHost;
 	class InputsHost;
 	class SwitchesHost;
 	class CheatsHost;
+	class SnapshotViewEventFilter;
 
 	class Aspect
 	{
@@ -125,6 +123,7 @@ private:
 	class StatusBarAspect;
 	class MenuBarAspect;
 	class ToggleMovieTextAspect;
+	class QuickLoadSaveAspect;
 	class Dummy;
 
 	// statics
@@ -135,10 +134,9 @@ private:
 
 	// variables configured at startup
 	std::unique_ptr<Ui::MainWindow>		m_ui;
+	MainPanel *							m_mainPanel;
 	Preferences							m_prefs;
 	MameClient							m_client;
-	SoftwareListItemModel *				m_softwareListItemModel;
-	ProfileListItemModel *				m_profileListItemModel;
 	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
@@ -148,8 +146,7 @@ private:
 	info::database						m_info_db;
 
 	// status of running emulation
-	QString								m_current_profile_path;
-	bool								m_current_profile_auto_save_state;
+	std::unique_ptr<SessionBehavior>	m_sessionBehavior;
 	std::optional<status::state>		m_state;
 
 	// other
@@ -158,10 +155,8 @@ private:
 	const Pauser *						m_current_pauser;
 	observable::value<QString>			m_current_recording_movie_filename;
 	observable::unique_subscription		m_watch_subscription;
-	QString								m_currentSoftwareList;
-	software_list_collection			m_softwareListCollection;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
-	IconLoader							m_icon_loader;
+	observable::value<QString>			m_currentQuickState;
 
 	// task notifications
 	bool onVersionCompleted(VersionResultEvent &event);
@@ -184,7 +179,6 @@ private:
 	bool PromptForMameExecutable();
 	bool refreshMameInfoDatabase();
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
-	bool shouldPromptOnStop() const;
 	void showInputsDialog(status::input::input_class input_class);
 	void showSwitchesDialog(status::input::input_class input_class);
 	bool isMameVersionAtLeast(const MameVersion &version) const;
@@ -192,36 +186,26 @@ private:
 	virtual void SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func);
 	void WatchForImageMount(const QString &tag);
 	void PlaceInRecentFiles(const QString &tag, const QString &path);
-	void updateSoftwareList();
-	info::machine GetRunningMachine() const;
-	bool AttachToRootPanel() const;
-	void Run(const info::machine &machine, const software_list::software *software = nullptr, const profiles::profile *profile = nullptr);
-	void Run(const profiles::profile &profile);
+	info::machine getRunningMachine() const;
+	bool attachToMainWindow() const;
+	QString attachWidgetId() const;
+	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
-	void FileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
-	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
-	void CreateProfile(const info::machine &machine, const software_list::software *software);
-	static bool DirExistsOrMake(const QString &path);
-	void DuplicateProfile(const profiles::profile &profile);
-	void RenameProfile(const profiles::profile &profile);
-	void DeleteProfile(const profiles::profile &profile);
-	void FocusOnNewProfile(QString &&new_profile_path);
-	void showInGraphicalShell(const QString &path) const;
-	info::machine machineFromModelIndex(const QModelIndex &index) const;
+	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
 	QString getTitleBarText();
 	static QString InputClassText(status::input::input_class input_class, bool elipsis);
-	void Issue(const std::vector<QString> &args);
-	void Issue(const std::initializer_list<std::string> &args);
-	void Issue(const char *command);
-	void InvokePing();
-	void InvokeExit();
-	void ChangePaused(bool paused);
-	void ChangeThrottled(bool throttled);
-	void ChangeThrottleRate(float throttle_rate);
-	void ChangeThrottleRate(int adjustment);
-	void ChangeSound(bool sound_enabled);
-	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
+	void issue(const std::vector<QString> &args);
+	void issue(const std::initializer_list<std::string> &args);
+	void issue(const char *command);
+	void waitForStatusUpdate();
+	void invokePing();
+	void invokeExit();
+	void changePaused(bool paused);
+	void changeThrottled(bool throttled);
+	void changeThrottleRate(float throttle_rate);
+	void changeThrottleRate(int adjustment);
+	void changeSound(bool sound_enabled);
 	void ensureProperFocus();
 };
 

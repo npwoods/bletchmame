@@ -28,18 +28,6 @@ MameVersion::MameVersion(const QString &version)
 
 
 //-------------------------------------------------
-//  ctor
-//-------------------------------------------------
-
-MameVersion::MameVersion(int major, int minor, bool dirty)
-	: m_major(major)
-	, m_minor(minor)
-	, m_dirty(dirty)
-{
-}
-
-
-//-------------------------------------------------
 //  isAtLeast
 //-------------------------------------------------
 

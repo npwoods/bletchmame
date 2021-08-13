@@ -57,8 +57,10 @@ public:
 private:
     QProcess &											m_process;
 	std::function<void(ChatterType, const QString &)>	m_chatterCallback;
+	bool												m_timedOut;
 
 	// private methods
+	void readStatusIntoResponse(Response &response);
 	status::update readStatus();
 	QString reallyReadLineFromProcess();
 	void callChatterCallback(ChatterType chatterType, const QString &text) const;

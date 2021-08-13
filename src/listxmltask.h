@@ -69,7 +69,7 @@ public:
 	ListXmlTask(QString &&output_filename);
 
 protected:
-	virtual QStringList getArguments(const Preferences &) const;
+	virtual QStringList getArguments(const Preferences &) const override;
 	virtual void process(QProcess &process, QObject &handler) override;
 	virtual void abort() override;
 

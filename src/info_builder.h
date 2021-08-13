@@ -14,6 +14,7 @@
 class QDataStream;
 
 #include "info.h"
+#include "xmlparser.h"
 
 namespace info
 {
@@ -28,7 +29,6 @@ namespace info
 
 		// methods
 		bool process_xml(QIODevice &stream, QString &error_message);
-		bool process_xml(QDataStream &input, QString &error_message);
 		void emit_info(QIODevice &stream) const;
 
 	private:
@@ -36,10 +36,14 @@ namespace info
 		class string_table
 		{
 		public:
+			typedef std::array<char, 6> SsoBuffer;
+
 			string_table();
 			std::uint32_t get(const std::string &string);
 			std::uint32_t get(const QString &string);
+			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char> &data() const;
+			const char *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
 
 			template<typename T> void embed_value(T value)
 			{
@@ -54,7 +58,16 @@ namespace info
 
 		info::binaries::header									m_salted_header;
 		std::vector<info::binaries::machine>					m_machines;
+		std::vector<info::binaries::biosset>					m_biossets;
+		std::vector<info::binaries::rom>						m_roms;
+		std::vector<info::binaries::disk>						m_disks;
 		std::vector<info::binaries::device>						m_devices;
+		std::vector<info::binaries::slot>						m_slots;
+		std::vector<info::binaries::slot_option>				m_slot_options;
+		std::vector<info::binaries::feature>					m_features;
+		std::vector<info::binaries::chip>						m_chips;
+		std::vector<info::binaries::display>					m_displays;
+		std::vector<info::binaries::sample>						m_samples;
 		std::vector<info::binaries::configuration>				m_configurations;
 		std::vector<info::binaries::configuration_condition>	m_configuration_conditions;
 		std::vector<info::binaries::configuration_setting>		m_configuration_settings;

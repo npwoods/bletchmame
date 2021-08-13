@@ -92,7 +92,7 @@ void ProfileListItemModel::setOneTimeFswCallback(std::function<void()> &&fswCall
 //  getProfileByIndex
 //-------------------------------------------------
 
-const profiles::profile &ProfileListItemModel::getProfileByIndex(int index) const
+std::shared_ptr<profiles::profile> ProfileListItemModel::getProfileByIndex(int index)
 {
     return m_profiles[index];
 }
@@ -106,10 +106,22 @@ QModelIndex ProfileListItemModel::findProfileIndex(const QString &path) const
 {
     for (int i = 0; i < m_profiles.size(); i++)
     {
-        if (m_profiles[i].path() == path)
+        if (m_profiles[i]->path() == path)
             return createIndex(i, 0);
     }
     return QModelIndex();
+}
+
+
+//-------------------------------------------------
+//  setProfileName
+//-------------------------------------------------
+
+bool ProfileListItemModel::setProfileName(const profiles::profile &profile, const QString &newName)
+{
+    QFileInfo fi(profile.path());
+    QString newPath = fi.dir().absolutePath() + "/" + newName + ".bletchmameprofile";
+    return profiles::profile::profile_file_rename(profile.path(), newPath);
 }
 
 
@@ -164,7 +176,7 @@ QVariant ProfileListItemModel::data(const QModelIndex &index, int role) const
         && index.row() >= 0
         && index.row() < m_profiles.size())
     {
-        const profiles::profile &p = m_profiles[index.row()];
+        const profiles::profile &p = *m_profiles[index.row()];
         Column column = (Column)index.column();
 
         switch (role)
@@ -190,6 +202,13 @@ QVariant ProfileListItemModel::data(const QModelIndex &index, int role) const
                 std::optional<info::machine> machine = m_infoDb.find_machine(p.machine());
                 if (machine)
                     result = m_iconLoader.getIcon(*machine);
+            }
+            break;
+
+        case Qt::EditRole:
+            if (column == Column::Name)
+            {
+                result = p.name();
             }
             break;
         }
@@ -239,5 +258,28 @@ Qt::ItemFlags ProfileListItemModel::flags(const QModelIndex &index) const
     Qt::ItemFlags result = QAbstractItemModel::flags(index);
     if (index.column() == (int)Column::Name)
         result |= Qt::ItemIsEditable;
+    return result;
+}
+
+
+//-------------------------------------------------
+//  setData
+//-------------------------------------------------
+
+bool ProfileListItemModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    bool result = false;
+    if (index.isValid()
+        && index.row() >= 0
+        && index.row() < m_profiles.size())
+    {
+        const profiles::profile &p = *m_profiles[index.row()];
+        Column column = (Column)index.column();
+
+        if (role == Qt::EditRole && column == Column::Name)
+        {
+            result = setProfileName(p, value.toString());
+        }
+    }
     return result;
 }

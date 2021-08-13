@@ -6,8 +6,7 @@
 
 ***************************************************************************/
 
-#include "client.h"
-
+#include <QDebug>
 #include <QThread>
 
 #include <iostream>
@@ -16,6 +15,13 @@
 #include "client.h"
 #include "prefs.h"
 #include "utility.h"
+
+
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+#define LOG_LAUNCH_COMMAND	0
 
 
 //**************************************************************************
@@ -95,16 +101,22 @@ void MameClient::taskThreadProc()
 	connect(m_process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
 	m_process->setReadChannel(QProcess::StandardOutput);
 
+	// log the command line (if appropriate)
+	if (LOG_LAUNCH_COMMAND)
+		qDebug() << "MameClient::taskThreadProc(): program=" << program << " arguments=" << arguments;
+
 	// launch the process
 	m_process->start(program, arguments);
-	if (!m_process->processId() || !m_process->waitForStarted() || !m_process->waitForReadyRead())
+	qint64 processId = m_process->processId();
+	if (!processId || !m_process->waitForStarted() || !m_process->waitForReadyRead())
 	{
 		// TODO - better error handling, especially when we're not pointed at the proper executable
+		qInfo() << "Failed to run MAME!\nstdout=" << m_process->readAllStandardOutput() << "\nstderr=" << m_process->readAllStandardError();
 		throw false;
 	}
 
 	// add the process to the job
-	s_job.AddProcess(m_process->processId());
+	s_job.addProcess(processId);
 
 	// we're done setting up; signal to the main thread
 	m_taskStartSemaphore.release();

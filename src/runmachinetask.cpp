@@ -26,6 +26,24 @@
 #define LOG_POST			0
 
 
+// MAME requires different arguments on different platforms
+#if defined(Q_OS_WIN32)
+
+// Win32 declarations
+#define KEYBOARD_PROVIDER	"dinput"
+#define MOUSE_PROVIDER		"dinput"
+#define LIGHTGUN_PROVIDER	"dinput"
+
+#else
+
+// Everything else
+#define KEYBOARD_PROVIDER	""
+#define MOUSE_PROVIDER		""
+#define LIGHTGUN_PROVIDER	""
+
+#endif
+
+
 //**************************************************************************
 //  VARIABLES
 //**************************************************************************
@@ -43,10 +61,11 @@ QEvent::Type ChatterEvent::s_eventId = (QEvent::Type) QEvent::registerEventType(
 //  ctor
 //-------------------------------------------------
 
-RunMachineTask::RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow)
+RunMachineTask::RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QString &&attachWindowParameter)
     : m_machine(machine)
-	, m_software(software)
-    , m_attachWindowParameter(getAttachWindowParameter(targetWindow))
+	, m_software(std::move(software))
+	, m_slotOptions(std::move(slotOptions))
+    , m_attachWindowParameter(std::move(attachWindowParameter))
 	, m_chatterEnabled(false)
 	, m_startedWithHashPaths(false)
 {
@@ -70,47 +89,46 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 		}
 	}
 
+	// the first argument is the machine name
 	QStringList results = { getMachine().name() };
+
+	// the second argument is the software (if specified)
 	if (!m_software.isEmpty())
 		results.push_back(m_software);
 
-	QStringList args =
+	// then follow this with slot options
+	for (const auto &opt : m_slotOptions)
 	{
-		"-rompath",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS),
-		"-samplepath",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES),
-		"-cfg_directory",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG),
-		"-nvram_directory",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM),
-		"-hashpath",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::HASH),
-		"-artpath",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK),
-		"-pluginspath",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS),
-		"-cheatpath",
-		prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS),
-		"-window",
-		"-keyboardprovider",
-		"dinput",
-		"-mouseprovider",
-		"dinput",
-		"-lightgunprovider",
-		"dinput",
-#if HAS_ATTACH_WINDOW
-		"-attach_window",
-		m_attachWindowParameter,
-#endif // HAS_ATTACH_WINDOW
-		"-skip_gameinfo",
-		"-nomouse",
-		"-debug",
-		"-plugin",
-		WORKER_UI_PLUGIN_NAME
-	};
+		results.push_back(QString("-") + opt.first);
+		results.push_back(opt.second);
+	}
 
-	results.append(args);
+	// variable arguments
+	if (strlen(KEYBOARD_PROVIDER) > 0)
+		results << "-keyboardprovider" << KEYBOARD_PROVIDER;
+	if (strlen(MOUSE_PROVIDER) > 0)
+		results << "-mouseprovider" << MOUSE_PROVIDER;
+	if (strlen(LIGHTGUN_PROVIDER) > 0)
+		results << "-lightgunprovider" << LIGHTGUN_PROVIDER;
+	if (!m_attachWindowParameter.isEmpty())
+		results << "-attach_window" << m_attachWindowParameter;
+
+
+	// and the rest of them
+	results << "-rompath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS);
+	results << "-samplepath"		<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES);
+	results << "-cfg_directory"		<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG);
+	results << "-nvram_directory"	<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM);
+	results << "-hashpath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::HASH);
+	results << "-artpath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK);
+	results << "-pluginspath"		<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS);
+	results << "-cheatpath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS);
+	results << "-plugin"			<< WORKER_UI_PLUGIN_NAME;
+	results << "-window";
+	results << "-skip_gameinfo";
+	results << "-nomouse";
+	results << "-debug";
+
 	return results;
 }
 
@@ -208,19 +226,6 @@ QString RunMachineTask::buildCommand(const std::vector<QString> &args)
 	}
 	command += "\r\n";
 	return command;
-}
-
-
-//-------------------------------------------------
-//  getAttachWindowParameter - determine the
-//	parameter to pass to '-attach_window'
-//-------------------------------------------------
-
-QString RunMachineTask::getAttachWindowParameter(const QWidget &targetWindow)
-{
-	// the documentation for QWidget::WId() says that this value can change any
-	// time; this is probably not true on Windows (where this returns the HWND)
-	return QString::number(targetWindow.winId());
 }
 
 

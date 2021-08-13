@@ -33,8 +33,9 @@ jobs:
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: true
-        install: git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt6-static
+        update: false
+        release: false
+        install: git make parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
 
     # Generate buildversion.txt
     - name: Generate buildversion.txt
@@ -61,15 +62,18 @@ jobs:
 
     # Run integration testing with actual MAME
     - name: Run integration testing with actual MAME
-      shell: bash
       run: |
         test -d deps || mkdir deps
         test -d deps/roms || mkdir deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        ./test_mame_interactions.sh mame0213
-        ./test_mame_interactions.sh mame0218
-        ./test_mame_interactions.sh mame0224
-        ./test_mame_interactions.sh mame0225
+        cat | parallel "./test_mame_interactions.sh" <<- EOF
+            mame0213
+            mame0218
+            mame0224
+            mame0226
+            mame0227
+            mame0229
+        EOF
 
     # Install PanDoc
     - name: Install PanDoc

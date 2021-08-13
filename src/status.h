@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     status.h
 
@@ -39,11 +39,27 @@ typedef std::uint32_t ioport_value;
 namespace status
 {
 	// ======================> image
+	struct image_format
+	{
+		image_format() = default;
+		image_format(const image_format &) = delete;
+		image_format(image_format &&) = default;
+
+		QString					m_name;
+		QString					m_description;
+		QString					m_option_spec;
+		std::vector<QString>	m_extensions;
+
+		image_format &operator=(image_format &&) = default;
+		bool operator==(const image_format &) const = default;
+	};
+
+	// ======================> image
 	struct image
 	{
 		image() = default;
-		image(const image &) = SHOULD_BE_DELETE;
-		image(image &&that) = default;
+		image(const image &) = delete;
+		image(image &&) = default;
 
 		QString				m_tag;
 		QString				m_instance_name;
@@ -53,9 +69,26 @@ namespace status
 		bool				m_must_be_loaded;
 		QString				m_file_name;
 		QString				m_display;
+		std::optional<std::vector<image_format>>	m_formats;
 
-		image &operator=(image &&that) = default;
-		bool operator==(const image &that) const;
+		image &operator=(image &&) = default;
+		bool operator==(const image &) const = default;
+	};
+
+
+	// ======================> slot
+	struct slot
+	{
+		slot() = default;
+		slot(const slot &) = delete;
+		slot(slot &&) = default;
+
+		QString				m_name;
+		QString				m_current_option;
+		bool				m_fixed;
+
+		slot &operator=(slot &&) = default;
+		bool operator==(const slot &) const = default;
 	};
 
 
@@ -63,8 +96,8 @@ namespace status
 	struct input_seq
 	{
 		input_seq() = default;
-		input_seq(const input_seq &that) = SHOULD_BE_DELETE;
-		input_seq(input_seq &&that) = default;
+		input_seq(const input_seq &that) = delete;
+		input_seq(input_seq &&) = default;
 
 		enum class type
 		{
@@ -76,7 +109,7 @@ namespace status
 		type					m_type;
 		QString				m_tokens;
 
-		bool operator==(const input_seq &that) const;
+		bool operator==(const input_seq &) const = default;
 	};
 
 
@@ -84,8 +117,8 @@ namespace status
 	struct input
 	{
 		input() = default;
-		input(const input &) = SHOULD_BE_DELETE;
-		input(input &&that) = default;
+		input(const input &) = delete;
+		input(input &&) = default;
 
 		enum class input_class
 		{
@@ -109,8 +142,8 @@ namespace status
 		ioport_value			m_value;
 		std::vector<input_seq>	m_seqs;
 
-		input &operator=(input &&that) = default;
-		bool operator==(const input &that) const;
+		input &operator=(input &&) = default;
+		bool operator==(const input &) const = default;
 	};
 
 
@@ -118,15 +151,15 @@ namespace status
 	struct input_device_item
 	{
 		input_device_item() = default;
-		input_device_item(const input_device_item &) = SHOULD_BE_DELETE;
-		input_device_item(input_device_item &&that) = default;
+		input_device_item(const input_device_item &) = delete;
+		input_device_item(input_device_item &&) = default;
 
 		QString		m_name;
 		QString		m_token;
 		QString		m_code;
 
-		input_device_item &operator=(input_device_item &&that) = default;
-		bool operator==(const input_device_item &that) const;
+		input_device_item &operator=(input_device_item &&) = default;
+		bool operator==(const input_device_item &) const = default;
 	};
 
 
@@ -134,16 +167,16 @@ namespace status
 	struct input_device
 	{
 		input_device() = default;
-		input_device(const input_device &) = SHOULD_BE_DELETE;
-		input_device(input_device &&that) = default;
+		input_device(const input_device &) = delete;
+		input_device(input_device &&) = default;
 
 		QString							m_name;
 		QString							m_id;
 		int								m_index;
 		std::vector<input_device_item>	m_items;
 		
-		input_device &operator=(input_device &&that) = default;
-		bool operator==(const input_device &that) const;
+		input_device &operator=(input_device &&) = default;
+		bool operator==(const input_device &) const = default;
 	};
 
 
@@ -151,16 +184,16 @@ namespace status
 	struct input_class
 	{
 		input_class() = default;
-		input_class(const input_class &) = SHOULD_BE_DELETE;
-		input_class(input_class &&that) = default;
+		input_class(const input_class &) = delete;
+		input_class(input_class &&) = default;
 
 		QString							m_name;
 		bool							m_enabled;
 		bool							m_multi;
 		std::vector<input_device>		m_devices;
 
-		input_class &operator=(input_class &&that) = default;
-		bool operator==(const input_class &that) const;
+		input_class &operator=(input_class &&) = default;
+		bool operator==(const input_class &) const = default;
 	};
 
 
@@ -179,7 +212,7 @@ namespace status
 	struct cheat_parameter
 	{
 		cheat_parameter() = default;
-		cheat_parameter(const cheat_parameter &) = SHOULD_BE_DELETE;
+		cheat_parameter(const cheat_parameter &) = delete;
 		cheat_parameter(cheat_parameter &&) = default;
 
 		std::uint64_t						m_value;
@@ -188,14 +221,14 @@ namespace status
 		std::uint64_t						m_step;
 		std::map<std::uint64_t, QString>	m_items;
 
-		bool operator==(const cheat_parameter &that) const;
+		bool operator==(const cheat_parameter &) const = default;
 	};
 
 	// ======================> cheat
 	struct cheat
 	{
 		cheat() = default;
-		cheat(const cheat &) = SHOULD_BE_DELETE;
+		cheat(const cheat &) = delete;
 		cheat(cheat &&) = default;
 
 		QString							m_id;
@@ -208,7 +241,7 @@ namespace status
 		QString							m_comment;
 		std::optional<cheat_parameter>	m_parameter;
 
-		bool operator==(const cheat &that) const;
+		bool operator==(const cheat &) const = default;
 	};
 
 	// ======================> update
@@ -216,7 +249,7 @@ namespace status
 	{
 		update();
 		update(const update &that) = delete;
-		update(update &&that) = default;
+		update(update &&) = default;
 		~update();
 
 		// did we have problems reading the response from MAME?
@@ -228,6 +261,7 @@ namespace status
 		std::optional<bool>							m_paused;
 		std::optional<bool>							m_polling_input_seq;
 		std::optional<bool>							m_has_input_using_mouse;
+		std::optional<bool>							m_has_mouse_enabled_problem;
 		std::optional<QString>						m_startup_text;
 		std::optional<bool>							m_debugger_present;
 		std::optional<float>						m_speed_percent;
@@ -238,13 +272,14 @@ namespace status
 		std::optional<bool>							m_is_recording;
 		std::optional<int>							m_sound_attenuation;
 		std::optional<std::vector<image>>			m_images;
+		std::optional<std::vector<slot>>			m_slots;
 		std::optional<std::vector<input>>			m_inputs;
 		std::optional<std::vector<input_class>>		m_input_classes;
 		std::optional<std::vector<cheat>>			m_cheats;
 
 		static update read(QIODevice &input);
 
-		update &operator=(update &&that) = default;
+		update &operator=(update &&) = default;
 	};
 
 
@@ -255,7 +290,7 @@ namespace status
 		// ctor/dtor
 		state();
 		state(const state &that) = delete;
-		state(state &&that) = default;
+		state(state &&) = default;
 		~state();
 
 		// update with new state
@@ -266,11 +301,13 @@ namespace status
 		observable::value<bool> &						paused()					{ return m_paused; }
 		observable::value<bool> &						polling_input_seq()			{ return m_polling_input_seq; }
 		observable::value<bool> &						has_input_using_mouse()		{ return m_has_input_using_mouse; }
+		observable::value<bool> &						has_mouse_enabled_problem()	{ return m_has_mouse_enabled_problem; }
 		observable::value<QString> &					startup_text()				{ return m_startup_text; }
 		observable::value<bool>	&						debugger_present()			{ return m_debugger_present; }
 		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
 		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
 		observable::value<std::vector<image>> &			images()					{ return m_images; }
+		observable::value<std::vector<slot>> &			devslots()					{ return m_slots; }
 		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
 		observable::value<std::vector<input_class>> &	input_classes()				{ return m_input_classes; }
 		observable::value<QString> &					frameskip()					{ return m_frameskip; }
@@ -289,11 +326,13 @@ namespace status
 		observable::value<bool>							m_paused;
 		observable::value<bool>							m_polling_input_seq;
 		observable::value<bool>							m_has_input_using_mouse;
+		observable::value<bool>							m_has_mouse_enabled_problem;		
 		observable::value<QString>						m_startup_text;
 		observable::value<bool>							m_debugger_present;
 		observable::value<float>						m_speed_percent;
 		observable::value<int>							m_effective_frameskip;
 		observable::value<std::vector<image>>			m_images;
+		observable::value<std::vector<slot>>			m_slots;
 		observable::value<std::vector<input>>			m_inputs;
 		observable::value<std::vector<input_class>>		m_input_classes;
 		observable::value<QString>						m_frameskip;

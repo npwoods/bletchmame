@@ -14,6 +14,7 @@
 #include <array>
 #include <ostream>
 #include <map>
+#include <set>
 
 #include <QDataStream>
 #include <QSize>
@@ -26,6 +27,15 @@ struct ColumnPrefs
 	int								m_width;
 	int								m_order;
 	std::optional<Qt::SortOrder>	m_sort;
+};
+
+
+struct FolderPrefs
+{
+	FolderPrefs();
+	bool operator==(const FolderPrefs &that) const = default;
+
+	bool							m_shown;
 };
 
 
@@ -48,6 +58,7 @@ public:
 		PLUGINS,
 		PROFILES,
 		CHEATS,
+		SNAPSHOTS,
 
 		COUNT
 	};
@@ -105,6 +116,18 @@ public:
 	list_view_type GetSelectedTab()																		{ return m_selected_tab; }
 	void SetSelectedTab(list_view_type type)															{ m_selected_tab = type; }
 
+	const QString &GetMachineFolderTreeSelection() const										{ return m_machine_folder_tree_selection; }
+	void SetMachineFolderTreeSelection(QString &&selection)										{ m_machine_folder_tree_selection = std::move(selection); }
+
+	const QList<int> &GetMachineSplitterSizes() const											{ return m_machine_splitter_sizes; }
+	void SetMachineSplitterSizes(QList<int> &&sizes)											{ m_machine_splitter_sizes = std::move(sizes); }
+
+	FolderPrefs GetFolderPrefs(const QString &folder) const;
+	void SetFolderPrefs(const QString &folder, FolderPrefs &&prefs);
+
+	const std::map<QString, std::set<QString>> &GetCustomFolders() const						{ return m_custom_folders; }
+	std::map<QString, std::set<QString>> &GetCustomFolders()									{ return m_custom_folders; }
+
 	const std::unordered_map<std::string, ColumnPrefs> &GetColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
 	void SetColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
@@ -131,7 +154,7 @@ public:
     static QString GetConfigDirectory(bool ensure_directory_exists = false);
 
 	bool Load();
-	bool Load(QDataStream &input);
+	bool Load(QIODevice &input);
 	void Save();
 
 private:
@@ -150,6 +173,10 @@ private:
 	mutable std::unordered_map<std::string, std::unordered_map<std::string, ColumnPrefs>>	m_column_prefs;
 	std::map<QString, MachineInfo>															m_machine_info;
 	list_view_type																			m_selected_tab;
+	QString																					m_machine_folder_tree_selection;
+	QList<int>																				m_machine_splitter_sizes;
+	std::map<QString, FolderPrefs>															m_folder_prefs;
+	std::map<QString, std::set<QString>>													m_custom_folders;
     std::unordered_map<QString, QString>													m_list_view_selection;
 	mutable std::unordered_map<QString, QString>											m_list_view_filter;
 	bool																					m_menu_bar_shown;

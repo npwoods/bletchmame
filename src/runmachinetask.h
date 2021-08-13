@@ -24,26 +24,8 @@
 //  MACROS
 //**************************************************************************
 
-// workaround for GCC bug fixed in 7.4
-#ifdef __GNUC__
-#if __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#define SHOULD_BE_DELETE	default
-#endif	// __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#endif // __GNUC__
-
-#ifndef SHOULD_BE_DELETE
-#define SHOULD_BE_DELETE	delete
-#endif // !SHOULD_BE_DELETE
-
 // the name of the worker_ui plugin
 #define WORKER_UI_PLUGIN_NAME	"worker_ui"
-
-// does this platform use -attach_window?
-#ifdef Q_OS_WIN32
-#define HAS_ATTACH_WINDOW	1
-#else // !Q_OS_WIN32
-#define HAS_ATTACH_WINDOW	0
-#endif // Q_OS_WIN32
 
 
 //**************************************************************************
@@ -109,7 +91,7 @@ class RunMachineTask : public Task
 public:
 	class Test;
 
-	RunMachineTask(info::machine machine, QString &&software, QWidget &targetWindow);
+	RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QString &&attachWindowParameter);
 
 	void issue(const std::vector<QString> &args);
 	void issueFullCommandLine(QString &&full_command);
@@ -141,13 +123,13 @@ private:
 
 	info::machine					m_machine;
 	QString							m_software;
+	std::map<QString, QString>		m_slotOptions;
 	QString							m_attachWindowParameter;
 	MessageQueue<Message>		    m_messageQueue;
 	volatile bool					m_chatterEnabled;
 	mutable bool					m_startedWithHashPaths;
 
 	static QString buildCommand(const std::vector<QString> &args);
-	static QString getAttachWindowParameter(const QWidget &targetWindow);
 
 	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
 	static MameWorkerController::Response receiveResponseAndHandleUpdates(MameWorkerController &controller, QObject &handler);

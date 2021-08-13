@@ -8,8 +8,8 @@
 
 #include "iconloader.h"
 #include "prefs.h"
-#include "quazip/quazip.h"
-#include "quazip/quazipfile.h"
+#include <quazip.h>
+#include <quazipfile.h>
 
 
 //**************************************************************************
@@ -154,8 +154,8 @@ void IconLoader::refreshIcons()
 const QPixmap &IconLoader::getIcon(const info::machine &machine)
 {
 	const QPixmap *result = getIconByName(machine.name());
-	if (!result && !machine.clone_of().isEmpty())
-		result = getIconByName(machine.clone_of());	
+	if (!result && machine.clone_of())
+		result = getIconByName(machine.clone_of()->name());	
 	return result ? *result : m_blankIcon;
 }
 

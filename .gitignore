@@ -49,6 +49,7 @@ CMakeFiles
 cmake_install.cmake
 CTestTestfile.cmake
 Makefile
+install_manifest.txt
 *.dir
 *_autogen
 

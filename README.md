@@ -8,8 +8,38 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.3 (TBD)
+- 2.7 (TBD)
 	- Updated to Qt 6.0
+	- Supporting -attach_window on SDLMAME 0.232 and higher
+	- Omitting -attach_window when MAME identified as lacking support
+	- Various changes for running under Linux [Davide Cavalca]
+		- CMake and build tweaks to link with dependencies non-statically
+		- Created basic desktop and metadata files for GNOME
+	- Small optimizations to the building of MAME Info Database (-listxml handling)
+
+- 2.6 (2021-Mar-6)
+	- Added a number of MAMEUI-style builtin folders 
+		- BIOS, CHD, CPU, Dumping, Mechanical, Non Mechanical, Raster, Samples, Save State, Sound, Unofficial, Vector
+	- Added support for custom folders
+	- Added a "Show Folders" contextual menu to the folder tree
+	- Fixed a unicode issue in preferences handling
+	- Updated to C++20
+
+- 2.5 (2021-Jan-31)
+	- Beginings of a MAMEUI-style machine folder and snapshot view
+
+- 2.4 (2021-Jan-3)
+	- Updated various parts of the worker_ui plugin in response to breaking LUA changes in MAME 0.227
+		- An implication is that previous versions of BletchMAME will not work with MAME 0.227 or greater
+		- Because MAME 0.227 doesn't support hot changes to mouse capture, the mouse may not be usable
+			- BletchMAME will warn the user in this scenario
+	- Changed the Images Dialog to a Configurable Devices dialog, combining image and slot selection
+		- Slot modification requires MAME 0.227, and will not function in previouew versions
+	- Resurrected the "Quick Load/Save State" feature, which has been broken since 2.0
+	- Fixed profile renaming, which also has been broken since 2.0
+	- Fixed a bug in the profiles view that could cause a crash if one right clicks empty space
+
+- 2.3 (2020-Dec-13)
 	- Added a warning to the Images Dialog if no hash paths were set up
 	- Fixed a bug that could cause image widgets to not be properly cleaned up if they got removed by a slot change
 	- Fixed a bug that prevented the "Unload Image" menu item from working

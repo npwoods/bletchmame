@@ -249,7 +249,7 @@ InputsDialog::InputsDialog(QWidget *parent, IInputsHost &host, status::input::in
 		// create the controls
 		QPushButton &main_button = *new QPushButton(name, this);
 		main_button.setSizePolicy(QSizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Minimum));
-		QPushButton &menu_button = *new QPushButton(QString::fromUtf8(u8"\u25BC"), this);
+		QPushButton &menu_button = *new QPushButton(QString::fromUtf8((const char *) u8"\u25BC"), this);
 		menu_button.setSizePolicy(QSizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Minimum));
 		menu_button.setFixedWidth(20);
 		QLabel &static_text = *new QLabel(this);

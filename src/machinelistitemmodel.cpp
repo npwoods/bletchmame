@@ -20,11 +20,61 @@ MachineListItemModel::MachineListItemModel(QObject *parent, info::database &info
 	, m_infoDb(infoDb)
     , m_iconLoader(iconLoader)
 {
-    m_infoDb.setOnChanged([this]
+    m_infoDb.addOnChangedHandler([this]
     {
-        beginResetModel();
-        endResetModel();
+        populateIndexes();
     });
+}
+
+
+//-------------------------------------------------
+//  machineFromIndex
+//-------------------------------------------------
+
+info::machine MachineListItemModel::machineFromIndex(const QModelIndex &index) const
+{
+    return m_infoDb.machines()[m_indexes[index.row()]];
+}
+
+
+//-------------------------------------------------
+//  setMachineFilter
+//-------------------------------------------------
+
+void MachineListItemModel::setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter)
+{
+    m_machineFilter = std::move(machineFilter);
+    populateIndexes();
+}
+
+
+//-------------------------------------------------
+//  populateIndexes
+//-------------------------------------------------
+
+void MachineListItemModel::populateIndexes()
+{
+    beginResetModel();
+
+    m_indexes.clear();
+    m_indexes.reserve(m_infoDb.machines().size());
+    for (int i = 0; i < m_infoDb.machines().size(); i++)
+    {
+        info::machine machine = m_infoDb.machines()[i];
+
+        // we only use runnable machines
+        if (machine.runnable())
+        {
+            // and we need to apply a filter (if we have one)
+            if (!m_machineFilter || m_machineFilter(machine))
+            {
+                m_indexes.push_back(i);
+            }
+        }
+    }
+    m_indexes.shrink_to_fit();
+
+    endResetModel();
 }
 
 
@@ -54,7 +104,7 @@ QModelIndex MachineListItemModel::parent(const QModelIndex &child) const
 
 int MachineListItemModel::rowCount(const QModelIndex &parent) const
 {
-    return util::safe_static_cast<int>(m_infoDb.machines().size());
+    return util::safe_static_cast<int>(m_indexes.size());
 }
 
 
@@ -77,9 +127,9 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
     QVariant result;
     if (index.isValid()
         && index.row() >= 0
-        && index.row() < m_infoDb.machines().size())
+        && index.row() < m_indexes.size())
     {
-        info::machine machine = m_infoDb.machines()[index.row()];
+        info::machine machine = machineFromIndex(index);
         Column column = (Column)index.column();
 
         switch (role)

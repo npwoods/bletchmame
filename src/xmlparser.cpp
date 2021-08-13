@@ -8,6 +8,9 @@
 
 #include <expat.h>
 #include <inttypes.h>
+#include <string>
+
+#include <QBuffer>
 
 #include "xmlparser.h"
 
@@ -30,22 +33,68 @@
 namespace
 {
 	template<typename T>
-	class scanf_parser
+	class strtoll_parser
 	{
 	public:
-		scanf_parser(const char *format)
-			: m_format(format)
+		strtoll_parser(int radix)
+			: m_radix(radix)
 		{
 		}
 
 		bool operator()(const std::string &text, T &value) const
 		{
-			int rc = sscanf(text.c_str(), m_format, &value);
-			return rc > 0;
+			char *endptr;
+			long long l = strtoll(text.c_str(), &endptr, m_radix);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)l;
+			return value == l;
 		}
 
 	private:
-		const char *m_format;
+		int m_radix;
+	};
+
+	template<typename T>
+	class strtoull_parser
+	{
+	public:
+		strtoull_parser(int radix)
+			: m_radix(radix)
+		{
+		}
+
+		bool operator()(const std::string &text, T &value) const
+		{
+			char *endptr;
+			unsigned long long l = strtoull(text.c_str(), &endptr, m_radix);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)l;
+			return value == l;
+		}
+
+	private:
+		int m_radix;
+	};
+
+
+	template<typename T>
+	class strtof_parser
+	{
+	public:
+		bool operator()(const std::string &text, T &value) const
+		{
+			char *endptr;
+			float f = strtof(text.c_str(), &endptr);
+			if (endptr != text.c_str() + text.size())
+				return false;
+
+			value = (T)f;
+			return value == f;
+		}
 	};
 };
 
@@ -53,12 +102,6 @@ namespace
 //**************************************************************************
 //  LOCAL VARIABLES
 //**************************************************************************
-
-
-static const scanf_parser<int> s_int_parser("%d");
-static const scanf_parser<unsigned int> s_uint_parser("%u");
-static const scanf_parser<std::uint64_t> s_ulong_parser("%" SCNu64);
-static const scanf_parser<float> s_float_parser("%f");
 
 static const util::enum_parser<bool> s_bool_parser =
 {
@@ -82,8 +125,8 @@ static const util::enum_parser<bool> s_bool_parser =
 //-------------------------------------------------
 
 XmlParser::XmlParser()
-	: m_root(std::make_unique<Node>())
-	, m_skipping_depth(0)
+	: m_root(std::make_unique<Node>(nullptr))
+	, m_skippingDepth(0)
 {
 	m_parser = XML_ParserCreate(nullptr);
 
@@ -109,24 +152,13 @@ XmlParser::~XmlParser()
 
 bool XmlParser::parse(QIODevice &input)
 {
-	QDataStream dataStream(&input);
-	return parse(dataStream);
-}
-
-
-//-------------------------------------------------
-//  parse
-//-------------------------------------------------
-
-bool XmlParser::parse(QDataStream &input)
-{
-	m_current_node = m_root;
-	m_skipping_depth = 0;
+	m_currentNode = m_root.get();
+	m_skippingDepth = 0;
 
 	bool success = internalParse(input);
 
-	m_current_node = nullptr;
-	m_skipping_depth = 0;
+	m_currentNode = nullptr;
+	m_skippingDepth = 0;
 	return success;
 }
 
@@ -150,9 +182,10 @@ bool XmlParser::parse(const QString &file_name)
 
 bool XmlParser::parseBytes(const void *ptr, size_t sz)
 {
-	QByteArray byte_array((const char *) ptr, (int)sz);
-	QDataStream input(byte_array);
-	return parse(input);
+	QByteArray byteArray((const char *) ptr, (int)sz);
+	QBuffer input(&byteArray);
+	return input.open(QIODevice::ReadOnly)
+		&& parse(input);
 }
 
 
@@ -160,10 +193,9 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 //  internalParse
 //-------------------------------------------------
 
-bool XmlParser::internalParse(QDataStream &input)
+bool XmlParser::internalParse(QIODevice &input)
 {
 	bool done = false;
-	bool success = true;
 	char buffer[8192];
 
 	if (LOG_XML)
@@ -172,10 +204,10 @@ bool XmlParser::internalParse(QDataStream &input)
 	while (!done)
 	{
 		// this seems to be necssary when reading from a QProcess
-		input.device()->waitForReadyRead(-1);
+		input.waitForReadyRead(-1);
 
 		// read data
-		int lastRead = input.readRawData(buffer, sizeof(buffer));
+		int lastRead = input.read(buffer, sizeof(buffer));
 		if (LOG_XML)
 			qDebug("XmlParser::internalParse(): input.readRawData() returned %d", lastRead);
 
@@ -188,12 +220,13 @@ bool XmlParser::internalParse(QDataStream &input)
 		// and feed this into expat
 		if (!XML_Parse(m_parser, buffer, done ? 0 : lastRead, done))
 		{
-			// an error happened; bail out
-			success = false;		
+			// an error happened; append the error and bail out
+			appendCurrentXmlError();
 			done = true;
 		}
 	}
 
+	bool success = m_errors.size() == 0;
 	if (LOG_XML)
 		qDebug("XmlParser::internalParse(): ending parse (success=%s)", success ? "true" : "false");
 	return success;
@@ -201,23 +234,28 @@ bool XmlParser::internalParse(QDataStream &input)
 
 
 //-------------------------------------------------
-//  errorMessage
+//  appendCurrentXmlError
 //-------------------------------------------------
 
-QString XmlParser::errorMessage() const
+void XmlParser::appendCurrentXmlError()
 {
-	int lineNumber = XML_GetCurrentLineNumber(m_parser);
-	int columnNumber = XML_GetCurrentColumnNumber(m_parser);
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *errorString = XML_ErrorString(code);
-	QString message = QString("%1:%2: %3").arg(
-		QString::number(lineNumber),
-		QString::number(columnNumber),
-		QString(errorString));
-	QString context = errorContext();
-	if (!context.isEmpty())
-		message = message + "\n" + context;
-	return message;
+	appendError(errorString);
+}
+
+
+//-------------------------------------------------
+//  appendError
+//-------------------------------------------------
+
+void XmlParser::appendError(QString &&message)
+{
+	Error &error = m_errors.emplace_back();
+	error.m_lineNumber = XML_GetCurrentLineNumber(m_parser);
+	error.m_columnNumber = XML_GetCurrentColumnNumber(m_parser);
+	error.m_message = std::move(message);
+	error.m_context = errorContext();
 }
 
 
@@ -267,6 +305,26 @@ QString XmlParser::errorContext(const char *contextString, int contextOffset, in
 
 
 //-------------------------------------------------
+//  errorMessagesSingleString
+//-------------------------------------------------
+
+QString XmlParser::errorMessagesSingleString() const
+{
+	QString result;
+	for (const Error &error : m_errors)
+	{
+		if (!result.isEmpty())
+			result += "\n";
+		result += QString("%1:%2: %3").arg(
+			QString::number(error.m_lineNumber),
+			QString::number(error.m_columnNumber),
+			error.m_message);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  isLineEnding
 //-------------------------------------------------
 
@@ -290,21 +348,19 @@ bool XmlParser::isWhitespace(char ch)
 //  getNode
 //-------------------------------------------------
 
-XmlParser::Node::ptr XmlParser::getNode(const std::initializer_list<const char *> &elements)
+XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &elements)
 {
-	Node::ptr node = m_root;
+	Node *node = m_root.get();
 
 	for (auto iter = elements.begin(); iter != elements.end(); iter++)
 	{
 		Node::ptr &child(node->m_map[*iter]);
 
+		// create the child node if it is not present
 		if (!child)
-		{
-			child = std::make_unique<Node>();
-			child->m_parent = node;
-		}
+			child = std::make_unique<Node>(node);
 
-		node = child;
+		node = child.get();
 	}
 	return node;
 }
@@ -317,12 +373,12 @@ XmlParser::Node::ptr XmlParser::getNode(const std::initializer_list<const char *
 void XmlParser::startElement(const char *element, const char **attributes)
 {
 	// only try to find this node in our tables if we are not skipping
-	Node::ptr child;
-	if (m_skipping_depth == 0)
+	Node *child = nullptr;
+	if (m_skippingDepth == 0)
 	{
-		auto iter = m_current_node->m_map.find(element);
-		if (iter != m_current_node->m_map.end())
-			child = iter->second;
+		auto iter = m_currentNode->m_map.find(element);
+		if (iter != m_currentNode->m_map.end())
+			child = iter->second.get();
 	}
 
 	// figure out how to handle this element
@@ -330,14 +386,14 @@ void XmlParser::startElement(const char *element, const char **attributes)
 	if (child)
 	{
 		// we do - traverse down the tree
-		m_current_node = child;
+		m_currentNode = child;
 
 		// do we have a callback function for beginning this node?
-		if (m_current_node->m_begin_func)
+		if (m_currentNode->m_beginFunc)
 		{
 			// we do - call it
-			Attributes *attributes_object = reinterpret_cast<Attributes *>(reinterpret_cast<void *>(attributes));
-			result = m_current_node->m_begin_func(*attributes_object);
+			Attributes attributesObject(*this, attributes);
+			result = m_currentNode->m_beginFunc(attributesObject);
 		}
 		else
 		{
@@ -360,7 +416,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 	case ElementResult::Skip:
 		// we're skipping this element; treat it the same as an unknown element
-		m_skipping_depth++;
+		m_skippingDepth++;
 		break;
 
 	default:
@@ -368,8 +424,11 @@ void XmlParser::startElement(const char *element, const char **attributes)
 		break;
 	}
 
-	// finally clear out content
-	m_current_content.clear();
+	// set up content, but only if we expect to emit it later
+	if (m_skippingDepth == 0 && m_currentNode->m_endFunc)
+		m_currentContent.emplace();
+	else
+		m_currentContent.reset();
 }
 
 
@@ -379,19 +438,22 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 void XmlParser::endElement(const char *)
 {
-	if (m_skipping_depth)
+	if (m_skippingDepth)
 	{
 		// coming out of an unknown element type
-		m_skipping_depth--;
+		m_skippingDepth--;
 	}
 	else
 	{
 		// call back the end func, if appropriate
-		if (m_current_node->m_end_func)
-			m_current_node->m_end_func(std::move(m_current_content));
+		if (m_currentNode->m_endFunc)
+		{
+			m_currentNode->m_endFunc(std::move(m_currentContent.value_or("")));
+			m_currentContent.reset();
+		}
 
 		// and go up the tree
-		m_current_node = m_current_node->m_parent.lock();
+		m_currentNode = m_currentNode->m_parent;
 	}
 }
 
@@ -402,8 +464,11 @@ void XmlParser::endElement(const char *)
 
 void XmlParser::characterData(const char *s, int len)
 {
-	QString text = QString::fromUtf8(s, len);
-	m_current_content.append(std::move(text));
+	if (m_currentContent.has_value())
+	{
+		QString text = QString::fromUtf8(s, len);
+		m_currentContent.value().append(std::move(text));
+	}
 }
 
 
@@ -482,82 +547,139 @@ void XmlParser::characterDataHandler(void *user_data, const char *s, int len)
 //**************************************************************************
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes ctor
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, int &value) const
+XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
+	: m_parser(parser)
+	, m_attributes(attributes)
 {
-	return get(attribute, value, s_int_parser);
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<int>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, std::uint32_t &value) const
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const
 {
-	return get(attribute, value, s_uint_parser);
+	return get<int>(attribute, 10);
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<int>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, std::uint64_t &value) const
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute, int radix) const
 {
-	return get(attribute, value, s_ulong_parser);
+	return get<int>(attribute, strtoll_parser<int>(radix));
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::uint8_t>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, bool &value) const
+template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute) const
 {
-	return get(attribute, value, s_bool_parser);
+	return get<std::uint8_t>(attribute, 10);
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::uint8_t>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, float &value) const
+template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute, int radix) const
 {
-	return get(attribute, value, s_float_parser);
+	return get<std::uint8_t>(attribute, strtoull_parser<std::uint8_t>(radix));
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::uint32_t>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, QString &value) const
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const
+{
+	return get<std::uint32_t>(attribute, 10);
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<std::uint32_t>
+//-------------------------------------------------
+
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute, int radix) const
+{
+	return get<std::uint32_t>(attribute, strtoull_parser<std::uint32_t>(radix));
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<std::uint64_t>
+//-------------------------------------------------
+
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const
+{
+	return get<std::uint64_t>(attribute, 10);
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<std::uint64_t>
+//-------------------------------------------------
+
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute, int radix) const
+{
+	return get<std::uint64_t>(attribute, strtoull_parser<std::uint64_t>(radix));
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<bool>
+//-------------------------------------------------
+
+template<> std::optional<bool> XmlParser::Attributes::get<bool>(const char *attribute) const
+{
+	return get<bool>(attribute, s_bool_parser);
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<float>
+//-------------------------------------------------
+
+template<> std::optional<float> XmlParser::Attributes::get<float>(const char *attribute) const
+{
+	return get<float>(attribute, strtof_parser<float>());
+}
+
+
+//-------------------------------------------------
+//  Attributes::get<QString>
+//-------------------------------------------------
+
+template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char *attribute) const
 {
 	const char *s = internalGet(attribute, true);
-	if (s)
-		value = QString::fromUtf8(s);
-	else
-		value.clear();
-	return s != nullptr;
+	return s
+		? QString::fromUtf8(s)
+		: std::optional<QString>();
 }
 
 
 //-------------------------------------------------
-//  Attributes::get
+//  Attributes::get<std::string>
 //-------------------------------------------------
 
-bool XmlParser::Attributes::get(const char *attribute, std::string &value) const
+template<> std::optional<std::string> XmlParser::Attributes::get<std::string>(const char *attribute) const
 {
 	const char *s = internalGet(attribute, true);
-	if (s)
-		value = s;
-	else
-		value.clear();
-	return s != nullptr;
+	return s
+		? s
+		: std::optional<std::string>();
 }
 
 
@@ -567,13 +689,44 @@ bool XmlParser::Attributes::get(const char *attribute, std::string &value) const
 
 const char *XmlParser::Attributes::internalGet(const char *attribute, bool return_null) const
 {
-	const char **actual_attribute = reinterpret_cast<const char **>(const_cast<Attributes *>(this));
-
-	for (size_t i = 0; actual_attribute[i]; i += 2)
+	for (size_t i = 0; m_attributes[i]; i += 2)
 	{
-		if (!strcmp(attribute, actual_attribute[i + 0]))
-			return actual_attribute[i + 1];
+		if (!strcmp(attribute, m_attributes[i + 0]))
+			return m_attributes[i + 1];
 	}
 
 	return return_null ? nullptr : "";
+}
+
+
+//-------------------------------------------------
+//  Attributes::reportAttributeParsingError
+//-------------------------------------------------
+
+void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, const std::string &value) const
+{
+	QString message = QString("Error parsing attribute \"%1\" (text=\"%2\")").arg(
+		QString(attribute),
+		QString::fromStdString(value));
+	m_parser.appendError(std::move(message));
+}
+
+
+//-------------------------------------------------
+//  Node ctor
+//-------------------------------------------------
+
+XmlParser::Node::Node(Node *parent)
+	: m_parent(parent)
+{
+
+}
+
+
+//-------------------------------------------------
+//  Node dtor
+//-------------------------------------------------
+
+XmlParser::Node::~Node()
+{
 }

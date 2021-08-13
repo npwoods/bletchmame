@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainwindow.cpp
 
@@ -19,21 +19,17 @@
 #include <QTextStream>
 
 #include "mainwindow.h"
+#include "mainpanel.h"
 #include "mameversion.h"
 #include "ui_mainwindow.h"
-#include "machinelistitemmodel.h"
-#include "softwarelistitemmodel.h"
-#include "profilelistitemmodel.h"
-#include "tableviewmanager.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
 #include "dialogs/cheats.h"
-#include "dialogs/choosesw.h"
+#include "dialogs/confdev.h"
 #include "dialogs/console.h"
-#include "dialogs/images.h"
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
@@ -44,8 +40,13 @@
 //  CONSTANTS
 //**************************************************************************
 
-// BletchMAME requires MAME 0.213 or later
-const MameVersion REQUIRED_MAME_VERSION = MameVersion(0, 213, false);
+#ifdef min
+#undef min
+#endif // min
+
+#ifdef max
+#undef max
+#endif // max
 
 
 //**************************************************************************
@@ -64,7 +65,7 @@ public:
 		// if we're running and not pause, pause while the message box is up
 		m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
 		if (m_is_running)
-			m_host.ChangePaused(true);
+			m_host.changePaused(true);
 
 		// track the chain of pausers
 		m_host.m_current_pauser = this;
@@ -73,7 +74,7 @@ public:
 	~Pauser()
 	{
 		if (m_is_running)
-			m_host.ChangePaused(false);
+			m_host.changePaused(false);
 		m_host.m_current_pauser = m_last_pauser;
 	}
 
@@ -84,19 +85,19 @@ private:
 };
 
 
-// ======================> ImagesHost
+// ======================> ConfigurableDevicesDialogHost
 
-class MainWindow::ImagesHost : public IImagesHost
+class MainWindow::ConfigurableDevicesDialogHost : public IConfigurableDevicesDialogHost
 {
 public:
-	ImagesHost(MainWindow &host)
+	ConfigurableDevicesDialogHost(MainWindow &host)
 		: m_host(host)
 	{
 	}
 
 	virtual info::machine getMachine()
 	{
-		return m_host.GetRunningMachine();
+		return m_host.getRunningMachine();
 	}
 
 	virtual Preferences &getPreferences()
@@ -107,6 +108,11 @@ public:
 	virtual observable::value<std::vector<status::image>> &getImages()
 	{
 		return m_host.m_state->images();
+	}
+
+	virtual observable::value<std::vector<status::slot>> &getSlots()
+	{
+		return m_host.m_state->devslots();
 	}
 
 	virtual const QString &getWorkingDirectory() const
@@ -121,41 +127,61 @@ public:
 
 	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
 	{
-		info::machine machine = m_host.GetRunningMachine();
+		info::machine machine = m_host.getRunningMachine();
 		const QString &device_type = GetDeviceType(machine, tag);
 		return m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
 	}
 
 	virtual std::vector<QString> getExtensions(const QString &tag) const
 	{
-		// find the device declaration
-		auto devices = m_host.GetRunningMachine().devices();
+		std::vector<QString> result;
 
-		auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
+		// first try getting the result from the image format
+		const status::image *image = m_host.m_state->find_image(tag);
+		if (image && image->m_formats.has_value())
 		{
-			return dev.tag() == tag;
-		});
-		assert(iter != devices.end());
+			// we did find it in the image formats
+			for (const status::image_format &format : *image->m_formats)
+			{
+				for (const QString &ext : format.m_extensions)
+				{
+					if (std::find(result.begin(), result.end(), ext) == result.end())
+						result.push_back(ext);
+				}
+			}
+		}
+		else
+		{
+			// find the device declaration
+			auto devices = m_host.getRunningMachine().devices();
 
-		// and return it!
-		return util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
+			auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
+			{
+				return dev.tag() == tag;
+			});
+			assert(iter != devices.end());
+
+			// and return it!
+			result = util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
+		}
+		return result;
 	}
 
 	virtual void createImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
-		m_host.Issue({ "create", tag, std::move(path) });
+		m_host.issue({ "create", tag, std::move(path) });
 	}
 
 	virtual void loadImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
-		m_host.Issue({ "load", tag, std::move(path) });
+		m_host.issue({ "load", tag, std::move(path) });
 	}
 
 	virtual void unloadImage(const QString &tag)
 	{
-		m_host.Issue({ "unload", tag });
+		m_host.issue({ "unload", tag });
 	}
 
 	virtual bool startedWithHashPaths() const
@@ -163,12 +189,30 @@ public:
 		return m_host.m_client.GetCurrentTask<RunMachineTask>()->startedWithHashPaths();
 	}
 
+	virtual void changeSlots(std::map<QString, QString> &&changes)
+	{
+		// prepare an argument list
+		std::vector<QString> args;
+		args.reserve(changes.size() * 2 + 1);
+		args.push_back("change_slots");
+
+		// move the change map into the arguments
+		for (auto &pair : changes)
+		{
+			args.push_back(std::move(pair.first));
+			args.push_back(std::move(pair.second));
+		}
+
+		// and issue the command
+		m_host.issue(args);
+	}
+
 private:
 	MainWindow &m_host;
 
 	const QString &getMachineName() const
 	{
-		return m_host.GetRunningMachine().name();
+		return m_host.getRunningMachine().name();
 	}
 };
 
@@ -215,17 +259,17 @@ public:
 		}
 
 		// invoke!
-		m_host.Issue(args);
+		m_host.issue(args);
 	}
 
 	virtual void StartPolling(const QString &port_tag, ioport_value mask, status::input_seq::type seq_type, const QString &start_seq_tokens) override
 	{
-		m_host.Issue({ "seq_poll_start", port_tag, QString::number(mask), SeqTypeString(seq_type), start_seq_tokens });
+		m_host.issue({ "seq_poll_start", port_tag, QString::number(mask), SeqTypeString(seq_type), start_seq_tokens });
 	}
 
 	virtual void StopPolling() override
 	{
-		m_host.Issue({ "seq_poll_stop" });
+		m_host.issue({ "seq_poll_stop" });
 	}
 
 private:
@@ -266,7 +310,7 @@ public:
 
 	virtual void SetInputValue(const QString &port_tag, ioport_value mask, ioport_value value) override
 	{
-		m_host.Issue({ "set_input_value", port_tag, QString::number(mask), QString::number(value) });
+		m_host.issue({ "set_input_value", port_tag, QString::number(mask), QString::number(value) });
 	}
 
 private:
@@ -292,9 +336,9 @@ public:
 	virtual void setCheatState(const QString &id, bool enabled, std::optional<std::uint64_t> parameter) override
 	{
 		if (parameter)
-			m_host.Issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(parameter.value()) });
+			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(parameter.value()) });
 		else
-			m_host.Issue({ "set_cheat_state", id, enabled ? "1" : "0" });
+			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0" });
 	}
 
 private:
@@ -401,11 +445,13 @@ public:
 
 	virtual void start()
 	{
-		m_host.m_state->phase().subscribe([this]() { update(); });
-		m_host.m_state->speed_percent().subscribe([this]() { update(); });
-		m_host.m_state->effective_frameskip().subscribe([this]() { update(); });
-		m_host.m_state->startup_text().subscribe([this]() { update(); });
-		m_host.m_state->images().subscribe([this]() { update(); });
+		m_host.m_state->phase().subscribe(						[this]() { update(); });
+		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
+		m_host.m_state->effective_frameskip().subscribe(		[this]() { update(); });
+		m_host.m_state->startup_text().subscribe(				[this]() { update(); });
+		m_host.m_state->images().subscribe(						[this]() { update(); });
+		m_host.m_state->has_input_using_mouse().subscribe(		[this]() { update(); });
+		m_host.m_state->has_mouse_enabled_problem().subscribe(	[this]() { update(); });
 		update();
 	}
 
@@ -456,6 +502,10 @@ private:
 				if (!iter->m_display.isEmpty())
 					statusText.push_back(iter->m_display);
 			}
+
+			// do we have the mouse capture problem?
+			if (state()->has_input_using_mouse().get() && state()->has_mouse_enabled_problem().get())
+				statusText.push_back("This version of MAME does not support hot changes to mouse capture; the mouse may not be usable");
 		}
 
 		// and specify it
@@ -499,7 +549,7 @@ public:
 		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_host.m_menu_bar_shown);
 		m_mouseCaptured.subscribe([this]()
 		{
-			m_host.Issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
+			m_host.issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
 			m_host.setCursor(m_mouseCaptured.get() ? Qt::BlankCursor : Qt::ArrowCursor);
 		});
 	}
@@ -552,6 +602,60 @@ private:
 };
 
 
+// ======================> QuickLoadSaveAspect
+
+class MainWindow::QuickLoadSaveAspect : public Aspect
+{
+public:
+	QuickLoadSaveAspect(observable::value<QString> &currentQuickState, QAction &quickLoadState, QAction &quickSaveState)
+		: m_currentQuickState(currentQuickState)
+		, m_quickLoadState(quickLoadState)
+		, m_quickSaveState(quickSaveState)
+	{
+		m_currentQuickState.subscribe([this] { update(); });
+	}
+
+	virtual void start()
+	{
+		m_currentQuickState = "";
+	}
+
+	virtual void stop()
+	{
+		m_currentQuickState = "";
+	}
+
+private:
+	observable::value<QString> &	m_currentQuickState;
+	QAction &						m_quickLoadState;
+	QAction &						m_quickSaveState;
+
+	void update()
+	{
+		QString quickStateName;
+		if (!m_currentQuickState.get().isEmpty())
+		{
+			// we want to only get the complete base name (note that if we triggered a state save,
+			// the file might not be saved yet)
+			quickStateName = QFileInfo(m_currentQuickState.get()).completeBaseName();
+		}
+
+		bool isEnabled = !quickStateName.isEmpty();
+		QString quickLoadText = quickStateName.isEmpty()
+			? QString("Quick Load State")
+			: QString("Quick Load \"%1\"").arg(quickStateName);
+		QString quickSaveText = quickStateName.isEmpty()
+			? QString("Quick Save State")
+			: QString("Quick Save \"%1\"").arg(quickStateName);
+
+		m_quickLoadState.setEnabled(isEnabled);
+		m_quickLoadState.setText(quickLoadText);
+		m_quickSaveState.setEnabled(isEnabled);
+		m_quickSaveState.setText(quickSaveText);
+	}
+};
+
+
 // ======================> Dummy
 
 class MainWindow::Dummy
@@ -570,38 +674,6 @@ const QString MainWindow::s_wc_saved_state = "MAME Saved State Files (*.sta);;Al
 const QString MainWindow::s_wc_save_snapshot = "PNG Files (*.png);;All Files (*.*)";
 const QString MainWindow::s_wc_record_movie = "AVI Files (*.avi);;MNG Files (*.mng);;All Files (*.*)";
 
-static const TableViewManager::ColumnDesc s_machineListTableViewColumns[] =
-{
-	{ "name",			85 },
-	{ "description",	370 },
-	{ "year",			50 },
-	{ "manufacturer",	320 },
-	{ nullptr }
-};
-
-static const TableViewManager::Description s_machineListTableViewDesc =
-{
-	"machine",
-	(int) MachineListItemModel::Column::Machine,
-	s_machineListTableViewColumns
-};
-
-static const TableViewManager::ColumnDesc s_profileListTableViewColumns[] =
-{
-	{ "name",			85 },
-	{ "machine",		85 },
-	{ "path",			600 },
-	{ nullptr }
-};
-
-static const TableViewManager::Description s_profileListTableViewDesc =
-{
-	"profile",
-	(int)ProfileListItemModel::Column::Path,
-	s_profileListTableViewColumns
-};
-
-
 static const int SOUND_ATTENUATION_OFF = -32;
 static const int SOUND_ATTENUATION_ON = 0;
 
@@ -612,12 +684,10 @@ static const int SOUND_ATTENUATION_ON = 0;
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
+	, m_mainPanel(nullptr)
 	, m_client(*this, m_prefs)
-	, m_softwareListItemModel(nullptr)
-	, m_profileListItemModel(nullptr)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
-	, m_icon_loader(m_prefs)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -626,73 +696,52 @@ MainWindow::MainWindow(QWidget *parent)
 	// initial preferences read
 	m_prefs.Load();
 
-	// set up machines view
-	QAbstractItemModel &machineListItemModel = *new MachineListItemModel(this, m_info_db, m_icon_loader);
-	TableViewManager::setup(
-		*m_ui->machinesTableView,
-		machineListItemModel,
-		m_ui->machinesSearchBox,
+	// set up the MainPanel - the UX code that is active outside the emulation
+	m_mainPanel = new MainPanel(
+		m_info_db,
 		m_prefs,
-		s_machineListTableViewDesc);
-
-	// set up software list view
-	m_softwareListItemModel = new SoftwareListItemModel(this);
-	TableViewManager::setup(
-		*m_ui->softwareTableView,
-		*m_softwareListItemModel,
-		m_ui->softwareSearchBox,
-		m_prefs,
-		ChooseSoftlistPartDialog::s_tableViewDesc);
-
-	// set up the profile list view
-	m_profileListItemModel = new ProfileListItemModel(this, m_prefs, m_info_db, m_icon_loader);
-	TableViewManager::setup(
-		*m_ui->profilesTableView,
-		*m_profileListItemModel,
-		nullptr,
-		m_prefs,
-		s_profileListTableViewDesc);
-	m_profileListItemModel->refresh(true, true);
+		[this](const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) { run(machine, std::move(sessionBehavior)); },
+		m_ui->rootWidget);
+	m_ui->stackedLayout->addWidget(m_mainPanel);
+	m_ui->stackedLayout->setCurrentWidget(m_mainPanel);
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
-	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::InvokePing);
+	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::invokePing);
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// setup properties that pertain to runtime behavior
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isEnabled,	&QWidget::setEnabled,		{ },								false);
-	setupPropSyncAspect((QWidget &) *m_ui->tabWidget,			&QWidget::isHidden,		&QWidget::setHidden,		{ },								true);
-	setupPropSyncAspect(*m_ui->rootWidget,						&QWidget::isHidden,		&QWidget::setHidden,		{ },								[this]() { return !AttachToRootPanel(); });
-	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,	&QWidget::setWindowTitle,	&status::state::paused,				[this]() { return getTitleBarText(); });
+	setupPropSyncAspect(*m_ui->stackedLayout,					&QStackedLayout::currentWidget,	&QStackedLayout::setCurrentWidget,	{ },								[this]() { return attachToMainWindow() ? nullptr : m_ui->emulationPanel; });
+	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,			&QWidget::setWindowTitle,			&status::state::paused,				[this]() { return getTitleBarText(); });
 
 	// actions
-	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,	&QAction::setChecked,		&status::state::paused,				[this]() { return m_state->paused().get(); });
-	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::images,				[this]() { return m_state->images().get().size() > 0;});
-	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,	&QAction::setChecked,		&status::state::sound_attenuation,	[this]() { return m_state->sound_attenuation().get() != SOUND_ATTENUATION_OFF; });
-	setupPropSyncAspect(*m_ui->actionCheats,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::cheats,				[this]() { return m_state->cheats().get().size() > 0; });
-	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,	&QAction::setEnabled,		{ },								true);
-	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONTROLLER); });
-	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::KEYBOARD); });
-	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::MISC); });
-	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONFIG); });
-	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,	&QAction::setEnabled,		&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::DIPSWITCH); });
+	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,			&QAction::setChecked,				&status::state::paused,				[this]() { return m_state->paused().get(); });
+	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::images,				[this]() { return m_state->images().get().size() > 0;});
+	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionIncreaseSpeed,				&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionDecreaseSpeed,				&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionWarpMode,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionToggleSound,				&QAction::isChecked,			&QAction::setChecked,				&status::state::sound_attenuation,	[this]() { return m_state->sound_attenuation().get() != SOUND_ATTENUATION_OFF; });
+	setupPropSyncAspect(*m_ui->actionCheats,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::cheats,				[this]() { return m_state->cheats().get().size() > 0; });
+	setupPropSyncAspect(*m_ui->actionConsole,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionJoysticksAndControllers,	&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONTROLLER); });
+	setupPropSyncAspect(*m_ui->actionKeyboard,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::KEYBOARD); });
+	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::MISC); });
+	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONFIG); });
+	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::DIPSWITCH); });
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
-	for (size_t i = 0; i < sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]); i++)
+	for (size_t i = 0; i < std::size(s_throttle_rates); i++)
 	{
 		float throttle_rate = s_throttle_rates[i];
 		QString text = QString::number((int)(throttle_rate * 100)) + "%";
@@ -701,7 +750,7 @@ MainWindow::MainWindow(QWidget *parent)
 		action.setEnabled(false);
 		action.setCheckable(true);
 
-		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { ChangeThrottleRate(throttle_rate); });
+		connect(&action, &QAction::triggered, this, [this, throttle_rate]() { changeThrottleRate(throttle_rate); });
 		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },								true);
 		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::throttle_rate,	[this, throttle_rate]() { return m_state->throttle_rate().get() == throttle_rate; });
 	}
@@ -715,18 +764,16 @@ MainWindow::MainWindow(QWidget *parent)
 		action.setEnabled(false);
 		action.setCheckable(true);
 
-		connect(&action, &QAction::triggered, this, [this, value{ value.toStdString()}]() { Issue({ "frameskip", value }); });
+		connect(&action, &QAction::triggered, this, [this, value{ value.toStdString()}]() { issue({ "frameskip", value }); });
 		setupPropSyncAspect(action, &QAction::isEnabled, &QAction::setEnabled, { },							true);
 		setupPropSyncAspect(action, &QAction::isChecked, &QAction::setChecked, &status::state::frameskip,	[this, value{std::move(value)}]() { return m_state->frameskip().get() == value; });
 	}
-
-	// set up the tab widget
-	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
 
 	// set up other miscellaneous aspects
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
 	m_aspects.push_back(std::make_unique<MenuBarAspect>(*this));
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
+	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
@@ -813,7 +860,7 @@ void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() co
 
 void MainWindow::on_actionStop_triggered()
 {
-	if (shouldPromptOnStop())
+	if (m_sessionBehavior->shouldPromptOnStop())
 	{
 		QString message = "Do you really want to stop?\n"
 			"\n"
@@ -823,7 +870,7 @@ void MainWindow::on_actionStop_triggered()
 			return;
 	}
 
-	InvokeExit();
+	invokeExit();
 }
 
 
@@ -833,7 +880,7 @@ void MainWindow::on_actionStop_triggered()
 
 void MainWindow::on_actionPause_triggered()
 {
-	ChangePaused(!m_state->paused().get());
+	changePaused(!m_state->paused().get());
 }
 
 
@@ -844,9 +891,30 @@ void MainWindow::on_actionPause_triggered()
 void MainWindow::on_actionImages_triggered()
 {
 	Pauser pauser(*this);
-	ImagesHost images_host(*this);
-	ImagesDialog dialog(*this, images_host, false);
+	ConfigurableDevicesDialogHost images_host(*this);
+	ConfigurableDevicesDialog dialog(*this, images_host, false);
 	dialog.exec();
+}
+
+
+//-------------------------------------------------
+//  on_actionQuickLoadState_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionQuickLoadState_triggered()
+{
+	if (QFileInfo(m_currentQuickState.get()).exists())
+		issue({ "state_load", m_currentQuickState.get() });
+}
+
+
+//-------------------------------------------------
+//  on_actionQuickSaveState_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionQuickSaveState_triggered()
+{
+	issue({ "state_save", m_currentQuickState.get() });
 }
 
 
@@ -856,13 +924,16 @@ void MainWindow::on_actionImages_triggered()
 
 void MainWindow::on_actionLoadState_triggered()
 {
-	FileDialogCommand(
+	QString path = fileDialogCommand(
 		{ "state_load" },
 		"Load State",
 		Preferences::machine_path_type::LAST_SAVE_STATE,
 		true,
 		s_wc_saved_state,
 		QFileDialog::AcceptMode::AcceptOpen);
+
+	if (!path.isEmpty())
+		m_currentQuickState = std::move(path);
 }
 
 
@@ -872,13 +943,16 @@ void MainWindow::on_actionLoadState_triggered()
 
 void MainWindow::on_actionSaveState_triggered()
 {
-	FileDialogCommand(
+	QString path = fileDialogCommand(
 		{ "state_save" },
 		"Save State",
 		Preferences::machine_path_type::LAST_SAVE_STATE,
 		true,
 		s_wc_saved_state,
 		QFileDialog::AcceptMode::AcceptSave);
+
+	if (!path.isEmpty())
+		m_currentQuickState = std::move(path);
 }
 
 
@@ -888,7 +962,7 @@ void MainWindow::on_actionSaveState_triggered()
 
 void MainWindow::on_actionSaveScreenshot_triggered()
 {
-	FileDialogCommand(
+	fileDialogCommand(
 		{ "save_snapshot", "0" },
 		"Save Snapshot",
 		Preferences::machine_path_type::WORKING_DIRECTORY,
@@ -904,14 +978,11 @@ void MainWindow::on_actionSaveScreenshot_triggered()
 
 void MainWindow::on_actionToggleRecordMovie_triggered()
 {
-	// recording movies by specifying absolute paths was introduced in MAME 0.221
-	const MameVersion REQUIRED_MAME_VERSION_TOGGLE_MOVIE = MameVersion(0, 220, true);
-
 	// Are we the required version? 
-	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION_TOGGLE_MOVIE))
+	if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_TOGGLE_MOVIE))
 	{
 		QString message = QString("Recording movies requires MAME %1 or newer to function")
-			.arg(REQUIRED_MAME_VERSION_TOGGLE_MOVIE.nextCleanVersion().toString());
+			.arg(MameVersion::Capabilities::HAS_TOGGLE_MOVIE.toString());
 		messageBox(message);
 		return;
 	}
@@ -920,7 +991,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 	if (m_state.value().is_recording())
 	{
 		// If so, stop the recording
-		Issue({ "end_recording" });
+		issue({ "end_recording" });
 		m_current_recording_movie_filename = "";
 	}
 	else
@@ -963,7 +1034,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 			// and issue the command
 			QString nativePath = QDir::toNativeSeparators(path);
-			Issue({ "begin_recording", std::move(nativePath), recordingTypeString });
+			issue({ "begin_recording", std::move(nativePath), recordingTypeString });
 			m_current_recording_movie_filename = std::move(path);
 		}
 	}
@@ -976,7 +1047,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 void MainWindow::on_actionDebugger_triggered()
 {
-	Issue("debugger");
+	issue("debugger");
 }
 
 
@@ -986,7 +1057,7 @@ void MainWindow::on_actionDebugger_triggered()
 
 void MainWindow::on_actionSoftReset_triggered()
 {
-	Issue("soft_reset");
+	issue("soft_reset");
 }
 
 
@@ -996,7 +1067,7 @@ void MainWindow::on_actionSoftReset_triggered()
 
 void MainWindow::on_actionHardReset_triggered()
 {
-	Issue("hard_reset");
+	issue("hard_reset");
 }
 
 
@@ -1016,7 +1087,7 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::on_actionIncreaseSpeed_triggered()
 {
-	ChangeThrottleRate(-1);
+	changeThrottleRate(-1);
 }
 
 
@@ -1026,7 +1097,7 @@ void MainWindow::on_actionIncreaseSpeed_triggered()
 
 void MainWindow::on_actionDecreaseSpeed_triggered()
 {
-	ChangeThrottleRate(+1);
+	changeThrottleRate(+1);
 }
 
 
@@ -1036,7 +1107,7 @@ void MainWindow::on_actionDecreaseSpeed_triggered()
 
 void MainWindow::on_actionWarpMode_triggered()
 {
-	ChangeThrottled(!m_state->throttled());
+	changeThrottled(!m_state->throttled());
 }
 
 
@@ -1069,7 +1140,7 @@ void MainWindow::on_actionFullScreen_triggered()
 void MainWindow::on_actionToggleSound_triggered()
 {
 	bool isEnabled = m_ui->actionToggleSound->isEnabled();
-	ChangeSound(!isEnabled);
+	changeSound(!isEnabled);
 }
 
 
@@ -1167,15 +1238,8 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-	// lambda to simplify "is this path changed?"
-	auto is_changed = [&changed_paths](Preferences::global_path_type type) -> bool
-	{
-		auto iter = std::find(changed_paths.begin(), changed_paths.end(), type);
-		return iter != changed_paths.end();
-	};
-
 	// did the user change the executable path?
-	if (is_changed(Preferences::global_path_type::EMU_EXECUTABLE))
+	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
 	{
 		// they did; check the MAME info DB
 		check_mame_info_status status = CheckMameInfoDatabase();
@@ -1200,15 +1264,7 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
-	// did the user change the profiles path?
-	if (is_changed(Preferences::global_path_type::PROFILES))
-		m_profileListItemModel->refresh(true, true);
-
-	// did the user change the icons path?
-	if (is_changed(Preferences::global_path_type::ICONS))
-	{
-		m_icon_loader.refreshIcons();
-	}
+	m_mainPanel->pathsChanged(changed_paths);
 }
 
 
@@ -1240,122 +1296,6 @@ void MainWindow::on_actionRefreshMachineInfo_triggered()
 void MainWindow::on_actionBletchMameWebSite_triggered()
 {
 	QDesktopServices::openUrl(QUrl("https://www.bletchmame.org/"));
-}
-
-
-//-------------------------------------------------
-//  on_machinesTableView_activated
-//-------------------------------------------------
-
-void MainWindow::on_machinesTableView_activated(const QModelIndex &index)
-{
-	// run the machine
-	const info::machine machine = machineFromModelIndex(index);
-	Run(machine);
-}
-
-
-//-------------------------------------------------
-//  on_machinesTableView_customContextMenuRequested
-//-------------------------------------------------
-
-void MainWindow::on_machinesTableView_customContextMenuRequested(const QPoint &pos)
-{
-	LaunchingListContextMenu(m_ui->machinesTableView->mapToGlobal(pos));
-}
-
-
-//-------------------------------------------------
-//  on_softwareTableView_activated
-//-------------------------------------------------
-
-void MainWindow::on_softwareTableView_activated(const QModelIndex &index)
-{
-	// identify the machine
-	const info::machine machine = m_info_db.find_machine(m_currentSoftwareList).value();
-
-	// map the index to the actual index
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(index);
-
-	// identify the software
-	const software_list::software &software = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
-
-	// and run!
-	Run(machine, &software);
-}
-
-
-//-------------------------------------------------
-//  on_softwareTableView_customContextMenuRequested
-//-------------------------------------------------
-
-void MainWindow::on_softwareTableView_customContextMenuRequested(const QPoint &pos)
-{
-	// identify the selected software
-	QModelIndexList selection = m_ui->softwareTableView->selectionModel()->selectedIndexes();
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(selection[0]);
-	const software_list::software &sw = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
-	
-	// and launch the context menu
-	LaunchingListContextMenu(m_ui->softwareTableView->mapToGlobal(pos), &sw);
-}
-
-
-//-------------------------------------------------
-//  on_profilesTableView_activated
-//-------------------------------------------------
-
-void MainWindow::on_profilesTableView_activated(const QModelIndex &index)
-{
-	// map the index to the actual index
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(index);
-
-	// identify the profile
-	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
-
-	// and run!
-	Run(profile);
-}
-
-
-//-------------------------------------------------
-//  on_profilesTableView_customContextMenuRequested
-//-------------------------------------------------
-
-void MainWindow::on_profilesTableView_customContextMenuRequested(const QPoint &pos)
-{
-	// identify the selected software
-	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
-	const profiles::profile &profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
-
-	// build the popup menu
-	QMenu popupMenu;
-	popupMenu.addAction(QString("Run \"%1\"").arg(profile.name()),	[this, &profile]() { Run(profile); });
-	popupMenu.addAction("Duplicate",								[this, &profile]() { DuplicateProfile(profile); });
-	popupMenu.addAction("Rename",									[this, &profile]() { RenameProfile(profile); });
-	popupMenu.addAction("Delete",									[this, &profile]() { DeleteProfile(profile); });
-	popupMenu.addSeparator();
-	popupMenu.addAction("Show in folder",							[this, &profile]() { showInGraphicalShell(profile.path()); });
-	popupMenu.exec(m_ui->profilesTableView->mapToGlobal(pos));
-}
-
-
-//-------------------------------------------------
-//  on_tabWidget_currentChanged
-//-------------------------------------------------
-
-void MainWindow::on_tabWidget_currentChanged(int index)
-{
-	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(index);
-	m_prefs.SetSelectedTab(list_view_type);
-
-	switch (list_view_type)
-	{
-	case Preferences::list_view_type::SOFTWARELIST:
-		updateSoftwareList();
-		break;
-	}
 }
 
 
@@ -1406,7 +1346,7 @@ bool MainWindow::event(QEvent *event)
 bool MainWindow::IsMameExecutablePresent() const
 {
 	const QString &path = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-	return !path.isEmpty() && wxFileExists(path);
+	return !path.isEmpty() && QFileInfo(path).exists();
 }
 
 
@@ -1539,10 +1479,10 @@ bool MainWindow::refreshMameInfoDatabase()
 
 
 //-------------------------------------------------
-//  GetRunningMachine
+//  getRunningMachine
 //-------------------------------------------------
 
-info::machine MainWindow::GetRunningMachine() const
+info::machine MainWindow::getRunningMachine() const
 {
 	// get the currently running machine
 	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
@@ -1556,30 +1496,48 @@ info::machine MainWindow::GetRunningMachine() const
 
 
 //-------------------------------------------------
-//  AttachToRootPanel
+//  attachToMainWindow
 //-------------------------------------------------
 
-bool MainWindow::AttachToRootPanel() const
+bool MainWindow::attachToMainWindow() const
 {
-	bool result = false;
-	if (HAS_ATTACH_WINDOW)
-	{
-		// Targetting subwindows with -attach_window was introduced in between MAME 0.217 and MAME 0.218
-		const MameVersion REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW = MameVersion(0, 217, true);
+	return !MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.has_value()
+		|| !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.value());
+}
 
-		// Are we the required version?
-		result = isMameVersionAtLeast(REQUIRED_MAME_VERSION_ATTACH_TO_CHILD_WINDOW);
+
+//-------------------------------------------------
+//  attachWidgetId
+//-------------------------------------------------
+
+QString MainWindow::attachWidgetId() const
+{
+	QString result;
+
+	if (MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.has_value()
+		&& isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.value()))
+	{
+		QWidget *attachWidget = attachToMainWindow()
+			? (QWidget *)this
+			: m_ui->emulationPanel;
+
+		// the documentation for QWidget::WId() says that this value can change any
+		// time; this is probably not true on Windows (where this returns the HWND)
+		result = QString::number(attachWidget->winId());
 	}
 	return result;
 }
 
 
 //-------------------------------------------------
-//  Run
+//  run
 //-------------------------------------------------
 
-void MainWindow::Run(const info::machine &machine, const software_list::software *software, const profiles::profile *profile)
+void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
+	// set the session behavior
+	m_sessionBehavior = std::move(sessionBehavior);
+
 	// run a "preflight check" on MAME, to catch obvious problems that might not be caught or reported well
 	QString preflight_errors = preflightCheck();
 	if (!preflight_errors.isEmpty())
@@ -1590,11 +1548,7 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 
 	// identify the software name; we either used what was passed in, or we use what is in a profile
 	// for which no images are mounted (suggesting a fresh launch)
-	QString software_name;
-	if (software)
-		software_name = software->m_name;
-	else if (profile && profile->images().empty())
-		software_name = profile->software();
+	QString software_name = m_sessionBehavior->getInitialSoftware();
 
 	// we need to have full information to support the emulation session; retrieve
 	// fake a pauser to forestall "PAUSED" from appearing in the menu bar
@@ -1604,7 +1558,8 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	Task::ptr task = std::make_shared<RunMachineTask>(
 		machine,
 		std::move(software_name),
-		AttachToRootPanel() ? *m_ui->rootWidget : *this);
+		m_sessionBehavior->getOptions(),
+		attachWidgetId());
 	m_client.launch(std::move(task));
 
 	// set up running state and subscribe to events
@@ -1618,68 +1573,56 @@ void MainWindow::Run(const info::machine &machine, const software_list::software
 	setFocus();
 
 	// wait for first ping
-	m_pinging = true;
-	while (m_pinging)
+	waitForStatusUpdate();
+
+	// if we exited, bail
+	if (!m_sessionBehavior)
+		return;
+
+	// load images associated with the behavior
+	std::map<QString, QString> behaviorImages = m_sessionBehavior->getImages();
+	if (behaviorImages.size() > 0)
 	{
-		if (!m_state.has_value())
-			return;
-		QCoreApplication::processEvents();
-		QThread::yieldCurrentThread();
+		std::vector<QString> args;
+		args.push_back("load");
+		for (auto &pair : behaviorImages)
+		{
+			args.push_back(std::move(pair.first));
+			args.push_back(std::move(pair.second));
+		}
+		issue(args);
 	}
 
-	// set up profile (if we have one)
-	m_current_profile_path = profile ? profile->path() : util::g_empty_string;
-	m_current_profile_auto_save_state = profile ? profile->auto_save_states() : false;
-	if (profile)
+	// load a saved state associated with the behavior
+	QString behaviorSavedStateFileName = m_sessionBehavior->getSavedState();
+	if (!behaviorSavedStateFileName.isEmpty() && QFileInfo(behaviorSavedStateFileName).exists())
 	{
-		// load all images
-		for (const auto &image : profile->images())
-			Issue({ "load", image.m_tag, image.m_path });
-
-		// if we have a save state, start it
-		if (profile->auto_save_states())
-		{
-			QString save_state_path = profiles::profile::change_path_save_state(profile->path());
-			QFileInfo fi(save_state_path);
-			if (fi.exists())
-				Issue({ "state_load", save_state_path });
-		}
+		// no need to wait for a status update here
+		issue({ "state_load", behaviorSavedStateFileName });
 	}
 
 	// do we have any images that require images?
-	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [](const status::image &image)
+	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [&behaviorImages](const status::image &image)
 	{
-		return image.m_must_be_loaded && image.m_file_name.isEmpty();
+		return image.m_must_be_loaded										// is this an image that must be loaded?
+			&& image.m_file_name.isEmpty()									// and the filename is empty?
+			&& behaviorImages.find(image.m_tag) == behaviorImages.end();	// and it wasn't specified as a "behavior image" (in which case we need to wait)?
 	});
 	if (iter != m_state->images().get().cend())
 	{
 		// if so, show the dialog
-		ImagesHost images_host(*this);
-		ImagesDialog dialog(*this, images_host, true);
+		ConfigurableDevicesDialogHost images_host(*this);
+		ConfigurableDevicesDialog dialog(*this, images_host, true);
 		dialog.exec();
 		if (dialog.result() != QDialog::DialogCode::Accepted)
 		{
-			Issue("exit");
+			issue("exit");
 			return;
 		}
 	}
 
 	// unpause
-	ChangePaused(false);
-}
-
-
-void MainWindow::Run(const profiles::profile &profile)
-{
-	// find the machine
-	std::optional<info::machine> machine = m_info_db.find_machine(profile.machine());
-	if (!machine)
-	{
-		messageBox("Unknown machine: " + profile.machine());
-		return;
-	}
-
-	Run(machine.value(), nullptr, &profile);
+	changePaused(false);
 }
 
 
@@ -1777,7 +1720,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	if (m_state.has_value())
 	{
 		// prompt the user, if appropriate
-		if (shouldPromptOnStop())
+		if (m_sessionBehavior->shouldPromptOnStop())
 		{
 			QString message = "Do you really want to exit?\n"
 				"\n"
@@ -1790,7 +1733,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 		}
 
 		// issue exit command so we can shut down the emulation session gracefully
-		InvokeExit();
+		invokeExit();
 		while (m_state.has_value())
 		{
 			QCoreApplication::processEvents();
@@ -1820,16 +1763,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 
 //-------------------------------------------------
-//  shouldPromptOnStop
-//-------------------------------------------------
-
-bool MainWindow::shouldPromptOnStop() const
-{
-	return m_current_profile_path.isEmpty() || !m_current_profile_auto_save_state;
-}
-
-
-//-------------------------------------------------
 //  showInputsDialog
 //-------------------------------------------------
 
@@ -1850,7 +1783,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 {
 	Pauser pauser(*this);
 	SwitchesHost host(*this);
-	SwitchesDialog dialog(this, host, input_class, GetRunningMachine());
+	SwitchesDialog dialog(this, host, input_class, getRunningMachine());
 	dialog.exec();
 }
 
@@ -1867,20 +1800,35 @@ bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 
 //-------------------------------------------------
 //  onVersionCompleted
-//-------------------------------------------------
+//-------------------------------------------------m
 
 bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 {
+	// get the MAME version
 	m_mame_version = std::move(event.m_version);
 
-	// warn the user if this is version of MAME is not supported
-	if (!isMameVersionAtLeast(REQUIRED_MAME_VERSION))
+	// if the current MAME version is problematic, generate a warning
+	QString message;
+	if (!isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
-		QString message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
-			QString::number(REQUIRED_MAME_VERSION.major()),
-			QString::number(REQUIRED_MAME_VERSION.minor()));
-		messageBox(message);
+		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
+			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.major()),
+			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.minor()));
 	}
+	else if (!MameVersion::Capabilities::HAS_ATTACH_WINDOW.has_value())
+	{
+		message = "MAME on this platform does not support -attach_window, and the MAME window will not properly be embedded within BletchMAME";
+	}
+	else if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
+	{
+		message = QString("MAME on this platform requires version of %1.%2 for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
+			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().major()),
+			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().minor()));
+	}
+
+	// ...and display the warning if appropriate
+	if (!message.isEmpty())
+		messageBox(message);
 
 	m_client.waitForCompletion();
 	return true;
@@ -1930,31 +1878,13 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 
 bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 {
-	// update the profile, if present
-	if (!m_current_profile_path.isEmpty())
-	{
-		std::optional<profiles::profile> profile = profiles::profile::load(m_current_profile_path);
-		if (profile)
-		{
-			profile->images().clear();
-			for (const status::image &status_image : m_state->images().get())
-			{
-				if (!status_image.m_file_name.isEmpty())
-				{
-					profiles::image &profile_image = profile->images().emplace_back();
-					profile_image.m_tag = status_image.m_tag;
-					profile_image.m_path = status_image.m_file_name;
-				}
-			}
-			profile->save();
-		}
-	}
+	// this updates the profile, if present
+	m_sessionBehavior->persistState(m_state->devslots().get(), m_state->images().get());
 
 	// clear out all of the state
 	m_client.waitForCompletion();
 	m_state.reset();
-	m_current_profile_path = util::g_empty_string;
-	m_current_profile_auto_save_state = false;
+	m_sessionBehavior.reset();
 
 	// execute the stop handler for all aspects
 	for (const auto &aspect : m_aspects)
@@ -1969,34 +1899,6 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 		messageBox(event.errorMessage());
 	}
 	return true;
-}
-
-
-//-------------------------------------------------
-//  updateSoftwareList
-//-------------------------------------------------
-
-void MainWindow::updateSoftwareList()
-{
-	// identify the selection
-	QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
-	if (selection.size() > 0)
-	{
-		// load software lists for the current machine
-		const info::machine machine = machineFromModelIndex(selection[0]);
-
-		// load the software
-		m_currentSoftwareList = machine.name();
-		m_softwareListCollection.load(m_prefs, machine);
-
-		// and load the model
-		m_softwareListItemModel->load(m_softwareListCollection, false);
-	}
-	else
-	{
-		// no machines are selected - reset the software list view
-		m_softwareListItemModel->reset();
-	}
 }
 
 
@@ -2048,7 +1950,7 @@ void MainWindow::WatchForImageMount(const QString &tag)
 void MainWindow::PlaceInRecentFiles(const QString &tag, const QString &path)
 {
 	// get the machine and device type to update recents
-	info::machine machine = GetRunningMachine();
+	info::machine machine = getRunningMachine();
 	const QString &device_type = GetDeviceType(machine, tag);
 
 	// actually edit the recent files; start by getting recent files
@@ -2133,7 +2035,7 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 
 	// identify the default file and directory
 	const QString &defaultPath = m_prefs.GetMachinePath(
-		GetRunningMachine().name(),
+		getRunningMachine().name(),
 		pathType);
 	QFileInfo defaultPathInfo(QDir::fromNativeSeparators(defaultPath));
 
@@ -2153,21 +2055,21 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 
 
 //-------------------------------------------------
-//  FileDialogCommand
+//  fileDialogCommand
 //-------------------------------------------------
 
-void MainWindow::FileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode)
+QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode)
 {
 	Pauser pauser(*this);
 	QString path = GetFileDialogFilename(caption, pathType, wildcard_string, acceptMode);
 	if (path.isEmpty())
-		return;
+		return { };
 
 	// append the resulting path to the command list
-	commands.push_back(std::move(path));
+	commands.push_back(path);
 
 	// put back the default
-	const QString &running_machine_name(GetRunningMachine().name());
+	const QString &running_machine_name(getRunningMachine().name());
 	if (path_is_file)
 	{
 		m_prefs.SetMachinePath(running_machine_name, pathType, QDir::toNativeSeparators(path));
@@ -2180,246 +2082,8 @@ void MainWindow::FileDialogCommand(std::vector<QString> &&commands, const QStrin
 	}
 
 	// finally issue the actual commands
-	Issue(commands);
-}
-
-
-//-------------------------------------------------
-//  LaunchingListContextMenu
-//-------------------------------------------------
-
-void MainWindow::LaunchingListContextMenu(const QPoint &pos, const software_list::software *software)
-{
-	// identify the machine
-	QModelIndex index = m_ui->machinesTableView->selectionModel()->selectedIndexes()[0];
-	const info::machine machine = machineFromModelIndex(index);
-
-	// identify the description
-	const QString &description = software
-		? software->m_description
-		: machine.description();
-
-	QMenu popupMenu(this);
-	popupMenu.addAction(QString("Run \"%1\"").arg(description),	[this, machine, &software]() { Run(machine, std::move(software));	});
-	popupMenu.addAction("Create profile",						[this, machine, &software]() { CreateProfile(machine, software);	});
-	popupMenu.exec(pos);
-}
-
-
-//-------------------------------------------------
-//  GetUniqueFileName
-//-------------------------------------------------
-
-template<typename TFunc>
-static QString GetUniqueProfilePath(const QString &dir_path, TFunc generate_name)
-{
-	// prepare for building file paths
-	QString file_path;
-
-	// try up to 10 attempts
-	for (int attempt = 0; file_path.isEmpty() && attempt < 10; attempt++)
-	{
-		// build the file path
-		QString name = generate_name(attempt);
-		QString path = dir_path + "/" + name + ".bletchmameprofile";
-		QFileInfo fi(path);
-
-		// get the file path if this file doesn't exist
-		if (!fi.exists())
-			file_path = fi.absoluteFilePath();
-	}
-	return file_path;
-}
-
-
-//-------------------------------------------------
-//  CreateProfile
-//-------------------------------------------------
-
-void MainWindow::CreateProfile(const info::machine &machine, const software_list::software *software)
-{
-	// find a path to create the new profile in
-	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
-	auto iter = std::find_if(paths.begin(), paths.end(), [](const QString &path)
-	{
-		QDir dir(path);
-		return dir.exists();
-	});
-	if (iter == paths.end())
-	{
-		iter = std::find_if(paths.begin(), paths.end(), DirExistsOrMake);
-		m_profileListItemModel->refresh(false, true);
-	}
-	if (iter == paths.end())
-	{
-		messageBox("Cannot create profile without valid profile path");
-		return;
-	}
-	const QString &path = *iter;
-
-	// identify the description, for use when we create the file name
-	const QString &description = software
-		? software->m_description
-		: machine.name();
-
-	// get the full path for a new profile
-	QString new_profile_path = GetUniqueProfilePath(path, [&description](int attempt)
-	{
-		return attempt == 0
-			? QString("%1 - New profile").arg(description)
-			: QString("%1 - New profile (%2)").arg(description, QString::number(attempt + 1));
-	});
-
-	// create the file stream
-	QFile file(new_profile_path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		messageBox("Could not create profile");
-		return;
-	}
-
-	// create the new profile and focus
-	QTextStream text_stream(&file);
-	profiles::profile::create(text_stream, machine, software);
-	FocusOnNewProfile(std::move(new_profile_path));
-}
-
-
-//-------------------------------------------------
-//  DirExistsOrMake
-//-------------------------------------------------
-
-bool MainWindow::DirExistsOrMake(const QString &path)
-{
-	bool result = QDir(path).exists();
-	if (!result)
-		result = QDir().mkdir(path);
-	return result;
-}
-
-
-//-------------------------------------------------
-//  DuplicateProfile
-//-------------------------------------------------
-
-void MainWindow::DuplicateProfile(const profiles::profile &profile)
-{
-	QString dir_path = profile.directory_path();
-
-	// get the full path for a new profile
-	QString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
-	{
-		return attempt == 0
-			? QString("%1 - Copy").arg(profile.name())
-			: QString("%1 - Copy (%2)").arg(profile.name(), QString::number(attempt + 1));
-	});
-
-	// create the file stream
-	QFile file(new_profile_path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		messageBox("Could not create profile");
-		return;
-	}
-
-	// create the new profile
-	QTextStream stream(&file);
-	profile.save_as(stream);
-
-	// copy the save state file also, if present
-	QString old_save_state_file = profiles::profile::change_path_save_state(profile.path());
-	if (QFile(old_save_state_file).exists())
-	{
-		QString new_save_state_file = profiles::profile::change_path_save_state(new_profile_path);
-		QFile::copy(old_save_state_file, new_save_state_file);
-	}
-
-	// finally focus
-	FocusOnNewProfile(std::move(new_profile_path));
-}
-
-
-//-------------------------------------------------
-//  RenameProfile
-//-------------------------------------------------
-
-void MainWindow::RenameProfile(const profiles::profile &profile)
-{
-	throw false;
-}
-
-
-//-------------------------------------------------
-//  DeleteProfile
-//-------------------------------------------------
-
-void MainWindow::DeleteProfile(const profiles::profile &profile)
-{
-	QString message = QString("Are you sure you want to delete profile \"%1\"").arg(profile.name());
-	if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
-		return;
-
-	if (!profiles::profile::profile_file_remove(profile.path()))
-		messageBox("Could not delete profile");
-}
-
-
-//-------------------------------------------------
-//  FocusOnNewProfile
-//-------------------------------------------------
-
-void MainWindow::FocusOnNewProfile(QString &&new_profile_path)
-{
-	// set the profiles tab as selected
-	m_ui->tabWidget->setCurrentWidget(m_ui->profilesTab);
-
-	// set the profile as selected, so we focus on it when we rebuild the list view
-	m_prefs.SetListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
-
-	// we want the current profile to be renamed - do this with a callback
-	m_profileListItemModel->setOneTimeFswCallback([this, profilePath{std::move(new_profile_path)}]()
-	{
-		QModelIndex actualIndex = m_profileListItemModel->findProfileIndex(profilePath);
-		if (!actualIndex.isValid())
-			return;
-
-		QModelIndex index = sortFilterProxyModel(*m_ui->profilesTableView).mapFromSource(index);
-		if (!index.isValid())
-			return;
-
-		m_ui->profilesTableView->edit(actualIndex);
-	});
-}
-
-
-//-------------------------------------------------
-//  showInGraphicalShell
-//-------------------------------------------------
-
-void MainWindow::showInGraphicalShell(const QString &path) const
-{
-	// Windows-only code here; we really should eventually be doing something like:
-	// https://stackoverflow.com/questions/3490336/how-to-reveal-in-finder-or-show-in-explorer-with-qt
-	QFileInfo fi(path);
-	QStringList args;
-	if (!fi.isDir())
-		args += QLatin1String("/select,");
-	args << QDir::toNativeSeparators(fi.canonicalFilePath());
-	QProcess::startDetached("explorer.exe", args);
-}
-
-
-//-------------------------------------------------
-//  machineFromModelIndex
-//-------------------------------------------------
-
-info::machine MainWindow::machineFromModelIndex(const QModelIndex &index) const
-{
-	// map the index to the actual index
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->machinesTableView).mapToSource(index);
-
-	// and look up in the info DB
-	return m_info_db.machines()[actualIndex.row()];
+	issue(commands);
+	return path;
 }
 
 
@@ -2458,7 +2122,7 @@ void MainWindow::ensureProperFocus()
 	// In absence of a better way to handle this, we have some Windows specific
 	// code below.  Eventually this code should be retired once there is an understanding
 	// of the proper Qt techniques to apply here
-	if (AttachToRootPanel() && m_client.GetCurrentTask<RunMachineTask>())
+	if (!attachToMainWindow() && m_client.GetCurrentTask<RunMachineTask>())
 	{
 		if (::GetFocus() == (HWND)winId())
 			::SetFocus((HWND)m_ui->rootWidget->winId());
@@ -2476,10 +2140,10 @@ void MainWindow::ensureProperFocus()
 //**************************************************************************
 
 //-------------------------------------------------
-//  Issue
+//  issue
 //-------------------------------------------------
 
-void MainWindow::Issue(const std::vector<QString> &args)
+void MainWindow::issue(const std::vector<QString> &args)
 {
 	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
 	if (!task)
@@ -2489,7 +2153,7 @@ void MainWindow::Issue(const std::vector<QString> &args)
 }
 
 
-void MainWindow::Issue(const std::initializer_list<std::string> &args)
+void MainWindow::issue(const std::initializer_list<std::string> &args)
 {
 	std::vector<QString> qargs;
 	qargs.reserve(args.size());
@@ -2500,85 +2164,102 @@ void MainWindow::Issue(const std::initializer_list<std::string> &args)
 		qargs.push_back(std::move(qarg));
 	}
 
-	Issue(qargs);
+	issue(qargs);
 }
 
 
-void MainWindow::Issue(const char *command)
+void MainWindow::issue(const char *command)
 {
 	QString command_string = command;
-	Issue({ command_string });
+	issue({ command_string });
 }
 
 
 //-------------------------------------------------
-//  InvokePing
+//  waitForStatusUpdate
 //-------------------------------------------------
 
-void MainWindow::InvokePing()
+void MainWindow::waitForStatusUpdate()
+{
+	m_pinging = true;
+	while (m_pinging)
+	{
+		if (!m_state.has_value())
+			return;
+		QCoreApplication::processEvents();
+		QThread::yieldCurrentThread();
+	}
+}
+
+
+//-------------------------------------------------
+//  invokePing
+//-------------------------------------------------
+
+void MainWindow::invokePing()
 {
 	// only issue a ping if there is an active session, and there is no ping in flight
 	if (!m_pinging && m_state.has_value())
 	{
 		m_pinging = true;
-		Issue("ping");
+		issue("ping");
 	}
 }
 
 
 //-------------------------------------------------
-//  InvokeExit
+//  invokeExit
 //-------------------------------------------------
 
-void MainWindow::InvokeExit()
+void MainWindow::invokeExit()
 {
-	if (m_current_profile_auto_save_state)
+	QString savedStatePath = m_sessionBehavior->getSavedState();
+	if (!savedStatePath.isEmpty())
 	{
-		QString save_state_path = profiles::profile::change_path_save_state(m_current_profile_path);
-		Issue({ "state_save_and_exit", QDir::toNativeSeparators(save_state_path) });
+		issue({ "state_save_and_exit", QDir::toNativeSeparators(savedStatePath) });
 	}
 	else
 	{
-		Issue({ "exit" });
+		issue({ "exit" });
 	}
 }
 
 
 //-------------------------------------------------
-//  ChangePaused
+//  changePaused
 //-------------------------------------------------
 
-void MainWindow::ChangePaused(bool paused)
+void MainWindow::changePaused(bool paused)
 {
-	Issue(paused ? "pause" : "resume");
+	issue(paused ? "pause" : "resume");
 }
 
 
 //-------------------------------------------------
-//  ChangeThrottled
+//  changeThrottled
 //-------------------------------------------------
 
-void MainWindow::ChangeThrottled(bool throttled)
+void MainWindow::changeThrottled(bool throttled)
 {
-	Issue({ "throttled", std::to_string(throttled ? 1 : 0) });
+	issue({ "throttled", std::to_string(throttled ? 1 : 0) });
 }
 
 
 //-------------------------------------------------
-//  ChangeThrottleRate
+//  changeThrottleRate
 //-------------------------------------------------
 
-void MainWindow::ChangeThrottleRate(float throttle_rate)
+void MainWindow::changeThrottleRate(float throttle_rate)
 {
-	Issue({ "throttle_rate", std::to_string(throttle_rate) });
+	issue({ "throttle_rate", std::to_string(throttle_rate) });
 }
 
 
 //-------------------------------------------------
-//  ChangeThrottleRate
+//  changeThrottleRate
 //-------------------------------------------------
 
-void MainWindow::ChangeThrottleRate(int adjustment)
+void MainWindow::changeThrottleRate(int adjustment)
 {
 	// find where we are in the array
 	int index;
@@ -2594,26 +2275,15 @@ void MainWindow::ChangeThrottleRate(int adjustment)
 	index = std::min(index, (int)(sizeof(s_throttle_rates) / sizeof(s_throttle_rates[0]) - 1));
 
 	// and change the throttle rate
-	ChangeThrottleRate(s_throttle_rates[index]);
+	changeThrottleRate(s_throttle_rates[index]);
 }
 
 
 //-------------------------------------------------
-//  ChangeSound
+//  changeSound
 //-------------------------------------------------
 
-void MainWindow::ChangeSound(bool sound_enabled)
+void MainWindow::changeSound(bool sound_enabled)
 {
-	Issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
-}
-
-
-//-------------------------------------------------
-//  sortFilterProxyModel
-//-------------------------------------------------
-
-const QSortFilterProxyModel &MainWindow::sortFilterProxyModel(const QTableView &tableView) const
-{
-	assert(&tableView == m_ui->machinesTableView || &tableView == m_ui->softwareTableView || &tableView == m_ui->profilesTableView);
-	return *dynamic_cast<QSortFilterProxyModel *>(tableView.model());
+	issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
 }

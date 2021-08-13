@@ -19,10 +19,11 @@
 //  ctor
 //-------------------------------------------------
 
-TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc)
+TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback)
     : QObject((QObject *) &tableView)
     , m_prefs(prefs)
     , m_desc(desc)
+    , m_selectionChangedCallback(std::move(selectionChangedCallback))
     , m_columnCount(-1)
     , m_proxyModel(nullptr)
     , m_currentlyApplyingColumnPrefs(false)
@@ -77,6 +78,8 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
             int selectedRow = m_proxyModel->mapToSource(selectedIndexes[0]).row();
             QModelIndex selectedIndex = itemModel.index(selectedRow, m_desc.m_keyColumnIndex);
             QString selectedValue = itemModel.data(selectedIndex).toString();
+            if (m_selectionChangedCallback)
+                m_selectionChangedCallback(selectedValue);
             m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
 		}
 	});
@@ -114,10 +117,10 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
 //  setup
 //-------------------------------------------------
 
-TableViewManager &TableViewManager::setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc)
+TableViewManager &TableViewManager::setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback)
 {
     // set up a TableViewManager
-    TableViewManager &manager = *new TableViewManager(tableView, itemModel, lineEdit, prefs, desc);
+    TableViewManager &manager = *new TableViewManager(tableView, itemModel, lineEdit, prefs, desc, std::move(selectionChangedCallback));
 
     // and read the prefs
     manager.applyColumnPrefs();

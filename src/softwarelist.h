@@ -47,7 +47,7 @@ public:
 		std::vector<part>	m_parts;
 	};
 
-	software_list(const software_list &) = SHOULD_BE_DELETE;
+	software_list(const software_list &) = delete;
 	software_list(software_list &&) = default;
 
 	// attempts to load a software list from a list of paths
@@ -66,7 +66,7 @@ private:
 	software_list() = default;
 
 	// methods
-	bool load(QDataStream &stream, QString &error_message);
+	bool load(QIODevice &stream, QString &error_message);
 };
 
 
@@ -75,7 +75,7 @@ class software_list_collection
 {
 public:
 	software_list_collection() = default;
-	software_list_collection(const software_list_collection &) = SHOULD_BE_DELETE;
+	software_list_collection(const software_list_collection &) = delete;
 	software_list_collection(software_list_collection &&) = default;
 
 	// accessors

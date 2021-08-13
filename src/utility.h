@@ -14,7 +14,9 @@
 #include <unordered_map>
 #include <optional>
 #include <functional>
+#include <span>
 #include <stdexcept>
+#include <string_view>
 #include <wctype.h>
 
 #include <QFileInfo>
@@ -22,19 +24,13 @@
 
 
 //**************************************************************************
-//  MACROS
+//  QT VERSION CHECK
 //**************************************************************************
 
-// workaround for GCC bug fixed in 7.4
-#ifdef __GNUC__
-#if __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#define SHOULD_BE_DELETE	default
-#endif	// __GNUC__ < 7 || (__GNUC__ == 7 && (__GNUC_MINOR__ < 4))
-#endif // __GNUC__
-
-#ifndef SHOULD_BE_DELETE
-#define SHOULD_BE_DELETE	delete
-#endif // !SHOULD_BE_DELETE
+// we use QTreeView::expandRecursively(), which was introduced in Qt 5.13
+#if QT_VERSION < QT_VERSION_CHECK(5, 13, 0)
+#error BletchMAME requires Qt version 5.13
+#endif
 
 
 //**************************************************************************
@@ -122,6 +118,34 @@ auto find_if_ptr(TContainer &container, TPredicate predicate)
 }
 
 
+template<typename TContainer>
+bool contains(typename TContainer::const_iterator begin, typename TContainer::const_iterator end, const typename TContainer::value_type &value)
+{
+	return std::find(begin, end, value) != end;
+}
+
+
+template<typename TContainer>
+bool contains(const TContainer &container, const typename TContainer::value_type &value)
+{
+	return contains<TContainer>(container.cbegin(), container.cend(), value);
+}
+
+
+template<typename TContainer, typename TPredicate>
+bool contains_if(typename TContainer::const_iterator begin, typename TContainer::const_iterator end, TPredicate predicate)
+{
+	return std::find_if(begin, end, predicate) != end;
+}
+
+
+template<typename TContainer, typename TPredicate>
+bool contains_if(const TContainer &container, TPredicate predicate)
+{
+	return contains_if<TContainer>(container.cbegin(), container.cend(), predicate);
+}
+
+
 //**************************************************************************
 //  ENUM UTILITY CLASSES
 //**************************************************************************
@@ -195,9 +219,7 @@ public:
 		iterator &operator--() { bump(-1); return *this; }
 		iterator operator++(int) { iterator result = *this; bump(+1); return result; }
 		iterator operator--(int) { iterator result = *this; bump(-1); return result; }
-		bool operator==(const iterator &that) const { return m_value == that.m_value; }
-		bool operator!=(const iterator &that) const { return m_value != that.m_value; }
-		bool operator<(const iterator &that) const { return m_value < that.m_value; }
+		auto operator<=>(const iterator &that) const = default;
 
 	private:
 		T m_value;
@@ -351,6 +373,20 @@ template<class T> T safe_static_cast(size_t sz)
 }
 
 
+//-------------------------------------------------
+//  binaryFromHex
+//-------------------------------------------------
+
+std::size_t binaryFromHex(std::span<uint8_t> &dest, std::string_view hex);
+
+template<std::size_t N>
+std::size_t binaryFromHex(uint8_t (&dest)[N], std::string_view hex)
+{
+	std::span<uint8_t> destSpan(dest);
+	return binaryFromHex(destSpan, hex);
+}
+
+
 //**************************************************************************
 //  COMMAND LINE
 //**************************************************************************
@@ -365,13 +401,6 @@ QString build_command_line(const QString &executable, const std::vector<QString>
 //**************************************************************************
 //  WXWIDGETS IMPERSONATION
 //**************************************************************************
-
-inline bool wxFileExists(const QString &path)
-{
-	QFileInfo check_file(path);
-	return check_file.exists() && check_file.isFile();
-}
-
 
 class wxFileName
 {

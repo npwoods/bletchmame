@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -14,99 +14,15 @@
    <string>BletchMAME</string>
   </property>
   <widget class="QWidget" name="rootWidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
-    <item>
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="currentIndex">
-       <number>2</number>
+   <layout class="QStackedLayout" name="stackedLayout">
+    <item row="0" column="0">
+     <widget class="QWidget" name="emulationPanel" native="true">
+      <property name="autoFillBackground">
+       <bool>false</bool>
       </property>
-      <widget class="QWidget" name="machinesTab">
-       <attribute name="title">
-        <string>Machines</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="machinesVerticalLayout">
-        <item>
-         <widget class="QLineEdit" name="machinesSearchBox"/>
-        </item>
-        <item>
-         <widget class="QTableView" name="machinesTableView">
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="gridStyle">
-           <enum>Qt::NoPen</enum>
-          </property>
-          <property name="sortingEnabled">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="softwareTab">
-       <attribute name="title">
-        <string>Software</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="softwareVerticalLayout">
-        <item>
-         <widget class="QLineEdit" name="softwareSearchBox"/>
-        </item>
-        <item>
-         <widget class="QTableView" name="softwareTableView">
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="gridStyle">
-           <enum>Qt::NoPen</enum>
-          </property>
-          <property name="sortingEnabled">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="profilesTab">
-       <attribute name="title">
-        <string>Profiles</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="profilesVerticalLayout">
-        <item>
-         <widget class="QTableView" name="profilesTableView">
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="editTriggers">
-           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="gridStyle">
-           <enum>Qt::NoPen</enum>
-          </property>
-          <property name="sortingEnabled">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
      </widget>
     </item>
    </layout>
@@ -227,7 +143,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Images...</string>
+    <string>Devices and Images...</string>
    </property>
   </action>
   <action name="actionQuickLoadState">
@@ -249,7 +165,7 @@
     <string>Quick Save State</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+F7</string>
    </property>
   </action>
   <action name="actionLoadState">
@@ -259,6 +175,9 @@
    <property name="text">
     <string>Load State...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+F7</string>
+   </property>
   </action>
   <action name="actionSaveState">
    <property name="enabled">
@@ -266,6 +185,9 @@
    </property>
    <property name="text">
     <string>Save State...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F7</string>
    </property>
   </action>
   <action name="actionSaveScreenshot">

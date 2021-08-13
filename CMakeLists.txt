@@ -8,10 +8,13 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(USE_SHARED_LIBS "Use shared libraries" OFF)
+if (NOT USE_SHARED_LIBS)
 SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+endif()
 
 # Threads
 find_package( Threads )
@@ -30,6 +33,14 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat REQUIRED)
 find_package(Qt6Test REQUIRED)
 
+# QuaZip
+find_package(QuaZip5)
+if (NOT QUAZIP_FOUND)
+set(QUAZIP_INCLUDE_DIRS lib/quazip)
+set(QUAZIP_LIBRARIES QuaZip)
+endif()
+include_directories(${QUAZIP_INCLUDE_DIRS})
+
 # Yes, we're unit testing
 enable_testing(true)
 
@@ -42,6 +53,8 @@ MESSAGE(STATUS "buildversion.gen.cpp UNAVAILABLE")
 add_definitions(-DHAS_BUILDVERSION_GEN_CPP=0)
 endif()
 
+# Define installation directories
+include(GNUInstallDirs)
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #
@@ -62,8 +75,13 @@ add_library(BletchMAME_core
 	src/job.h
 	src/listxmltask.cpp
 	src/listxmltask.h
+	src/machinefoldertreemodel.cpp
+	src/machinefoldertreemodel.h
 	src/machinelistitemmodel.cpp
 	src/machinelistitemmodel.h
+	src/mainpanel.cpp
+	src/mainpanel.h
+	src/mainpanel.ui
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui
@@ -80,10 +98,14 @@ add_library(BletchMAME_core
 	src/profilelistitemmodel.h
 	src/runmachinetask.cpp
 	src/runmachinetask.h
+	src/sessionbehavior.cpp
+	src/sessionbehavior.h
 	src/softwarelist.cpp
 	src/softwarelist.h
 	src/softwarelistitemmodel.cpp
 	src/softwarelistitemmodel.h
+	src/splitterviewtoggler.cpp
+	src/splitterviewtoggler.h
 	src/status.cpp
 	src/status.h
 	src/utility.cpp
@@ -105,12 +127,14 @@ add_library(BletchMAME_core
 	src/dialogs/choosesw.cpp
 	src/dialogs/choosesw.h
 	src/dialogs/choosesw.ui
+	src/dialogs/confdev.cpp
+	src/dialogs/confdev.h
+	src/dialogs/confdev.ui
+	src/dialogs/confdevmodel.cpp
+	src/dialogs/confdevmodel.h
 	src/dialogs/console.cpp
 	src/dialogs/console.h
 	src/dialogs/console.ui
-	src/dialogs/images.cpp
-	src/dialogs/images.h
-	src/dialogs/images.ui
 	src/dialogs/inputs.cpp
 	src/dialogs/inputs.h
 	src/dialogs/inputs_base.cpp
@@ -128,6 +152,9 @@ add_library(BletchMAME_core
 	src/dialogs/loading.cpp
 	src/dialogs/loading.h
 	src/dialogs/loading.ui
+	src/dialogs/newcustomfolder.cpp
+	src/dialogs/newcustomfolder.h
+	src/dialogs/newcustomfolder.ui
 	src/dialogs/paths.cpp
 	src/dialogs/paths.h
 	src/dialogs/paths.ui
@@ -136,16 +163,17 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets QuaZip)
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES})
 
 
 #############################################################################
 # BletchMAME executable                                                     #
 #############################################################################
 
-add_executable(BletchMAME WIN32 src/main.cpp)
+add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
 #############################################################################
@@ -161,17 +189,22 @@ add_executable(BletchMAME_tests
 	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/listxmltask_test.cpp
+	src/tests/machinefoldertreemodel_test.cpp
 	src/tests/machinelistitemmodel_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
+	src/tests/profile_test.cpp
 	src/tests/runmachinetask_test.cpp
 	src/tests/softwarelist_test.cpp
+	src/tests/status_test.cpp
 	src/tests/utility_test.cpp
 	src/tests/xmlparser_test.cpp
 	src/tests/dialogs/about_test.cpp
+	src/tests/dialogs/confdevmodel_test.cpp
 	src/tests/dialogs/inputs_test.cpp
 	src/tests/dialogs/paths_test.cpp
 	src/tests/resources.qrc
+	src/resources.qrc
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
@@ -182,6 +215,7 @@ target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6:
 # QuaZib																	#
 #############################################################################
 
+if (NOT QUAZIP_FOUND)
 add_library(QuaZip
 	lib/quazip/ioapi.h
 	lib/quazip/JlCompress.cpp
@@ -216,7 +250,7 @@ add_library(QuaZip
 target_include_directories(QuaZip PRIVATE lib/quazip)
 target_link_libraries(QuaZip PRIVATE Qt6::Widgets ${ZLIB_LIBRARIES} PUBLIC Qt6::Core5Compat)
 add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
-
+endif()
 
 #############################################################################
 # Translations                                                              #

@@ -18,28 +18,35 @@ namespace
         Q_OBJECT
 
     private slots:
-        void general_coco_dtd()			{ general(":/resources/listxml_coco.xml", false, 15, 796, 32, 48); }
-		void general_coco_noDtd()		{ general(":/resources/listxml_coco.xml", true, 15, 796, 32, 48); }
-        void general_alienar_dtd()		{ general(":/resources/listxml_alienar.xml", false, 1, 0, 0, 0); }
-        void general_alienar_noDtd()	{ general(":/resources/listxml_alienar.xml", true, 1, 0, 0, 0); }
-		void machineLookup_coco()		{ machineLookup(":/resources/listxml_coco.xml"); }
-		void machineLookup_alienar()	{ machineLookup(":/resources/listxml_alienar.xml"); }
-		void deviceLookup_coco2b()		{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }
-		void deviceLookup_coco3()		{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
+		void general_coco_dtd()				{ general(":/resources/listxml_coco.xml", false, 104, 15, 1501, 32, 48, 99, 488); }
+		void general_coco_noDtd()			{ general(":/resources/listxml_coco.xml", true, 104, 15, 1501, 32, 48, 99, 488); }
+		void general_alienar_dtd()			{ general(":/resources/listxml_alienar.xml", false, 13, 1, 0, 0, 0, 0, 0); }
+		void general_alienar_noDtd()		{ general(":/resources/listxml_alienar.xml", true, 13, 1, 0, 0, 0, 0, 0); }
+		void machineLookup_coco()			{ machineLookup(":/resources/listxml_coco.xml"); }
+		void machineLookup_alienar()		{ machineLookup(":/resources/listxml_alienar.xml"); }
+		void deviceLookup_coco2b()			{ deviceLookup(":/resources/listxml_coco.xml", "coco2b"); }
+		void deviceLookup_coco3()			{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
+		void loadExpectedVersion_coco()		{ loadExpectedVersion(":/resources/listxml_coco.xml", "0.229 (mame0229)"); }
+		void loadExpectedVersion_alienar()	{ loadExpectedVersion(":/resources/listxml_alienar.xml", "0.229 (mame0229)"); }
 		void viewIterators();
-		void loadGarbage_0_0()			{ loadGarbage(0, 0); }
-		void loadGarbage_0_1000()		{ loadGarbage(0, 1000); }
-		void loadGarbage_1000_0()		{ loadGarbage(1000, 0); }
-		void loadGarbage_1000_1000()	{ loadGarbage(1000, 1000); }
+		void loadGarbage_0_0()				{ loadGarbage(0, 0); }
+		void loadGarbage_0_1000()			{ loadGarbage(0, 1000); }
+		void loadGarbage_1000_0()			{ loadGarbage(1000, 0); }
+		void loadGarbage_1000_1000()		{ loadGarbage(1000, 1000); }
 		void loadFailuresDontMutate();
 		void readsAllBytes();
 		void sortable();
+		void scrutinize_alienar();
+		void scrutinize_coco();
+		void scrutinize_coco2b();
 
 	private:
-		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount);
-		void machineLookup(const QString &fileName);
+		void general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount,
+			int expectedRamOptionCount, int expectedSlotCount, int expectedSlotOptionCount);
+		void machineLookup(const QString &filename);
 		void deviceLookup(const QString &fileName, const QString &machineName);
 		void loadGarbage(int legitBytes, int garbageBytes);
+		void loadExpectedVersion(const QString &fileName, const QString &expectedVersion);
 		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
 };
@@ -53,17 +60,22 @@ namespace
 //  general
 //-------------------------------------------------
 
-void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedSettingCount, int expectedSoftwareListCount, int expectedRamOptionCount)
+void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCount, int expectedRunnableMachineCount, int expectedSettingCount, int expectedSoftwareListCount,
+	int expectedRamOptionCount, int expectedSlotCount, int expectedSlotOptionCount)
 {
 	// read the db, validating we've done so successfully
 	info::database db;
 	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	bool dbChangedAlt = false;
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
+	db.addOnChangedHandler([&dbChangedAlt]() { dbChangedAlt = true; });
 	QVERIFY(db.load(buildInfoDatabase(fileName, skipDtd)));
 	QVERIFY(dbChanged);
+	QVERIFY(dbChangedAlt);
 
 	// spelunk through the resulting db
-	int machineCount = 0, settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
+	int machineCount = 0, runnableMachineCount = 0, settingCount = 0, softwareListCount = 0, ramOptionCount = 0;
+	int slotCount = 0, slotOptionCount = 0;
 	for (info::machine machine : db.machines())
 	{
 		// basic machine properties
@@ -74,6 +86,8 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 
 		// count machines
 		machineCount++;
+		if (machine.runnable())
+			runnableMachineCount++;
 
 		for (info::device dev : machine.devices())
 		{
@@ -98,12 +112,22 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 
 		for (info::ram_option ramopt : machine.ram_options())
 			ramOptionCount++;
+
+		for (info::slot slot : machine.devslots())
+		{
+			slotCount++;
+			for (info::slot_option opt : slot.options())
+				slotOptionCount++;
+		}
 	}
 	QVERIFY(machineCount == db.machines().size());
 	QVERIFY(machineCount == expectedMachineCount);
+	QVERIFY(runnableMachineCount == expectedRunnableMachineCount);
 	QVERIFY(settingCount == expectedSettingCount);
 	QVERIFY(softwareListCount == expectedSoftwareListCount);
 	QVERIFY(ramOptionCount == expectedRamOptionCount);
+	QVERIFY(slotCount == expectedSlotCount);
+	QVERIFY(slotOptionCount == expectedSlotOptionCount);
 }
 
 
@@ -182,11 +206,18 @@ void Test::viewIterators()
 	auto iter3 = ++iter1;
 	iter1 += 5;
 	auto iter4 = iter1;
+	auto iter5 = iter1;
+	auto iter6 = --iter5;
+	auto iter7 = iter5--;
 
 	// and validate that the iterators are what we expect
 	QVERIFY(iter1 - db.machines().begin() == 7);
 	QVERIFY(iter2 - db.machines().begin() == 0);
 	QVERIFY(iter3 - db.machines().begin() == 2);
+	QVERIFY(iter4 - db.machines().begin() == 7);
+	QVERIFY(iter5 - db.machines().begin() == 5);
+	QVERIFY(iter6 - db.machines().begin() == 6);
+	QVERIFY(iter7 - db.machines().begin() == 6);
 
 	// and ensure that dereferencing works consistently
 	QVERIFY(iter1->name() == db.machines()[7].name());
@@ -227,9 +258,22 @@ void Test::loadGarbage(int legitBytes, int garbageBytes)
 	// try to load it
 	info::database db;
 	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
 	QVERIFY(!db.load(byteArray));
 	QVERIFY(!dbChanged);
+}
+
+
+//-------------------------------------------------
+//  loadExpectedVersion - tests that
+//	info::database::load() with an expected version
+//	functions properly
+//-------------------------------------------------
+
+void Test::loadExpectedVersion(const QString &fileName, const QString &expectedVersion)
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(fileName), expectedVersion));
 }
 
 
@@ -248,7 +292,7 @@ void Test::loadFailuresDontMutate()
 	// and process it, validating we've done so successfully
 	info::database db;
 	int dbChangedCount = 0;
-	db.setOnChanged([&dbChangedCount]() { dbChangedCount++; });
+	db.addOnChangedHandler([&dbChangedCount]() { dbChangedCount++; });
 	QVERIFY(db.load(goodByteArray));
 	QVERIFY(dbChangedCount == 1);
 
@@ -301,7 +345,7 @@ void Test::readsAllBytes()
 	// read the db, validating we've done so successfully
 	info::database db;
 	bool dbChanged = false;
-	db.setOnChanged([&dbChanged]() { dbChanged = true; });
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
 	QVERIFY(db.load(buffer));
 	QVERIFY(dbChanged);
 
@@ -351,6 +395,88 @@ void Test::sortable()
 	}
 }
 
+
+//-------------------------------------------------
+//  scrutinize_alienar
+//-------------------------------------------------
+
+void Test::scrutinize_alienar()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_alienar.xml")));
+
+	std::optional<info::machine> machine = db.find_machine("alienar");
+	QVERIFY(machine.has_value());
+	QVERIFY(machine->name() == "alienar");
+	QVERIFY(machine->description() == "Alien Arena");
+	QVERIFY(machine->manufacturer() == "Duncan Brown");
+	QVERIFY(!machine->clone_of().has_value());
+	QVERIFY(!machine->rom_of().has_value());
+	QVERIFY(machine->sound_channels() == 1);
+
+	QVERIFY(machine->roms().size() == 12);
+	QVERIFY(machine->roms()[ 0].name() == "aarom10");
+	QVERIFY(machine->roms()[ 1].name() == "aarom11");
+	QVERIFY(machine->roms()[ 2].name() == "aarom12");
+	QVERIFY(machine->roms()[ 3].name() == "aarom01");
+	QVERIFY(machine->roms()[ 4].name() == "aarom02");
+	QVERIFY(machine->roms()[ 5].name() == "aarom03");
+	QVERIFY(machine->roms()[ 6].name() == "aarom04");
+	QVERIFY(machine->roms()[ 7].name() == "aarom05");
+	QVERIFY(machine->roms()[ 8].name() == "aarom06");
+	QVERIFY(machine->roms()[ 9].name() == "aarom07");
+	QVERIFY(machine->roms()[10].name() == "aarom08");
+	QVERIFY(machine->roms()[11].name() == "aarom09");
+
+	for (info::rom rom : machine->roms())
+	{
+		QVERIFY(rom.bios().isEmpty());
+		QVERIFY(rom.merge().isEmpty());
+	}
+}
+
+
+//-------------------------------------------------
+//  scrutinize_coco
+//-------------------------------------------------
+
+void Test::scrutinize_coco()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
+
+	std::optional<info::machine> machine = db.find_machine("coco");
+	QVERIFY(machine.has_value());
+	QVERIFY(machine->name() == "coco");
+	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
+	QVERIFY(!machine->clone_of().has_value());
+	QVERIFY(!machine->rom_of().has_value());
+	QVERIFY(machine->sound_channels() == 1);
+}
+
+
+//-------------------------------------------------
+//  scrutinize_coco2b
+//-------------------------------------------------
+
+void Test::scrutinize_coco2b()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
+
+	std::optional<info::machine> machine = db.find_machine("coco2b");
+	QVERIFY(machine.has_value());
+	QVERIFY(machine->name() == "coco2b");
+	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
+	QVERIFY(machine->clone_of().has_value());
+	QVERIFY(machine->clone_of()->name() == "coco");
+	QVERIFY(machine->rom_of().has_value());
+	QVERIFY(machine->rom_of()->name() == "coco");
+	QVERIFY(machine->sound_channels() == 3);
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<Test> fixture;
 #include "info_test.moc"
