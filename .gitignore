@@ -35,6 +35,7 @@
 # Directories
 bin
 obj
+deps
 
 # MSVC
 .vs
