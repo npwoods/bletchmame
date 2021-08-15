@@ -27,7 +27,6 @@ class QTableView;
 class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
-class info::database;
 class MachineFolderTreeModel;
 class ProfileListItemModel;
 class SessionBehavior;
