@@ -34,12 +34,8 @@ find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat REQUIRED)
 find_package(Qt6Test REQUIRED)
 
 # QuaZip
-find_package(QuaZip5)
-if (NOT QUAZIP_FOUND)
-set(QUAZIP_INCLUDE_DIRS lib/quazip)
-set(QUAZIP_LIBRARIES QuaZip)
-endif()
-include_directories(${QUAZIP_INCLUDE_DIRS})
+find_package(QuaZip-Qt6 REQUIRED)
+include_directories(SYSTEM ${QuaZip_DIR}/../../include/QuaZip-Qt6-1.1/quazip)
 
 # Yes, we're unit testing
 enable_testing(true)
@@ -163,7 +159,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES})
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets QuaZip)
 
 
 #############################################################################
@@ -210,47 +206,6 @@ add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
 target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-
-#############################################################################
-# QuaZib																	#
-#############################################################################
-
-if (NOT QUAZIP_FOUND)
-add_library(QuaZip
-	lib/quazip/ioapi.h
-	lib/quazip/JlCompress.cpp
-	lib/quazip/JlCompress.h
-	lib/quazip/minizip_crypt.h
-	lib/quazip/qioapi.cpp
-	lib/quazip/quaadler32.cpp
-	lib/quazip/quaadler32.h
-	lib/quazip/quachecksum32.h
-	lib/quazip/quacrc32.cpp
-	lib/quazip/quacrc32.h
-	lib/quazip/quagzipfile.cpp
-	lib/quazip/quagzipfile.h
-	lib/quazip/quaziodevice.cpp
-	lib/quazip/quaziodevice.h
-	lib/quazip/quazip.cpp
-	lib/quazip/quazip.h
-	lib/quazip/quazipdir.cpp
-	lib/quazip/quazipdir.h
-	lib/quazip/quazipfile.cpp
-	lib/quazip/quazipfile.h
-	lib/quazip/quazipfileinfo.cpp
-	lib/quazip/quazipfileinfo.h
-	lib/quazip/quazipnewinfo.cpp
-	lib/quazip/quazipnewinfo.h
-	lib/quazip/quazip_global.h
-	lib/quazip/unzip.cpp
-	lib/quazip/unzip.h
-	lib/quazip/zip.cpp
-	lib/quazip/zip.h
-)
-target_include_directories(QuaZip PRIVATE lib/quazip)
-target_link_libraries(QuaZip PRIVATE Qt6::Widgets ${ZLIB_LIBRARIES} PUBLIC Qt6::Core5Compat)
-add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
-endif()
 
 #############################################################################
 # Translations                                                              #
