@@ -32,10 +32,12 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 # Qt
 find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat REQUIRED)
 find_package(Qt6Test REQUIRED)
+find_package(Qt6Zlib REQUIRED)
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
 include_directories(SYSTEM ${QuaZip_DIR}/../../include/QuaZip-Qt6-1.1/quazip)
+link_directories(${QuaZip_DIR}/../../lib)
 
 # Yes, we're unit testing
 enable_testing(true)
@@ -159,7 +161,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets QuaZip)
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6)
 
 
 #############################################################################
