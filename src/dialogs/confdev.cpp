@@ -49,7 +49,7 @@ public:
         QWidget &widget = *new QWidget(parent);
         QHBoxLayout &layout = *new QHBoxLayout(&widget);
         layout.setSpacing(0);
-        layout.setMargin(0);
+        layout.setContentsMargins(0, 0, 0, 0);
         layout.setAlignment(Qt::AlignRight);
         layout.addWidget(&button);
         layout.setSizeConstraint(QLayout::SetMinimumSize);
