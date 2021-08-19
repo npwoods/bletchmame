@@ -37,14 +37,26 @@ jobs:
         release: false
         install: git make parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-llvm mingw-w64-x86_64-ninja mingw-w64-x86_64-polly
 
+    # Cache Dependencies
+    - name: Cache Dependencies
+      id: cache-deps
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-deps
+      with:
+        path: ~/deps/msys2
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('scripts/*_build_msys2.sh', 'scripts/*_retrieve.sh')}}
+
     # Build Qt6
     - name: Build Qt6
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/qt_retrieve.sh
-        sh scripts/qt_build_msys2.sh
+        sh scripts/qt6_retrieve.sh
+        sh scripts/qt6_build_msys2.sh
 
     # Build QuaZip
     - name: Build QuaZip
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         sh scripts/quazip_retrieve.sh
         sh scripts/quazip_build_msys2.sh

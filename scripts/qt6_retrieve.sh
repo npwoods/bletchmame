@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###################################################################################
-# qt_retrieve.sh - Retrieves Qt sources                                           #
+# qt6_retrieve.sh - Retrieves Qt sources                                          #
 ###################################################################################
 
 # Sanity check
@@ -19,6 +19,11 @@ git clone https://code.qt.io/qt/qt5.git $QT_DIR
 # Prep the repository
 pushd $QT_DIR
 git checkout 6.1.2
+
+# Prune unnecessary modules
+rm -rf deps/qt6/qt3d deps/qt6/qtcharts deps/qt6/qtcoap deps/qt6/qtdatavis3d deps/qt6/qtlottie deps/qt6/qtmqtt deps/qt6/qtnetworkauth deps/qt6/qtopcua deps/qt6/qtquick3d deps/qt6/qtquicktimeline
+
+# Initialize the repository
 perl init-repository
 
 # Apply hacks necessary to get static Qt to compile

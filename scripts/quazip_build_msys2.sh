@@ -11,9 +11,9 @@ if [ -z "$BASH_SOURCE" ]; then
 fi
 
 # Identify directories
-QUAZIP_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/quazip)
-INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msys2)
-QUAZIP_BUILD_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msys2/build/quazip)
+QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
+INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msys2
+QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msys2/quazip
 
 # Build and install it!
 rm -rf $QUAZIP_BUILD_DIR
