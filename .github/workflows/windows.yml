@@ -31,6 +31,7 @@ jobs:
     # Build Qt6
     - name: Build Qt6
       run: |
+        ls -l scripts
         bash scripts/qt_retrieve.sh
         bash scripts/qt_build_msys2.sh
 
