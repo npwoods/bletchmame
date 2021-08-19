@@ -16,12 +16,9 @@ rm -rf $QT_DIR
 mkdir -p $QT_DIR
 git clone -b 6.1.2 --depth 1 https://code.qt.io/qt/qt5.git $QT_DIR
 
-# Prune unnecessary modules
-rm -rf deps/qt6/qt3d deps/qt6/qtcharts deps/qt6/qtcoap deps/qt6/qtdatavis3d deps/qt6/qtlottie deps/qt6/qtmqtt deps/qt6/qtnetworkauth deps/qt6/qtopcua deps/qt6/qtquick3d deps/qt6/qtquicktimeline
-
 # Prep the repository
 pushd $QT_DIR
-perl init-repository
+perl init-repository --module-subset=essential,qtsvg,qtactiveqt,qtimageformats
 
 # Apply hacks necessary to get static Qt to compile
 patch -p1 <<EOF

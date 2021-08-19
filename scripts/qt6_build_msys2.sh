@@ -26,7 +26,7 @@ QT_BUILD_DIR=$(realpath $QT_BUILD_DIR)
 
 # Configure Qt
 pushd $QT_BUILD_DIR
-$QT_DIR/configure.bat -release -static -static-runtime -optimize-size -prefix $INSTALL_DIR -platform win32-g++ -opensource -confirm-license -qt-zlib -qt-libpng -qt-webp -qt-libjpeg -qt-freetype -qt-tiff -qt-pcre -no-jasper -no-opengl -no-mng -make libs -nomake examples -nomake tests -skip qt3d -skip qtcharts -skip qtcoap -skip qtdatavis3d -skip qtlottie -skip qtmqtt -skip qtnetworkauth -skip qtopcua -skip qtquick3d -skip qtquicktimeline
+$QT_DIR/configure.bat -release -static -static-runtime -optimize-size -prefix $INSTALL_DIR -platform win32-g++ -opensource -confirm-license -qt-zlib -qt-libpng -qt-webp -qt-libjpeg -qt-freetype -qt-tiff -qt-pcre -no-jasper -no-opengl -no-mng -no-sql-odbc -make libs -nomake examples -nomake tests -skip qt3d -skip qtcharts -skip qtcoap -skip qtdatavis3d -skip qtlottie -skip qtmqtt -skip qtnetworkauth -skip qtopcua -skip qtquick3d -skip qtquicktimeline -skip qtshadertools
 
 # Build!
 cmake --build . --parallel
