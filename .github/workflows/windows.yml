@@ -28,6 +28,18 @@ jobs:
       with:
         fetch-depth: 0
 
+    # Build Qt6
+    - name: Build Qt6
+      run: |
+        sh scripts/qt_retrieve.sh
+        sh scripts/qt_build_msys2.sh
+
+    # Build QuaZip
+    - name: Build QuaZip
+      run: |
+        sh scripts/quazip_retrieve.sh
+        sh scripts/quazip_build_msys2.sh
+
     # Install MSYS2
     - name: Install MSYS2
       uses: msys2/setup-msys2@v2
