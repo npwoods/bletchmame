@@ -11,10 +11,21 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(USE_SHARED_LIBS "Use shared libraries" OFF)
+# By default, BletchMAME should build linking to shared libraries; its the norm on Linux and it
+# is desirable in debugging scenarios.  But for when performing releases on platforms where such
+# releases may entail distributing large Qt libraries (Windows and probably macOS), building linking
+# to Qt and QuaZip statically is desirable to minimize dependency issues
+option(USE_SHARED_LIBS "Use shared libraries" ON)
 if (NOT USE_SHARED_LIBS)
-SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+add_definitions(-DQUAZIP_STATIC)
 endif()
+
+
+#############################################################################
+# Dependencies                                                              #
+#############################################################################
 
 # Threads
 find_package( Threads )
@@ -22,12 +33,12 @@ find_package( Threads )
 # Expat
 include(FindEXPAT)
 find_package(EXPAT REQUIRED)
-include_directories(${EXPAT_INCLUDE_DIRS})
+include_directories(${EXPAT_INCLUDE_DIR})
 
 # ZLib
 include(FindZLIB)
 find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIRS})
+include_directories(${ZLIB_INCLUDE_DIR})
 
 # Qt
 find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat REQUIRED)
@@ -36,8 +47,8 @@ find_package(Qt6Zlib REQUIRED)
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
-include_directories(SYSTEM ${QuaZip_DIR}/../../include/QuaZip-Qt6-1.1/quazip)
-link_directories(${QuaZip_DIR}/../../lib)
+include_directories(SYSTEM ${QuaZip-Qt6_DIR}/../../../include/QuaZip-Qt6-1.1/quazip)
+link_directories(${QuaZip-Qt6_DIR}/../../../lib)
 
 # Yes, we're unit testing
 enable_testing(true)
@@ -53,6 +64,7 @@ endif()
 
 # Define installation directories
 include(GNUInstallDirs)
+
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #
@@ -161,7 +173,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6)
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6 Qt6::Core5Compat ${ZLIB_LIBRARIES})
 
 
 #############################################################################
@@ -170,7 +182,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6)
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets quazip1-qt6 Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -static gcc stdc++ winpthread)
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
@@ -206,7 +218,7 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test quazip1-qt6 Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 
 #############################################################################

@@ -11,21 +11,21 @@ if [ -z "$BASH_SOURCE" ]; then
 fi
 
 # Identify directories
-QT_DIR=$(dirname $BASH_SOURCE)/../deps/qt6
-QT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/qt6_msys2_build
-QT_INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/qt6_msys2_install
+QT_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/qt6)
+INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msys2)
+QT_BUILD_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msys2/build/qt6)
 
 # Clean directories
-rm -rf $QT_BUILD_DIR $QT_INSTALL_DIR
+rm -rf $QT_BUILD_DIR
 mkdir -p $QT_BUILD_DIR
-mkdir -p $QT_INSTALL_DIR
 
 # Configure Qt
 pushd $QT_BUILD_DIR
-../qt6/configure.bat -release -static -static-runtime -prefix ../qt6_msys2_install -platform win32-g++ -opensource -confirm-license -qt-zlib -qt-libpng -qt-webp -qt-libjpeg -qt-freetype -no-opengl -make libs -nomake examples -nomake tests -skip qtmultimedia
+$QT_DIR/configure.bat -release -static -static-runtime -prefix $INSTALL_DIR -platform win32-g++ -opensource -confirm-license -qt-zlib -qt-libpng -qt-webp -qt-libjpeg -qt-freetype -qt-tiff -qt-pcre -no-jasper -no-opengl -no-mng -make libs -nomake examples -nomake tests -skip qtmultimedia
 
 # Build!
 cmake --build . --parallel
 
 # Install!
 cmake --install .
+popd

@@ -36,6 +36,7 @@
 bin
 obj
 deps
+build
 
 # MSVC
 .vs
