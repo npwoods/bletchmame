@@ -91,12 +91,16 @@ jobs:
     - name: Build Qt6
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
+        ls -l deps
+        ls -l /c/deps
         sh scripts/qt6_build_msys2.sh
 
     # Build QuaZip
     - name: Build QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
+        ls -l deps
+        ls -l /c/deps
         sh scripts/quazip_build_msys2.sh
 
     # Build BletchMAME

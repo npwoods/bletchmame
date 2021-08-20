@@ -30,6 +30,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: 6.1.2
+        modules: 'qt5compat'
 
     # Install OpenGL
     - name: Install OpenGL
