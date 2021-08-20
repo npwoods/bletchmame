@@ -41,9 +41,7 @@ find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIR})
 
 # Qt
-find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat REQUIRED)
-find_package(Qt6Test REQUIRED)
-find_package(Qt6Zlib REQUIRED)
+find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
