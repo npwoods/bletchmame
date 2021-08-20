@@ -45,7 +45,7 @@ jobs:
     # Retrieve QuaZip
     - name: Retrieve QuaZip
       run: |
-        sh scripts/quazip_retrieve.sh
+        git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git deps/quazip
 
     # Build QuaZip
     - name: Build QuaZip
