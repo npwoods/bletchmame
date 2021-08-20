@@ -82,4 +82,4 @@ jobs:
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
-      run: export PATH=$PATH:$GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib ; ./BletchMAME_tests
+      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib ; ./BletchMAME_tests
