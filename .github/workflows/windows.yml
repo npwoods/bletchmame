@@ -54,7 +54,9 @@ jobs:
       run: |
         dir C:\
         dir D:\
+        mkdir C:\deps
         mklink /J deps C:\deps
+        echo foo > c:\deps\foo.txt
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
@@ -66,7 +68,9 @@ jobs:
     - name: Build QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
+        echo ls -l deps
         ls -l deps
+        echo ls -l /c/deps
         ls -l /c/deps
         sh scripts/quazip_build_msys2.sh
 
