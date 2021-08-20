@@ -64,8 +64,7 @@ jobs:
         rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 14.0"
         rm -rf "/c/Program Files (x86)/Microsoft Visual Studio Tools for Unity"
         rm -rf "/c/Program Files (x86)/Xamarin"
-        mkdir -p /c/build
-        mkdir -p deps
+        mkdir -p /c/deps
 
     # Make Space For Dependency Builds
     - name: Make Space For Dependency Builds
@@ -74,7 +73,7 @@ jobs:
       run: |
         dir C:\
         dir D:\
-        mklink deps\build C:\build
+        mklink deps C:\deps
 
     # Build Qt6
     - name: Build Qt6
