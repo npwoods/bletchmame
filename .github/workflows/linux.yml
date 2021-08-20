@@ -33,12 +33,6 @@ jobs:
         modules: 'qt5compat'
         dir: ${{ github.workspace }}
 
-    # DEBUG
-    - name: DEBUG
-      run: |       
-        ls -l $GITHUB_WORKSPACE/Qt/6.1.2/gcc_64
-        ls -l $GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib
-
     # Install OpenGL
     - name: Install OpenGL
       uses: openrndr/setup-opengl@v1.1
