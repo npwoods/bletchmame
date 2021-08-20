@@ -50,7 +50,7 @@ jobs:
     # Build QuaZip
     - name: Build QuaZip
       run: |
-        cmake -Sdeps/quazip -Ddeps/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
+        cmake -Sdeps/quazip -Bdeps/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
         cmake --install deps/ubuntu/quazip
 
     # Generate buildversion.txt
