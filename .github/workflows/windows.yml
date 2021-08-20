@@ -47,6 +47,24 @@ jobs:
         path: ~/deps/msys2
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('scripts/*_build_msys2.sh', 'scripts/*_retrieve.sh')}}
 
+    # Make Space For Dependency Builds
+    - name: Make Space For Dependency Builds
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        rm -rf "/c/mysql-5.7.21-winx64"      
+        rm -rf "/c/Julia"
+        rm -rf "/c/Rust"      
+        rm -rf "/c/Program Files/Mozilla Firefox"
+        rm -rf "/c/Program Files (x86)/Google"
+        rm -rf "/c/Program Files (x86)/Microsoft SDKs"
+        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio"
+        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 10.0"
+        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 11.0"
+        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 12.0"
+        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 14.0"
+        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio Tools for Unity"
+        rm -rf "/c/Program Files (x86)/Xamarin"
+
     # Set Up Junction To C Drive
     - name: Set Up Junction To C Drive
       if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -58,11 +76,25 @@ jobs:
         mklink /J deps C:\deps
         echo foo > c:\deps\foo.txt
 
+    # Retrieve Qt6
+    - name: Retrieve Qt6
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/qt6_retrieve.sh
+
     # Retrieve QuaZip
     - name: Retrieve QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         sh scripts/quazip_retrieve.sh
+
+    # Build Qt6
+    - name: Build Qt6
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        ls -l deps
+        ls -l /c/deps
+        sh scripts/qt6_build_msys2.sh
 
     # Build QuaZip
     - name: Build QuaZip
@@ -73,20 +105,6 @@ jobs:
         echo ls -l /c/deps
         ls -l /c/deps
         sh scripts/quazip_build_msys2.sh
-
-    # Retrieve Qt6
-    - name: Retrieve Qt6
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        sh scripts/qt6_retrieve.sh
-
-    # Build Qt6
-    - name: Build Qt6
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        ls -l deps
-        ls -l /c/deps
-        sh scripts/qt6_build_msys2.sh
 
     # Build BletchMAME
     - name: Build BletchMAME
