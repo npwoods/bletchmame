@@ -51,6 +51,7 @@ jobs:
     - name: Build QuaZip
       run: |
         cmake -Sdeps/quazip -Bdeps/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
+        cmake --build deps/ubuntu/quazip --parallel
         ls -l deps
         ls -l deps/ubuntu
         ls -l deps/ubuntu/quazip
