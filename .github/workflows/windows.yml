@@ -66,7 +66,9 @@ jobs:
         rm -rf "/c/Program Files (x86)/Xamarin"
         mkdir -p /c/build
         mkdir -p deps
-        junction deps/build /c/build
+        cmd //c 'dir C:\\'
+        cmd //c 'dir D:\\'
+        cmd //c 'mklink deps\\build C:\\Windows'
 
     # Build Qt6
     - name: Build Qt6
