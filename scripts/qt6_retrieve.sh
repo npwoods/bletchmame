@@ -18,7 +18,7 @@ git clone -b 6.1.2 --depth 1 https://code.qt.io/qt/qt5.git $QT_DIR
 
 # Prep the repository
 pushd $QT_DIR
-perl init-repository --module-subset=essential,qtsvg,qtactiveqt,qtimageformats
+perl init-repository --module-subset=essential,qtsvg,qtactiveqt,qtimageformats,qt5compat,qttools
 
 # Apply hacks necessary to get static Qt to compile
 patch -p1 <<EOF

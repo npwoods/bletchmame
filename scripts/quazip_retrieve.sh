@@ -13,4 +13,4 @@ fi
 # Retrieval of QuaZip
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
 rm -rf $QUAZIP_DIR
-git clone -b v1.1 --depth 1 git@github.com:stachenov/quazip.git $QUAZIP_DIR
+git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git
