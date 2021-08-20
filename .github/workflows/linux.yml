@@ -31,14 +31,15 @@ jobs:
       with:
         version: 6.1.2
         modules: 'qt5compat'
-        dir: ~/Qt
+        dir: ${{ github.workspace }}
 
     # DEBUG
     - name: DEBUG
-      run: |        
-        ls -l ~/Qt
-        ls -l ~/Qt/6.1.2
-        ls -l ~/Qt/6.1.2/gcc_64
+      run: |       
+        ls -l $GITHUB_WORKSPACE
+        ls -l $GITHUB_WORKSPACE/Qt
+        ls -l $GITHUB_WORKSPACE/Qt/6.1.2
+        ls -l $GITHUB_WORKSPACE/Qt/6.1.2/gcc_64
 
     # Install OpenGL
     - name: Install OpenGL
