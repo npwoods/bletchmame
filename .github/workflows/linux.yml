@@ -36,10 +36,8 @@ jobs:
     # DEBUG
     - name: DEBUG
       run: |       
-        ls -l $GITHUB_WORKSPACE
-        ls -l $GITHUB_WORKSPACE/Qt
-        ls -l $GITHUB_WORKSPACE/Qt/6.1.2
         ls -l $GITHUB_WORKSPACE/Qt/6.1.2/gcc_64
+        ls -l $GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib
 
     # Install OpenGL
     - name: Install OpenGL
@@ -84,4 +82,4 @@ jobs:
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
-      run: ./BletchMAME_tests
+      run: export PATH=$PATH:$GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib ; ./BletchMAME_tests
