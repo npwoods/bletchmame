@@ -180,7 +180,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6 Qt6::Core
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets quazip1-qt6 Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -static gcc stdc++ winpthread)
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets quazip1-qt6 Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
