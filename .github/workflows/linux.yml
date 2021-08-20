@@ -50,13 +50,9 @@ jobs:
     # Build QuaZip
     - name: Build QuaZip
       run: |
-        cmake -Sdeps/quazip -Bdeps/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
-        cmake --build deps/ubuntu/quazip --parallel
-        ls -l deps
-        ls -l deps/ubuntu
-        ls -l deps/ubuntu/quazip
-        ls -l deps/ubuntu/quazip/quazip
-        cmake --install deps/ubuntu/quazip
+        cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
+        cmake --build deps/build/ubuntu/quazip --parallel
+        cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
 
     # Generate buildversion.txt
     - name: Generate buildversion.txt
@@ -73,7 +69,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=g++-10
+        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=g++-10 -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
         make -j 8
         strip ./BletchMAME
 
