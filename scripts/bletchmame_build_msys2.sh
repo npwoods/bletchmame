@@ -37,11 +37,7 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
 	-DQt6Core_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6Core							\
 	-DQt6CoreTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6CoreTools				\
 	-DQt6GuiTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6GuiTools					\
-	-DQt6Scxml_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6Scxml						\
-	-DQt6ScxmlTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6ScxmlTools				\
-	-DQt6ScxmlQml_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6ScxmlQml					\
-	-DQt6Qml_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6Qml							\
-	-DQt6QmlTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6QmlTools					\
+	-DQt6Test_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6Test							\
 	-DQt6WidgetsTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6WidgetsTools			\
 	-DQuaZip-Qt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/QuaZip-Qt6-1.1
 

@@ -29,7 +29,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 6.0.0
+        version: 6.1.2
 
     # Install OpenGL
     - name: Install OpenGL
