@@ -31,6 +31,14 @@ jobs:
       with:
         version: 6.1.2
         modules: 'qt5compat'
+        dir: ~/Qt
+
+    # DEBUG
+    - name: DEBUG
+      run: |        
+        ls -l ~/Qt
+        ls -l ~/Qt/6.1.2
+        ls -l ~/Qt/6.1.2/gcc_64
 
     # Install OpenGL
     - name: Install OpenGL
@@ -44,7 +52,7 @@ jobs:
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
-      run: |
+      run: |        
         git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git deps/quazip
 
     # Build QuaZip
