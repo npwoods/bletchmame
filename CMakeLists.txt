@@ -47,6 +47,9 @@ find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
 find_package(QuaZip-Qt6 REQUIRED)
 include_directories(SYSTEM ${QuaZip-Qt6_DIR}/../../../include/QuaZip-Qt6-1.1/quazip)
 link_directories(${QuaZip-Qt6_DIR}/../../../lib)
+if(NOT DEFINED QUAZIP_LIBRARIES)
+set(QUAZIP_LIBRARIES quazip1-qt6)
+endif()
 
 # Yes, we're unit testing
 enable_testing(true)
@@ -171,7 +174,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6 Qt6::Core5Compat ${ZLIB_LIBRARIES})
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${ZLIB_LIBRARIES})
 
 
 #############################################################################
@@ -180,7 +183,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets quazip1-qt6 Qt6::Core
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets quazip1-qt6 Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
@@ -216,7 +219,7 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test quazip1-qt6 Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 
 #############################################################################

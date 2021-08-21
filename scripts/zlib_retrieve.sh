@@ -11,6 +11,6 @@ if [ -z "$BASH_SOURCE" ]; then
 fi
 
 # Retrieval of Zlib
-ZLIB_DIR=$(dirname $BASH_SOURCE)/../deps/zlib-ng
+ZLIB_DIR=$(dirname $BASH_SOURCE)/../deps/zlib
 rm -rf $ZLIB_DIR
-git clone -b 2.0.5 --depth 1 https://github.com/zlib-ng/zlib-ng.git $ZLIB_DIR
+git clone -b v1.2.11 --depth 1 https://github.com/madler/zlib.git $ZLIB_DIR
