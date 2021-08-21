@@ -33,7 +33,7 @@ see quazip/(un)zip.h files for details. Basically it's the zlib license.
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QFile>
-#include <QtCore/QTextCodec>
+#include <QtCore5Compat/QTextCodec>
 
 /// Utility class for typical operations.
 /**

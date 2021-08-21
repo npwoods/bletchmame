@@ -29,8 +29,32 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 5.15.0
-      
+        version: 6.1.2
+        modules: 'qt5compat'
+        dir: ${{ github.workspace }}
+
+    # Install OpenGL
+    - name: Install OpenGL
+      uses: openrndr/setup-opengl@v1.1
+
+    # Install Packages
+    - name: Install Packages
+      run: |
+        sudo apt update
+        sudo apt install -y freeglut3-dev libalut-dev libasound2-dev libc6-dev libgl1-mesa-dev libglu1-mesa-dev llvm-6.0 libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxxf86vm-dev mesa-utils pkg-config xorg-dev xvfb
+
+    # Retrieve QuaZip
+    - name: Retrieve QuaZip
+      run: |        
+        git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git deps/quazip
+
+    # Build QuaZip
+    - name: Build QuaZip
+      run: |
+        cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
+        cmake --build deps/build/ubuntu/quazip --parallel
+        cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
+
     # Generate buildversion.txt
     - name: Generate buildversion.txt
       run: |
@@ -46,10 +70,10 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=g++-10
+        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=g++-10 -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
         make -j 8
         strip ./BletchMAME
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
-      run: ./BletchMAME_tests
+      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib ; ./BletchMAME_tests

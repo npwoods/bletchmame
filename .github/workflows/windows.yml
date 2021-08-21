@@ -35,36 +35,63 @@ jobs:
         msystem: MINGW64
         update: false
         release: false
-        install: git make parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5-static
+        install: git parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-polly
 
-    # Generate buildversion.txt
-    - name: Generate buildversion.txt
-      run: |
-        git describe --tags | python version.py | tee buildversion.txt
+    # Cache Dependencies
+    - name: Cache Dependencies
+      id: cache-deps
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-deps
+      with:
+        path: deps/msys2
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows.yml', 'scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
 
-    # Generate src/buildversion.gen.cpp
-    - name: Generate src/buildversion.gen.cpp
+    # Set Up Junction To C Drive
+    - name: Set Up Junction To C Drive
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      shell: cmd
       run: |
-        sh >src/buildversion.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat buildversion.txt 2>NUL)\"\;'
-        sh >>src/buildversion.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
-        sh >>src/buildversion.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
+        mkdir C:\deps
+        mklink /J deps C:\deps
+
+    # Retrieve Qt6
+    - name: Retrieve Qt6
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/qt6_retrieve.sh
+
+    # Retrieve QuaZip
+    - name: Retrieve QuaZip
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/quazip_retrieve.sh
+
+    # Build Qt6
+    - name: Build Qt6
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/qt6_build_msys2.sh
+
+    # Build QuaZip
+    - name: Build QuaZip
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/quazip_build_msys2.sh
 
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -G "MSYS Makefiles" -DQt5_DIR=/mingw64/qt5-static/lib/cmake/Qt5 -DQt5Test_DIR=/mingw64/qt5-static/lib/cmake/Qt5Test -DCMAKE_MAKE_PROGRAM=make -DHAS_BUILDVERSION_GEN_CPP=1
-        make -j 8
-        strip ./BletchMAME.exe
+        sh scripts/bletchmame_build_msys2.sh
 
     # Run Unit Tests
     - name: Run Unit Tests
-      run: ./BletchMAME_tests.exe
+      run: ./build/msys2/BletchMAME_tests.exe
 
     # Run integration testing with actual MAME
     - name: Run integration testing with actual MAME
       run: |
-        test -d deps || mkdir deps
-        test -d deps/roms || mkdir deps/roms
+        mkdir -p deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
         cat | parallel "./test_mame_interactions.sh" <<- EOF
             mame0213
@@ -89,7 +116,7 @@ jobs:
 
     # Build MSI - Candle
     - name: Build MSI - Candle
-      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat buildversion.txt` -dQTBIN=./deps/Qt/5.15.1/mingw81_64/bin -out bletchmame.wixobj
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat buildversion.txt` -out bletchmame.wixobj
         
     # Build MSI - Light
     - name: Build MSI - Light
@@ -102,7 +129,7 @@ jobs:
         mkdir rel
         cp buildversion.txt rel/version_latest.txt
         mv BletchMAME.msi rel/BletchMAME_latest.msi
-        7z a rel/BletchMAME_latest.zip BletchMAME.exe
+        7z a rel/BletchMAME_latest.zip ./build/msys2/bin/BletchMAME.exe
         7z a rel/BletchMAME_latest.zip readme.html
         7z a rel/BletchMAME_latest.zip plugins
 

@@ -36,24 +36,4 @@
 bin
 obj
 deps
-
-# MSVC
-.vs
-*.vcxproj
-*.vcxproj.filters
-*.sln
-*.user
-
-# CMake
-CMakeCache.txt
-CMakeFiles
-cmake_install.cmake
-CTestTestfile.cmake
-Makefile
-install_manifest.txt
-*.dir
-*_autogen
-
-# Binaries
-BletchMAME
-BletchMAME_tests
+build

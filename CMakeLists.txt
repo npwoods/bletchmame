@@ -11,10 +11,21 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(USE_SHARED_LIBS "Use shared libraries" OFF)
+# By default, BletchMAME should build linking to shared libraries; its the norm on Linux and it
+# is desirable in debugging scenarios.  But for when performing releases on platforms where such
+# releases may entail distributing large Qt libraries (Windows and probably macOS), building linking
+# to Qt and QuaZip statically is desirable to minimize dependency issues
+option(USE_SHARED_LIBS "Use shared libraries" ON)
 if (NOT USE_SHARED_LIBS)
-SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+add_definitions(-DQUAZIP_STATIC)
 endif()
+
+
+#############################################################################
+# Dependencies                                                              #
+#############################################################################
 
 # Threads
 find_package( Threads )
@@ -22,24 +33,23 @@ find_package( Threads )
 # Expat
 include(FindEXPAT)
 find_package(EXPAT REQUIRED)
-include_directories(${EXPAT_INCLUDE_DIRS})
+include_directories(${EXPAT_INCLUDE_DIR})
 
 # ZLib
 include(FindZLIB)
 find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIRS})
+include_directories(${ZLIB_INCLUDE_DIR})
 
 # Qt
-find_package(Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
-find_package(Qt5Test REQUIRED)
+find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
 
 # QuaZip
-find_package(QuaZip5)
-if (NOT QUAZIP_FOUND)
-set(QUAZIP_INCLUDE_DIRS lib/quazip)
-set(QUAZIP_LIBRARIES QuaZip)
+find_package(QuaZip-Qt6 REQUIRED)
+include_directories(SYSTEM ${QuaZip-Qt6_DIR}/../../../include/QuaZip-Qt6-1.1/quazip)
+link_directories(${QuaZip-Qt6_DIR}/../../../lib)
+if(NOT DEFINED QUAZIP_LIBRARIES)
+set(QUAZIP_LIBRARIES quazip1-qt6)
 endif()
-include_directories(${QUAZIP_INCLUDE_DIRS})
 
 # Yes, we're unit testing
 enable_testing(true)
@@ -55,6 +65,7 @@ endif()
 
 # Define installation directories
 include(GNUInstallDirs)
+
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #
@@ -163,7 +174,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib)
-target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets ${QUAZIP_LIBRARIES})
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${ZLIB_LIBRARIES})
 
 
 #############################################################################
@@ -172,7 +183,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt5::Widgets ${QUAZIP_LIBRARIES})
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
 target_include_directories(BletchMAME PRIVATE src lib)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt5::Widgets ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
@@ -208,52 +219,11 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt5::Widgets Qt5::Test ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-
-#############################################################################
-# QuaZib																	#
-#############################################################################
-
-if (NOT QUAZIP_FOUND)
-add_library(QuaZip
-	lib/quazip/ioapi.h
-	lib/quazip/JlCompress.cpp
-	lib/quazip/JlCompress.h
-	lib/quazip/minizip_crypt.h
-	lib/quazip/qioapi.cpp
-	lib/quazip/quaadler32.cpp
-	lib/quazip/quaadler32.h
-	lib/quazip/quachecksum32.h
-	lib/quazip/quacrc32.cpp
-	lib/quazip/quacrc32.h
-	lib/quazip/quagzipfile.cpp
-	lib/quazip/quagzipfile.h
-	lib/quazip/quaziodevice.cpp
-	lib/quazip/quaziodevice.h
-	lib/quazip/quazip.cpp
-	lib/quazip/quazip.h
-	lib/quazip/quazipdir.cpp
-	lib/quazip/quazipdir.h
-	lib/quazip/quazipfile.cpp
-	lib/quazip/quazipfile.h
-	lib/quazip/quazipfileinfo.cpp
-	lib/quazip/quazipfileinfo.h
-	lib/quazip/quazipnewinfo.cpp
-	lib/quazip/quazipnewinfo.h
-	lib/quazip/quazip_global.h
-	lib/quazip/unzip.cpp
-	lib/quazip/unzip.h
-	lib/quazip/zip.cpp
-	lib/quazip/zip.h
-)
-target_include_directories(QuaZip PRIVATE lib/quazip)
-target_link_libraries(QuaZip PRIVATE Qt5::Widgets ${ZLIB_LIBRARIES})
-add_definitions(-DQUAZIP_STATIC -DNOCRYPT)
-endif()
 
 #############################################################################
 # Translations                                                              #
 #############################################################################
 
-qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+qt6_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})

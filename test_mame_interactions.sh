@@ -21,10 +21,10 @@ curl -f -L "https://github.com/mamedev/mame/releases/download/${MAME_VERSION}/${
 7z -y x deps/${MAME_VERSION}b_64bit.exe -odeps/${MAME_VERSION}
 
 # Run integration tests that put MAME through its courses
-./BletchMAME_tests.exe --runmame src/tests/scripts deps/${MAME_VERSION}/${MAME_EXE} alienar -rompath deps/roms -skip_gameinfo -sound none -video none -nothrottle -pluginspath "deps/${MAME_VERSION}/plugins;plugins" -plugin worker_ui
+./build/msys2/BletchMAME_tests.exe --runmame src/tests/scripts deps/${MAME_VERSION}/${MAME_EXE} alienar -rompath deps/roms -skip_gameinfo -sound none -video none -nothrottle -pluginspath "deps/${MAME_VERSION}/plugins;plugins" -plugin worker_ui
 
 # Ensure we can digest -listxml from this MAME
-./BletchMAME_tests.exe --runlistxml deps/${MAME_VERSION}/${MAME_EXE}
+./build/msys2/BletchMAME_tests.exe --runlistxml deps/${MAME_VERSION}/${MAME_EXE}
 
 # Finally clean up after ourselves
 rm -rf deps/${MAME_VERSION}b_64bit.exe deps/${MAME_VERSION}/
