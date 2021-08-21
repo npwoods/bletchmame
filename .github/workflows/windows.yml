@@ -45,36 +45,15 @@ jobs:
         cache-name: cache-deps
       with:
         path: ~/deps/msys2
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('scripts/*_build_msys2.sh', 'scripts/*_retrieve.sh')}}
-
-    # Make Space For Dependency Builds
-    - name: Make Space For Dependency Builds
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        rm -rf "/c/mysql-5.7.21-winx64"      
-        rm -rf "/c/Julia"
-        rm -rf "/c/Rust"      
-        rm -rf "/c/Program Files/Mozilla Firefox"
-        rm -rf "/c/Program Files (x86)/Google"
-        rm -rf "/c/Program Files (x86)/Microsoft SDKs"
-        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio"
-        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 10.0"
-        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 11.0"
-        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 12.0"
-        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio 14.0"
-        rm -rf "/c/Program Files (x86)/Microsoft Visual Studio Tools for Unity"
-        rm -rf "/c/Program Files (x86)/Xamarin"
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows.yml', 'scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
 
     # Set Up Junction To C Drive
     - name: Set Up Junction To C Drive
       if: steps.cache-deps.outputs.cache-hit != 'true'
       shell: cmd
       run: |
-        dir C:\
-        dir D:\
         mkdir C:\deps
         mklink /J deps C:\deps
-        echo foo > c:\deps\foo.txt
 
     # Retrieve Qt6
     - name: Retrieve Qt6
@@ -92,18 +71,12 @@ jobs:
     - name: Build Qt6
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        ls -l deps
-        ls -l /c/deps
         sh scripts/qt6_build_msys2.sh
 
     # Build QuaZip
     - name: Build QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        echo ls -l deps
-        ls -l deps
-        echo ls -l /c/deps
-        ls -l /c/deps
         sh scripts/quazip_build_msys2.sh
 
     # Build BletchMAME
@@ -143,7 +116,7 @@ jobs:
 
     # Build MSI - Candle
     - name: Build MSI - Candle
-      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat buildversion.txt` -dQTBIN=./deps/Qt/5.15.1/mingw81_64/bin -out bletchmame.wixobj
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`cat buildversion.txt` -out bletchmame.wixobj
         
     # Build MSI - Light
     - name: Build MSI - Light
@@ -156,7 +129,7 @@ jobs:
         mkdir rel
         cp buildversion.txt rel/version_latest.txt
         mv BletchMAME.msi rel/BletchMAME_latest.msi
-        7z a rel/BletchMAME_latest.zip BletchMAME.exe
+        7z a rel/BletchMAME_latest.zip ./build/msys2/bin/BletchMAME.exe
         7z a rel/BletchMAME_latest.zip readme.html
         7z a rel/BletchMAME_latest.zip plugins
 
