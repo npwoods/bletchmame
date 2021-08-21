@@ -93,7 +93,7 @@ jobs:
       run: |
         mkdir -p deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        cat | parallel "./test_mame_interactions.sh" <<- EOF
+        cat | parallel "./scripts/test_mame_interactions.sh" <<- EOF
             mame0213
             mame0218
             mame0224
