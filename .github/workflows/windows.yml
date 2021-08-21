@@ -47,13 +47,6 @@ jobs:
         path: deps/msys2
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
 
-    # List Cache Contents
-    - name: List Cache Contents
-      shell: bash
-      run: |
-        ls -l deps/msys
-        ls -l deps/msys/lib
-
     # Set Up Junction To C Drive
     - name: Set Up Junction To C Drive
       if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -67,6 +60,14 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         sh scripts/qt6_retrieve.sh
+
+    # List Cache Contents
+    - name: List Cache Contents
+      shell: bash
+      run: |
+        mkdir -p deps/msys/lib
+        ls -l deps/msys
+        ls -l deps/msys/lib
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
