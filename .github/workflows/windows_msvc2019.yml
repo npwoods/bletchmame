@@ -1,0 +1,92 @@
+#############################################
+# BletchMAME Windows MSVC2019 Github Action #
+#############################################
+
+name: Windows MSVC2019
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Install MSYS2
+    - name: Install MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: false
+        release: false
+        install: git parallel mingw-w64-x86_64-cmake
+
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 6.1.2
+        modules: 'qt5compat'
+        dir: C:\
+        arch: win64_msvc2019_64
+
+    # Cache Dependencies
+    - name: Cache Dependencies
+      id: cache-deps
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-deps
+      with:
+        path: deps/msvc2019
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_retrieve.sh', 'scripts/expat_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/zlib_build_msvc2019.sh', 'scripts/expat_build_msvc2019.sh', 'scripts/quazip_build_msvc2019.sh')}}
+
+    # Retrieve Zlib
+    - name: Retrieve Zlib
+      run: |
+        sh scripts/zlib_retrieve.sh
+
+    # Retrieve Expat
+    - name: Retrieve Expat
+      run: |
+        sh scripts/expat_retrieve.sh
+
+    # Retrieve QuaZip
+    - name: Retrieve QuaZip
+      run: |
+        sh scripts/quazip_retrieve.sh
+
+    # Build Zlib
+    - name: Build Zlib
+      run: |
+        sh scripts/zlib_build_msvc2019.sh
+
+    # Build Expat
+    - name: Build Expat
+      run: |
+        sh scripts/expat_build_msvc2019.sh
+
+    # Build QuaZip
+    - name: Build QuaZip
+      run: |
+        sh scripts/quazip_build_msvc2019.sh
+
+    # Build BletchMAME
+    - name: Build BletchMAME
+      run: |
+        sh scripts/bletchmame_build_msvc2019.sh
