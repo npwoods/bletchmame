@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+
+#############################################################################################
+# test_mame_interactions.sh - Use BletchMAME_tests to exercise a particular version of MAME #
+#############################################################################################
 
 # Determine the MAME version (e.g. - 'mame0227')
 MAME_VERSION="$(echo -e "${1}" | tr -d '[:space:]')"
