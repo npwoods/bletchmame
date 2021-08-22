@@ -1,5 +1,5 @@
 ###################################################################################
-# zlib_build_msvc2019.sh - Builds Zlib for MSVC (Debug)                        #
+# zlib_build_msvc2019.sh - Builds Zlib for MSVC                                   #
 ###################################################################################
 
 # Sanity check
@@ -10,8 +10,8 @@ fi
 
 # Identify directories
 ZLIB_DIR=$(dirname $BASH_SOURCE)/../deps/zlib
-ZLIB_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019_dbg/zlib
-INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019_dbg)
+ZLIB_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019/zlib
+INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
 
 # Build and install it!
 rm -rf $ZLIB_BUILD_DIR

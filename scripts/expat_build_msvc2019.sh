@@ -1,5 +1,5 @@
 ###################################################################################
-# expat_build_msvc2019.sh - Builds QuaZip for MSVC (Debug)                        #
+# expat_build_msvc2019.sh - Builds QuaZip for MSVC                                #
 ###################################################################################
 
 # Sanity check
@@ -10,8 +10,8 @@ fi
 
 # Identify directories
 EXPAT_DIR=$(dirname $BASH_SOURCE)/../deps/expat/expat
-EXPAT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019_dbg/expat
-INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msvc2019_dbg
+EXPAT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019/expat
+INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msvc2019
 
 # Build and install it!
 rm -rf $EXPAT_BUILD_DIR

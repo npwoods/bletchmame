@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###################################################################################
-# bletchmame_build_msys2.sh - Builds BletchMAME under MSVC (Debug)                #
+# bletchmame_build_msys2.sh - Builds BletchMAME under MSVC                        #
 ###################################################################################
 
 # Sanity check
@@ -16,9 +16,9 @@ fi
 
 # Identify directories
 BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
-BLETCHMAME_BUILD_DIR=build/msvc2019_dbg
+BLETCHMAME_BUILD_DIR=build/msvc2019
 BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
-DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019_dbg)
+DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
 
 # Set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}

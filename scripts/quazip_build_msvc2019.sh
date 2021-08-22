@@ -14,8 +14,8 @@ fi
 
 # Identify directories
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
-QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019_dbg/quazip
-INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019_dbg)
+QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019/quazip
+INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
 
 # Build and install it!
 rm -rf $QUAZIP_BUILD_DIR $QUAZIP_INSTALL_DIR
