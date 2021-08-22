@@ -83,4 +83,4 @@ jobs:
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
-      run: export PATH=$PATH:/c/Qt/6.1.2/msvc2019_64/lib:./deps/msvc2019/lib ; ./build/msvc2019/Release/BletchMAME_tests.exe
+      run: export PATH=$PATH:/c/Qt/6.1.2/msvc2019_64/lib:./deps/msvc2019/bin ; ./build/msvc2019/Release/BletchMAME_tests.exe
