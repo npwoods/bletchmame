@@ -36,9 +36,8 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-DQt6WidgetsTools_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6WidgetsTools	\
 	-DQuaZip-Qt6_DIR=$DEPS_INSTALL_DIR/lib/cmake/QuaZip-Qt6-1.1			\
 	-DQUAZIP_LIBRARIES=$DEPS_INSTALL_DIR/lib/quazip1-qt6d.lib			\
-	-DEXPAT_LIBRARY=$DEPS_INSTALL_DIR/lib/libexpatd.lib					\
-	-DEXPAT_INCLUDE_DIR=$DEPS_INSTALL_DIR/include						\
-	-DZLIB_LIBRARY=$DEPS_INSTALL_DIR/lib/zlibstaticd.lib				\
-	-DZLIB_INCLUDE_DIR=$DEPS_INSTALL_DIR/include
-cmake --build ${BLETCHMAME_BUILD_DIR} --parallel
+	-DCMAKE_LIBRARY_PATH=$DEPS_INSTALL_DIR/lib							\
+	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include
+cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config Debug
+cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config Release
 cmake --install ${BLETCHMAME_INSTALL_DIR} --prefix ${BLETCHMAME_INSTALL_DIR} --config Debug
