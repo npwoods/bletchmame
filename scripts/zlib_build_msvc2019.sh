@@ -18,5 +18,7 @@ rm -rf $ZLIB_BUILD_DIR
 cmake -S$ZLIB_DIR -B$ZLIB_BUILD_DIR		\
 	--install-prefix $INSTALL_DIR		\
 	-G"Visual Studio 16 2019"
-cmake --build $ZLIB_BUILD_DIR --parallel
+cmake --build $ZLIB_BUILD_DIR --parallel --config Debug
+cmake --build $ZLIB_BUILD_DIR --parallel --config Release
 cmake --install $ZLIB_BUILD_DIR --config Debug
+cmake --install $ZLIB_BUILD_DIR --config Release
