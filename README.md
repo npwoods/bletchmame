@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.7 (TBD)
+- 2.7 (2021-Aug-27)
 	- Updated to Qt 6.1
 		- On Windows, Qt is now built statically and optimized for size
 	- Fixed a minor bug that caused garbage icons to be displayed for systems without icons
