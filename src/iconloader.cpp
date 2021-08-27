@@ -99,6 +99,9 @@ IconLoader::IconLoader(Preferences &prefs)
 	: m_prefs(prefs)
 	, m_blankIcon(ICON_SIZE_X, ICON_SIZE_Y)
 {
+	// QPixmap starts with uninitialized data; make "blank" be blank
+	m_blankIcon.fill(Qt::transparent);
+
 	refreshIcons();
 }
 
