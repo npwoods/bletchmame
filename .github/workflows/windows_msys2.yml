@@ -93,20 +93,13 @@ jobs:
       run: |
         mkdir -p deps/roms
         curl -L "https://www.mamedev.org/roms/alienar/alienar.zip" > deps/roms/alienar.zip
-        cat | parallel "./scripts/test_mame_interactions.sh" <<- EOF
-            mame0213
-            mame0218
-            mame0224
-            mame0226
-            mame0227
-            mame0229
-        EOF
+        cat scripts/mame_versions_to_test.txt | parallel "./scripts/test_mame_interactions.sh"
 
     # Install PanDoc
     - name: Install PanDoc
       shell: bash
       run: |
-        test -d deps || mkdir deps
+        mkdir -p deps
         curl -L -f "https://github.com/jgm/pandoc/releases/download/2.10.1/pandoc-2.10.1-windows-x86_64.zip" > deps/pandoc-2.10.1-windows-x86_64.zip
         7z x deps/pandoc-2.10.1-windows-x86_64.zip -odeps
 
