@@ -11,6 +11,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.7 (TBD)
 	- Updated to Qt 6.1
 		- On Windows, Qt is now built statically and optimized for size
+	- Fixed a minor bug that caused garbage icons to be displayed for systems without icons
 	- Supporting -attach_window on SDLMAME 0.232 and higher
 	- Omitting -attach_window when MAME identified as lacking support
 	- Various changes for running under Linux [Davide Cavalca]
