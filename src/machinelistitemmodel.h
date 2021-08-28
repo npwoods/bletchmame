@@ -31,11 +31,12 @@ public:
 		Max = Manufacturer
 	};
 
-	MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader);
+	MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback);
 
 	// methods
 	info::machine machineFromIndex(const QModelIndex &index) const;
 	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
+	void auditStatusesChanged();
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -50,6 +51,7 @@ private:
 	IIconLoader &										m_iconLoader;
 	std::function<bool(const info::machine &machine)>	m_machineFilter;
 	std::vector<int>									m_indexes;
+	std::function<void(info::machine)>					m_machineIconAccessedCallback;
 
 	void populateIndexes();
 };

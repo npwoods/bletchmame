@@ -14,6 +14,7 @@
 #include <QFileDialog>
 #include <memory.h>
 
+#include "auditqueue.h"
 #include "info.h"
 #include "mainpanel.h"
 #include "prefs.h"
@@ -70,6 +71,10 @@ private slots:
 	void on_actionSaveState_triggered();
 	void on_actionSaveScreenshot_triggered();
 	void on_actionToggleRecordMovie_triggered();
+	void on_actionAuditingDisabled_triggered();
+	void on_actionAuditingAutomatic_triggered();
+	void on_actionAuditingManual_triggered();
+	void on_actionAuditThis_triggered();
 	void on_actionDebugger_triggered();
 	void on_actionSoftReset_triggered();
 	void on_actionHardReset_triggered();
@@ -90,6 +95,8 @@ private slots:
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
+
+	void on_menuAuditing_aboutToShow();
 
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
@@ -153,6 +160,11 @@ private:
 	std::unique_ptr<SessionBehavior>	m_sessionBehavior;
 	std::optional<status::state>		m_state;
 
+	// auditing
+	AuditQueue							m_auditQueue;
+	QTimer *							m_auditTimer;
+	unsigned int						m_maximumConcurrentAuditTasks;
+
 	// other
 	observable::value<bool>				m_menu_bar_shown;
 	bool								m_pinging;
@@ -170,6 +182,7 @@ private:
 	bool onListXmlCompleted(const ListXmlResultEvent &event);
 	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);
 	bool onStatusUpdate(StatusUpdateEvent &event);
+	bool onAuditResult(const AuditResultEvent &event);
 	bool onChatter(const ChatterEvent &event);
 
 	// templated property/action binding
@@ -213,6 +226,10 @@ private:
 	void changeThrottleRate(int adjustment);
 	void changeSound(bool sound_enabled);
 	void ensureProperFocus();
+	void changeAuditingState(Preferences::AuditingState auditingState);
+	virtual void auditIfAppropriate(const info::machine &machine) override;
+	void updateAuditTimer();
+	void dispatchAuditTasks();
 };
 
 #endif // MAINWINDOW_H

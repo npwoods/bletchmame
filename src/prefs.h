@@ -103,6 +103,16 @@ public:
 		Max = PROFILE
 	};
 
+	enum class AuditingState
+	{
+		Disabled,
+		Automatic,
+		Manual,
+
+		Default = Disabled,
+		Max = Manual
+	};
+
 	Preferences();
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
@@ -153,11 +163,18 @@ public:
 	bool getMenuBarShown() const																		{ return m_menu_bar_shown; }
 	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
 
+	AuditingState getAuditingState() const																{ return m_auditingState; }
+	void setAuditingState(AuditingState auditingState)													{ m_auditingState = auditingState; }
+
 	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
 	void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
 
 	std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type);
 	const std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const;
+
+	AuditStatus getMachineAuditStatus(const QString & machine_name) const;
+	void setMachineAuditStatus(const QString &machine_name, AuditStatus status);
+	void dropAllMachineAuditStatuses();
 
 	QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
 	QString applySubstitutions(const QString &path) const;
@@ -181,6 +198,7 @@ private:
 
 		QString										m_workingDirectory;
 		QString										m_lastSaveState;
+		AuditStatus									m_auditStatus;
 		std::map<QString, std::vector<QString>>     m_recentDeviceFiles;
 	};
 
@@ -199,6 +217,7 @@ private:
 	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
 	bool																						m_menu_bar_shown;
+	AuditingState																				m_auditingState;
 
 	void save(QIODevice &output);
 	QString getFileName(bool ensure_directory_exists);

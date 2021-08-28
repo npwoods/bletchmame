@@ -49,7 +49,7 @@ void Test::general()
 	// create a MachineListItemModel
 	info::database db;
 	MockIconLoader iconLoader;
-	MachineListItemModel model(nullptr, db, iconLoader);
+	MachineListItemModel model(nullptr, db, iconLoader, { });
 	QVERIFY(model.rowCount(QModelIndex()) == 0);
 
 	// load an info DB

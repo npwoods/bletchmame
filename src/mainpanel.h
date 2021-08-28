@@ -27,6 +27,7 @@ class QTableView;
 class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
+class AuditResult;
 class MachineFolderTreeModel;
 class MachineListItemModel;
 class ProfileListItemModel;
@@ -40,6 +41,7 @@ class IMainPanelHost
 {
 public:
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) = 0;
+	virtual void auditIfAppropriate(const info::machine &machine) = 0;
 };
 
 
@@ -54,6 +56,12 @@ public:
 	~MainPanel();
 
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
+	std::optional<info::machine> currentlySelectedMachine();
+
+	// auditing
+	void setMachineAuditStatuses(const std::vector<AuditResult> &results);
+	void machineAuditStatusesChanged();
+	void manualAudit(const info::machine &machine);
 
 private slots:
 	void on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos);
@@ -112,6 +120,7 @@ private:
 	void updateSnapshot();
 	void identifyExpandedFolderTreeItems();
 	static void iterateItemModelIndexes(QAbstractItemModel &model, const std::function<void(const QModelIndex &)> &func, const QModelIndex &index = QModelIndex());
+	void setMachineAuditStatus(const QString &machineName, AuditStatus status);
 };
 
 

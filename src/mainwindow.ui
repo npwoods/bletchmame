@@ -47,6 +47,16 @@
      <addaction name="actionSoftReset"/>
      <addaction name="actionHardReset"/>
     </widget>
+    <widget class="QMenu" name="menuAuditing">
+     <property name="title">
+      <string>Auditing</string>
+     </property>
+     <addaction name="actionAuditingDisabled"/>
+     <addaction name="actionAuditingAutomatic"/>
+     <addaction name="actionAuditingManual"/>
+     <addaction name="separator"/>
+     <addaction name="actionAuditThis"/>
+    </widget>
     <addaction name="actionStop"/>
     <addaction name="actionPause"/>
     <addaction name="separator"/>
@@ -59,6 +69,8 @@
     <addaction name="separator"/>
     <addaction name="actionSaveScreenshot"/>
     <addaction name="actionToggleRecordMovie"/>
+    <addaction name="separator"/>
+    <addaction name="menuAuditing"/>
     <addaction name="separator"/>
     <addaction name="actionDebugger"/>
     <addaction name="menuReset"/>
@@ -402,6 +414,35 @@
    </property>
    <property name="text">
     <string>Cheats...</string>
+   </property>
+  </action>
+  <action name="actionAuditingDisabled">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Disabled</string>
+   </property>
+  </action>
+  <action name="actionAuditingAutomatic">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Automatic</string>
+   </property>
+  </action>
+  <action name="actionAuditingManual">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Manual</string>
+   </property>
+  </action>
+  <action name="actionAuditThis">
+   <property name="text">
+    <string>Audit This</string>
    </property>
   </action>
  </widget>

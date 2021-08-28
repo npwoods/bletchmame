@@ -56,6 +56,23 @@ static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list
 };
 
 
+static const util::enum_parser_bidirectional<AuditStatus> s_audit_status_parser =
+{
+	{ "unknown", AuditStatus::Unknown, },
+	{ "found", AuditStatus::Found, },
+	{ "missing", AuditStatus::Missing },
+	{ "missingoptional", AuditStatus::MissingOptional }
+};
+
+
+static const util::enum_parser_bidirectional<Preferences::AuditingState> s_auditingStateParser =
+{
+	{ "disabled", Preferences::AuditingState::Disabled, },
+	{ "automatic", Preferences::AuditingState::Automatic, },
+	{ "manual", Preferences::AuditingState::Manual }
+};
+
+
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
@@ -157,6 +174,7 @@ Preferences::Preferences()
 	: m_size(950, 600)
 	, m_selected_tab(list_view_type::MACHINE)
 	, m_menu_bar_shown(true)
+	, m_auditingState(AuditingState::Default)
 {
 	// default paths
 	setGlobalPath(global_path_type::CONFIG, getConfigDirectory(true));
@@ -436,6 +454,49 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 
 
 //-------------------------------------------------
+//  getMachineAuditStatus
+//-------------------------------------------------
+
+AuditStatus Preferences::getMachineAuditStatus(const QString &machine_name) const
+{
+	AuditStatus result = AuditStatus::Unknown;
+
+	auto iter = m_machine_info.find(machine_name);
+	if (iter != m_machine_info.end())
+		result = iter->second.m_auditStatus;
+
+	return result;
+}
+
+
+//-------------------------------------------------
+//  setMachineAuditStatus
+//-------------------------------------------------
+
+void Preferences::setMachineAuditStatus(const QString &machine_name, AuditStatus status)
+{
+	assert(status == AuditStatus::Unknown || status == AuditStatus::Found
+		|| status == AuditStatus::MissingOptional || status == AuditStatus::Missing);
+	m_machine_info[machine_name].m_auditStatus = status;
+}
+
+
+//-------------------------------------------------
+//  dropAllMachineAuditStatuses
+//-------------------------------------------------
+
+void Preferences::dropAllMachineAuditStatuses()
+{
+	// drop all statuses
+	for (auto &[machineName, info] : m_machine_info)
+		info.m_auditStatus = AuditStatus::Unknown;
+
+	// after this update, its highly likely we have data worthy of garbage collection
+	garbageCollectMachineInfo();
+}
+
+
+//-------------------------------------------------
 //  garbageCollectMachineInfo
 //-------------------------------------------------
 
@@ -488,6 +549,7 @@ bool Preferences::load(QIODevice &input)
 	// clear out state
 	m_machine_info.clear();
 	m_custom_folders.clear();
+	m_auditingState = AuditingState::Default;
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -498,6 +560,10 @@ bool Preferences::load(QIODevice &input)
 		std::optional<list_view_type> selected_tab = attributes.get<list_view_type>("selected_tab", s_list_view_type_parser);
 		if (selected_tab)
 			setSelectedTab(*selected_tab);
+
+		std::optional<AuditingState> auditingState = attributes.get<AuditingState>("auditing", s_auditingStateParser);
+		if (auditingState)
+			setAuditingState(*auditingState);
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -618,6 +684,9 @@ bool Preferences::load(QIODevice &input)
 		if (lastSaveState)
 			setMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(*lastSaveState));
 
+		AuditStatus status = attributes.get<AuditStatus>("audit_status", s_audit_status_parser).value_or(AuditStatus::Unknown);
+		setMachineAuditStatus(current_machine_name, status);
+
 		return XmlParser::ElementResult::Ok;
 	});
 	xml.onElementBegin({ "preferences", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
@@ -666,6 +735,7 @@ void Preferences::save(QIODevice &output)
 	writer.writeStartElement("preferences");
 	writer.writeAttribute("menu_bar_shown", QString::number(m_menu_bar_shown ? 1 : 0));
 	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
+	writer.writeAttribute("auditing", s_auditingStateParser[getAuditingState()]);
 
 	// paths
 	writer.writeComment("Paths");
@@ -767,6 +837,8 @@ void Preferences::save(QIODevice &output)
 				writer.writeAttribute("working_directory", info.m_workingDirectory);
 			if (!info.m_lastSaveState.isEmpty())
 				writer.writeAttribute("last_save_state", info.m_lastSaveState);
+			if (info.m_auditStatus != AuditStatus::Unknown)
+				writer.writeAttribute("audit_status", s_audit_status_parser[info.m_auditStatus]);
 
 			if (!info.m_recentDeviceFiles.empty())
 			{
@@ -946,6 +1018,7 @@ static QString getDefaultPluginsDirectory()
 //-------------------------------------------------
 
 Preferences::MachineInfo::MachineInfo()
+	: m_auditStatus(AuditStatus::Unknown)
 {
 }
 

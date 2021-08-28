@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.9 (TBD)
+	- Added experimental MAMEUI-style media auditing capabilities
 	- When refreshing the MAME Info Database (-listxml handling), names and descriptions of machines will be displayed
 	- The Paths Dialog will highlight file paths for snapshots and icons that are not valid archives in red
 	- Improving display of icon on the machine list on high resolution displays

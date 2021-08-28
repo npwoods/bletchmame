@@ -15,10 +15,11 @@
 //  ctor
 //-------------------------------------------------
 
-MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader)
+MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback)
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
 	, m_iconLoader(iconLoader)
+	, m_machineIconAccessedCallback(machineIconAccessedCallback)
 {
 	m_infoDb.addOnChangedHandler([this]
 	{
@@ -45,6 +46,19 @@ void MachineListItemModel::setMachineFilter(std::function<bool(const info::machi
 {
 	m_machineFilter = std::move(machineFilter);
 	populateIndexes();
+}
+
+
+//-------------------------------------------------
+//  auditStatusesChanged
+//-------------------------------------------------
+
+void MachineListItemModel::auditStatusesChanged()
+{
+	QModelIndex topLeft = createIndex(0, (int)Column::Machine);
+	QModelIndex bottomRight = createIndex(m_indexes.size() - 1, (int)Column::Machine);
+	QVector<int> roles = { Qt::DecorationRole };
+	dataChanged(topLeft, bottomRight, roles);
 }
 
 
@@ -154,7 +168,12 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 
 		case Qt::DecorationRole:
 			if (column == Column::Machine)
+			{
 				result = m_iconLoader.getIcon(machine);
+
+				if (m_machineIconAccessedCallback)
+					m_machineIconAccessedCallback(machine);
+			}
 			break;
 		}
 	}
