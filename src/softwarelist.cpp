@@ -110,7 +110,7 @@ std::optional<software_list> software_list::try_load(const QStringList &hash_pat
 void software_list_collection::load(const Preferences &prefs, info::machine machine)
 {
 	m_software_lists.clear();
-	QStringList hash_paths = prefs.GetSplitPaths(Preferences::global_path_type::HASH);
+	QStringList hash_paths = prefs.getSplitPaths(Preferences::global_path_type::HASH);
 	for (const info::software_list softlist_info : machine.software_lists())
 	{
 		std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());

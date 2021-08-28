@@ -117,19 +117,19 @@ public:
 
 	virtual const QString &getWorkingDirectory() const
 	{
-		return m_host.m_prefs.GetMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
+		return m_host.m_prefs.getMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
 	}
 
 	virtual void setWorkingDirectory(QString &&dir)
 	{
-		m_host.m_prefs.SetMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
+		m_host.m_prefs.setMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
 	}
 
 	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
 	{
 		info::machine machine = m_host.getRunningMachine();
 		const QString &device_type = GetDeviceType(machine, tag);
-		return m_host.m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+		return m_host.m_prefs.getRecentDeviceFiles(machine.name(), device_type);
 	}
 
 	virtual std::vector<QString> getExtensions(const QString &tag) const
@@ -543,7 +543,7 @@ public:
 	virtual void start()
 	{
 		// update the menu bar from the prefs
-		m_host.m_menu_bar_shown = m_host.m_prefs.GetMenuBarShown();
+		m_host.m_menu_bar_shown = m_host.m_prefs.getMenuBarShown();
 
 		// mouse capturing is a bit more involved
 		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_host.m_menu_bar_shown);
@@ -556,7 +556,7 @@ public:
 
 	virtual void stop()
 	{
-		m_host.m_prefs.SetMenuBarShown(m_host.m_menu_bar_shown.get());
+		m_host.m_prefs.setMenuBarShown(m_host.m_menu_bar_shown.get());
 		m_host.m_menu_bar_shown = true;
 	}
 
@@ -694,7 +694,7 @@ MainWindow::MainWindow(QWidget *parent)
 	m_ui->setupUi(this);
 
 	// initial preferences read
-	m_prefs.Load();
+	m_prefs.load();
 
 	// set up the MainPanel - the UX code that is active outside the emulation
 	m_mainPanel = new MainPanel(
@@ -786,7 +786,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-	m_prefs.Save();
+	m_prefs.save();
 }
 
 
@@ -1234,7 +1234,7 @@ void MainWindow::on_actionPaths_triggered()
 		if (dialog.result() == QDialog::DialogCode::Accepted)
 		{
 			changed_paths = dialog.persist();
-			m_prefs.Save();
+			m_prefs.save();
 		}
 	}
 
@@ -1345,7 +1345,7 @@ bool MainWindow::event(QEvent *event)
 
 bool MainWindow::IsMameExecutablePresent() const
 {
-	const QString &path = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	const QString &path = m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 	return !path.isEmpty() && QFileInfo(path).exists();
 }
 
@@ -1417,7 +1417,7 @@ MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
 		return check_mame_info_status::MAME_NOT_FOUND;
 
 	// now let's try to open the info DB; we expect a specific version
-	QString db_path = m_prefs.GetMameXmlDatabasePath();
+	QString db_path = m_prefs.getMameXmlDatabasePath();
 	if (!m_info_db.load(db_path, m_mame_version))
 		return check_mame_info_status::DB_NEEDS_REBUILD;
 
@@ -1432,11 +1432,11 @@ MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
 
 bool MainWindow::PromptForMameExecutable()
 {
-	QString path = PathsDialog::browseForPathDialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
+	QString path = PathsDialog::browseForPathDialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
 	if (path.isEmpty())
 		return false;
 
-	m_prefs.SetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
+	m_prefs.setGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
 	return true;
 }
 
@@ -1452,7 +1452,7 @@ bool MainWindow::refreshMameInfoDatabase()
 		return false;
 
 	// list XML
-	QString db_path = m_prefs.GetMameXmlDatabasePath();
+	QString db_path = m_prefs.getMameXmlDatabasePath();
 	m_client.launch(std::make_shared<ListXmlTask>(std::move(db_path)));
 
 	// and show the dialog
@@ -1636,7 +1636,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 QString MainWindow::preflightCheck() const
 {
 	// get a list of the plugin paths, checking for the obvious problem where there are no paths
-	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PLUGINS);
+	QStringList paths = m_prefs.getSplitPaths(Preferences::global_path_type::PLUGINS);
 	if (paths.empty())
 		return QString("No plug-in paths are specified.  Under these circumstances, the required \"%1\" plug-in cannot be loaded.").arg(WORKER_UI_PLUGIN_NAME);
 
@@ -1847,7 +1847,7 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 	case ListXmlResultEvent::Status::SUCCESS:
 		// if it succeeded, try to load the DB
 		{
-			QString db_path = m_prefs.GetMameXmlDatabasePath();
+			QString db_path = m_prefs.getMameXmlDatabasePath();
 			m_info_db.load(db_path);
 		}
 		break;
@@ -1954,7 +1954,7 @@ void MainWindow::PlaceInRecentFiles(const QString &tag, const QString &path)
 	const QString &device_type = GetDeviceType(machine, tag);
 
 	// actually edit the recent files; start by getting recent files
-	std::vector<QString> &recent_files = m_prefs.GetRecentDeviceFiles(machine.name(), device_type);
+	std::vector<QString> &recent_files = m_prefs.getRecentDeviceFiles(machine.name(), device_type);
 
 	// ...and clearing out places where that entry already exists
 	std::vector<QString>::iterator iter;
@@ -2034,7 +2034,7 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 	}
 
 	// identify the default file and directory
-	const QString &defaultPath = m_prefs.GetMachinePath(
+	const QString &defaultPath = m_prefs.getMachinePath(
 		getRunningMachine().name(),
 		pathType);
 	QFileInfo defaultPathInfo(QDir::fromNativeSeparators(defaultPath));
@@ -2072,13 +2072,13 @@ QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QSt
 	const QString &running_machine_name(getRunningMachine().name());
 	if (path_is_file)
 	{
-		m_prefs.SetMachinePath(running_machine_name, pathType, QDir::toNativeSeparators(path));
+		m_prefs.setMachinePath(running_machine_name, pathType, QDir::toNativeSeparators(path));
 	}
 	else
 	{
 		QString new_dir;
 		wxFileName::SplitPath(path, &new_dir, nullptr, nullptr);
-		m_prefs.SetMachinePath(running_machine_name, pathType, std::move(new_dir));
+		m_prefs.setMachinePath(running_machine_name, pathType, std::move(new_dir));
 	}
 
 	// finally issue the actual commands

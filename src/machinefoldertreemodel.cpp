@@ -196,7 +196,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	m_root.clear();
 	for (const RootFolderDesc &desc : m_rootFolderList)
 	{
-		FolderPrefs folderPrefs = m_prefs.GetFolderPrefs(desc.id());
+		FolderPrefs folderPrefs = m_prefs.getFolderPrefs(desc.id());
 		if (folderPrefs.m_shown)
 		{
 			if (!strcmp(desc.id(), "all"))
@@ -303,7 +303,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	}
 
 	// set up the custom folder
-	const auto &customFolders = m_prefs.GetCustomFolders();
+	const auto &customFolders = m_prefs.getCustomFolders();
 	m_custom.clear();
 	m_custom.reserve(customFolders.size());
 	for (const auto &pair : customFolders)
@@ -367,7 +367,7 @@ bool MachineFolderTreeModel::renameFolder(const QModelIndex &index, QString &&ne
 		return true;
 
 	// get the custom folders map
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.GetCustomFolders();
+	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
 
 	// find this entry
 	auto iter = customFolders.find(customFolder);
@@ -398,7 +398,7 @@ bool MachineFolderTreeModel::deleteFolder(const QModelIndex &index)
 		return false;
 
 	// get the custom folders map
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.GetCustomFolders();
+	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
 
 	// find this entry
 	auto iter = customFolders.find(customFolder);

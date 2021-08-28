@@ -134,7 +134,7 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, std::function<v
 	});
 	connect(&machineFolderTreeModel, &QAbstractItemModel::modelReset, this, [this, &machineFolderTreeModel]()
 	{
-		const QString &selectionPath = m_prefs.GetMachineFolderTreeSelection();
+		const QString &selectionPath = m_prefs.getMachineFolderTreeSelection();
 		QModelIndex selectionIndex = machineFolderTreeModel.modelIndexFromPath(!selectionPath.isEmpty() ? selectionPath : "all");
 		m_ui->machinesFolderTreeView->selectionModel()->select(selectionIndex, QItemSelectionModel::Select);
 		m_ui->machinesFolderTreeView->scrollTo(selectionIndex);
@@ -167,10 +167,10 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, std::function<v
 	m_profileListItemModel->refresh(true, true);
 
 	// set up the tab widget
-	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.GetSelectedTab()));
+	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.getSelectedTab()));
 
 	// set up machine splitters
-	const QList<int> &machineSplitterSizes = m_prefs.GetMachineSplitterSizes();
+	const QList<int> &machineSplitterSizes = m_prefs.getMachineSplitterSizes();
 	if (!machineSplitterSizes.isEmpty())
 		m_ui->machinesSplitter->setSizes(machineSplitterSizes);
 
@@ -270,7 +270,7 @@ void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list:
 
 	// build the custom folder menu
 	QMenu &customFolderMenu = *popupMenu.addMenu("Add to custom folder");
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.GetCustomFolders();
+	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
 	for (auto &pair : customFolders)
 	{
 		// create the custom folder menu item
@@ -385,7 +385,7 @@ static QString GetUniqueProfilePath(const QString &dir_path, TFunc generate_name
 void MainPanel::createProfile(const info::machine &machine, const software_list::software *software)
 {
 	// find a path to create the new profile in
-	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::PROFILES);
+	QStringList paths = m_prefs.getSplitPaths(Preferences::global_path_type::PROFILES);
 	auto iter = std::find_if(paths.begin(), paths.end(), [](const QString &path)
 	{
 		QDir dir(path);
@@ -510,7 +510,7 @@ void MainPanel::focusOnNewProfile(QString &&new_profile_path)
 	m_ui->tabWidget->setCurrentWidget(m_ui->profilesTab);
 
 	// set the profile as selected, so we focus on it when we rebuild the list view
-	m_prefs.SetListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
+	m_prefs.setListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
 
 	// we want the current profile to be renamed - do this with a callback
 	m_profileListItemModel->setOneTimeFswCallback([this, profilePath{ std::move(new_profile_path) }]()
@@ -656,7 +656,7 @@ void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &new
 
 	// update preferences
 	QString path = machineFolderTreeModel().pathFromModelIndex(selectedIndex);
-	m_prefs.SetMachineFolderTreeSelection(std::move(path));
+	m_prefs.setMachineFolderTreeSelection(std::move(path));
 }
 
 
@@ -667,7 +667,7 @@ void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &new
 void MainPanel::persistMachineSplitterSizes()
 {
 	QList<int> splitterSizes = m_ui->machinesSplitter->sizes();
-	m_prefs.SetMachineSplitterSizes(std::move(splitterSizes));
+	m_prefs.setMachineSplitterSizes(std::move(splitterSizes));
 }
 
 
@@ -683,7 +683,7 @@ void MainPanel::updateInfoPanel(const QString &machineName)
 	if (!machineName.isEmpty())
 	{
 		// look for the pertinent snapshot file in every snapshot directory
-		QStringList snapPaths = m_prefs.GetSplitPaths(Preferences::global_path_type::SNAPSHOTS);
+		QStringList snapPaths = m_prefs.getSplitPaths(Preferences::global_path_type::SNAPSHOTS);
 		for (const QString &path : snapPaths)
 		{
 			QString snapshotFileName = QString("%1/%2.png").arg(path, machineName);
@@ -784,13 +784,13 @@ void MainPanel::on_machinesFolderTreeView_customContextMenuRequested(const QPoin
 	{
 		QAction &action = *showFoldersMenu.addAction(desc.displayName(), [this, &desc]()
 		{
-			FolderPrefs folderPrefs = m_prefs.GetFolderPrefs(desc.id());
+			FolderPrefs folderPrefs = m_prefs.getFolderPrefs(desc.id());
 			folderPrefs.m_shown = !folderPrefs.m_shown;
-			m_prefs.SetFolderPrefs(desc.id(), std::move(folderPrefs));
+			m_prefs.setFolderPrefs(desc.id(), std::move(folderPrefs));
 			machineFolderTreeModel().refresh();
 		});
 		action.setCheckable(true);
-		action.setChecked(m_prefs.GetFolderPrefs(desc.id()).m_shown);
+		action.setChecked(m_prefs.getFolderPrefs(desc.id()).m_shown);
 	}
 
 	popupMenu.exec(m_ui->machinesFolderTreeView->mapToGlobal(pos));
@@ -904,7 +904,7 @@ void MainPanel::on_profilesTableView_customContextMenuRequested(const QPoint &po
 void MainPanel::on_tabWidget_currentChanged(int index)
 {
 	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(index);
-	m_prefs.SetSelectedTab(list_view_type);
+	m_prefs.setSelectedTab(list_view_type);
 
 	switch (list_view_type)
 	{
