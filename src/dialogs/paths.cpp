@@ -92,10 +92,10 @@ PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 
 	// path data
 	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_pathLists[i] = m_prefs.GetGlobalPath(static_cast<Preferences::global_path_type>(i));
+		m_pathLists[i] = m_prefs.getGlobalPath(static_cast<Preferences::global_path_type>(i));
 
 	// list view
-	PathListModel &model = *new PathListModel(*this, [this](const QString &path) { return m_prefs.ApplySubstitutions(path); });
+	PathListModel &model = *new PathListModel(*this, [this](const QString &path) { return m_prefs.applySubstitutions(path); });
 	m_ui->listView->setModel(&model);
 
 	// combo box
@@ -133,10 +133,10 @@ std::vector<Preferences::global_path_type> PathsDialog::persist()
 		QString &path = m_pathLists[static_cast<size_t>(type)];
 
 		// has this path changed?
-		if (path != m_prefs.GetGlobalPath(type))
+		if (path != m_prefs.getGlobalPath(type))
 		{
 			// if so, record that it changed
-			m_prefs.SetGlobalPath(type, std::move(path));
+			m_prefs.setGlobalPath(type, std::move(path));
 			changedPaths.push_back(type);
 		}
 	}
@@ -266,7 +266,7 @@ void PathsDialog::updateCurrentPathList()
 {
 	const Preferences::global_path_type currentPathType = getCurrentPath();
 	bool applySubstitutions = currentPathType != Preferences::global_path_type::EMU_EXECUTABLE;
-	Preferences::path_category category = Preferences::GetPathCategory(currentPathType);
+	Preferences::path_category category = Preferences::getPathCategory(currentPathType);
 	bool isMultiple = category == Preferences::path_category::MULTIPLE_DIRECTORIES
 		|| category == Preferences::path_category::MULTIPLE_MIXED;
 	bool supportsFiles = isFilePathType(currentPathType);

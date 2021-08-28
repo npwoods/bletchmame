@@ -95,73 +95,73 @@ public:
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
-	static path_category GetPathCategory(global_path_type path_type);
-	static path_category GetPathCategory(machine_path_type path_type);
-    static void EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path);
+	static path_category getPathCategory(global_path_type path_type);
+	static path_category getPathCategory(machine_path_type path_type);
+    static void ensureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path);
 
-    const QString &GetGlobalPath(global_path_type type) const									{ return m_paths[static_cast<size_t>(type)]; }
-	void SetGlobalPath(global_path_type type, QString &&path);
-	void SetGlobalPath(global_path_type type, const QString &path);
+    const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
+	void setGlobalPath(global_path_type type, QString &&path);
+	void setGlobalPath(global_path_type type, const QString &path);
 	
-    QStringList GetSplitPaths(global_path_type type) const;
+    QStringList getSplitPaths(global_path_type type) const;
 
-    QString GetGlobalPathWithSubstitutions(global_path_type type) const;
+    QString getGlobalPathWithSubstitutions(global_path_type type) const;
 
-    const QString &GetMameExtraArguments() const												{ return m_mame_extra_arguments; }
-    void SetMameExtraArguments(QString &&extra_arguments)										{ m_mame_extra_arguments = std::move(extra_arguments); }
+    const QString &getMameExtraArguments() const														{ return m_mame_extra_arguments; }
+    void setMameExtraArguments(QString &&extra_arguments)												{ m_mame_extra_arguments = std::move(extra_arguments); }
 
-	const QSize &GetSize() const											 					{ return m_size; }
-	void SetSize(const QSize &size)																{ m_size = size; }
+	const QSize &setSize() const											 							{ return m_size; }
+	void setSize(const QSize &size)																		{ m_size = size; }
 
-	list_view_type GetSelectedTab()																		{ return m_selected_tab; }
-	void SetSelectedTab(list_view_type type)															{ m_selected_tab = type; }
+	list_view_type getSelectedTab()																		{ return m_selected_tab; }
+	void setSelectedTab(list_view_type type)															{ m_selected_tab = type; }
 
-	const QString &GetMachineFolderTreeSelection() const										{ return m_machine_folder_tree_selection; }
-	void SetMachineFolderTreeSelection(QString &&selection)										{ m_machine_folder_tree_selection = std::move(selection); }
+	const QString &getMachineFolderTreeSelection() const												{ return m_machine_folder_tree_selection; }
+	void setMachineFolderTreeSelection(QString &&selection)												{ m_machine_folder_tree_selection = std::move(selection); }
 
-	const QList<int> &GetMachineSplitterSizes() const											{ return m_machine_splitter_sizes; }
-	void SetMachineSplitterSizes(QList<int> &&sizes)											{ m_machine_splitter_sizes = std::move(sizes); }
+	const QList<int> &getMachineSplitterSizes() const													{ return m_machine_splitter_sizes; }
+	void setMachineSplitterSizes(QList<int> &&sizes)													{ m_machine_splitter_sizes = std::move(sizes); }
 
-	FolderPrefs GetFolderPrefs(const QString &folder) const;
-	void SetFolderPrefs(const QString &folder, FolderPrefs &&prefs);
+	FolderPrefs getFolderPrefs(const QString &folder) const;
+	void setFolderPrefs(const QString &folder, FolderPrefs &&prefs);
 
-	const std::map<QString, std::set<QString>> &GetCustomFolders() const						{ return m_custom_folders; }
-	std::map<QString, std::set<QString>> &GetCustomFolders()									{ return m_custom_folders; }
+	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_custom_folders; }
+	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_custom_folders; }
 
-	const std::unordered_map<std::string, ColumnPrefs> &GetColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
-	void SetColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
+	const std::unordered_map<std::string, ColumnPrefs> &getColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
+	void setColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
-    const QString &GetListViewSelection(const char *view_type, const QString &softlist_name) const;
-	void SetListViewSelection(const char *view_type, const QString &softlist_name, QString &&selection);
-	void SetListViewSelection(const char *view_type, QString &&selection)						{ SetListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
+    const QString &getListViewSelection(const char *view_type, const QString &softlist_name) const;
+	void setListViewSelection(const char *view_type, const QString &softlist_name, QString &&selection);
+	void setListViewSelection(const char *view_type, QString &&selection)								{ setListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
 
-    const QString &GetSearchBoxText(const char *view_type) const								{ return m_list_view_filter[view_type]; }
-	void SetSearchBoxText(const char *view_type, QString &&search_box_text)					{ m_list_view_filter[view_type] = std::move(search_box_text); }
+    const QString &getSearchBoxText(const char *view_type) const										{ return m_list_view_filter[view_type]; }
+	void setSearchBoxText(const char *view_type, QString &&search_box_text)								{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
-	bool GetMenuBarShown() const							{ return m_menu_bar_shown; }
-	void SetMenuBarShown(bool menu_bar_shown)				{ m_menu_bar_shown = menu_bar_shown; }
+	bool getMenuBarShown() const																		{ return m_menu_bar_shown; }
+	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
 
-    const QString &GetMachinePath(const QString &machine_name, machine_path_type path_type) const;
-    void SetMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
+    const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
+    void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
 
-    std::vector<QString> &GetRecentDeviceFiles(const QString &machine_name, const QString &device_type);
-    const std::vector<QString> &GetRecentDeviceFiles(const QString &machine_name, const QString &device_type) const;
+    std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type);
+    const std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const;
 
-    QString GetMameXmlDatabasePath(bool ensure_directory_exists = true) const;
-    QString ApplySubstitutions(const QString &path) const;
-	static QString InternalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
+    QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
+    QString applySubstitutions(const QString &path) const;
+	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
-    static QString GetConfigDirectory(bool ensure_directory_exists = false);
+    static QString getConfigDirectory(bool ensure_directory_exists = false);
 
-	bool Load();
-	bool Load(QIODevice &input);
-	void Save();
+	bool load();
+	bool load(QIODevice &input);
+	void save();
 
 private:
 	struct MachineInfo
 	{
-		QString									m_working_directory;
-		QString									m_last_save_state;
+		QString										m_working_directory;
+		QString										m_last_save_state;
         std::map<QString, std::vector<QString>>     m_recent_device_files;
 	};
 
@@ -181,9 +181,9 @@ private:
 	mutable std::unordered_map<QString, QString>											m_list_view_filter;
 	bool																					m_menu_bar_shown;
 
-	void Save(std::ostream &output);
-    QString GetFileName(bool ensure_directory_exists);
-    const MachineInfo *GetMachineInfo(const QString &machine_name) const;
+	void save(std::ostream &output);
+    QString getFileName(bool ensure_directory_exists);
+    const MachineInfo *getMachineInfo(const QString &machine_name) const;
 };
 
 #endif // PREFS_H

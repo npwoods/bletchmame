@@ -80,7 +80,7 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 {
 	// somewhat of a hack - record whether we started with hash paths
 	m_startedWithHashPaths = false;
-	for (const QString &path : prefs.GetSplitPaths(Preferences::global_path_type::HASH))
+	for (const QString &path : prefs.getSplitPaths(Preferences::global_path_type::HASH))
 	{
 		if (QDir(path).exists())
 		{
@@ -115,14 +115,14 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 
 
 	// and the rest of them
-	results << "-rompath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS);
-	results << "-samplepath"		<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES);
-	results << "-cfg_directory"		<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG);
-	results << "-nvram_directory"	<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM);
-	results << "-hashpath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::HASH);
-	results << "-artpath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK);
-	results << "-pluginspath"		<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS);
-	results << "-cheatpath"			<< prefs.GetGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS);
+	results << "-rompath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS);
+	results << "-samplepath"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES);
+	results << "-cfg_directory"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG);
+	results << "-nvram_directory"	<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM);
+	results << "-hashpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::HASH);
+	results << "-artpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK);
+	results << "-pluginspath"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS);
+	results << "-cheatpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS);
 	results << "-plugin"			<< WORKER_UI_PLUGIN_NAME;
 	results << "-window";
 	results << "-skip_gameinfo";

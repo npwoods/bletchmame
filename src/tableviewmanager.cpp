@@ -40,7 +40,7 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
     if (lineEdit)
     {
         // set the initial text on the search box
-        const QString &text = m_prefs.GetSearchBoxText(desc.m_name);
+        const QString &text = m_prefs.getSearchBoxText(desc.m_name);
         lineEdit->setText(text);
         m_proxyModel->setFilterFixedString(text);
 
@@ -49,7 +49,7 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         {
             // change the filter
             QString text = lineEdit->text();
-            m_prefs.SetSearchBoxText(descName, QString(text));
+            m_prefs.setSearchBoxText(descName, QString(text));
             m_proxyModel->setFilterFixedString(text);
 
             // ensure that whatever was selected stays visible
@@ -80,7 +80,7 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
             QString selectedValue = itemModel.data(selectedIndex).toString();
             if (m_selectionChangedCallback)
                 m_selectionChangedCallback(selectedValue);
-            m_prefs.SetListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
+            m_prefs.setListViewSelection(m_desc.m_name, util::g_empty_string, std::move(selectedValue));
 		}
 	});
 
@@ -153,7 +153,7 @@ void TableViewManager::applyColumnPrefs()
     QTableView &tableView = *dynamic_cast<QTableView *>(parent());
 
     // get the preferences
-    const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.GetColumnPrefs(m_desc.m_name);
+    const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.getColumnPrefs(m_desc.m_name);
 
     // unpack them
     int sortLogicalColumn = 0;
@@ -235,7 +235,7 @@ void TableViewManager::persistColumnPrefs()
 	}
 
 	// and save it
-	m_prefs.SetColumnPrefs(m_desc.m_name, std::move(col_prefs));
+	m_prefs.setColumnPrefs(m_desc.m_name, std::move(col_prefs));
 }
 
 
@@ -248,7 +248,7 @@ void TableViewManager::applySelectedValue()
     QTableView &tableView = *dynamic_cast<QTableView *>(parent());
     QAbstractItemModel &itemModel = *m_proxyModel->sourceModel();
 
-    const QString &selectedValue = m_prefs.GetListViewSelection(m_desc.m_name, util::g_empty_string);
+    const QString &selectedValue = m_prefs.getListViewSelection(m_desc.m_name, util::g_empty_string);
     QModelIndex selectedIndex;
 
     if (!selectedValue.isEmpty())

@@ -59,14 +59,14 @@ static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list
 //  IMPLEMENTATION
 //**************************************************************************
 
-static QString GetDefaultPluginsDirectory();
+static QString getDefaultPluginsDirectory();
 
 
 //-------------------------------------------------
-//  ValidateDimension
+//  isValidDimension
 //-------------------------------------------------
 
-static bool IsValidDimension(int dimension)
+static bool isValidDimension(int dimension)
 {
     // arbitrary validation of dimensions
     return dimension >= 10 && dimension <= 20000;
@@ -74,20 +74,20 @@ static bool IsValidDimension(int dimension)
 
 
 //-------------------------------------------------
-//  GetListViewSelectionKey
+//  getListViewSelectionKey
 //-------------------------------------------------
 
-static QString GetListViewSelectionKey(const char *view_type, const QString &softlist)
+static QString getListViewSelectionKey(const char *view_type, const QString &softlist)
 {
 	return QString(view_type) + QString(1, '\0') + softlist;
 }
 
 
 //-------------------------------------------------
-//  SplitListViewSelectionKey
+//  splitListViewSelectionKey
 //-------------------------------------------------
 
-static std::tuple<const QChar *, const QChar *> SplitListViewSelectionKey(const QString &key)
+static std::tuple<const QChar *, const QChar *> splitListViewSelectionKey(const QString &key)
 {
 	// get the view type
 	const QChar *view_type = key.constData();
@@ -158,20 +158,20 @@ Preferences::Preferences()
 	, m_selected_tab(list_view_type::MACHINE)
 {
 	// default paths
-	SetGlobalPath(global_path_type::CONFIG, GetConfigDirectory(true));
-	SetGlobalPath(global_path_type::NVRAM, GetConfigDirectory(true));
-	SetGlobalPath(global_path_type::PLUGINS, GetDefaultPluginsDirectory());
-	SetGlobalPath(global_path_type::PROFILES, GetConfigDirectory(true) + QDir::separator() + QString("profiles"));
+	setGlobalPath(global_path_type::CONFIG, getConfigDirectory(true));
+	setGlobalPath(global_path_type::NVRAM, getConfigDirectory(true));
+	setGlobalPath(global_path_type::PLUGINS, getDefaultPluginsDirectory());
+	setGlobalPath(global_path_type::PROFILES, getConfigDirectory(true) + QDir::separator() + QString("profiles"));
 
-    Load();
+    load();
 }
 
 
 //-------------------------------------------------
-//  GetPathCategory
+//  getPathCategory
 //-------------------------------------------------
 
-Preferences::path_category Preferences::GetPathCategory(global_path_type path_type)
+Preferences::path_category Preferences::getPathCategory(global_path_type path_type)
 {
 	path_category result;
 	switch (path_type)
@@ -208,10 +208,10 @@ Preferences::path_category Preferences::GetPathCategory(global_path_type path_ty
 
 
 //-------------------------------------------------
-//  GetPathCategory
+//  getPathCategory
 //-------------------------------------------------
 
-Preferences::path_category Preferences::GetPathCategory(machine_path_type path_type)
+Preferences::path_category Preferences::getPathCategory(machine_path_type path_type)
 {
 	path_category result;
 	switch (path_type)
@@ -232,10 +232,10 @@ Preferences::path_category Preferences::GetPathCategory(machine_path_type path_t
 
 
 //-------------------------------------------------
-//  EnsureDirectoryPathsHaveFinalPathSeparator
+//  ensureDirectoryPathsHaveFinalPathSeparator
 //-------------------------------------------------
 
-void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path)
+void Preferences::ensureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path)
 {
 	bool isDirectory = category == path_category::SINGLE_DIRECTORY
 		|| category == path_category::MULTIPLE_DIRECTORIES;
@@ -247,10 +247,10 @@ void Preferences::EnsureDirectoryPathsHaveFinalPathSeparator(path_category categ
 
 
 //-------------------------------------------------
-//  GetMachineInfo
+//  getMachineInfo
 //-------------------------------------------------
 
-const Preferences::MachineInfo *Preferences::GetMachineInfo(const QString &machine_name) const
+const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machine_name) const
 {
 	const auto iter = m_machine_info.find(machine_name);
 	return iter != m_machine_info.end()
@@ -260,38 +260,38 @@ const Preferences::MachineInfo *Preferences::GetMachineInfo(const QString &machi
 
 
 //-------------------------------------------------
-//  SetGlobalPath
+//  setGlobalPath
 //-------------------------------------------------
 
-void Preferences::SetGlobalPath(global_path_type type, QString &&path)
+void Preferences::setGlobalPath(global_path_type type, QString &&path)
 {
-	EnsureDirectoryPathsHaveFinalPathSeparator(GetPathCategory(type), path);
+	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(type), path);
 	m_paths[static_cast<size_t>(type)] = std::move(path);
 }
 
 
-void Preferences::SetGlobalPath(global_path_type type, const QString &path)
+void Preferences::setGlobalPath(global_path_type type, const QString &path)
 {
-	SetGlobalPath(type, QString(path));
+	setGlobalPath(type, QString(path));
 }
 
 
 //-------------------------------------------------
-//  GetSplitPaths
+//  getSplitPaths
 //-------------------------------------------------
 
-QStringList Preferences::GetSplitPaths(global_path_type type) const
+QStringList Preferences::getSplitPaths(global_path_type type) const
 {
 	QStringList paths;
 
-	const QString &pathsString = GetGlobalPath(type);
+	const QString &pathsString = getGlobalPath(type);
 	if (!pathsString.isEmpty())
 	{
 		paths = pathsString.split(';');
 		for (QString &path : paths)
 		{
 			// apply variable substituions
-			path = ApplySubstitutions(path);
+			path = applySubstitutions(path);
 
 			// normalize path separators
 			path = QDir::fromNativeSeparators(path);
@@ -302,24 +302,24 @@ QStringList Preferences::GetSplitPaths(global_path_type type) const
 
 
 //-------------------------------------------------
-//  GetGlobalPathWithSubstitutions
+//  getGlobalPathWithSubstitutions
 //-------------------------------------------------
 
-QString Preferences::GetGlobalPathWithSubstitutions(global_path_type type) const
+QString Preferences::getGlobalPathWithSubstitutions(global_path_type type) const
 {
-	assert(GetPathCategory(type) != path_category::FILE);
-	return ApplySubstitutions(GetGlobalPath(type));
+	assert(getPathCategory(type) != path_category::FILE);
+	return applySubstitutions(getGlobalPath(type));
 }
 
 
 //-------------------------------------------------
-//  GetMachinePath
+//  getMachinePath
 //-------------------------------------------------
 
-const QString &Preferences::GetMachinePath(const QString &machine_name, machine_path_type path_type) const
+const QString &Preferences::getMachinePath(const QString &machine_name, machine_path_type path_type) const
 {
 	// find the machine path entry
-	const MachineInfo *info = GetMachineInfo(machine_name);
+	const MachineInfo *info = getMachineInfo(machine_name);
 	if (!info)
 		return util::g_empty_string;
 
@@ -336,10 +336,10 @@ const QString &Preferences::GetMachinePath(const QString &machine_name, machine_
 
 
 //-------------------------------------------------
-//  GetFolderPrefs
+//  getFolderPrefs
 //-------------------------------------------------
 
-FolderPrefs Preferences::GetFolderPrefs(const QString &folder) const
+FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 {
 	auto iter = m_folder_prefs.find(folder);
 	return iter != m_folder_prefs.end()
@@ -349,10 +349,10 @@ FolderPrefs Preferences::GetFolderPrefs(const QString &folder) const
 
 
 //-------------------------------------------------
-//  GetListViewSelection
+//  setFolderPrefs
 //-------------------------------------------------
 
-void Preferences::SetFolderPrefs(const QString &folder, FolderPrefs &&prefs)
+void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 {
 	if (prefs == FolderPrefs())
 		m_folder_prefs.erase(folder);
@@ -362,12 +362,12 @@ void Preferences::SetFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 
 
 //-------------------------------------------------
-//  GetListViewSelection
+//  getListViewSelection
 //-------------------------------------------------
 
-const QString &Preferences::GetListViewSelection(const char *view_type, const QString &machine_name) const
+const QString &Preferences::getListViewSelection(const char *view_type, const QString &machine_name) const
 {
-	QString key = GetListViewSelectionKey(view_type, machine_name);
+	QString key = getListViewSelectionKey(view_type, machine_name);
 	auto iter = m_list_view_selection.find(key);
 	return iter != m_list_view_selection.end()
 		? iter->second
@@ -376,24 +376,24 @@ const QString &Preferences::GetListViewSelection(const char *view_type, const QS
 
 
 //-------------------------------------------------
-//  SetListViewSelection
+//  setListViewSelection
 //-------------------------------------------------
 
-void Preferences::SetListViewSelection(const char *view_type, const QString &machine_name, QString &&selection)
+void Preferences::setListViewSelection(const char *view_type, const QString &machine_name, QString &&selection)
 {
-	QString key = GetListViewSelectionKey(view_type, machine_name);
+	QString key = getListViewSelectionKey(view_type, machine_name);
 	m_list_view_selection[key] = std::move(selection);
 }
 
 
 //-------------------------------------------------
-//  SetMachinePath
+//  setMachinePath
 //-------------------------------------------------
 
-void Preferences::SetMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path)
+void Preferences::setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path)
 {
 	// ensure that if we have a path, it has a path separator at the end
-	EnsureDirectoryPathsHaveFinalPathSeparator(GetPathCategory(path_type), path);
+	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(path_type), path);
 
 	switch (path_type)
 	{
@@ -410,19 +410,19 @@ void Preferences::SetMachinePath(const QString &machine_name, machine_path_type 
 
 
 //-------------------------------------------------
-//  GetRecentDeviceFiles
+//  getRecentDeviceFiles
 //-------------------------------------------------
 
-std::vector<QString> &Preferences::GetRecentDeviceFiles(const QString &machine_name, const QString &device_type)
+std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &machine_name, const QString &device_type)
 {
 	return m_machine_info[machine_name].m_recent_device_files[device_type];
 }
 
 
-const std::vector<QString> &Preferences::GetRecentDeviceFiles(const QString &machine_name, const QString &device_type) const
+const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const
 {
 	static const std::vector<QString> empty_vector;
-	const MachineInfo *info = GetMachineInfo(machine_name);
+	const MachineInfo *info = getMachineInfo(machine_name);
 	if (!info)
 		return empty_vector;
 
@@ -435,14 +435,14 @@ const std::vector<QString> &Preferences::GetRecentDeviceFiles(const QString &mac
 
 
 //-------------------------------------------------
-//  Load
+//  load
 //-------------------------------------------------
 
-bool Preferences::Load()
+bool Preferences::load()
 {
 	using namespace std::placeholders;
 
-	QString fileName = GetFileName(false);
+	QString fileName = getFileName(false);
 
 	// first check to see if the file exists
 	bool success = false;
@@ -450,17 +450,17 @@ bool Preferences::Load()
 	{
 		QFile file(fileName);
 		if (file.open(QFile::ReadOnly))
-			success = Load(file);
+			success = load(file);
 	}
 	return success;
 }
 
 
 //-------------------------------------------------
-//  Load
+//  load
 //-------------------------------------------------
 
-bool Preferences::Load(QIODevice &input)
+bool Preferences::load(QIODevice &input)
 {
 	XmlParser xml;
 	global_path_type type = global_path_type::COUNT;
@@ -477,11 +477,11 @@ bool Preferences::Load(QIODevice &input)
 	{
 		std::optional<bool> menu_bar_shown = attributes.get<bool>("menu_bar_shown");
 		if (menu_bar_shown)
-			SetMenuBarShown(*menu_bar_shown);
+			setMenuBarShown(*menu_bar_shown);
 
 		std::optional<list_view_type> selected_tab = attributes.get<list_view_type>("selected_tab", s_list_view_type_parser);
 		if (selected_tab)
-			SetSelectedTab(*selected_tab);
+			setSelectedTab(*selected_tab);
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -497,45 +497,45 @@ bool Preferences::Load(QIODevice &input)
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
 		if (type < global_path_type::COUNT)
-			SetGlobalPath(type, std::move(content));
+			setGlobalPath(type, std::move(content));
 		type = global_path_type::COUNT;
 	});
 	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
 	{
-		SetMameExtraArguments(std::move(content));
+		setMameExtraArguments(std::move(content));
 	});
 	xml.onElementBegin({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::optional<int> width = attributes.get<int>("width");
 		std::optional<int> height = attributes.get<int>("height");
 
-		if (width && height && IsValidDimension(*width) && IsValidDimension(*height))
+		if (width && height && isValidDimension(*width) && isValidDimension(*height))
 		{
 			QSize size;
 			size.setWidth(*width);
 			size.setHeight(*height);
-			SetSize(size);
+			setSize(size);
 		}
 	});	
 	xml.onElementEnd({ "preferences", "machinelistsplitters" }, [&](QString &&content)
 	{
 		QList<int> splitterSizes = intListFromString(content);
 		if (!splitterSizes.isEmpty())
-			SetMachineSplitterSizes(std::move(splitterSizes));
+			setMachineSplitterSizes(std::move(splitterSizes));
 	});
 	xml.onElementBegin({ "preferences", "folder" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::optional<QString> id = attributes.get<QString>("id");
 		if (id)
 		{
-			FolderPrefs folderPrefs = GetFolderPrefs(*id);
+			FolderPrefs folderPrefs = getFolderPrefs(*id);
 			std::optional<bool> isShown = attributes.get<bool>("shown");
 			if (isShown)
 				folderPrefs.m_shown = *isShown;
-			SetFolderPrefs(*id, std::move(folderPrefs));
+			setFolderPrefs(*id, std::move(folderPrefs));
 			
 			if (attributes.get<bool>("selected") == true)
-				SetMachineFolderTreeSelection(std::move(id.value()));
+				setMachineFolderTreeSelection(std::move(id.value()));
 		}
 	});
 	xml.onElementBegin({ "preferences", "customfolder" }, [&](const XmlParser::Attributes &attributes)
@@ -559,7 +559,7 @@ bool Preferences::Load(QIODevice &input)
 		if (list_view)
 		{
 			std::string softlist = attributes.get<std::string>("softlist").value_or("");
-			QString key = GetListViewSelectionKey(list_view->c_str(), QString::fromStdString(softlist));
+			QString key = getListViewSelectionKey(list_view->c_str(), QString::fromStdString(softlist));
 			current_list_view_parameter = &m_list_view_selection[key];
 		}
 	});
@@ -596,11 +596,11 @@ bool Preferences::Load(QIODevice &input)
 
 		std::optional<QString> workingDirectory = attributes.get<QString>("working_directory");
 		if (workingDirectory)
-			SetMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(*workingDirectory));
+			setMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(*workingDirectory));
 
 		std::optional<QString> lastSaveState = attributes.get<QString>("last_save_state");
 		if (lastSaveState)
-			SetMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(*lastSaveState));
+			setMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(*lastSaveState));
 
 		return XmlParser::ElementResult::Ok;
 	});
@@ -615,7 +615,7 @@ bool Preferences::Load(QIODevice &input)
 	});
 	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](QString &&content)
 	{
-		GetRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
+		getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
 	});
 	bool success = xml.parse(input);
 
@@ -624,30 +624,30 @@ bool Preferences::Load(QIODevice &input)
 
 
 //-------------------------------------------------
-//  Save
+//  save
 //-------------------------------------------------
 
-void Preferences::Save()
+void Preferences::save()
 {
-	QString file_name = GetFileName(true);
+	QString file_name = getFileName(true);
 	std::ofstream output(file_name.toStdString(), std::ios_base::out);
-	Save(output);
+	save(output);
 }
 
 
 //-------------------------------------------------
-//  Save
+//  save
 //-------------------------------------------------
 
-void Preferences::Save(std::ostream &output)
+void Preferences::save(std::ostream &output)
 {
 	output << "<!-- Preferences for BletchMAME -->" << std::endl;
-	output << "<preferences menu_bar_shown=\"" << (m_menu_bar_shown ? "1" : "0") << "\" selected_tab=\"" << s_list_view_type_parser[GetSelectedTab()] << "\">" << std::endl;
+	output << "<preferences menu_bar_shown=\"" << (m_menu_bar_shown ? "1" : "0") << "\" selected_tab=\"" << s_list_view_type_parser[getSelectedTab()] << "\">" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Paths -->" << std::endl;
 	for (size_t i = 0; i < m_paths.size(); i++)
-		output << "\t<path type=\"" << s_path_names[i] << "\">" << XmlParser::escape(GetGlobalPath(static_cast<global_path_type>(i))) << "</path>" << std::endl;
+		output << "\t<path type=\"" << s_path_names[i] << "\">" << XmlParser::escape(getGlobalPath(static_cast<global_path_type>(i))) << "</path>" << std::endl;
 	output << std::endl;
 
 	output << "\t<!-- Miscellaneous -->" << std::endl;
@@ -681,7 +681,7 @@ void Preferences::Save(std::ostream &output)
 	{
 		if (!pair.second.isEmpty())
 		{
-			auto [view_type, softlist] = SplitListViewSelectionKey(pair.first);
+			auto [view_type, softlist] = splitListViewSelectionKey(pair.first);
 			output << "\t<selection view=\"" << XmlParser::escape(QString(view_type));
 			if (softlist)
 				output << "\" softlist=\"" + XmlParser::escape(QString(softlist));
@@ -749,10 +749,10 @@ void Preferences::Save(std::ostream &output)
 
 
 //-------------------------------------------------
-//  InternalApplySubstitutions
+//  internalApplySubstitutions
 //-------------------------------------------------
 
-QString Preferences::InternalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func)
+QString Preferences::internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func)
 {
 	QString result;
 	result.reserve(src.size() + 100);
@@ -810,17 +810,17 @@ QString Preferences::InternalApplySubstitutions(const QString &src, std::functio
 
 
 //-------------------------------------------------
-//  ApplySubstitutions
+//  applySubstitutions
 //-------------------------------------------------
 
-QString Preferences::ApplySubstitutions(const QString &path) const
+QString Preferences::applySubstitutions(const QString &path) const
 {
-	return InternalApplySubstitutions(path, [this](const QString &var_name)
+	return internalApplySubstitutions(path, [this](const QString &var_name)
 	{
 		QString result;
 		if (var_name == "MAMEPATH")
 		{
-			const QString &path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+			const QString &path = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 			wxFileName::SplitPath(path, &result, nullptr, nullptr);
 		}
 		else if (var_name == "BLETCHMAMEPATH")
@@ -833,18 +833,18 @@ QString Preferences::ApplySubstitutions(const QString &path) const
 
 
 //-------------------------------------------------
-//  GetMameXmlDatabasePath
+//  getMameXmlDatabasePath
 //-------------------------------------------------
 
-QString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
+QString Preferences::getMameXmlDatabasePath(bool ensure_directory_exists) const
 {
 	// get the configuration directory
-	QString config_dir = GetConfigDirectory(ensure_directory_exists);
+	QString config_dir = getConfigDirectory(ensure_directory_exists);
 	if (config_dir.isEmpty())
 		return "";
 
 	// get the MAME path
-	const QString &mame_path = GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	const QString &mame_path = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 	if (mame_path.isEmpty())
 		return "";
 
@@ -858,22 +858,22 @@ QString Preferences::GetMameXmlDatabasePath(bool ensure_directory_exists) const
 
 
 //-------------------------------------------------
-//  GetFileName
+//  getFileName
 //-------------------------------------------------
 
-QString Preferences::GetFileName(bool ensure_directory_exists)
+QString Preferences::getFileName(bool ensure_directory_exists)
 {
-	QString directory = GetConfigDirectory(ensure_directory_exists);
+	QString directory = getConfigDirectory(ensure_directory_exists);
 	return QDir(directory).filePath("BletchMAME.xml");
 }
 
 
 //-------------------------------------------------
-//  GetConfigDirectory - gets the configuration
+//  getConfigDirectory - gets the configuration
 //	directory, and optionally ensuring it exists
 //-------------------------------------------------
 
-QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
+QString Preferences::getConfigDirectory(bool ensure_directory_exists)
 {
 	// this is currently a thin wrapper on GetUserDataDir(), but hypothetically
 	// we might want a command line option to override this directory
@@ -891,10 +891,10 @@ QString Preferences::GetConfigDirectory(bool ensure_directory_exists)
 
 
 //-------------------------------------------------
-//  GetDefaultPluginsDirectory
+//  getDefaultPluginsDirectory
 //-------------------------------------------------
 
-static QString GetDefaultPluginsDirectory()
+static QString getDefaultPluginsDirectory()
 {
 	return QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
 }

@@ -78,13 +78,13 @@ void MameClient::launch(Task::ptr &&task)
 void MameClient::taskThreadProc()
 {
 	// identify the program
-	const QString &program = m_prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	const QString &program = m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
 	// get the arguments
 	QStringList arguments = m_task->getArguments(m_prefs);
 
 	// slap on any extra arguments
-	const QString &extra_arguments = m_prefs.GetMameExtraArguments();
+	const QString &extra_arguments = m_prefs.getMameExtraArguments();
 	appendExtraArguments(arguments, extra_arguments);
 
 	// set up the QProcess

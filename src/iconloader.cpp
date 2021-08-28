@@ -126,7 +126,7 @@ void IconLoader::refreshIcons()
 	m_finders.clear();
 
 	// loop through all icon paths
-	QStringList paths = m_prefs.GetSplitPaths(Preferences::global_path_type::ICONS);
+	QStringList paths = m_prefs.getSplitPaths(Preferences::global_path_type::ICONS);
 	for (QString &path : paths)
 	{
 		// try to create an appropiate path entry

@@ -68,35 +68,35 @@ void Preferences::Test::general(bool regurgitate)
 	{
 		// we're regurgitatating; read the prefs into a separate Preferences object
 		Preferences prefs2;
-		prefs2.Load(buffer);
+		prefs2.load(buffer);
 
 		// and save it out
 		std::stringstream stringStream;
-		prefs2.Save(stringStream);
+		prefs2.save(stringStream);
 		std::string str = stringStream.str();
 
 		// and read the saved out bytes back
 		QByteArray byteArray(str.c_str(), str.size());
 		QBuffer buffer2(&byteArray);
 		QVERIFY(buffer2.open(QIODevice::ReadOnly));
-		QVERIFY(prefs.Load(buffer2));
+		QVERIFY(prefs.load(buffer2));
 	}
 	else
 	{
 		// read the prefs directly; no regurgitation
-		QVERIFY(prefs.Load(buffer));
+		QVERIFY(prefs.load(buffer));
 	}
 
 	// validate the results
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)					== fixPaths("C:\\mame64.exe"));
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::ROMS)							== fixPaths("C:\\roms\\"));
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::SAMPLES)							== fixPaths("C:\\samples\\"));
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::CONFIG)							== fixPaths("C:\\cfg\\"));
-	QVERIFY(prefs.GetGlobalPath(Preferences::global_path_type::NVRAM)							== fixPaths("C:\\nvram\\"));
-	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== fixPaths(u"C:\\My\u20ACchoGames\\"));
-	QVERIFY(prefs.GetMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== fixPaths(u"C:\\MyLastSt\u03B1te.sta"));
-	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== fixPaths(""));
-	QVERIFY(prefs.GetMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)	== fixPaths(""));
+	QVERIFY(prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE)					== fixPaths("C:\\mame64.exe"));
+	QVERIFY(prefs.getGlobalPath(Preferences::global_path_type::ROMS)							== fixPaths("C:\\roms\\"));
+	QVERIFY(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES)							== fixPaths("C:\\samples\\"));
+	QVERIFY(prefs.getGlobalPath(Preferences::global_path_type::CONFIG)							== fixPaths("C:\\cfg\\"));
+	QVERIFY(prefs.getGlobalPath(Preferences::global_path_type::NVRAM)							== fixPaths("C:\\nvram\\"));
+	QVERIFY(prefs.getMachinePath("echo", Preferences::machine_path_type::WORKING_DIRECTORY)		== fixPaths(u"C:\\My\u20ACchoGames\\"));
+	QVERIFY(prefs.getMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== fixPaths(u"C:\\MyLastSt\u03B1te.sta"));
+	QVERIFY(prefs.getMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== fixPaths(""));
+	QVERIFY(prefs.getMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)	== fixPaths(""));
 }
 
 
@@ -153,7 +153,7 @@ void Preferences::Test::pathNames()
 void Preferences::Test::globalGetPathCategory()
 {
 	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
-		Preferences::GetPathCategory(type);
+		Preferences::getPathCategory(type);
 }
 
 
@@ -164,7 +164,7 @@ void Preferences::Test::globalGetPathCategory()
 void Preferences::Test::machineGetPathCategory()
 {
 	for (Preferences::machine_path_type type : util::all_enums<Preferences::machine_path_type>())
-		Preferences::GetPathCategory(type);
+		Preferences::getPathCategory(type);
 }
 
 
@@ -181,7 +181,7 @@ void Preferences::Test::substitutions(const char *input, const char *expected)
 			: QString();
 	};
 
-	QString actual = Preferences::InternalApplySubstitutions(QString(input), func);
+	QString actual = Preferences::internalApplySubstitutions(QString(input), func);
 	assert(actual == expected);
 	(void)actual;
 	(void)expected;
