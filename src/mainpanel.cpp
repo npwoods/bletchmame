@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QSortFilterProxyModel>
 
+#include "assetfinder.h"
 #include "machinefoldertreemodel.h"
 #include "machinelistitemmodel.h"
 #include "mainpanel.h"
@@ -206,6 +207,16 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 	// did the user change the icons path?
 	if (util::contains(changedPaths, Preferences::global_path_type::ICONS))
 		m_iconLoader.refreshIcons();
+
+	// did the user change the snapshots path?
+	if (util::contains(changedPaths, Preferences::global_path_type::SNAPSHOTS))
+	{
+		QString machineName;
+		QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
+		if (selection.size() > 0)
+			machineName = machineFromModelIndex(selection[0]).name();
+		updateInfoPanel(machineName);
+	}
 }
 
 
@@ -682,18 +693,13 @@ void MainPanel::updateInfoPanel(const QString &machineName)
 	// do we have a machine?
 	if (!machineName.isEmpty())
 	{
-		// look for the pertinent snapshot file in every snapshot directory
-		QStringList snapPaths = m_prefs.getSplitPaths(Preferences::global_path_type::SNAPSHOTS);
-		for (const QString &path : snapPaths)
-		{
-			QString snapshotFileName = QString("%1/%2.png").arg(path, machineName);
-			if (QFileInfo(snapshotFileName).exists())
-			{
-				m_currentSnapshot = QPixmap(snapshotFileName);
-				if (m_currentSnapshot.width() > 0 && m_currentSnapshot.height() > 0)
-					break;
-			}
-		}
+		// find the snapshot asset
+		AssetFinder assetFinder(m_prefs, Preferences::global_path_type::SNAPSHOTS);
+		QByteArray byteArray = assetFinder.findAssetBytes(machineName + ".png");
+
+		// and if we got something, load it
+		if (!byteArray.isEmpty())
+			m_currentSnapshot.loadFromData(byteArray);
 	}
 
 	updateSnapshot();

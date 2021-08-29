@@ -192,11 +192,11 @@ Preferences::path_category Preferences::getPathCategory(global_path_type path_ty
 	case Preferences::global_path_type::PLUGINS:
 	case Preferences::global_path_type::PROFILES:
 	case Preferences::global_path_type::CHEATS:
-	case Preferences::global_path_type::SNAPSHOTS:
 		result = path_category::MULTIPLE_DIRECTORIES;
 		break;
 
 	case Preferences::global_path_type::ICONS:
+	case Preferences::global_path_type::SNAPSHOTS:
 		result = path_category::MULTIPLE_MIXED;
 		break;
 

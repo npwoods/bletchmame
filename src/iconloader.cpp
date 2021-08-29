@@ -8,8 +8,6 @@
 
 #include "iconloader.h"
 #include "prefs.h"
-#include <quazip.h>
-#include <quazipfile.h>
 
 
 //**************************************************************************
@@ -18,73 +16,6 @@
 
 #define ICON_SIZE_X 16
 #define ICON_SIZE_Y 16
-
-
-//**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
-
-// ======================> IconLoader::IconFinder
-class IconLoader::IconFinder
-{
-public:
-	IconFinder() = default;
-	IconFinder(const IconFinder &) = delete;
-	IconFinder(IconFinder &&) = delete;
-
-	virtual ~IconFinder()
-	{
-	}
-
-	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) = 0;
-};
-
-
-// ======================> IconLoader::DirectoryIconFinder
-class IconLoader::DirectoryIconFinder : public IconLoader::IconFinder
-{
-public:
-	DirectoryIconFinder(QString &&path)
-		: m_path(std::move(path))
-	{
-	}
-
-	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) override
-	{
-		return std::make_unique<QFile>(m_path + "/" + filename);
-	}
-
-private:
-	QString		m_path;
-};
-
-// ======================> IconLoader::DirectoryIconFinder
-class IconLoader::ZipIconFinder : public IconLoader::IconFinder
-{
-public:
-	ZipIconFinder(const QString &path)
-		: m_zip(path)
-	{
-	}
-
-	bool openZip()
-	{
-		return m_zip.open(QuaZip::Mode::mdUnzip);
-	}
-
-	virtual std::unique_ptr<QIODevice> getIconStream(const QString &filename) override
-	{
-		// find the file
-		if (!m_zip.setCurrentFile(filename))
-			return { };
-
-		// and return a QuaZipFile
-		return std::make_unique<QuaZipFile>(&m_zip);
-	}
-
-private:
-	QuaZip	m_zip;
-};
 
 
 //**************************************************************************
@@ -121,32 +52,11 @@ IconLoader::~IconLoader()
 
 void IconLoader::refreshIcons()
 {
-	// clear ourselves out
+	// clear out the icon map
 	m_icon_map.clear();
-	m_finders.clear();
 
-	// loop through all icon paths
-	QStringList paths = m_prefs.getSplitPaths(Preferences::global_path_type::ICONS);
-	for (QString &path : paths)
-	{
-		// try to create an appropiate path entry
-		std::unique_ptr<IconFinder> iconFinder;
-		QFileInfo fi(path);
-		if (fi.isDir())
-		{
-			iconFinder = std::make_unique<DirectoryIconFinder>(std::move(path));
-		}
-		else if (fi.isFile())
-		{
-			auto zipIconFinder = std::make_unique<ZipIconFinder>(path);
-			if (zipIconFinder->openZip())
-				iconFinder = std::move(zipIconFinder);
-		}
-
-		// if successful, add it
-		if (iconFinder)
-			m_finders.push_back(std::move(iconFinder));
-	}
+	// set up the asset finder
+	m_assetFinder.setPaths(m_prefs, Preferences::global_path_type::ICONS);
 }
 
 
@@ -167,35 +77,27 @@ const QPixmap &IconLoader::getIcon(const info::machine &machine)
 //  getIconByName
 //-------------------------------------------------
 
-const QPixmap *IconLoader::getIconByName(const QString &icon_name)
+const QPixmap *IconLoader::getIconByName(const QString &iconName)
 {
 	// look up the result in the icon map
-	auto iter = m_icon_map.find(icon_name);
+	auto iter = m_icon_map.find(iconName);
 
 	// did we come up empty?
 	if (iter == m_icon_map.end())
 	{
 		// we have not tried to load this icon - first determine the real file name
-		QString icon_file_name = icon_name + ".ico";
+		QString iconFileName = iconName + ".ico";
 
-		// and try to load it from each ZIP file
-		for (const auto &finder : m_finders)
+		// and try to load the icon
+		QByteArray byteArray = m_assetFinder.findAssetBytes(iconFileName);
+		if (!byteArray.isEmpty())
 		{
-			// try to get a stream and open it
-			std::unique_ptr<QIODevice> stream = finder->getIconStream(icon_file_name);
-			if (stream && stream->open(QIODevice::ReadOnly))
-			{
-				// read the bytes
-				QByteArray byteArray = stream->readAll();
+			// we've found an entry - try to load the icon; note that while this can
+			// fail, we want to memoize the failure
+			std::optional<QPixmap> icon = LoadIcon(std::move(iconFileName), byteArray);
 
-				// we've found an entry - try to load the icon; note that while this can
-				// fail, we want to memoize the failure
-				std::optional<QPixmap> icon = LoadIcon(std::move(icon_file_name), byteArray);
-
-				// record the result in the icon map
-				iter = m_icon_map.emplace(icon_name, std::move(icon)).first;
-				break;
-			}
+			// record the result in the icon map
+			iter = m_icon_map.emplace(iconName, std::move(icon)).first;
 		}
 	}
 
