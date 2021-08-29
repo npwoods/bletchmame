@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <charconv>
 #include <expat.h>
 #include <inttypes.h>
 #include <string>
