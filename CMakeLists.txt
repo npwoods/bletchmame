@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(USE_SHARED_LIBS "Use shared libraries" ON)
 if (NOT USE_SHARED_LIBS)
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES} -lstdc++ -lpthread")
 add_definitions(-DQUAZIP_STATIC)
 endif()
 
