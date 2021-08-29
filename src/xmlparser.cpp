@@ -88,13 +88,12 @@ namespace
 	public:
 		bool operator()(const std::string &text, T &value) const
 		{
-			float f;
-			const auto res = std::from_chars(text.data(), text.data() + text.size(), f, std::chars_format::general);
-			if (res.ec != std::errc() || res.ptr - text.data() != text.size())
-				return false;
-
-			value = (T)f;
-			return value == f;
+			// it would be better to use std::from_chars(), but GCC 10 doesn't handle it
+			// well; using Qt is a stopgap for now until the GCC 11 upgrade happens
+			QString s = QString::fromStdString(text);
+			bool ok;
+			value = (T) s.toDouble(&ok);
+			return ok;
 		}
 	};
 };
