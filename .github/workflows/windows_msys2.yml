@@ -84,6 +84,10 @@ jobs:
       run: |
         sh scripts/bletchmame_build_msys2.sh
 
+    # Validate DLL Imports
+    - name: Validate DLL Imports
+      run: perl scripts/validate_dllimports.pl
+
     # Run Unit Tests
     - name: Run Unit Tests
       run: ./build/msys2/BletchMAME_tests.exe

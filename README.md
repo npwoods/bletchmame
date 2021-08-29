@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.8 (TBD)
+	- Removed accidentally introduced dependency on libwinpthread-1.dll
+
 - 2.7 (2021-Aug-27)
 	- Updated to Qt 6.1
 		- On Windows, Qt is now built statically and optimized for size
