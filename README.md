@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.8 (TBD)
+	- Added support for compressed snapshots (#128)
 	- Removed accidentally introduced dependency on libwinpthread-1.dll
 
 - 2.7 (2021-Aug-27)

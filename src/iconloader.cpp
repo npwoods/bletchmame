@@ -89,12 +89,9 @@ const QPixmap *IconLoader::getIconByName(const QString &iconName)
 		QString iconFileName = iconName + ".ico";
 
 		// and try to load the icon
-		std::unique_ptr<QIODevice> stream = m_assetFinder.findAsset(iconFileName);
-		if (stream)
+		QByteArray byteArray = m_assetFinder.findAssetBytes(iconFileName);
+		if (!byteArray.isEmpty())
 		{
-			// read the bytes
-			QByteArray byteArray = stream->readAll();
-
 			// we've found an entry - try to load the icon; note that while this can
 			// fail, we want to memoize the failure
 			std::optional<QPixmap> icon = LoadIcon(std::move(iconFileName), byteArray);

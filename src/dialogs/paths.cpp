@@ -328,7 +328,8 @@ Preferences::global_path_type PathsDialog::getCurrentPath() const
 bool PathsDialog::isFilePathType(Preferences::global_path_type type)
 {
 	return type == Preferences::global_path_type::EMU_EXECUTABLE
-		|| type == Preferences::global_path_type::ICONS;
+		|| type == Preferences::global_path_type::ICONS
+		|| type == Preferences::global_path_type::SNAPSHOTS;
 }
 
 

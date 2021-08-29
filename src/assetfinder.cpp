@@ -93,6 +93,16 @@ AssetFinder::AssetFinder()
 
 
 //-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
+AssetFinder::AssetFinder(const Preferences &prefs, Preferences::global_path_type pathType)
+{
+	setPaths(prefs, pathType);
+}
+
+
+//-------------------------------------------------
 //  dtor
 //-------------------------------------------------
 
@@ -155,7 +165,7 @@ void AssetFinder::setPaths(const Preferences &prefs, Preferences::global_path_ty
 //  findAsset
 //-------------------------------------------------
 
-std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName)
+std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName) const
 {
 	for (const Lookup::ptr &lookup : m_lookups)
 	{
@@ -164,4 +174,18 @@ std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName)
 			return stream;
 	}
 	return { };
+}
+
+
+//-------------------------------------------------
+//  findAssetBytes
+//-------------------------------------------------
+
+QByteArray AssetFinder::findAssetBytes(const QString &fileName) const
+{
+	QByteArray result;
+	std::unique_ptr<QIODevice> stream = findAsset(fileName);
+	if (stream)
+		result = stream->readAll();
+	return result;
 }
