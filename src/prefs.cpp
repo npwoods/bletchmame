@@ -171,18 +171,18 @@ Preferences::Preferences()
 //  getPathCategory
 //-------------------------------------------------
 
-Preferences::path_category Preferences::getPathCategory(global_path_type path_type)
+Preferences::PathCategory Preferences::getPathCategory(global_path_type path_type)
 {
-	path_category result;
+	PathCategory result;
 	switch (path_type)
 	{
 	case Preferences::global_path_type::EMU_EXECUTABLE:
-		result = path_category::FILE;
+		result = PathCategory::SingleFile;
 		break;
 
 	case Preferences::global_path_type::CONFIG:
 	case Preferences::global_path_type::NVRAM:
-		result = path_category::SINGLE_DIRECTORY;
+		result = PathCategory::SingleDirectory;
 		break;
 
 	case Preferences::global_path_type::ROMS:
@@ -192,12 +192,12 @@ Preferences::path_category Preferences::getPathCategory(global_path_type path_ty
 	case Preferences::global_path_type::PLUGINS:
 	case Preferences::global_path_type::PROFILES:
 	case Preferences::global_path_type::CHEATS:
-		result = path_category::MULTIPLE_DIRECTORIES;
+		result = PathCategory::MultipleDirectories;
 		break;
 
 	case Preferences::global_path_type::ICONS:
 	case Preferences::global_path_type::SNAPSHOTS:
-		result = path_category::MULTIPLE_MIXED;
+		result = PathCategory::MultipleDirectoriesOrArchives;
 		break;
 
 	default:
@@ -211,17 +211,17 @@ Preferences::path_category Preferences::getPathCategory(global_path_type path_ty
 //  getPathCategory
 //-------------------------------------------------
 
-Preferences::path_category Preferences::getPathCategory(machine_path_type path_type)
+Preferences::PathCategory Preferences::getPathCategory(machine_path_type path_type)
 {
-	path_category result;
+	PathCategory result;
 	switch (path_type)
 	{
 	case Preferences::machine_path_type::LAST_SAVE_STATE:
-		result = path_category::FILE;
+		result = PathCategory::SingleFile;
 		break;
 
 	case Preferences::machine_path_type::WORKING_DIRECTORY:
-		result = path_category::SINGLE_DIRECTORY;
+		result = PathCategory::SingleDirectory;
 		break;
 
 	default:
@@ -235,10 +235,10 @@ Preferences::path_category Preferences::getPathCategory(machine_path_type path_t
 //  ensureDirectoryPathsHaveFinalPathSeparator
 //-------------------------------------------------
 
-void Preferences::ensureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path)
+void Preferences::ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path)
 {
-	bool isDirectory = category == path_category::SINGLE_DIRECTORY
-		|| category == path_category::MULTIPLE_DIRECTORIES;
+	bool isDirectory = category == PathCategory::SingleDirectory
+		|| category == PathCategory::MultipleDirectories;
 	if (isDirectory && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
 	{
 		path += QDir::separator();
@@ -307,7 +307,7 @@ QStringList Preferences::getSplitPaths(global_path_type type) const
 
 QString Preferences::getGlobalPathWithSubstitutions(global_path_type type) const
 {
-	assert(getPathCategory(type) != path_category::FILE);
+	assert(getPathCategory(type) != PathCategory::SingleFile);
 	return applySubstitutions(getGlobalPath(type));
 }
 

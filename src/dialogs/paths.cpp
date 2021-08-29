@@ -266,9 +266,9 @@ void PathsDialog::updateCurrentPathList()
 {
 	const Preferences::global_path_type currentPathType = getCurrentPath();
 	bool applySubstitutions = currentPathType != Preferences::global_path_type::EMU_EXECUTABLE;
-	Preferences::path_category category = Preferences::getPathCategory(currentPathType);
-	bool isMultiple = category == Preferences::path_category::MULTIPLE_DIRECTORIES
-		|| category == Preferences::path_category::MULTIPLE_MIXED;
+	Preferences::PathCategory category = Preferences::getPathCategory(currentPathType);
+	bool isMultiple = category == Preferences::PathCategory::MultipleDirectories
+		|| category == Preferences::PathCategory::MultipleDirectoriesOrArchives;
 	bool supportsFiles = isFilePathType(currentPathType);
 	bool supportsDirectories = isDirPathType(currentPathType);
 	
