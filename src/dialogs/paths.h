@@ -67,7 +67,6 @@ private:
 
 	// static methods
 	static QStringList buildComboBoxStrings();
-	static bool isFilePathType(Preferences::global_path_type type);
 	static bool isDirPathType(Preferences::global_path_type type);
 };
 

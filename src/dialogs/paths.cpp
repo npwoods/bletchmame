@@ -13,6 +13,7 @@
 
 #include "dialogs/paths.h"
 #include "ui_paths.h"
+#include "assetfinder.h"
 #include "prefs.h"
 #include "utility.h"
 
@@ -30,10 +31,10 @@ public:
 	PathListModel(QObject &parent, std::function<QString(const QString &)> &&applySubstitutionsFunc);
 
 	// accessors
-	bool expandable() const { return m_expandable; }
+	bool isExpandable() const;
 
 	// setting/getting full paths
-	void setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool supportsFiles, bool supportsDirectories);
+	void setPaths(const QString &paths, bool applySubstitutions, Preferences::PathCategory pathCategory);
 	QString paths() const;
 
 	// setting/getting individual paths
@@ -60,9 +61,7 @@ private:
 
 	std::function<QString(const QString &)>	m_applySubstitutionsFunc;
 	bool									m_applySubstitutions;
-	bool									m_expandable;
-	bool									m_supportsFiles;
-	bool									m_supportsDirectories;
+	Preferences::PathCategory				m_pathCategory;
 	std::vector<Entry>						m_entries;
 
 	// private methods
@@ -218,8 +217,8 @@ void PathsDialog::updateButtonsEnabled()
 		: std::optional<int>();
 	bool isSelectingPath = selectedItem.has_value() && selectedItem.value() < listModel().pathCount();
 
-	m_ui->insertButton->setEnabled(listModel().expandable());
-	m_ui->deleteButton->setEnabled(listModel().expandable() && isSelectingPath);
+	m_ui->insertButton->setEnabled(listModel().isExpandable());
+	m_ui->deleteButton->setEnabled(listModel().isExpandable() && isSelectingPath);
 }
 
 
@@ -266,18 +265,12 @@ void PathsDialog::updateCurrentPathList()
 {
 	const Preferences::global_path_type currentPathType = getCurrentPath();
 	bool applySubstitutions = currentPathType != Preferences::global_path_type::EMU_EXECUTABLE;
-	Preferences::path_category category = Preferences::getPathCategory(currentPathType);
-	bool isMultiple = category == Preferences::path_category::MULTIPLE_DIRECTORIES
-		|| category == Preferences::path_category::MULTIPLE_MIXED;
-	bool supportsFiles = isFilePathType(currentPathType);
-	bool supportsDirectories = isDirPathType(currentPathType);
+	Preferences::PathCategory category = Preferences::getPathCategory(currentPathType);
 	
 	listModel().setPaths(
 		m_pathLists[(int)currentPathType],
 		applySubstitutions,
-		isMultiple,
-		supportsFiles,
-		supportsDirectories);
+		category);
 
 	m_listViewModelCurrentPath = currentPathType;
 }
@@ -318,18 +311,6 @@ Preferences::global_path_type PathsDialog::getCurrentPath() const
 {
 	int selection = m_ui->comboBox->currentIndex();
 	return static_cast<Preferences::global_path_type>(selection);
-}
-
-
-//-------------------------------------------------
-//  isFilePathType
-//-------------------------------------------------
-
-bool PathsDialog::isFilePathType(Preferences::global_path_type type)
-{
-	return type == Preferences::global_path_type::EMU_EXECUTABLE
-		|| type == Preferences::global_path_type::ICONS
-		|| type == Preferences::global_path_type::SNAPSHOTS;
 }
 
 
@@ -375,9 +356,22 @@ QString PathsDialog::browseForPathDialog(QWidget &parent, Preferences::global_pa
 	};
 
 	// determine the FileMode
-	QFileDialog::FileMode fileMode = isDirPathType(type)
-		? QFileDialog::FileMode::Directory
-		: QFileDialog::FileMode::ExistingFile;
+	QFileDialog::FileMode fileMode;
+	switch (Preferences::getPathCategory(type))
+	{
+	case Preferences::PathCategory::SingleFile:
+		fileMode = QFileDialog::FileMode::ExistingFile;
+		break;
+
+	case Preferences::PathCategory::SingleDirectory:
+	case Preferences::PathCategory::MultipleDirectories:
+	case Preferences::PathCategory::MultipleDirectoriesOrArchives:
+		fileMode = QFileDialog::FileMode::Directory;
+		break;
+
+	default:
+		throw false;
+	}
 
 	// show the dialog
 	QFileDialog dialog(&parent, caption, default_path, filter);
@@ -415,14 +409,12 @@ PathsDialog::PathListModel::PathListModel(QObject &parent, std::function<QString
 //  PathListModel::setPaths
 //-------------------------------------------------
 
-void PathsDialog::PathListModel::setPaths(const QString &paths, bool applySubstitutions, bool expandable, bool supportsFiles, bool supportsDirectories)
+void PathsDialog::PathListModel::setPaths(const QString &paths, bool applySubstitutions, Preferences::PathCategory pathCategory)
 {
 	beginResetModel();
 
 	m_applySubstitutions = applySubstitutions;
-	m_expandable = expandable;
-	m_supportsFiles = supportsFiles;
-	m_supportsDirectories = supportsDirectories;
+	m_pathCategory = pathCategory;
 	m_entries.clear();
 	if (!paths.isEmpty())
 	{
@@ -436,6 +428,17 @@ void PathsDialog::PathListModel::setPaths(const QString &paths, bool applySubsti
 	}
 
 	endResetModel();
+}
+
+
+//-------------------------------------------------
+//  PathListModel::isExpandable
+//-------------------------------------------------
+
+bool PathsDialog::PathListModel::isExpandable() const
+{
+	return m_pathCategory == Preferences::PathCategory::MultipleDirectories
+		|| m_pathCategory == Preferences::PathCategory::MultipleDirectoriesOrArchives;
 }
 
 
@@ -650,15 +653,31 @@ bool PathsDialog::PathListModel::validateAndCanonicalize(QString &path) const
 
 	// check the file
 	bool isValid = false;
-	QFileInfo fileInfo(pathAfterSubstitutions);
-	if (fileInfo.isFile())
+	QFileInfo fi(pathAfterSubstitutions);
+	if (fi.exists())
 	{
-		isValid = m_supportsFiles;
-	}
-	else if (fileInfo.isDir())
-	{
-		isValid = m_supportsDirectories;
-		if (!path.endsWith('/'))
+		switch (m_pathCategory)
+		{
+		case Preferences::PathCategory::SingleFile:
+			isValid = fi.isFile();
+			break;
+
+		case Preferences::PathCategory::SingleDirectory:
+		case Preferences::PathCategory::MultipleDirectories:
+			isValid = fi.isDir();
+			break;
+
+		case Preferences::PathCategory::MultipleDirectoriesOrArchives:
+			isValid = fi.isDir()
+				|| (fi.isFile() && AssetFinder::isValidArchive(pathAfterSubstitutions));
+			break;
+
+		default:
+			throw false;
+		}
+
+		// ensure a trailing slash if we're a directory
+		if (fi.isDir() && !path.endsWith('/'))
 			path += '/';
 	}
 	return isValid;
@@ -672,7 +691,7 @@ bool PathsDialog::PathListModel::validateAndCanonicalize(QString &path) const
 bool PathsDialog::PathListModel::hasExpandEntry() const
 {
 	return m_entries.size() == 0
-		|| (m_expandable && !m_entries[m_entries.size() - 1].m_path.isEmpty());
+		|| (isExpandable() && !m_entries[m_entries.size() - 1].m_path.isEmpty());
 }
 
 

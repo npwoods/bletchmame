@@ -15,7 +15,6 @@ class PathsDialog::Test : public QObject
 
 private slots:
 	void buildComboBoxStrings();
-	void fileAndDirTypes();
 };
 
 
@@ -36,23 +35,6 @@ void PathsDialog::Test::buildComboBoxStrings()
 	for (const QString &s : strs)
 	{
 		QVERIFY(!s.isEmpty());
-	}
-}
-
-
-//-------------------------------------------------
-//  fileAndDirTypes
-//-------------------------------------------------
-
-void PathsDialog::Test::fileAndDirTypes()
-{
-	// ensure that all path types are either a file or dir
-	for (int i = 0; i < static_cast<int>(Preferences::global_path_type::COUNT); i++)
-	{
-		Preferences::global_path_type path_type = static_cast<Preferences::global_path_type>(i);
-		bool is_file_path_type = isFilePathType(path_type);
-		bool is_dir_path_type = isDirPathType(path_type);
-		QVERIFY(is_file_path_type || is_dir_path_type);
 	}
 }
 

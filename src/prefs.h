@@ -73,12 +73,12 @@ public:
 	};
 
 	// is this path type for a file, a directory, or multiple directories?
-	enum class path_category
+	enum class PathCategory
 	{
-		FILE,
-		SINGLE_DIRECTORY,
-		MULTIPLE_DIRECTORIES,
-		MULTIPLE_MIXED
+		SingleFile,
+		SingleDirectory,
+		MultipleDirectories,
+		MultipleDirectoriesOrArchives
 	};
 
 	// we have three different list views, each with a tab; this identifies them
@@ -95,9 +95,9 @@ public:
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
-	static path_category getPathCategory(global_path_type path_type);
-	static path_category getPathCategory(machine_path_type path_type);
-    static void ensureDirectoryPathsHaveFinalPathSeparator(path_category category, QString &path);
+	static PathCategory getPathCategory(global_path_type path_type);
+	static PathCategory getPathCategory(machine_path_type path_type);
+    static void ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path);
 
     const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
 	void setGlobalPath(global_path_type type, QString &&path);

@@ -189,3 +189,15 @@ QByteArray AssetFinder::findAssetBytes(const QString &fileName) const
 		result = stream->readAll();
 	return result;
 }
+
+
+//-------------------------------------------------
+//  isValidArchive - utility method housed here
+//	to insulate rest of app from QuaZip
+//-------------------------------------------------
+
+bool AssetFinder::isValidArchive(const QString &path)
+{
+	QuaZip zip(path);
+	return zip.open(QuaZip::Mode::mdUnzip);
+}
