@@ -36,6 +36,7 @@ namespace
 		void loadFailuresDontMutate();
 		void readsAllBytes();
 		void sortable();
+		void localeSensitivity();
 		void scrutinize_alienar();
 		void scrutinize_coco();
 		void scrutinize_coco2b();
@@ -242,6 +243,27 @@ void Test::viewIterators()
 	QVERIFY(!(iter1 != iter4));
 	QVERIFY(iter2 != iter4);
 	QVERIFY(iter3 != iter4);
+}
+
+
+//-------------------------------------------------
+//  localeSensitivity - checks to see if we have
+//	problems due to sensitivity on the current locale
+// 
+//	this was bug #143
+//-------------------------------------------------
+
+void Test::localeSensitivity()
+{
+	// set the locale to a locale that does not use periods as decimal separators
+	TestLocaleOverride override("it-IT");
+
+	// try loading the info DB
+	info::database db;
+	bool dbChanged = false;
+	db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
+	QVERIFY(db.load(buildInfoDatabase()));
+	QVERIFY(dbChanged);
 }
 
 

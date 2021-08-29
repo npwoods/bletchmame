@@ -45,6 +45,19 @@ public:
     }
 };
 
+
+// ======================> TestLocaleOverride
+class TestLocaleOverride
+{
+public:
+    TestLocaleOverride(const char *locale);
+    ~TestLocaleOverride();
+
+private:
+    std::string m_oldLocale;
+};
+
+
 // runners
 int runAndExcerciseMame(int argc, char *argv[]);
 int runAndExcerciseListXml(int argc, char *argv[], bool sequential);

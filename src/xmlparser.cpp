@@ -87,9 +87,9 @@ namespace
 	public:
 		bool operator()(const std::string &text, T &value) const
 		{
-			char *endptr;
-			float f = strtof(text.c_str(), &endptr);
-			if (endptr != text.c_str() + text.size())
+			float f;
+			const auto res = std::from_chars(text.data(), text.data() + text.size(), f, std::chars_format::general);
+			if (res.ec != std::errc() || res.ptr - text.data() != text.size())
 				return false;
 
 			value = (T)f;
