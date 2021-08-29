@@ -198,6 +198,7 @@ add_executable(BletchMAME_tests
 	src/tests/test.h
 	src/tests/listxmlrunner.cpp
 	src/tests/mamerunner.cpp
+	src/tests/assetfinder_test.cpp
 	src/tests/client_test.cpp
 	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp
