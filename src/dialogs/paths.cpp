@@ -13,6 +13,7 @@
 
 #include "dialogs/paths.h"
 #include "ui_paths.h"
+#include "assetfinder.h"
 #include "prefs.h"
 #include "utility.h"
 
@@ -667,7 +668,8 @@ bool PathsDialog::PathListModel::validateAndCanonicalize(QString &path) const
 			break;
 
 		case Preferences::PathCategory::MultipleDirectoriesOrArchives:
-			isValid = fi.isFile() || fi.isDir();
+			isValid = fi.isDir()
+				|| (fi.isFile() && AssetFinder::isValidArchive(pathAfterSubstitutions));
 			break;
 
 		default:

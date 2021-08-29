@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.9 (TBD)
+	- The Paths Dialog will highlight file paths for snapshots and icons that are not valid archives in red
+
 - 2.8 (2021-Aug-29)
 	- Added support for snapshots in ZIP files instead of in directories (#128)
 	- Fixed an issue in Info XML parsing caused by inappropriately relying on the current locale's rules (#143) [Julian Sikorski]

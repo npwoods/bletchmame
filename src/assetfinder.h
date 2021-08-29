@@ -34,6 +34,9 @@ public:
 	std::unique_ptr<QIODevice> findAsset(const QString &fileName) const;
 	QByteArray findAssetBytes(const QString &fileName) const;
 
+	// statics
+	static bool isValidArchive(const QString &path);
+
 private:
 	class Lookup;
 	class DirectoryLookup;
