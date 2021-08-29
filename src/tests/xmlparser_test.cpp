@@ -18,6 +18,7 @@ private slots:
 	void unicode();
 	void skipping();
 	void multiple();
+	void localeSensitivity();
 	void xmlParsingError();
 
 	void attributeParsingError_int_1()		{ attributeParsingError<int>("<alpha><bravo value=\"NOT_AN_INTEGER\"/></alpha>"); }
@@ -185,6 +186,34 @@ void XmlParser::Test::multiple()
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
 	QVERIFY(total == 10);
+}
+
+
+//-------------------------------------------------
+//  localeSensitivity - checks to see if we have
+//	problems due to sensitivity on the current locale
+// 
+//	this was bug #143
+//-------------------------------------------------
+
+void XmlParser::Test::localeSensitivity()
+{
+	// set the locale to a locale that does not use periods as decimal separators; this
+	// is not exactly thread safe, but this is good enough for the purposes of unit testing
+	TestLocaleOverride override("it-IT");
+
+	XmlParser xml;
+	std::optional<float> f = 0;
+	xml.onElementBegin({ "alpha" }, [&](const XmlParser::Attributes &attributes)
+	{
+		f = attributes.get<float>("bravo");
+	});
+
+	const char *xmlText = "<alpha bravo=\"1.234\"/>";
+	bool result = xml.parseBytes(xmlText, strlen(xmlText));
+	QVERIFY(result);
+	QVERIFY(f.has_value());
+	QVERIFY(std::abs(*f - 1.234) < 0.001);
 }
 
 

@@ -49,6 +49,33 @@ int TestFixtureBase::testFixtureCount()
 
 
 //-------------------------------------------------
+//  TestLocaleOverride ctor
+//-------------------------------------------------
+
+TestLocaleOverride::TestLocaleOverride(const char *localeOverride)
+{
+    // get the old locale
+    const char *oldLocale = setlocale(LC_ALL, nullptr);
+    if (oldLocale)
+        m_oldLocale = oldLocale;
+
+    // not exactly thread safe, but good enough for now
+    setlocale(LC_ALL, localeOverride);
+}
+
+
+//-------------------------------------------------
+//  TestLocaleOverride dtor
+//-------------------------------------------------
+
+TestLocaleOverride::~TestLocaleOverride()
+{
+    // restore the old locale
+    setlocale(LC_ALL, m_oldLocale.c_str());
+}
+
+
+//-------------------------------------------------
 //  runTestFixtures
 //-------------------------------------------------
 

@@ -10,6 +10,8 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.8 (TBD)
 	- Added support for compressed snapshots (#128)
+	- Fixed an issue in Info XML parsing caused by inappropriately relying on the current locale's rules (#143) [Julian Sikorski]
+		- This rendered BletchMAME unusable in some locales
 	- Fixed a bug where updates to the snapshot path failed to trigger an update of the info panel
 	- Removed accidentally introduced dependency on libwinpthread-1.dll
 

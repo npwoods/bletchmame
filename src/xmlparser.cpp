@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <charconv>
 #include <expat.h>
 #include <inttypes.h>
 #include <string>
@@ -87,13 +88,12 @@ namespace
 	public:
 		bool operator()(const std::string &text, T &value) const
 		{
-			char *endptr;
-			float f = strtof(text.c_str(), &endptr);
-			if (endptr != text.c_str() + text.size())
-				return false;
-
-			value = (T)f;
-			return value == f;
+			// it would be better to use std::from_chars(), but GCC 10 doesn't handle it
+			// well; using Qt is a stopgap for now until the GCC 11 upgrade happens
+			QString s = QString::fromStdString(text);
+			bool ok;
+			value = (T) s.toDouble(&ok);
+			return ok;
 		}
 	};
 };
