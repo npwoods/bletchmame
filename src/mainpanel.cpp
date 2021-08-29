@@ -207,6 +207,16 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 	// did the user change the icons path?
 	if (util::contains(changedPaths, Preferences::global_path_type::ICONS))
 		m_iconLoader.refreshIcons();
+
+	// did the user change the snapshots path?
+	if (util::contains(changedPaths, Preferences::global_path_type::SNAPSHOTS))
+	{
+		QString machineName;
+		QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
+		if (selection.size() > 0)
+			machineName = machineFromModelIndex(selection[0]).name();
+		updateInfoPanel(machineName);
+	}
 }
 
 
