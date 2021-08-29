@@ -72,6 +72,8 @@ include(GNUInstallDirs)
 #############################################################################
 
 add_library(BletchMAME_core
+	src/assetfinder.cpp
+	src/assetfinder.h
 	src/buildversion.cpp
 	src/buildversion.h
 	src/client.cpp

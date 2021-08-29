@@ -18,6 +18,7 @@
 #include <unordered_map>
 
 #include "info.h"
+#include "assetfinder.h"
 
 class Preferences;
 
@@ -44,13 +45,9 @@ public:
 	virtual const QPixmap &getIcon(const info::machine &machine) final;
 
 private:
-	class IconFinder;
-	class DirectoryIconFinder;
-	class ZipIconFinder;
-	
 	Preferences &										m_prefs;
 	std::unordered_map<QString, std::optional<QPixmap>>	m_icon_map;
-	std::vector<std::unique_ptr<IconFinder>>			m_finders;
+	AssetFinder											m_assetFinder;
 	QPixmap												m_blankIcon;
 
 	std::optional<QPixmap> LoadIcon(QString &&icon_name, const QByteArray &byteArray);
