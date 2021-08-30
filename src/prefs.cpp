@@ -77,9 +77,9 @@ static bool isValidDimension(int dimension)
 //  getListViewSelectionKey
 //-------------------------------------------------
 
-static QString getListViewSelectionKey(const char *view_type, const QString &softlist)
+static QString getListViewSelectionKey(std::string_view view_type, const QString &softlist)
 {
-	return QString(view_type) + QString(1, '\0') + softlist;
+	return QString::fromLocal8Bit(view_type.data(), view_type.size()) + QString(1, '\0') + softlist;
 }
 
 
@@ -555,11 +555,11 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::string> list_view = attributes.get<std::string>("view");
+		std::optional<std::string_view> list_view = attributes.get<std::string_view>("view");
 		if (list_view)
 		{
-			std::string softlist = attributes.get<std::string>("softlist").value_or("");
-			QString key = getListViewSelectionKey(list_view->c_str(), QString::fromStdString(softlist));
+			QString softlist = attributes.get<QString>("softlist").value_or("");
+			QString key = getListViewSelectionKey(*list_view, std::move(softlist));
 			current_list_view_parameter = &m_list_view_selection[key];
 		}
 	});
@@ -577,11 +577,11 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::string> view_type = attributes.get<std::string>("type");
-		std::optional<std::string> id = attributes.get<std::string>("id");
+		std::optional<std::string_view> view_type = attributes.get<std::string_view>("type");
+		std::optional<std::string_view> id = attributes.get<std::string_view>("id");
 		if (view_type && id)
 		{
-			ColumnPrefs &col_prefs = m_column_prefs[*view_type][*id];
+			ColumnPrefs &col_prefs = m_column_prefs[std::string(*view_type)][std::string(*id)];
 			col_prefs.m_width = attributes.get<int>("width").value_or(col_prefs.m_width);
 			col_prefs.m_order = attributes.get<int>("order").value_or(col_prefs.m_order);
 			col_prefs.m_sort = attributes.get<Qt::SortOrder>("sort", s_column_sort_type_parser);

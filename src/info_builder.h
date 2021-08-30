@@ -39,7 +39,7 @@ namespace info
 			typedef std::array<char, 6> SsoBuffer;
 
 			string_table();
-			std::uint32_t get(const std::string &string);
+			std::uint32_t get(std::string_view string);
 			std::uint32_t get(const QString &string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char> &data() const;
