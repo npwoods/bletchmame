@@ -160,15 +160,15 @@ public:
 	{
 	}
 
-	bool operator()(const std::string &text, T &value) const
+	bool operator()(std::string_view text, T &value) const
 	{
-		auto iter = m_map.find(text.c_str());
+		auto iter = m_map.find(text.data());
 		bool success = iter != m_map.end();
 		value = success ? iter->second : T();
 		return success;
 	}
 
-	bool operator()(const std::string &text, std::optional<T> &value) const
+	bool operator()(std::string_view text, std::optional<T> &value) const
 	{
 		T inner_value;
 		bool success = (*this)(text, inner_value);

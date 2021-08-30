@@ -174,7 +174,7 @@ static constexpr std::uint8_t encodeEnum(std::optional<T> &&value, std::uint8_t 
 //-------------------------------------------------
 
 template<int N>
-static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::string> &hex)
+static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::string_view> &hex)
 {
 	std::size_t pos = hex.has_value() ? util::binaryFromHex(dest, *hex) : 0;
 	std::fill(dest + pos, dest + N, 0);
@@ -292,8 +292,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		rom.m_name_strindex					= m_strings.get(attributes, "name");
 		rom.m_bios_strindex					= m_strings.get(attributes, "bios");
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
-		binaryFromHex(rom.m_crc,			  attributes.get<std::string>("crc"));
-		binaryFromHex(rom.m_sha1,			  attributes.get<std::string>("sha1"));
+		binaryFromHex(rom.m_crc,			  attributes.get<std::string_view>("crc"));
+		binaryFromHex(rom.m_sha1,			  attributes.get<std::string_view>("sha1"));
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
 		rom.m_merge_strindex				= m_strings.get(attributes, "merge");
 		rom.m_region_strindex				= m_strings.get(attributes, "region");
@@ -310,7 +310,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 
 		info::binaries::disk &disk = m_disks.emplace_back();
 		disk.m_name_strindex				= m_strings.get(attributes, "name");
-		binaryFromHex(disk.m_sha1,			  attributes.get<std::string>("sha1"));
+		binaryFromHex(disk.m_sha1,			  attributes.get<std::string_view>("sha1"));
 		disk.m_merge_strindex				= m_strings.get(attributes, "merge");
 		disk.m_region_strindex				= m_strings.get(attributes, "region");
 		disk.m_index						= attributes.get<std::uint32_t>("index").value_or(0);
@@ -414,7 +414,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::string> name = attributes.get<std::string>("name");
+		std::optional<std::string_view> name = attributes.get<std::string_view>("name");
 		if (name)
 		{
 			current_device_extensions.append(*name);
@@ -610,10 +610,10 @@ info::database_builder::string_table::string_table()
 
 
 //-------------------------------------------------
-//  string_table::get(const std::string &s)
+//  string_table::get(std::string_view s)
 //-------------------------------------------------
 
-std::uint32_t info::database_builder::string_table::get(const std::string &s)
+std::uint32_t info::database_builder::string_table::get(std::string_view s)
 {
 	// try encoding as a small string
 	std::optional<std::uint32_t> ssoResult = info::database::tryEncodeAsSmallString(s);
@@ -621,7 +621,8 @@ std::uint32_t info::database_builder::string_table::get(const std::string &s)
 		return *ssoResult;
 
 	// if we've already cached this value, look it up
-	auto iter = m_map.find(s);
+	std::string str(s);
+	auto iter = m_map.find(str);
 	if (iter != m_map.end())
 		return iter->second;
 
@@ -629,10 +630,11 @@ std::uint32_t info::database_builder::string_table::get(const std::string &s)
 	std::uint32_t result = to_uint32(m_data.size());
 
 	// append the string (including trailing NUL) to m_data
-	m_data.insert(m_data.end(), s.c_str(), s.c_str() + s.size() + 1);
+	m_data.insert(m_data.end(), s.data(), s.data() + s.size());
+	m_data.insert(m_data.end(), '\0');
 
 	// and to m_map
-	m_map[s] = result;
+	m_map.emplace(std::move(str), result);
 
 	// and return
 	return result;
@@ -656,8 +658,8 @@ std::uint32_t info::database_builder::string_table::get(const QString &s)
 
 std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
 {
-	std::optional<QString> attributeValue = attributes.get<QString>(attribute);
-	return get(attributeValue ? *attributeValue : QString());
+	std::optional<std::string_view> attributeValue = attributes.get<std::string_view>(attribute);
+	return get(attributeValue.value_or(""));
 }
 
 

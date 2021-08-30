@@ -69,7 +69,7 @@ public:
 		std::optional<T> get(const char *attribute, TFunc func) const
 		{
 			std::optional<T> result = { };
-			std::optional<std::string> text = get<std::string>(attribute);
+			std::optional<std::string_view> text = get<std::string_view>(attribute);
 			if (text.has_value())
 			{
 				T funcResult;
@@ -86,7 +86,7 @@ public:
 		const char **	m_attributes;
 
 		const char *internalGet(const char *attribute, bool return_null = false) const;
-		void reportAttributeParsingError(const char *attribute, const std::string &value) const;
+		void reportAttributeParsingError(const char *attribute, std::string_view value) const;
 	};
 
 	// ctor/dtor
@@ -196,7 +196,7 @@ template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attr
 template<> std::optional<bool>			XmlParser::Attributes::get<bool>(const char *attribute) const;
 template<> std::optional<float>			XmlParser::Attributes::get<float>(const char *attribute) const;
 template<> std::optional<QString>		XmlParser::Attributes::get<QString>(const char *attribute) const;
-template<> std::optional<std::string>	XmlParser::Attributes::get<std::string>(const char *attribute) const;
+template<> std::optional<std::string_view>	XmlParser::Attributes::get<std::string_view>(const char *attribute) const;
 template<> std::optional<std::uint8_t>	XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const;
 template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
 template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;

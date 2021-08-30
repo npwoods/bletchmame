@@ -42,11 +42,11 @@ namespace
 		{
 		}
 
-		bool operator()(const std::string &text, T &value) const
+		bool operator()(std::string_view text, T &value) const
 		{
 			char *endptr;
-			long long l = strtoll(text.c_str(), &endptr, m_radix);
-			if (endptr != text.c_str() + text.size())
+			long long l = strtoll(text.data(), &endptr, m_radix);
+			if (endptr != text.data() + text.size())
 				return false;
 
 			value = (T)l;
@@ -66,11 +66,11 @@ namespace
 		{
 		}
 
-		bool operator()(const std::string &text, T &value) const
+		bool operator()(std::string_view text, T &value) const
 		{
 			char *endptr;
-			unsigned long long l = strtoull(text.c_str(), &endptr, m_radix);
-			if (endptr != text.c_str() + text.size())
+			unsigned long long l = strtoull(text.data(), &endptr, m_radix);
+			if (endptr != text.data() + text.size())
 				return false;
 
 			value = (T)l;
@@ -86,11 +86,11 @@ namespace
 	class strtof_parser
 	{
 	public:
-		bool operator()(const std::string &text, T &value) const
+		bool operator()(std::string_view text, T &value) const
 		{
 			// it would be better to use std::from_chars(), but GCC 10 doesn't handle it
 			// well; using Qt is a stopgap for now until the GCC 11 upgrade happens
-			QString s = QString::fromStdString(text);
+			QString s = QString::fromLocal8Bit(text.data(), text.size());
 			bool ok;
 			value = (T) s.toDouble(&ok);
 			return ok;
@@ -671,15 +671,15 @@ template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char
 
 
 //-------------------------------------------------
-//  Attributes::get<std::string>
+//  Attributes::get<std::string_view>
 //-------------------------------------------------
 
-template<> std::optional<std::string> XmlParser::Attributes::get<std::string>(const char *attribute) const
+template<> std::optional<std::string_view> XmlParser::Attributes::get<std::string_view>(const char *attribute) const
 {
 	const char *s = internalGet(attribute, true);
 	return s
 		? s
-		: std::optional<std::string>();
+		: std::optional<std::string_view>();
 }
 
 
@@ -703,11 +703,11 @@ const char *XmlParser::Attributes::internalGet(const char *attribute, bool retur
 //  Attributes::reportAttributeParsingError
 //-------------------------------------------------
 
-void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, const std::string &value) const
+void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, std::string_view value) const
 {
 	QString message = QString("Error parsing attribute \"%1\" (text=\"%2\")").arg(
 		QString(attribute),
-		QString::fromStdString(value));
+		QString::fromLocal8Bit(value.data(), value.size()));
 	m_parser.appendError(std::move(message));
 }
 
