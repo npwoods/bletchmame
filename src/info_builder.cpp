@@ -266,15 +266,15 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_incomplete			= encodeBool(std::nullopt);
 		machine.m_sound_channels		= ~0;
 	});
-	xml.onElementEnd({ "mame", "machine", "description" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "description" }, [this](std::string &&content)
 	{
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
 	});
-	xml.onElementEnd({ "mame", "machine", "year" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "year" }, [this](std::string &&content)
 	{
 		util::last(m_machines).m_year_strindex = m_strings.get(content);
 	});
-	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](std::string &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
 	});
@@ -621,34 +621,24 @@ std::uint32_t info::database_builder::string_table::get(std::string_view s)
 		return *ssoResult;
 
 	// if we've already cached this value, look it up
-	std::string str(s);
-	auto iter = m_map.find(str);
+	auto iter = m_map.find(s);
 	if (iter != m_map.end())
 		return iter->second;
 
 	// we're going to append the string; the current size becomes the position of the new string
-	std::uint32_t result = to_uint32(m_data.size());
+	uint32_t sizeBeforeAppend = to_uint32(m_data.size());
 
-	// append the string (including trailing NUL) to m_data
+	// append the string to m_data (but keep track of where we are)
 	m_data.insert(m_data.end(), s.data(), s.data() + s.size());
+
+	// and append the NUL
 	m_data.insert(m_data.end(), '\0');
 
 	// and to m_map
-	m_map.emplace(std::move(str), result);
+	m_map.emplace(std::string_view(&m_data[sizeBeforeAppend], s.size()), sizeBeforeAppend);
 
 	// and return
-	return result;
-}
-
-
-//-------------------------------------------------
-//  string_table::get(const QString &s)
-//-------------------------------------------------
-
-std::uint32_t info::database_builder::string_table::get(const QString &s)
-{
-	// this is safe because QString::toStdString() specified UTF-8
-	return get(s.toStdString());
+	return sizeBeforeAppend;
 }
 
 
