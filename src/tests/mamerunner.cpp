@@ -139,11 +139,11 @@ static MameVersion getMameVersion(const QString &program)
 static void trim(std::string &s)
 {
     auto begin = std::find_if(s.begin(), s.end(), [](char c) { return !isspace(c); });
-    auto end = std::find_if(s.begin(), s.end(), [](char c) { return !isspace(c); });
-    if (begin != s.begin() || end != s.end())
+    auto end = std::find_if(s.rbegin(), s.rend(), [](char c) { return !isspace(c); });
+    if (begin != s.begin() || end != s.rbegin())
     {
-        s = (begin < end)
-            ? std::string(begin, end)
+        s = (begin < end.base())
+            ? std::string(begin, end.base())
             : std::string();
     }
 }
