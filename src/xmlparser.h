@@ -113,6 +113,7 @@ public:
 		getNode(elements)->m_beginFunc = std::move(proxy);
 	}
 
+	// onElementBegin
 	template<typename TFunc>
 	void onElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func)
 	{
@@ -123,7 +124,8 @@ public:
 		}
 	}
 
-	typedef std::function<void(QString &&content)> OnEndElementCallback;
+	// onElementEnd (std::string)
+	typedef std::function<void(std::string &&content)> OnEndElementCallback;
 	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
 		getNode(elements)->m_endFunc = std::move(func);
@@ -133,6 +135,24 @@ public:
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
 		{
 			OnEndElementCallback func_duplicate(func);
+			onElementEnd(*iter, std::move(func_duplicate));
+		}
+	}
+
+	// onElementEnd (QString)
+	typedef std::function<void(QString &&content)> OnEndElementQStringCallback;
+	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementQStringCallback &&func)
+	{
+		getNode(elements)->m_endFunc = [func{std::move(func)}](std::string &&content)
+		{
+			func(QString::fromStdString(content));
+		};
+	}
+	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementQStringCallback &&func)
+	{
+		for (auto iter = elements.begin(); iter != elements.end(); iter++)
+		{
+			OnEndElementQStringCallback func_duplicate(func);
 			onElementEnd(*iter, std::move(func_duplicate));
 		}
 	}
@@ -167,7 +187,7 @@ private:
 	Node::ptr					m_root;
 	Node *						m_currentNode;
 	int							m_skippingDepth;
-	std::optional<QString>		m_currentContent;
+	std::optional<std::string>	m_currentContent;
 	std::vector<Error>			m_errors;
 
 	bool internalParse(QIODevice &input);

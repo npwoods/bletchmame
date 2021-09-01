@@ -81,10 +81,10 @@ static void checkResponseForParseError(const MameWorkerController::Response &res
 //  receiveResponseEnsureSuccess
 //-------------------------------------------------
 
-static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerController &controller, const char *command)
+static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerController &controller, std::string_view command)
 {
     // issue the command
-    controller.issueCommand(command);
+    controller.issueCommand(QString::fromLocal8Bit(command.data(), command.size()));
 
     // and get a response
     MameWorkerController::Response response = controller.receiveResponse();
@@ -129,6 +129,23 @@ static MameVersion getMameVersion(const QString &program)
     QByteArray output = process.readAllStandardOutput();
     QString versionString = QString::fromUtf8(output);
     return MameVersion(versionString);
+}
+
+
+//-------------------------------------------------
+//  trim
+//-------------------------------------------------
+
+static void trim(std::string &s)
+{
+    auto begin = std::find_if(s.begin(), s.end(), [](char c) { return !isspace(c); });
+    auto end = std::find_if(s.rbegin(), s.rend(), [](char c) { return !isspace(c); });
+    if (begin != s.begin() || end != s.rbegin())
+    {
+        s = (begin < end.base())
+            ? std::string(begin, end.base())
+            : std::string();
+    }
 }
 
 
@@ -182,13 +199,14 @@ static void internalRunAndExcerciseMame(const QString &scriptFileName, const QSt
 
     // get ready to parse
     XmlParser xml;
-    xml.onElementEnd({ "script", "command" }, [&controller](QString &&text)
+    xml.onElementEnd({ "script", "command" }, [&controller](std::string &&text)
     {
         // normalize the text
-        text = text.trimmed() + "\n";
+        trim(text);
+        text += "\n";
 
         // issue the command
-        issueCommandAndReceiveResponse(controller, text.toLocal8Bit());
+        issueCommandAndReceiveResponse(controller, text);
     });
 
     // load the script

@@ -426,9 +426,14 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 	// set up content, but only if we expect to emit it later
 	if (m_skippingDepth == 0 && m_currentNode->m_endFunc)
+	{
 		m_currentContent.emplace();
+		m_currentContent->reserve(1024);
+	}
 	else
+	{
 		m_currentContent.reset();
+	}
 }
 
 
@@ -466,8 +471,7 @@ void XmlParser::characterData(const char *s, int len)
 {
 	if (m_currentContent.has_value())
 	{
-		QString text = QString::fromUtf8(s, len);
-		m_currentContent.value().append(std::move(text));
+		m_currentContent.value() += std::string_view(s, len);
 	}
 }
 
