@@ -173,8 +173,8 @@ static constexpr std::uint8_t encodeEnum(std::optional<T> &&value, std::uint8_t 
 //  binaryFromHex
 //-------------------------------------------------
 
-template<int N>
-static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::string_view> &hex)
+template<int N, class Char>
+static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::basic_string_view<Char>> &hex)
 {
 	std::size_t pos = hex.has_value() ? util::binaryFromHex(dest, *hex) : 0;
 	std::fill(dest + pos, dest + N, 0);
@@ -215,7 +215,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 
 	// parse the -listxml output
 	XmlParser xml;
-	std::string current_device_extensions;
+	std::u8string current_device_extensions;
 	xml.onElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
 	{
 		header.m_build_strindex = m_strings.get(attributes, "build");
@@ -266,15 +266,15 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_incomplete			= encodeBool(std::nullopt);
 		machine.m_sound_channels		= ~0;
 	});
-	xml.onElementEnd({ "mame", "machine", "description" }, [this](std::string &&content)
+	xml.onElementEnd({ "mame", "machine", "description" }, [this](std::u8string &&content)
 	{
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
 	});
-	xml.onElementEnd({ "mame", "machine", "year" }, [this](std::string &&content)
+	xml.onElementEnd({ "mame", "machine", "year" }, [this](std::u8string &&content)
 	{
 		util::last(m_machines).m_year_strindex = m_strings.get(content);
 	});
-	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](std::string &&content)
+	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](std::u8string &&content)
 	{
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
 	});
@@ -292,8 +292,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		rom.m_name_strindex					= m_strings.get(attributes, "name");
 		rom.m_bios_strindex					= m_strings.get(attributes, "bios");
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
-		binaryFromHex(rom.m_crc,			  attributes.get<std::string_view>("crc"));
-		binaryFromHex(rom.m_sha1,			  attributes.get<std::string_view>("sha1"));
+		binaryFromHex(rom.m_crc,			  attributes.get<std::u8string_view>("crc"));
+		binaryFromHex(rom.m_sha1,			  attributes.get<std::u8string_view>("sha1"));
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
 		rom.m_merge_strindex				= m_strings.get(attributes, "merge");
 		rom.m_region_strindex				= m_strings.get(attributes, "region");
@@ -310,7 +310,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 
 		info::binaries::disk &disk = m_disks.emplace_back();
 		disk.m_name_strindex				= m_strings.get(attributes, "name");
-		binaryFromHex(disk.m_sha1,			  attributes.get<std::string_view>("sha1"));
+		binaryFromHex(disk.m_sha1,			  attributes.get<std::u8string_view>("sha1"));
 		disk.m_merge_strindex				= m_strings.get(attributes, "merge");
 		disk.m_region_strindex				= m_strings.get(attributes, "region");
 		disk.m_index						= attributes.get<std::uint32_t>("index").value_or(0);
@@ -414,11 +414,11 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::string_view> name = attributes.get<std::string_view>("name");
+		std::optional<std::u8string_view> name = attributes.get<std::u8string_view>("name");
 		if (name)
 		{
 			current_device_extensions.append(*name);
-			current_device_extensions.append(",");
+			current_device_extensions.append(u8",");
 		}
 	});
 	xml.onElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](QString &&)
@@ -539,7 +539,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	// build a machine index map
 	std::unordered_map<std::uint32_t, std::uint32_t> machineIndexMap;
 	machineIndexMap.reserve(m_machines.size() + 1);
-	machineIndexMap.emplace(m_strings.get(std::string()), ~0);
+	machineIndexMap.emplace(m_strings.get(std::u8string()), ~0);
 	for (auto iter = m_machines.begin(); iter != m_machines.end(); iter++)
 	{
 		machineIndexMap.emplace(iter->m_name_strindex, iter - m_machines.begin());
@@ -610,10 +610,10 @@ info::database_builder::string_table::string_table()
 
 
 //-------------------------------------------------
-//  string_table::get(std::string_view s)
+//  string_table::get(std::u8string_view s)
 //-------------------------------------------------
 
-std::uint32_t info::database_builder::string_table::get(std::string_view s)
+std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 {
 	// try encoding as a small string
 	std::optional<std::uint32_t> ssoResult = info::database::tryEncodeAsSmallString(s);
@@ -635,7 +635,7 @@ std::uint32_t info::database_builder::string_table::get(std::string_view s)
 	m_data.insert(m_data.end(), '\0');
 
 	// and to m_map
-	m_map.emplace(std::string_view(&m_data[sizeBeforeAppend], s.size()), sizeBeforeAppend);
+	m_map.emplace(std::u8string_view((const char8_t *) &m_data[sizeBeforeAppend], s.size()), sizeBeforeAppend);
 
 	// and return
 	return sizeBeforeAppend;
@@ -648,8 +648,8 @@ std::uint32_t info::database_builder::string_table::get(std::string_view s)
 
 std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
 {
-	std::optional<std::string_view> attributeValue = attributes.get<std::string_view>(attribute);
-	return get(attributeValue.value_or(""));
+	std::optional<std::u8string_view> attributeValue = attributes.get<std::u8string_view>(attribute);
+	return get(attributeValue.value_or(u8""));
 }
 
 

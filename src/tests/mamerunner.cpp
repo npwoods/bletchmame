@@ -78,13 +78,13 @@ static void checkResponseForParseError(const MameWorkerController::Response &res
 
 
 //-------------------------------------------------
-//  receiveResponseEnsureSuccess
+//  issueCommandAndReceiveResponse
 //-------------------------------------------------
 
-static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerController &controller, std::string_view command)
+static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerController &controller, std::u8string_view command)
 {
     // issue the command
-    controller.issueCommand(QString::fromLocal8Bit(command.data(), command.size()));
+    controller.issueCommand(util::toQString(command));
 
     // and get a response
     MameWorkerController::Response response = controller.receiveResponse();
@@ -136,15 +136,15 @@ static MameVersion getMameVersion(const QString &program)
 //  trim
 //-------------------------------------------------
 
-static void trim(std::string &s)
+static void trim(std::u8string &s)
 {
     auto begin = std::find_if(s.begin(), s.end(), [](char c) { return !isspace(c); });
     auto end = std::find_if(s.rbegin(), s.rend(), [](char c) { return !isspace(c); });
     if (begin != s.begin() || end != s.rbegin())
     {
         s = (begin < end.base())
-            ? std::string(begin, end.base())
-            : std::string();
+            ? std::u8string(begin, end.base())
+            : std::u8string();
     }
 }
 
@@ -199,11 +199,11 @@ static void internalRunAndExcerciseMame(const QString &scriptFileName, const QSt
 
     // get ready to parse
     XmlParser xml;
-    xml.onElementEnd({ "script", "command" }, [&controller](std::string &&text)
+    xml.onElementEnd({ "script", "command" }, [&controller](std::u8string &&text)
     {
         // normalize the text
         trim(text);
-        text += "\n";
+        text += u8"\n";
 
         // issue the command
         issueCommandAndReceiveResponse(controller, text);

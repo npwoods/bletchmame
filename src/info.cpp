@@ -20,7 +20,7 @@
 //  CONSTANTS
 //**************************************************************************
 
-static const char *s_smallStringChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ";
+static const char8_t s_smallStringChars[] = u8"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ";
 
 
 //**************************************************************************
@@ -314,9 +314,9 @@ const QString &info::database::get_string(std::uint32_t offset) const
 //  database::tryEncodeSmallStringChar
 //-------------------------------------------------
 
-std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(char ch)
+std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(char8_t ch)
 {
-	const char *p = (const char *) memchr(s_smallStringChars, ch, strlen(s_smallStringChars) + 1);
+	const char8_t *p = (const char8_t *) memchr(s_smallStringChars, ch, std::size(s_smallStringChars));
 	return p
 		? (std::uint32_t)(p - s_smallStringChars)
 		: std::optional<std::uint32_t>();
@@ -327,7 +327,7 @@ std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(char ch)
 //  database::tryEncodeAsSmallString
 //-------------------------------------------------
 
-std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::string_view s)
+std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::u8string_view s)
 {
 	if (s.size() > 5)
 		return { };

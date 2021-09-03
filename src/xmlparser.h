@@ -69,7 +69,7 @@ public:
 		std::optional<T> get(const char *attribute, TFunc func) const
 		{
 			std::optional<T> result = { };
-			std::optional<std::string_view> text = get<std::string_view>(attribute);
+			std::optional<std::u8string_view> text = get<std::u8string_view>(attribute);
 			if (text.has_value())
 			{
 				T funcResult;
@@ -86,7 +86,7 @@ public:
 		const char **	m_attributes;
 
 		const char *internalGet(const char *attribute, bool return_null = false) const;
-		void reportAttributeParsingError(const char *attribute, std::string_view value) const;
+		void reportAttributeParsingError(const char *attribute, std::u8string_view value) const;
 	};
 
 	// ctor/dtor
@@ -124,8 +124,8 @@ public:
 		}
 	}
 
-	// onElementEnd (std::string)
-	typedef std::function<void(std::string &&content)> OnEndElementCallback;
+	// onElementEnd (std::u8string)
+	typedef std::function<void(std::u8string &&content)> OnEndElementCallback;
 	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
 	{
 		getNode(elements)->m_endFunc = std::move(func);
@@ -143,9 +143,9 @@ public:
 	typedef std::function<void(QString &&content)> OnEndElementQStringCallback;
 	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementQStringCallback &&func)
 	{
-		getNode(elements)->m_endFunc = [func{std::move(func)}](std::string &&content)
+		getNode(elements)->m_endFunc = [func{std::move(func)}](std::u8string &&content)
 		{
-			func(QString::fromStdString(content));
+			func(util::toQString(content));
 		};
 	}
 	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementQStringCallback &&func)
@@ -163,6 +163,7 @@ public:
 	QString errorMessagesSingleString() const;
 
 	static std::string escape(const QString &str);
+	static std::string escape(const std::u8string_view &str);
 
 private:
 	struct Node
@@ -177,18 +178,18 @@ private:
 		~Node();
 
 		// fields
-		OnBeginElementCallback	m_beginFunc;
-		OnEndElementCallback	m_endFunc;
-		Node *					m_parent;
-		Map						m_map;
+		OnBeginElementCallback		m_beginFunc;
+		OnEndElementCallback		m_endFunc;
+		Node *						m_parent;
+		Map							m_map;
 	};
 
-	struct XML_ParserStruct *	m_parser;
-	Node::ptr					m_root;
-	Node *						m_currentNode;
-	int							m_skippingDepth;
-	std::optional<std::string>	m_currentContent;
-	std::vector<Error>			m_errors;
+	struct XML_ParserStruct *		m_parser;
+	Node::ptr						m_root;
+	Node *							m_currentNode;
+	int								m_skippingDepth;
+	std::optional<std::u8string>	m_currentContent;
+	std::vector<Error>				m_errors;
 
 	bool internalParse(QIODevice &input);
 	void startElement(const char *name, const char **attributes);
@@ -212,19 +213,19 @@ private:
 //  TEMPLATE SPECIALIZATIONS
 //**************************************************************************
 
-template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute) const;
-template<> std::optional<bool>			XmlParser::Attributes::get<bool>(const char *attribute) const;
-template<> std::optional<float>			XmlParser::Attributes::get<float>(const char *attribute) const;
-template<> std::optional<QString>		XmlParser::Attributes::get<QString>(const char *attribute) const;
-template<> std::optional<std::string_view>	XmlParser::Attributes::get<std::string_view>(const char *attribute) const;
-template<> std::optional<std::uint8_t>	XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const;
-template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
-template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;
+template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute) const;
+template<> std::optional<bool>					XmlParser::Attributes::get<bool>(const char *attribute) const;
+template<> std::optional<float>					XmlParser::Attributes::get<float>(const char *attribute) const;
+template<> std::optional<QString>				XmlParser::Attributes::get<QString>(const char *attribute) const;
+template<> std::optional<std::u8string_view>	XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const;
+template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const;
+template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
+template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;
 
-template<> std::optional<int>			XmlParser::Attributes::get<int>(const char *attribute, int radix) const;
-template<> std::optional<std::uint8_t>	XmlParser::Attributes::get<std::uint8_t>(const char *attribute, int radix) const;
-template<> std::optional<std::uint32_t>	XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const;
-template<> std::optional<std::uint64_t>	XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const;
+template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute, int radix) const;
+template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute, int radix) const;
+template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const;
+template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const;
 
 
 #endif // XMLPARSER_H

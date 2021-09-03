@@ -87,7 +87,8 @@ MameWorkerController::Response MameWorkerController::receiveResponse()
 	assert(!args.empty());
 
 	// interpret the main message
-	s_response_type_parser(args[0].toStdString(), response.m_type);
+	std::string responseType = args[0].toStdString();
+	s_response_type_parser(std::u8string_view((const char8_t *) responseType.data(), responseType.size()), response.m_type);
 
 	// logging and chatter
 	if (LOG_RESPONSES)

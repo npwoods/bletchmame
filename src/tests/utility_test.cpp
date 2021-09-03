@@ -69,15 +69,15 @@ void Test::enum_parser()
 	bool result;
 	int value;
 
-	result = parser(std::string("fourtytwo"), value);
+	result = parser(u8"fourtytwo", value);
 	QVERIFY(result);
 	QVERIFY(value == 42);
 
-	result = parser(std::string("twentyone"), value);
+	result = parser(u8"twentyone", value);
 	QVERIFY(result);
 	QVERIFY(value == 21);
 
-	result = parser(std::string("invalid"), value);
+	result = parser(u8"invalid", value);
 	QVERIFY(!result);
 	QVERIFY(value == 0);
 }
@@ -112,9 +112,10 @@ void Test::return_value_substitutor()
 
 void Test::binaryFromHex()
 {
-	std::uint8_t buffer[10];
+	using namespace std::literals;
 
-	std::size_t rc = util::binaryFromHex(buffer, "BaaDF00DDEADBeeF12345678");
+	std::uint8_t buffer[10];
+	std::size_t rc = util::binaryFromHex(buffer, "BaaDF00DDEADBeeF12345678"sv);
 	QVERIFY(rc == 10);
 	QVERIFY(buffer[0] == 0xBA);
 	QVERIFY(buffer[1] == 0xAD);

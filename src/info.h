@@ -759,8 +759,8 @@ namespace info
 
 		// private functions
 		void onChanged();
-		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char ch);
-		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::string_view s);
+		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char8_t ch);
+		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::u8string_view s);
 		static std::optional<std::array<char, 6>> tryDecodeAsSmallString(std::uint32_t value);
 	};
 

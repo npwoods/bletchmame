@@ -128,15 +128,15 @@ public:
 	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_custom_folders; }
 	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_custom_folders; }
 
-	const std::unordered_map<std::string, ColumnPrefs> &getColumnPrefs(const char *view_type)			{ return m_column_prefs[view_type]; }
-	void setColumnPrefs(const char *view_type, std::unordered_map<std::string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
+	const std::unordered_map<std::u8string, ColumnPrefs> &getColumnPrefs(const char8_t *view_type)			{ return m_column_prefs[view_type]; }
+	void setColumnPrefs(const char8_t *view_type, std::unordered_map<std::u8string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
-    const QString &getListViewSelection(const char *view_type, const QString &softlist_name) const;
-	void setListViewSelection(const char *view_type, const QString &softlist_name, QString &&selection);
-	void setListViewSelection(const char *view_type, QString &&selection)								{ setListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
+    const QString &getListViewSelection(const char8_t *view_type, const QString &softlist_name) const;
+	void setListViewSelection(const char8_t *view_type, const QString &softlist_name, QString &&selection);
+	void setListViewSelection(const char8_t *view_type, QString &&selection)								{ setListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
 
-    const QString &getSearchBoxText(const char *view_type) const										{ return m_list_view_filter[view_type]; }
-	void setSearchBoxText(const char *view_type, QString &&search_box_text)								{ m_list_view_filter[view_type] = std::move(search_box_text); }
+    const QString &getSearchBoxText(const char8_t *view_type) const										{ return m_list_view_filter[view_type]; }
+	void setSearchBoxText(const char8_t *view_type, QString &&search_box_text)							{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
 	bool getMenuBarShown() const																		{ return m_menu_bar_shown; }
 	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
@@ -167,19 +167,19 @@ private:
 
 	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names;
 
-    std::array<QString, static_cast<size_t>(global_path_type::COUNT)>						m_paths;
-    QString                                                                 				m_mame_extra_arguments;
-	QSize																					m_size;
-	mutable std::unordered_map<std::string, std::unordered_map<std::string, ColumnPrefs>>	m_column_prefs;
-	std::map<QString, MachineInfo>															m_machine_info;
-	list_view_type																			m_selected_tab;
-	QString																					m_machine_folder_tree_selection;
-	QList<int>																				m_machine_splitter_sizes;
-	std::map<QString, FolderPrefs>															m_folder_prefs;
-	std::map<QString, std::set<QString>>													m_custom_folders;
-    std::unordered_map<QString, QString>													m_list_view_selection;
-	mutable std::unordered_map<QString, QString>											m_list_view_filter;
-	bool																					m_menu_bar_shown;
+    std::array<QString, static_cast<size_t>(global_path_type::COUNT)>							m_paths;
+    QString                                                                 					m_mame_extra_arguments;
+	QSize																						m_size;
+	mutable std::unordered_map<std::u8string, std::unordered_map<std::u8string, ColumnPrefs>>	m_column_prefs;
+	std::map<QString, MachineInfo>																m_machine_info;
+	list_view_type																				m_selected_tab;
+	QString																						m_machine_folder_tree_selection;
+	QList<int>																					m_machine_splitter_sizes;
+	std::map<QString, FolderPrefs>																m_folder_prefs;
+	std::map<QString, std::set<QString>>														m_custom_folders;
+    std::unordered_map<QString, QString>														m_list_view_selection;
+	mutable std::unordered_map<QString, QString>												m_list_view_filter;
+	bool																						m_menu_bar_shown;
 
 	void save(std::ostream &output);
     QString getFileName(bool ensure_directory_exists);
