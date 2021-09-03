@@ -59,10 +59,16 @@ public:
 		Attributes(XmlParser &parser, const char **attributes);
 
 		// main attribute getter
-		template<class T> std::optional<T> get(const char *attribute) const;
+		template<class T> std::optional<T> get(const char *attribute) const
+		{
+			static_assert(sizeof(T) == -1, "Expected use of template specialization");
+		}
 
 		// alternate radices
-		template<class T> std::optional<T> get(const char *attribute, int radix) const;
+		template<class T> std::optional<T> get(const char *attribute, int radix) const
+		{
+			static_assert(sizeof(T) == -1, "Expected use of template specialization");
+		}
 
 		// generic getter with a parser function
 		template<typename T, typename TFunc>
