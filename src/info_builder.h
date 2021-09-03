@@ -39,7 +39,7 @@ namespace info
 			typedef std::array<char, 6> SsoBuffer;
 
 			string_table();
-			std::uint32_t get(std::string_view string);
+			std::uint32_t get(std::u8string_view string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char> &data() const;
 			const char *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
@@ -51,8 +51,8 @@ namespace info
 			}
 
 		private:
-			std::vector<char>									m_data;
-			std::unordered_map<std::string_view, std::uint32_t>	m_map;
+			std::vector<char>										m_data;
+			std::unordered_map<std::u8string_view, std::uint32_t>	m_map;
 		};
 
 		info::binaries::header									m_salted_header;

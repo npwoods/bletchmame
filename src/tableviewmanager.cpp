@@ -153,7 +153,7 @@ void TableViewManager::applyColumnPrefs()
     QTableView &tableView = *dynamic_cast<QTableView *>(parent());
 
     // get the preferences
-    const std::unordered_map<std::string, ColumnPrefs> &columnPrefs = m_prefs.getColumnPrefs(m_desc.m_name);
+    const std::unordered_map<std::u8string, ColumnPrefs> &columnPrefs = m_prefs.getColumnPrefs(m_desc.m_name);
 
     // unpack them
     int sortLogicalColumn = 0;
@@ -220,7 +220,7 @@ void TableViewManager::persistColumnPrefs()
     const QHeaderView &headerView = *tableView.horizontalHeader();
 
 	// start preparing column prefs
-	std::unordered_map<std::string, ColumnPrefs> col_prefs;
+	std::unordered_map<std::u8string, ColumnPrefs> col_prefs;
 	col_prefs.reserve(m_columnCount);
 
 	// get all info about each column

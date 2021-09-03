@@ -77,9 +77,19 @@ static bool isValidDimension(int dimension)
 //  getListViewSelectionKey
 //-------------------------------------------------
 
+static QString getListViewSelectionKey(std::u8string_view view_type, const QString &softlist)
+{
+	return util::toQString(view_type) + QString(1, '\0') + softlist;
+}
+
+
+//-------------------------------------------------
+//  getListViewSelectionKey
+//-------------------------------------------------
+
 static QString getListViewSelectionKey(std::string_view view_type, const QString &softlist)
 {
-	return QString::fromLocal8Bit(view_type.data(), view_type.size()) + QString(1, '\0') + softlist;
+	return getListViewSelectionKey(std::u8string_view((const char8_t *)view_type.data(), view_type.size()), softlist);
 }
 
 
@@ -365,7 +375,7 @@ void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 //  getListViewSelection
 //-------------------------------------------------
 
-const QString &Preferences::getListViewSelection(const char *view_type, const QString &machine_name) const
+const QString &Preferences::getListViewSelection(const char8_t *view_type, const QString &machine_name) const
 {
 	QString key = getListViewSelectionKey(view_type, machine_name);
 	auto iter = m_list_view_selection.find(key);
@@ -379,7 +389,7 @@ const QString &Preferences::getListViewSelection(const char *view_type, const QS
 //  setListViewSelection
 //-------------------------------------------------
 
-void Preferences::setListViewSelection(const char *view_type, const QString &machine_name, QString &&selection)
+void Preferences::setListViewSelection(const char8_t *view_type, const QString &machine_name, QString &&selection)
 {
 	QString key = getListViewSelectionKey(view_type, machine_name);
 	m_list_view_selection[key] = std::move(selection);
@@ -555,7 +565,7 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::string_view> list_view = attributes.get<std::string_view>("view");
+		std::optional<std::u8string_view> list_view = attributes.get<std::u8string_view>("view");
 		if (list_view)
 		{
 			QString softlist = attributes.get<QString>("softlist").value_or("");
@@ -577,11 +587,11 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::string_view> view_type = attributes.get<std::string_view>("type");
-		std::optional<std::string_view> id = attributes.get<std::string_view>("id");
+		std::optional<std::u8string_view> view_type = attributes.get<std::u8string_view>("type");
+		std::optional<std::u8string_view> id = attributes.get<std::u8string_view>("id");
 		if (view_type && id)
 		{
-			ColumnPrefs &col_prefs = m_column_prefs[std::string(*view_type)][std::string(*id)];
+			ColumnPrefs &col_prefs = m_column_prefs[std::u8string(*view_type)][std::u8string(*id)];
 			col_prefs.m_width = attributes.get<int>("width").value_or(col_prefs.m_width);
 			col_prefs.m_order = attributes.get<int>("order").value_or(col_prefs.m_order);
 			col_prefs.m_sort = attributes.get<Qt::SortOrder>("sort", s_column_sort_type_parser);
@@ -700,7 +710,7 @@ void Preferences::save(std::ostream &output)
 	{
 		for (const auto &col_prefs : view_prefs.second)
 		{
-			output << "\t<column type=\"" << view_prefs.first << "\" id=\"" << col_prefs.first
+			output << "\t<column type=\"" << XmlParser::escape(view_prefs.first) << "\" id=\"" << XmlParser::escape(col_prefs.first)
 				<< "\" width=\"" << col_prefs.second.m_width
 				<< "\" order=\"" << col_prefs.second.m_order;
 

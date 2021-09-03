@@ -15,10 +15,10 @@
 
 static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
 {
-	{ "name",			85 },
-	{ "description",	220 },
-	{ "year",			50 },
-	{ "publisher",		190 },
+	{ u8"name",			85 },
+	{ u8"description",	220 },
+	{ u8"year",			50 },
+	{ u8"publisher",		190 },
 	{ nullptr }
 };
 

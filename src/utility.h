@@ -160,15 +160,15 @@ public:
 	{
 	}
 
-	bool operator()(std::string_view text, T &value) const
+	bool operator()(std::u8string_view text, T &value) const
 	{
-		auto iter = m_map.find(text.data());
+		auto iter = m_map.find((const char *) text.data());
 		bool success = iter != m_map.end();
 		value = success ? iter->second : T();
 		return success;
 	}
 
-	bool operator()(std::string_view text, std::optional<T> &value) const
+	bool operator()(std::u8string_view text, std::optional<T> &value) const
 	{
 		T inner_value;
 		bool success = (*this)(text, inner_value);
@@ -242,10 +242,24 @@ public:
 
 
 //**************************************************************************
+//  QSTRING HELPERS
+//**************************************************************************
+
+//**************************************************************************
 //  STRING & CONTAINER UTILITIES
 //**************************************************************************
 
 extern const QString g_empty_string;
+
+
+//-------------------------------------------------
+//  toQString
+//-------------------------------------------------
+
+inline QString toQString(std::u8string_view s)
+{
+	return QString::fromUtf8(s.data(), s.size());
+}
 
 
 //-------------------------------------------------
@@ -350,17 +364,6 @@ TStruct salt(const TStruct &original, const TSalt &salt_value)
 
 
 //-------------------------------------------------
-//  to_utf8_string
-//-------------------------------------------------
-
-inline std::string to_utf8_string(const QString &str)
-{
-	auto byte_array = str.toUtf8();
-	return std::string(byte_array.constData(), byte_array.size());
-}
-
-
-//-------------------------------------------------
 //  safe_static_cast
 //-------------------------------------------------
 
@@ -379,8 +382,13 @@ template<class T> T safe_static_cast(size_t sz)
 
 std::size_t binaryFromHex(std::span<uint8_t> &dest, std::string_view hex);
 
-template<std::size_t N>
-std::size_t binaryFromHex(uint8_t (&dest)[N], std::string_view hex)
+inline std::size_t binaryFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
+{
+	return binaryFromHex(dest, std::string_view((const char *)hex.data(), hex.size()));
+}
+
+template<std::size_t N, class Char>
+std::size_t binaryFromHex(uint8_t (&dest)[N], std::basic_string_view<Char> hex)
 {
 	std::span<uint8_t> destSpan(dest);
 	return binaryFromHex(destSpan, hex);

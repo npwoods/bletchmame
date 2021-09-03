@@ -30,13 +30,13 @@ class TableViewManager : public QObject
 public:
     struct ColumnDesc
     {
-        const char *    m_id;
+        const char8_t * m_id;
         int				m_defaultWidth;
     };
 
     struct Description
     {
-        const char *        m_name;
+        const char8_t *     m_name;
         int                 m_keyColumnIndex;
         const ColumnDesc *  m_columns;
     };

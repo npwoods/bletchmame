@@ -14,7 +14,7 @@
 #include "softwarelist.h"
 
 
-#define SOFTLIST_VIEW_DESC_NAME "softlist"
+#define SOFTLIST_VIEW_DESC_NAME u8"softlist"
 
 
 // ======================> SoftwareListItemModel

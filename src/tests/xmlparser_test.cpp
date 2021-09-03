@@ -106,13 +106,13 @@ void XmlParser::Test::test()
 void XmlParser::Test::unicodeStdString()
 {
 	XmlParser xml;
-	std::string bravo_value;
-	std::optional<std::string> charlie_value;
+	std::u8string bravo_value;
+	std::optional<std::u8string> charlie_value;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		charlie_value = attributes.get<std::string_view>("charlie");
+		charlie_value = attributes.get<std::u8string_view>("charlie");
 	});
-	xml.onElementEnd({ "alpha", "bravo" }, [&](std::string &&value)
+	xml.onElementEnd({ "alpha", "bravo" }, [&](std::u8string &&value)
 	{
 		bravo_value = std::move(value);
 	});
@@ -120,9 +120,9 @@ void XmlParser::Test::unicodeStdString()
 	const char *xml_text = "<alpha><bravo charlie=\"&#x6B7B;\">&#x60AA;</bravo></alpha>";
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
-	QVERIFY(bravo_value == (const char*) u8"\u60AA");
+	QVERIFY(bravo_value == u8"\u60AA");
 	QVERIFY(charlie_value.has_value());
-	QVERIFY(charlie_value == (const char *) u8"\u6B7B");
+	QVERIFY(charlie_value == u8"\u6B7B");
 }
 
 
