@@ -45,7 +45,8 @@ private:
 
 void Preferences::Test::general(bool regurgitate)
 {
-	// read the prefs.xml test case into a QString and fix it
+	// read the prefs.xml test case into a QString and fix it (see comments
+	// for fixPaths() for details)
 	QString text;
 	{
 		QFile file(":/resources/prefs.xml");
@@ -71,15 +72,15 @@ void Preferences::Test::general(bool regurgitate)
 		prefs2.load(buffer);
 
 		// and save it out
-		std::stringstream stringStream;
+		QBuffer stringStream;
+		QVERIFY(stringStream.open(QIODevice::ReadWrite));
 		prefs2.save(stringStream);
-		std::string str = stringStream.str();
+
+		// seek back to the beginning
+		QVERIFY(stringStream.seek(0));
 
 		// and read the saved out bytes back
-		QByteArray byteArray(str.c_str(), str.size());
-		QBuffer buffer2(&byteArray);
-		QVERIFY(buffer2.open(QIODevice::ReadOnly));
-		QVERIFY(prefs.load(buffer2));
+		QVERIFY(prefs.load(stringStream));
 	}
 	else
 	{

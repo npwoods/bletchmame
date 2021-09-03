@@ -13,6 +13,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QStandardPaths>
+#include <QXmlStreamWriter>
 
 #include "prefs.h"
 #include "utility.h"
@@ -135,14 +136,14 @@ static QList<int> intListFromString(const QString &s)
 //  stringFromIntList
 //-------------------------------------------------
 
-static std::string stringFromIntList(const QList<int> &list)
+static QString stringFromIntList(const QList<int> &list)
 {
-	std::string result;
+	QString result;
 	for (int i : list)
 	{
 		if (result.size() > 0)
 			result += ",";
-		result += std::to_string(i);
+		result += QString::number(i);
 	}
 	return result;
 }
@@ -639,9 +640,10 @@ bool Preferences::load(QIODevice &input)
 
 void Preferences::save()
 {
-	QString file_name = getFileName(true);
-	std::ofstream output(file_name.toStdString(), std::ios_base::out);
-	save(output);
+	QString fileName = getFileName(true);
+	QFile file(fileName);
+	if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+		save(file);
 }
 
 
@@ -649,60 +651,85 @@ void Preferences::save()
 //  save
 //-------------------------------------------------
 
-void Preferences::save(std::ostream &output)
+void Preferences::save(QIODevice &output)
 {
-	output << "<!-- Preferences for BletchMAME -->" << std::endl;
-	output << "<preferences menu_bar_shown=\"" << (m_menu_bar_shown ? "1" : "0") << "\" selected_tab=\"" << s_list_view_type_parser[getSelectedTab()] << "\">" << std::endl;
-	output << std::endl;
+	QXmlStreamWriter writer(&output);
+	writer.setAutoFormatting(true);
 
-	output << "\t<!-- Paths -->" << std::endl;
+	writer.writeStartDocument();
+	writer.writeComment("Preferences for BletchMAME");
+	writer.writeStartElement("preferences");
+	writer.writeAttribute("menu_bar_shown", QString::number(m_menu_bar_shown ? 1 : 0));
+	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
+
+	// paths
+	writer.writeComment("Paths");
 	for (size_t i = 0; i < m_paths.size(); i++)
-		output << "\t<path type=\"" << s_path_names[i] << "\">" << XmlParser::escape(getGlobalPath(static_cast<global_path_type>(i))) << "</path>" << std::endl;
-	output << std::endl;
+	{
+		writer.writeStartElement("path");
+		writer.writeAttribute("type", s_path_names[i]);
+		writer.writeCharacters(getGlobalPath(static_cast<global_path_type>(i)));
+		writer.writeEndElement();
+	}
 
-	output << "\t<!-- Miscellaneous -->" << std::endl;
+	writer.writeComment("Miscellaneous");
 	if (!m_mame_extra_arguments.isEmpty())
-		output << "\t<mameextraarguments>" << XmlParser::escape(m_mame_extra_arguments) << "</mameextraarguments>" << std::endl;
-	output << "\t<size width=\"" << m_size.width() << "\" height=\"" << m_size.height() << "\"/>" << std::endl;
+		writer.writeTextElement("mameextraarguments", m_mame_extra_arguments);
+	writer.writeStartElement("size");
+	writer.writeAttribute("width", QString::number(m_size.width()));
+	writer.writeAttribute("height", QString::number(m_size.height()));
+	writer.writeEndElement();
 	if (!m_machine_splitter_sizes.isEmpty())
-		output << "\t<machinelistsplitters>" << stringFromIntList(m_machine_splitter_sizes) << "</machinelistsplitters>" << std::endl;
+		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
 
 	// folder prefs
 	if (!m_machine_folder_tree_selection.isEmpty() && m_folder_prefs.find(m_machine_folder_tree_selection) == m_folder_prefs.end())
 		m_folder_prefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
 	for (const auto &pair : m_folder_prefs)
 	{
-		output << "\t<folder id=\"" << XmlParser::escape(pair.first) << '\"'
-			<< " shown=\"" << (pair.second.m_shown ? "true" : "false") << '\"'
-			<< (pair.first == m_machine_folder_tree_selection ? " selected=\"true\"" : "")
-			<< "/>" << std::endl;
+		writer.writeStartElement("folder");
+		writer.writeAttribute("id", pair.first);
+		writer.writeAttribute("shown", pair.second.m_shown ? "true" : "false");
+		if (pair.first == m_machine_folder_tree_selection)
+			writer.writeAttribute("selected", "true");
+		writer.writeEndElement();
 	}
 
 	// custom folders
 	for (const auto &pair : m_custom_folders)
 	{
-		output << "\t<customfolder name=\"" << XmlParser::escape(pair.first) << "\">" << std::endl;
+		writer.writeStartElement("customfolder");
+		writer.writeAttribute("name", pair.first);
 		for (const QString &system : pair.second)
-			output << "\t\t<system>" << XmlParser::escape(system) << "</system>" << std::endl;
-		output << "\t</customfolder>" << std::endl;
+			writer.writeTextElement("system", system);
+		writer.writeEndElement();
 	}
 
+	// list view selection
 	for (const auto &pair : m_list_view_selection)
 	{
 		if (!pair.second.isEmpty())
 		{
 			auto [view_type, softlist] = splitListViewSelectionKey(pair.first);
-			output << "\t<selection view=\"" << XmlParser::escape(QString(view_type));
+			writer.writeStartElement("selection");
+			writer.writeAttribute("view", QString(view_type));
 			if (softlist)
-				output << "\" softlist=\"" + XmlParser::escape(QString(softlist));
-			output << "\">" << XmlParser::escape(pair.second) << "</selection>" << std::endl;
+				writer.writeAttribute("softlist", QString("softlist"));
+			writer.writeCharacters(pair.second);
+			writer.writeEndElement();
 		}
 	}
 
+	// list view filter
 	for (const auto &[view_type, text] : m_list_view_filter)
 	{
 		if (!text.isEmpty())
-			output << "\t<searchboxtext view=\"" << view_type.toStdString() << "\">" << text.toStdString() << "</searchboxtext>" << std::endl;
+		{
+			writer.writeStartElement("searchboxtext");
+			writer.writeAttribute("view", view_type);
+			writer.writeCharacters(text);
+			writer.writeEndElement();
+		}
 	}
 
 	// column width/order
@@ -710,51 +737,49 @@ void Preferences::save(std::ostream &output)
 	{
 		for (const auto &col_prefs : view_prefs.second)
 		{
-			output << "\t<column type=\"" << XmlParser::escape(view_prefs.first) << "\" id=\"" << XmlParser::escape(col_prefs.first)
-				<< "\" width=\"" << col_prefs.second.m_width
-				<< "\" order=\"" << col_prefs.second.m_order;
-
+			writer.writeStartElement("column");
+			writer.writeAttribute("type", util::toQString(view_prefs.first));
+			writer.writeAttribute("id", util::toQString(col_prefs.first));
+			writer.writeAttribute("width", QString::number(col_prefs.second.m_width));
+			writer.writeAttribute("order", QString::number(col_prefs.second.m_order));
 			if (col_prefs.second.m_sort.has_value())
-				output << "\" sort=\"" << s_column_sort_type_parser[col_prefs.second.m_sort.value()];
-
-			output << "\"/>" << std::endl;
+				writer.writeAttribute("sort", s_column_sort_type_parser[col_prefs.second.m_sort.value()]);
+			writer.writeEndElement();
 		}
 	}
-	output << std::endl;
 
-	output << "\t<!-- Machines -->" << std::endl;
+	// machines
+	writer.writeComment("Machines");
 	for (const auto &[machine_name, info] : m_machine_info)
 	{
 		if (!machine_name.isEmpty() && (!info.m_working_directory.isEmpty() || !info.m_last_save_state.isEmpty() || !info.m_recent_device_files.empty()))
 		{
-			output << "\t<machine name=\"" << XmlParser::escape(machine_name) << "\"";
-			
-			if (!info.m_working_directory.isEmpty())
-				output << " working_directory=\"" << XmlParser::escape(info.m_working_directory) << "\"";
-			if (!info.m_last_save_state.isEmpty())
-				output << " last_save_state=\"" << XmlParser::escape(info.m_last_save_state) << "\"";
+			writer.writeStartElement("machine");
+			writer.writeAttribute("name", machine_name);
 
-			if (info.m_recent_device_files.empty())
+			if (!info.m_working_directory.isEmpty())
+				writer.writeAttribute("working_directory", info.m_working_directory);
+			if (!info.m_last_save_state.isEmpty())
+				writer.writeAttribute("last_save_state", info.m_last_save_state);
+
+			if (!info.m_recent_device_files.empty())
 			{
-				output << "/>" << std::endl;
-			}
-			else
-			{
-				output << ">" << std::endl;
 				for (const auto &[device_type, recents] : info.m_recent_device_files)
 				{
-					output << "\t\t<device type=\"" << XmlParser::escape(device_type) << "\">" << std::endl;
+					writer.writeStartElement("device");
+					writer.writeAttribute("type", device_type);
 					for (const QString &recent : recents)
-						output << "\t\t\t<recentfile>" << recent.toStdString() << "</recentfile>" << std::endl;
-					output << "\t\t</device>" << std::endl;
+						writer.writeTextElement("recentfile", recent);
+					writer.writeEndElement();
 				}
-				output << "\t</machine>" << std::endl;
 			}
+
+			writer.writeEndElement();
 		}
 	}
-	output << std::endl;
-
-	output << "</preferences>" << std::endl;
+	
+	writer.writeEndElement();
+	writer.writeEndDocument();
 }
 
 

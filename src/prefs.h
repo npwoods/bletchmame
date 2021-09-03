@@ -181,7 +181,7 @@ private:
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
 	bool																						m_menu_bar_shown;
 
-	void save(std::ostream &output);
+	void save(QIODevice &output);
     QString getFileName(bool ensure_directory_exists);
     const MachineInfo *getMachineInfo(const QString &machine_name) const;
 };

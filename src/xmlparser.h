@@ -168,9 +168,6 @@ public:
 	bool parseBytes(const void *ptr, size_t sz);
 	QString errorMessagesSingleString() const;
 
-	static std::string escape(const QString &str);
-	static std::string escape(const std::u8string_view &str);
-
 private:
 	struct Node
 	{
