@@ -474,49 +474,6 @@ void XmlParser::characterData(const char *s, int len)
 }
 
 
-//-------------------------------------------------
-//  escape
-//-------------------------------------------------
-
-std::string XmlParser::escape(const QString &str)
-{
-	std::string result;
-	for (QChar qch : str)
-	{
-		char16_t ch = qch.unicode();
-		switch (ch)
-		{
-		case '<':
-			result += "&lt;";
-			break;
-		case '>':
-			result += "&gt;";
-			break;
-		case '\"':
-			result += "&quot;";
-			break;
-		default:
-			if (ch >= 0 && ch <= 127)
-				result += (char)ch;
-			else
-				result += "&#" + std::to_string((int)ch) + ";";
-			break;
-		}
-	}
-	return result;
-}
-
-
-//-------------------------------------------------
-//  escape
-//-------------------------------------------------
-
-std::string XmlParser::escape(const std::u8string_view &str)
-{
-	return escape(util::toQString(str));
-}
-
-
 //**************************************************************************
 //  TRAMPOLINES
 //**************************************************************************
