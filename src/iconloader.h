@@ -50,8 +50,9 @@ private:
 	AssetFinder											m_assetFinder;
 	QPixmap												m_blankIcon;
 
-	std::optional<QPixmap> LoadIcon(QString &&icon_name, const QByteArray &byteArray);
 	const QPixmap *getIconByName(const QString &iconName);
+	static std::optional<QPixmap> loadIcon(const QByteArray &byteArray);
+	static void setProperDevicePixelRatio(QPixmap &pixmap);
 };
 
 #endif // ICONLOADER_H

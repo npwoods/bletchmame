@@ -14,8 +14,7 @@
 //  CONSTANTS
 //**************************************************************************
 
-#define ICON_SIZE_X 16
-#define ICON_SIZE_Y 16
+#define ICON_SIZE	16
 
 
 //**************************************************************************
@@ -28,7 +27,7 @@
 
 IconLoader::IconLoader(Preferences &prefs)
 	: m_prefs(prefs)
-	, m_blankIcon(ICON_SIZE_X, ICON_SIZE_Y)
+	, m_blankIcon(ICON_SIZE, ICON_SIZE)
 {
 	// QPixmap starts with uninitialized data; make "blank" be blank
 	m_blankIcon.fill(Qt::transparent);
@@ -94,7 +93,7 @@ const QPixmap *IconLoader::getIconByName(const QString &iconName)
 		{
 			// we've found an entry - try to load the icon; note that while this can
 			// fail, we want to memoize the failure
-			std::optional<QPixmap> icon = LoadIcon(std::move(iconFileName), byteArray);
+			std::optional<QPixmap> icon = loadIcon(byteArray);
 
 			// record the result in the icon map
 			iter = m_icon_map.emplace(iconName, std::move(icon)).first;
@@ -110,14 +109,37 @@ const QPixmap *IconLoader::getIconByName(const QString &iconName)
 
 
 //-------------------------------------------------
-//  LoadIcon
+//  loadIcon
 //-------------------------------------------------
 
-std::optional<QPixmap> IconLoader::LoadIcon(QString &&icon_name, const QByteArray &byteArray)
+std::optional<QPixmap> IconLoader::loadIcon(const QByteArray &byteArray)
 {
+	std::optional<QPixmap> result;
+
 	// load the icon into a file
-	QPixmap image;
-	return image.loadFromData(byteArray)
-		? image.scaled(ICON_SIZE_X, ICON_SIZE_Y)
-		: std::optional<QPixmap>();
+	QPixmap pixmap;
+	if (pixmap.loadFromData(byteArray))
+	{
+		// we've load the icon; normalize it
+		setProperDevicePixelRatio(pixmap);
+
+		// and return it
+		result = std::move(pixmap);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  setProperDevicePixelRatio
+//-------------------------------------------------
+
+void IconLoader::setProperDevicePixelRatio(QPixmap &pixmap)
+{
+	// determine the maximum dimension
+	qreal dimension = std::max(pixmap.width(), pixmap.height());
+
+	// and set an appropriate scale factor
+	qreal scaleFactor = dimension / ICON_SIZE;
+	pixmap.setDevicePixelRatio(scaleFactor);
 }
