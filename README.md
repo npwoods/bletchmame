@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.9 (TBD)
 	- The Paths Dialog will highlight file paths for snapshots and icons that are not valid archives in red
+	- Fixed a bug that caused column sorts to not be honored on startup
 	- Small optimizations to the building of MAME Info Database (-listxml handling) and general XML parsing
 
 - 2.8 (2021-Aug-29)

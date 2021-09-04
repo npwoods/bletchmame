@@ -152,6 +152,9 @@ void TableViewManager::applyColumnPrefs()
     // identify the QTableView
     QTableView &tableView = *dynamic_cast<QTableView *>(parent());
 
+    // identify the header
+    QHeaderView &horizontalHeader = *tableView.horizontalHeader();
+
     // get the preferences
     const std::unordered_map<std::u8string, ColumnPrefs> &columnPrefs = m_prefs.getColumnPrefs(m_desc.m_name);
 
@@ -175,14 +178,15 @@ void TableViewManager::applyColumnPrefs()
         }
 
         // resize the column
-        tableView.horizontalHeader()->resizeSection(logicalColumn, width);
+        horizontalHeader.resizeSection(logicalColumn, width);
 
         // track the order
         logicalColumnOrdering[logicalColumn] = order;
     }
 
     // specify the sort indicator
-    tableView.horizontalHeader()->setSortIndicator(sortLogicalColumn, sortType);
+    horizontalHeader.setSortIndicator(sortLogicalColumn, sortType);
+    m_proxyModel->sort(sortLogicalColumn, sortType);
 
     // reorder columns appropriately
     for (int column = 0; column < m_columnCount - 1; column++)
@@ -196,7 +200,7 @@ void TableViewManager::applyColumnPrefs()
             if (iter != logicalColumnOrdering.end())
             {
                 // move on the header
-                tableView.horizontalHeader()->moveSection(iter - logicalColumnOrdering.begin(), column);
+                horizontalHeader.moveSection(iter - logicalColumnOrdering.begin(), column);
 
                 // update the ordering
                 logicalColumnOrdering.erase(iter);
