@@ -97,18 +97,18 @@ public:
 
 	static PathCategory getPathCategory(global_path_type path_type);
 	static PathCategory getPathCategory(machine_path_type path_type);
-    static void ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path);
+	static void ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path);
 
-    const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
+	const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
 	void setGlobalPath(global_path_type type, QString &&path);
 	void setGlobalPath(global_path_type type, const QString &path);
 	
-    QStringList getSplitPaths(global_path_type type) const;
+	QStringList getSplitPaths(global_path_type type) const;
 
-    QString getGlobalPathWithSubstitutions(global_path_type type) const;
+	QString getGlobalPathWithSubstitutions(global_path_type type) const;
 
-    const QString &getMameExtraArguments() const														{ return m_mame_extra_arguments; }
-    void setMameExtraArguments(QString &&extra_arguments)												{ m_mame_extra_arguments = std::move(extra_arguments); }
+	const QString &getMameExtraArguments() const														{ return m_mame_extra_arguments; }
+	void setMameExtraArguments(QString &&extra_arguments)												{ m_mame_extra_arguments = std::move(extra_arguments); }
 
 	const QSize &setSize() const											 							{ return m_size; }
 	void setSize(const QSize &size)																		{ m_size = size; }
@@ -131,27 +131,27 @@ public:
 	const std::unordered_map<std::u8string, ColumnPrefs> &getColumnPrefs(const char8_t *view_type)			{ return m_column_prefs[view_type]; }
 	void setColumnPrefs(const char8_t *view_type, std::unordered_map<std::u8string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
 
-    const QString &getListViewSelection(const char8_t *view_type, const QString &softlist_name) const;
+	const QString &getListViewSelection(const char8_t *view_type, const QString &softlist_name) const;
 	void setListViewSelection(const char8_t *view_type, const QString &softlist_name, QString &&selection);
 	void setListViewSelection(const char8_t *view_type, QString &&selection)								{ setListViewSelection(view_type, util::g_empty_string, std::move(selection)); }
 
-    const QString &getSearchBoxText(const char8_t *view_type) const										{ return m_list_view_filter[view_type]; }
+	const QString &getSearchBoxText(const char8_t *view_type) const										{ return m_list_view_filter[view_type]; }
 	void setSearchBoxText(const char8_t *view_type, QString &&search_box_text)							{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
 	bool getMenuBarShown() const																		{ return m_menu_bar_shown; }
 	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
 
-    const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
-    void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
+	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
+	void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
 
-    std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type);
-    const std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const;
+	std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type);
+	const std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const;
 
-    QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
-    QString applySubstitutions(const QString &path) const;
+	QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
+	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
-    static QString getConfigDirectory(bool ensure_directory_exists = false);
+	static QString getConfigDirectory(bool ensure_directory_exists = false);
 
 	bool load();
 	bool load(QIODevice &input);
@@ -162,13 +162,13 @@ private:
 	{
 		QString										m_working_directory;
 		QString										m_last_save_state;
-        std::map<QString, std::vector<QString>>     m_recent_device_files;
+		std::map<QString, std::vector<QString>>     m_recent_device_files;
 	};
 
 	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names;
 
-    std::array<QString, static_cast<size_t>(global_path_type::COUNT)>							m_paths;
-    QString                                                                 					m_mame_extra_arguments;
+	std::array<QString, static_cast<size_t>(global_path_type::COUNT)>							m_paths;
+	QString                                                                 					m_mame_extra_arguments;
 	QSize																						m_size;
 	mutable std::unordered_map<std::u8string, std::unordered_map<std::u8string, ColumnPrefs>>	m_column_prefs;
 	std::map<QString, MachineInfo>																m_machine_info;
@@ -177,13 +177,13 @@ private:
 	QList<int>																					m_machine_splitter_sizes;
 	std::map<QString, FolderPrefs>																m_folder_prefs;
 	std::map<QString, std::set<QString>>														m_custom_folders;
-    std::unordered_map<QString, QString>														m_list_view_selection;
+	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
 	bool																						m_menu_bar_shown;
 
 	void save(QIODevice &output);
-    QString getFileName(bool ensure_directory_exists);
-    const MachineInfo *getMachineInfo(const QString &machine_name) const;
+	QString getFileName(bool ensure_directory_exists);
+	const MachineInfo *getMachineInfo(const QString &machine_name) const;
 };
 
 #endif // PREFS_H
