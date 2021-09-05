@@ -337,9 +337,9 @@ const QString &Preferences::getMachinePath(const QString &machine_name, machine_
 	switch (path_type)
 	{
 	case machine_path_type::WORKING_DIRECTORY:
-		return info->m_working_directory;
+		return info->m_workingDirectory;
 	case machine_path_type::LAST_SAVE_STATE:
-		return info->m_last_save_state;
+		return info->m_lastSaveState;
 	default:
 		throw false;
 	}
@@ -409,10 +409,10 @@ void Preferences::setMachinePath(const QString &machine_name, machine_path_type 
 	switch (path_type)
 	{
 	case machine_path_type::WORKING_DIRECTORY:
-		m_machine_info[machine_name].m_working_directory = std::move(path);
+		m_machine_info[machine_name].m_workingDirectory = std::move(path);
 		break;
 	case machine_path_type::LAST_SAVE_STATE:
-		m_machine_info[machine_name].m_last_save_state = std::move(path);
+		m_machine_info[machine_name].m_lastSaveState = std::move(path);
 		break;
 	default:
 		throw false;
@@ -426,7 +426,7 @@ void Preferences::setMachinePath(const QString &machine_name, machine_path_type 
 
 std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &machine_name, const QString &device_type)
 {
-	return m_machine_info[machine_name].m_recent_device_files[device_type];
+	return m_machine_info[machine_name].m_recentDeviceFiles[device_type];
 }
 
 
@@ -437,8 +437,8 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 	if (!info)
 		return empty_vector;
 
-	auto iter = info->m_recent_device_files.find(device_type);
-	if (iter == info->m_recent_device_files.end())
+	auto iter = info->m_recentDeviceFiles.find(device_type);
+	if (iter == info->m_recentDeviceFiles.end())
 		return empty_vector;
 
 	return iter->second;
@@ -750,22 +750,22 @@ void Preferences::save(QIODevice &output)
 
 	// machines
 	writer.writeComment("Machines");
-	for (const auto &[machine_name, info] : m_machine_info)
+	for (const auto &[machineName, info] : m_machine_info)
 	{
 		// only write this info out if the data is-non default
 		if (info != MachineInfo())
 		{
 			writer.writeStartElement("machine");
-			writer.writeAttribute("name", machine_name);
+			writer.writeAttribute("name", machineName);
 
-			if (!info.m_working_directory.isEmpty())
-				writer.writeAttribute("working_directory", info.m_working_directory);
-			if (!info.m_last_save_state.isEmpty())
-				writer.writeAttribute("last_save_state", info.m_last_save_state);
+			if (!info.m_workingDirectory.isEmpty())
+				writer.writeAttribute("working_directory", info.m_workingDirectory);
+			if (!info.m_lastSaveState.isEmpty())
+				writer.writeAttribute("last_save_state", info.m_lastSaveState);
 
-			if (!info.m_recent_device_files.empty())
+			if (!info.m_recentDeviceFiles.empty())
 			{
-				for (const auto &[device_type, recents] : info.m_recent_device_files)
+				for (const auto &[device_type, recents] : info.m_recentDeviceFiles)
 				{
 					writer.writeStartElement("device");
 					writer.writeAttribute("type", device_type);

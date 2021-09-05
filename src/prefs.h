@@ -167,9 +167,9 @@ private:
 
 		bool operator==(const MachineInfo &) const = default;
 
-		QString										m_working_directory;
-		QString										m_last_save_state;
-		std::map<QString, std::vector<QString>>     m_recent_device_files;
+		QString										m_workingDirectory;
+		QString										m_lastSaveState;
+		std::map<QString, std::vector<QString>>     m_recentDeviceFiles;
 	};
 
 	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names;
