@@ -160,6 +160,13 @@ public:
 private:
 	struct MachineInfo
 	{
+		MachineInfo();
+		~MachineInfo();
+		MachineInfo(const MachineInfo &) = delete;
+		MachineInfo(MachineInfo &&) = default;
+
+		bool operator==(const MachineInfo &) const = default;
+
 		QString										m_working_directory;
 		QString										m_last_save_state;
 		std::map<QString, std::vector<QString>>     m_recent_device_files;

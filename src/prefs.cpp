@@ -752,7 +752,8 @@ void Preferences::save(QIODevice &output)
 	writer.writeComment("Machines");
 	for (const auto &[machine_name, info] : m_machine_info)
 	{
-		if (!machine_name.isEmpty() && (!info.m_working_directory.isEmpty() || !info.m_last_save_state.isEmpty() || !info.m_recent_device_files.empty()))
+		// only write this info out if the data is-non default
+		if (info != MachineInfo())
 		{
 			writer.writeStartElement("machine");
 			writer.writeAttribute("name", machine_name);
@@ -932,4 +933,22 @@ QString Preferences::getConfigDirectory(bool ensure_directory_exists)
 static QString getDefaultPluginsDirectory()
 {
 	return QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
+}
+
+
+//-------------------------------------------------
+//  MachineInfo ctor
+//-------------------------------------------------
+
+Preferences::MachineInfo::MachineInfo()
+{
+}
+
+
+//-------------------------------------------------
+//  MachineInfo dtor
+//-------------------------------------------------
+
+Preferences::MachineInfo::~MachineInfo()
+{
 }
