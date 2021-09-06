@@ -113,7 +113,7 @@ namespace info
 			std::uint32_t	m_name_strindex;
 			std::uint32_t	m_bios_strindex;
 			std::uint32_t	m_size;
-			std::uint8_t	m_crc[4];
+			std::uint32_t	m_crc32;
 			std::uint8_t	m_sha1[20];
 			std::uint32_t	m_merge_strindex;
 			std::uint32_t	m_region_strindex;
@@ -293,7 +293,7 @@ namespace info
 		const QString &name() const { return get_string(inner().m_name_strindex); }
 		const QString &bios() const { return get_string(inner().m_bios_strindex); }
 		std::uint32_t size() const { return inner().m_size; }
-		std::array<uint8_t, 4> crc() const { return std::to_array(inner().m_crc); }
+		std::uint32_t crc32() const { return inner().m_crc32; }
 		std::array<uint8_t, 20> sha1() const { return std::to_array(inner().m_sha1); }
 		const QString &merge() const { return get_string(inner().m_merge_strindex); }
 		const QString &region() const { return get_string(inner().m_region_strindex); }
