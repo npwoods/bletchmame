@@ -695,11 +695,11 @@ void MainPanel::updateInfoPanel(const QString &machineName)
 	{
 		// find the snapshot asset
 		AssetFinder assetFinder(m_prefs, Preferences::global_path_type::SNAPSHOTS);
-		QByteArray byteArray = assetFinder.findAssetBytes(machineName + ".png");
+		std::optional<QByteArray> byteArray = assetFinder.findAssetBytes(machineName + ".png");
 
 		// and if we got something, load it
-		if (!byteArray.isEmpty())
-			m_currentSnapshot.loadFromData(byteArray);
+		if (byteArray)
+			m_currentSnapshot.loadFromData(*byteArray);
 	}
 
 	updateSnapshot();

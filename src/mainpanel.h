@@ -33,7 +33,7 @@ class SessionBehavior;
 class SoftwareListItemModel;
 
 
-// ======================> MainWindow
+// ======================> MainPanel
 
 class MainPanel : public QWidget
 {

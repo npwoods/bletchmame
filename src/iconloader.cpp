@@ -88,12 +88,12 @@ const QPixmap *IconLoader::getIconByName(const QString &iconName)
 		QString iconFileName = iconName + ".ico";
 
 		// and try to load the icon
-		QByteArray byteArray = m_assetFinder.findAssetBytes(iconFileName);
-		if (!byteArray.isEmpty())
+		std::optional<QByteArray> byteArray = m_assetFinder.findAssetBytes(iconFileName);
+		if (byteArray)
 		{
 			// we've found an entry - try to load the icon; note that while this can
 			// fail, we want to memoize the failure
-			std::optional<QPixmap> icon = loadIcon(byteArray);
+			std::optional<QPixmap> icon = loadIcon(*byteArray);
 
 			// record the result in the icon map
 			iter = m_icon_map.emplace(iconName, std::move(icon)).first;

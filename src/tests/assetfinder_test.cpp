@@ -19,7 +19,7 @@ namespace
         void empty();
         void zip();
         void isValidArchive_zip()       { isValidArchive(":/resources/sample_archive.zip", true); }
-        void isValidArchive_garbage()   { isValidArchive(":/resources/softlist.xml", false); }
+        void isValidArchive_garbage()   { isValidArchive(":/resources/garbage.bin", false); }
 
     private:
         void isValidArchive(const char *path, bool expectedResult);
@@ -38,7 +38,7 @@ namespace
 void Test::empty()
 {
     AssetFinder assetFinder;
-    QVERIFY(assetFinder.findAssetBytes("unknown.txt").isEmpty());
+    QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
 }
 
 
@@ -51,10 +51,10 @@ void Test::zip()
     AssetFinder assetFinder;
     assetFinder.setPaths({ ":/resources/sample_archive.zip" });
 
-    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("alpha.txt")) == "11111");
-    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("bravo.txt")) == "22222");
-    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("charlie.txt")) == "33333");
-    QVERIFY(assetFinder.findAssetBytes("unknown.txt").isEmpty());
+    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("alpha.txt").value_or(QByteArray())) == "11111");
+    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("bravo.txt").value_or(QByteArray())) == "22222");
+    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("charlie.txt").value_or(QByteArray())) == "33333");
+    QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
 }
 
 

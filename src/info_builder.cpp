@@ -289,10 +289,15 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "rom" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::rom &rom = m_roms.emplace_back();
+		std::uint8_t crc32Bytes[4];
 		rom.m_name_strindex					= m_strings.get(attributes, "name");
 		rom.m_bios_strindex					= m_strings.get(attributes, "bios");
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
-		binaryFromHex(rom.m_crc,			  attributes.get<std::u8string_view>("crc"));
+		binaryFromHex(crc32Bytes,			  attributes.get<std::u8string_view>("crc"));
+		rom.m_crc32 = ((std::uint32_t) crc32Bytes[0]) << 24
+					| ((std::uint32_t) crc32Bytes[1]) << 16
+					| ((std::uint32_t) crc32Bytes[2]) << 8
+					| ((std::uint32_t) crc32Bytes[3]) << 0;
 		binaryFromHex(rom.m_sha1,			  attributes.get<std::u8string_view>("sha1"));
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
 		rom.m_merge_strindex				= m_strings.get(attributes, "merge");
