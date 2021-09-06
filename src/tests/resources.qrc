@@ -1,6 +1,7 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource>
+        <file>resources/garbage.bin</file>
         <file>resources/listxml_alienar.xml</file>
         <file>resources/listxml_coco.xml</file>
         <file>resources/prefs.xml</file>

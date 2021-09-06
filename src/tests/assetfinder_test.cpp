@@ -19,7 +19,7 @@ namespace
         void empty();
         void zip();
         void isValidArchive_zip()       { isValidArchive(":/resources/sample_archive.zip", true); }
-        void isValidArchive_garbage()   { isValidArchive(":/resources/softlist.xml", false); }
+        void isValidArchive_garbage()   { isValidArchive(":/resources/garbage.bin", false); }
 
     private:
         void isValidArchive(const char *path, bool expectedResult);
