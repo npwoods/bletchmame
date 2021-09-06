@@ -181,9 +181,9 @@ std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName) const
 //  findAssetBytes
 //-------------------------------------------------
 
-QByteArray AssetFinder::findAssetBytes(const QString &fileName) const
+std::optional<QByteArray> AssetFinder::findAssetBytes(const QString &fileName) const
 {
-	QByteArray result;
+	std::optional<QByteArray> result;
 	std::unique_ptr<QIODevice> stream = findAsset(fileName);
 	if (stream)
 		result = stream->readAll();
