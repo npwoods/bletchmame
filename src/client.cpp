@@ -96,7 +96,7 @@ void MameClient::taskThreadProc()
 	// set the callback
 	auto finishedCallback = [this](int exitCode, QProcess::ExitStatus exitStatus)
 	{
-		m_task->onChildProcessCompleted(static_cast<Task::emu_error>(exitCode));
+		m_task->onChildProcessCompleted(static_cast<Task::EmuError>(exitCode));
 	};
 	connect(m_process.get(), QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
 	m_process->setReadChannel(QProcess::StandardOutput);

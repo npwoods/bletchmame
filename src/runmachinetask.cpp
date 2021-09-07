@@ -147,7 +147,7 @@ void RunMachineTask::abort()
 //  onChildProcessCompleted
 //-------------------------------------------------
 
-void RunMachineTask::onChildProcessCompleted(emu_error status)
+void RunMachineTask::onChildProcessCompleted(EmuError status)
 {
 	internalPost(Message::type::TERMINATED, "", status);
 }
@@ -159,7 +159,7 @@ void RunMachineTask::onChildProcessCompleted(emu_error status)
 
 void RunMachineTask::onChildProcessKilled()
 {
-	internalPost(Message::type::TERMINATED, "", emu_error::KILLED);
+	internalPost(Message::type::TERMINATED, "", EmuError::Killed);
 }
 
 
@@ -189,7 +189,7 @@ void RunMachineTask::issueFullCommandLine(QString &&fullCommand)
 //  internalPost
 //-------------------------------------------------
 
-void RunMachineTask::internalPost(Message::type type, QString &&command, emu_error status)
+void RunMachineTask::internalPost(Message::type type, QString &&command, EmuError status)
 {
 	if (LOG_POST)
 		qDebug("RunMachineTask::internalPost(): command='%s'", command.trimmed().toStdString().c_str());
@@ -269,7 +269,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 	{
 		// loop until the process terminates
 		bool done = false;
-		emu_error status = emu_error::NONE;
+		EmuError status = EmuError::None;
 		while (!done)
 		{
 			// await a message from the queue
@@ -298,7 +298,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 		}
 
 		// was there an error?
-		if (status != emu_error::NONE)
+		if (status != EmuError::None)
 		{
 			// if so, capture what was emitted by MAME's standard output stream
 			QByteArray errorMessageBytes = process.readAllStandardError();
