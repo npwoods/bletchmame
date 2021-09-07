@@ -48,6 +48,6 @@ private:
 //  FUNCTION PROTOTYPES
 //**************************************************************************
 
-Task::ptr create_version_task();
+Task::ptr createVersionTask();
 
 #endif // VERSIONTASK_H

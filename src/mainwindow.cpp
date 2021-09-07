@@ -1404,7 +1404,7 @@ MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
 		return check_mame_info_status::MAME_NOT_FOUND;
 
 	// get the version - this should be blazingly fast
-	m_client.launch(create_version_task());
+	m_client.launch(createVersionTask());
 	while (m_client.IsTaskActive())
 	{
 		QCoreApplication::processEvents();

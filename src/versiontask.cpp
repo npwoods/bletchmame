@@ -83,10 +83,10 @@ void VersionTask::process(QProcess &process, QObject &handler)
 
 
 //-------------------------------------------------
-//  create_list_xml_task
+//  createVersionTask
 //-------------------------------------------------
 
-Task::ptr create_version_task()
+Task::ptr createVersionTask()
 {
 	return std::make_shared<VersionTask>();
 }
