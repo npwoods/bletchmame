@@ -103,7 +103,7 @@ protected:
 	virtual QStringList getArguments(const Preferences &prefs) const override;
 	virtual void process(QProcess &process, QObject &handler) override;
 	virtual void abort() override;
-	virtual void onChildProcessCompleted(emu_error status) override;
+	virtual void onChildProcessCompleted(EmuError status) override;
 	virtual void onChildProcessKilled() override;
 
 private:
@@ -118,7 +118,7 @@ private:
 
 		type						m_type;
 		QString						m_command;
-		emu_error					m_status;
+		EmuError					m_status;
     };
 
 	info::machine					m_machine;
@@ -131,7 +131,7 @@ private:
 
 	static QString buildCommand(const std::vector<QString> &args);
 
-	void internalPost(Message::type type, QString &&command, emu_error status = emu_error::INVALID);
+	void internalPost(Message::type type, QString &&command, EmuError status = EmuError::Invalid);
 	static MameWorkerController::Response receiveResponseAndHandleUpdates(MameWorkerController &controller, QObject &handler);
 };
 

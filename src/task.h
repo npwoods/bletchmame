@@ -31,23 +31,23 @@ class Task
 	friend class MameClient;
 
 public:
-	enum class emu_error
+	enum class EmuError
 	{
 		// standard MAME error codes, from MAME main.h
-		NONE = 0,				// no error
-		FAILED_VALIDITY = 1,	// failed validity checks
-		MISSING_FILES = 2,		// missing files
-		FATALERROR = 3,			// some other fatal error
-		DEVICE = 4,				// device initialization error (MESS-specific)
-		NO_SUCH_GAME = 5,		// game was specified but doesn't exist
-		INVALID_CONFIG = 6,		// some sort of error in configuration 
-		IDENT_NONROMS = 7,		// identified all non-ROM files
-		IDENT_PARTIAL = 8,		// identified some files but not all
-		IDENT_NONE = 9,			// identified no files
+		None = 0,				// no error
+		FailedValidity = 1,		// failed validity checks
+		MissingFiles = 2,		// missing files
+		FatalError = 3,			// some other fatal error
+		Device = 4,				// device initialization error (MESS-specific)
+		NoSuchGame = 5,			// game was specified but doesn't exist
+		InvalidConfig = 6,		// some sort of error in configuration 
+		IdentNonRoms = 7,		// identified all non-ROM files
+		IdentPartial = 8,		// identified some files but not all
+		IdentNone = 9,			// identified no files
 
 		// our error codes
-		INVALID = 1000,			// invalid error code
-		KILLED,					// the process was killed
+		Invalid = 1000,			// invalid error code
+		Killed,					// the process was killed
 	};
 
 	typedef std::shared_ptr<Task> ptr;
@@ -64,7 +64,7 @@ protected:
 	virtual void process(QProcess &process, QObject &handler) = 0;
 
 	// called on the main thread when the child process has been completed
-	virtual void onChildProcessCompleted(emu_error status);
+	virtual void onChildProcessCompleted(EmuError status);
 
 	// called on the main thread when the child process has been killed
 	virtual void onChildProcessKilled();

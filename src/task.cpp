@@ -26,7 +26,7 @@ Task::~Task()
 //  onChildProcessCompleted
 //-------------------------------------------------
 
-void Task::onChildProcessCompleted(emu_error)
+void Task::onChildProcessCompleted(EmuError)
 {
 	// by default, do nothing
 }
