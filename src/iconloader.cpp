@@ -121,25 +121,10 @@ std::optional<QPixmap> IconLoader::loadIcon(const QByteArray &byteArray)
 	if (pixmap.loadFromData(byteArray))
 	{
 		// we've load the icon; normalize it
-		setProperDevicePixelRatio(pixmap);
+		setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
 
 		// and return it
 		result = std::move(pixmap);
 	}
 	return result;
-}
-
-
-//-------------------------------------------------
-//  setProperDevicePixelRatio
-//-------------------------------------------------
-
-void IconLoader::setProperDevicePixelRatio(QPixmap &pixmap)
-{
-	// determine the maximum dimension
-	qreal dimension = std::max(pixmap.width(), pixmap.height());
-
-	// and set an appropriate scale factor
-	qreal scaleFactor = dimension / ICON_SIZE;
-	pixmap.setDevicePixelRatio(scaleFactor);
 }

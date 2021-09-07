@@ -52,7 +52,6 @@ private:
 
 	const QPixmap *getIconByName(const QString &iconName);
 	static std::optional<QPixmap> loadIcon(const QByteArray &byteArray);
-	static void setProperDevicePixelRatio(QPixmap &pixmap);
 };
 
 #endif // ICONLOADER_H

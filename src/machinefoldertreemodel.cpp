@@ -17,8 +17,7 @@
 //  CONSTANTS
 //**************************************************************************
 
-#define ICON_SIZE_X 16
-#define ICON_SIZE_Y 16
+#define ICON_SIZE 16
 
 
 //**************************************************************************
@@ -62,7 +61,8 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 		for (int i = 0; i < folderIconResourceNames.size(); i++)
 		{
 			QPixmap pixmap(folderIconResourceNames[i]);
-			m_folderIcons[i] = pixmap.scaled(ICON_SIZE_X, ICON_SIZE_Y);
+			setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
+			m_folderIcons[i] = pixmap;
 		}
 	}
 
