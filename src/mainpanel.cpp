@@ -22,6 +22,7 @@
 #include "softwarelistitemmodel.h"
 #include "splitterviewtoggler.h"
 #include "tableviewmanager.h"
+#include "utility.h"
 #include "ui_mainpanel.h"
 #include "dialogs/choosesw.h"
 #include "dialogs/newcustomfolder.h"
@@ -712,11 +713,8 @@ void MainPanel::updateInfoPanel(const QString &machineName)
 
 void MainPanel::updateSnapshot()
 {
-	QPixmap scaledSnapshot = m_currentSnapshot.scaled(
-		m_ui->machinesSnapLabel->size(),
-		Qt::KeepAspectRatio,
-		Qt::SmoothTransformation);
-	m_ui->machinesSnapLabel->setPixmap(scaledSnapshot);
+	setPixmapDevicePixelRatioToFit(m_currentSnapshot, m_ui->machinesSnapLabel->size());
+	m_ui->machinesSnapLabel->setPixmap(m_currentSnapshot);
 }
 
 

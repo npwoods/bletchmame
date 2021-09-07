@@ -128,3 +128,26 @@ void truncateGridLayout(QGridLayout &gridLayout, int rows)
 		}
 	}
 }
+
+
+//-------------------------------------------------
+//  setPixmapDevicePixelRatioToFit
+//-------------------------------------------------
+
+void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, const QSize &size)
+{
+	qreal xScaleFactor = pixmap.width() / (qreal)size.width();
+	qreal yScaleFactor = pixmap.height() / (qreal)size.height();
+	qreal scaleFactor = std::max(xScaleFactor, yScaleFactor);
+	pixmap.setDevicePixelRatio(scaleFactor);
+}
+
+
+//-------------------------------------------------
+//  setPixmapDevicePixelRatioToFit
+//-------------------------------------------------
+
+void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, int dimension)
+{
+	setPixmapDevicePixelRatioToFit(pixmap, QSize(dimension, dimension));
+}

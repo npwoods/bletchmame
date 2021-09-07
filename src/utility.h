@@ -418,12 +418,21 @@ public:
 };
 
 
+//**************************************************************************
+//  MISCELLANEOUS QT HELPERS
+//**************************************************************************
+
 // useful for popup menus
 QPoint globalPositionBelowWidget(const QWidget &widget);
 
 // remove extra items in a grid layout
 class QGridLayout;
 void truncateGridLayout(QGridLayout &gridLayout, int rows);
+
+// use these to avoid scaling
+class QPixmap;
+void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, const QSize &size);
+void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, int dimension);
 
 
 #endif // UTILITY_H
