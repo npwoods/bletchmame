@@ -11,7 +11,7 @@
 #include <QThread>
 
 #include "versiontask.h"
-#include "task.h"
+#include "mametask.h"
 #include "utility.h"
 
 
@@ -22,12 +22,11 @@
 namespace
 {
 	// ======================> VersionTask
-	class VersionTask : public Task
+	class VersionTask : public MameTask
 	{
 	protected:
 		virtual QStringList getArguments(const Preferences &) const;
-		virtual void process(QProcess &process, QObject &handler) override;
-		virtual void abort() override;
+		virtual void process(QProcess &process, QObject &eventHandler) override final;
 	};
 };
 
@@ -60,25 +59,19 @@ QStringList VersionTask::getArguments(const Preferences &) const
 
 
 //-------------------------------------------------
-//  abort
-//-------------------------------------------------
-
-void VersionTask::abort()
-{
-	// do nothing
-}
-
-
-//-------------------------------------------------
 //  process
 //-------------------------------------------------
 
-void VersionTask::process(QProcess &process, QObject &handler)
+void VersionTask::process(QProcess &process, QObject &eventHandler)
 {
 	// get the version
 	auto version = QString::fromLocal8Bit(process.readLine());
+
+	// and put it on the completion event
 	auto evt = std::make_unique<VersionResultEvent>(std::move(version));
-	QCoreApplication::postEvent(&handler, evt.release());
+
+	// and post it
+	QCoreApplication::postEvent(&eventHandler, evt.release());
 }
 
 
@@ -88,6 +81,6 @@ void VersionTask::process(QProcess &process, QObject &handler)
 
 Task::ptr createVersionTask()
 {
-	return std::make_shared<VersionTask>();
+	return std::make_unique<VersionTask>();
 }
 

@@ -9,10 +9,11 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.9 (TBD)
+	- When refreshing the MAME Info Database (-listxml handling), names and descriptions of machines will be displayed
 	- The Paths Dialog will highlight file paths for snapshots and icons that are not valid archives in red
 	- Improving display of icon on the machine list on high resolution displays
 	- Fixed a bug that caused column sorts to not be honored on startup
-	- Small optimizations to the building of MAME Info Database (-listxml handling) and general XML parsing
+	- Small optimizations to the building of MAME Info Database and general XML parsing
 
 - 2.8 (2021-Aug-29)
 	- Added support for snapshots in ZIP files instead of in directories (#128)

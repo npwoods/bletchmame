@@ -139,7 +139,13 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 
 void RunMachineTask::abort()
 {
+	// be nice, try to exit
 	issue({ "exit" });
+
+	// but kill anyways
+	emuPocess().kill();
+
+	internalPost(Message::type::TERMINATED, "", EmuError::Killed);
 }
 
 
@@ -150,16 +156,6 @@ void RunMachineTask::abort()
 void RunMachineTask::onChildProcessCompleted(EmuError status)
 {
 	internalPost(Message::type::TERMINATED, "", status);
-}
-
-
-//-------------------------------------------------
-//  onChildProcessKilled
-//-------------------------------------------------
-
-void RunMachineTask::onChildProcessKilled()
-{
-	internalPost(Message::type::TERMINATED, "", EmuError::Killed);
 }
 
 

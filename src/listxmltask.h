@@ -13,7 +13,7 @@
 
 #include <QEvent>
 
-#include "task.h"
+#include "mametask.h"
 
 
 //**************************************************************************
@@ -29,6 +29,28 @@
 //**************************************************************************
 //  TYPES
 //**************************************************************************
+
+// ======================> ListXmlProgressEvent
+
+class ListXmlProgressEvent : public QEvent
+{
+public:
+	// ctor
+	ListXmlProgressEvent(QString &&machineName, QString &&machineDescription);
+
+	// accessors
+	static QEvent::Type eventId() { return s_eventId; }
+	const QString &machineName() const { return m_machineName; }
+	const QString &machineDescription() const { return m_machineDescription; }
+
+private:
+	static QEvent::Type	s_eventId;
+	QString				m_machineName;
+	QString				m_machineDescription;
+};
+
+
+// ======================> ListXmlResultEvent
 
 class ListXmlResultEvent : public QEvent
 {
@@ -60,17 +82,18 @@ private:
 //**************************************************************************
 
 // ======================> ListXmlTask
-class ListXmlTask : public Task
+
+class ListXmlTask : public MameTask
 {
 public:
 	class Test;
 
 	// ctor
-	ListXmlTask(QString &&output_filename);
+	ListXmlTask(QString &&outputFilename);
 
 protected:
-	virtual QStringList getArguments(const Preferences &) const override;
-	virtual void process(QProcess &process, QObject &handler) override;
+	virtual QStringList getArguments(const Preferences &) const override final;
+	virtual void process(QProcess &process, QObject &handler) override final;
 	virtual void abort() override;
 
 private:
@@ -84,10 +107,10 @@ private:
 		QString						m_message;
 	};
 
-	QString			m_output_filename;
+	QString			m_outputFilename;
 	volatile bool	m_aborted;
 
-	void internalProcess(QIODevice &process);
+	void internalProcess(QIODevice &process, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback = { });
 };
 
 #endif // LISTXMLTASK_H

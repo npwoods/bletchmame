@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <chrono>
 #include <cmath>
 
 #include "info_builder.h"
@@ -186,11 +187,31 @@ static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::basi
 //  process_xml()
 //-------------------------------------------------
 
-bool info::database_builder::process_xml(QIODevice &input, QString &error_message)
+bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback)
 {
 	// sanity check; ensure we're fresh
 	assert(m_machines.empty());
 	assert(m_devices.empty());
+
+	// progress reporting
+	auto lastProgress = std::chrono::system_clock::now();
+	auto reportProgressIfAppropriate = [this, &lastProgress, &progressCallback](const info::binaries::machine &machine)
+	{
+		using namespace std::chrono_literals;
+
+		// is it time to report progress?
+		auto now = std::chrono::system_clock::now();
+		if (now > lastProgress + 100ms)
+		{
+			// it is, report it
+			lastProgress = now;
+			info::database_builder::string_table::SsoBuffer nameSso, descSso;
+			const char8_t *name = (const char8_t *) m_strings.lookup(machine.m_name_strindex, nameSso);
+			const char8_t *desc = (const char8_t *) m_strings.lookup(machine.m_description_strindex, descSso);
+			if (progressCallback)
+				progressCallback(name, desc);
+		}
+	};
 
 	// prepare header and magic variables
 	info::binaries::header header = { 0, };
@@ -266,9 +287,10 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_incomplete			= encodeBool(std::nullopt);
 		machine.m_sound_channels		= ~0;
 	});
-	xml.onElementEnd({ "mame", "machine", "description" }, [this](std::u8string &&content)
+	xml.onElementEnd({ "mame", "machine", "description" }, [this, &reportProgressIfAppropriate](std::u8string &&content)
 	{
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
+		reportProgressIfAppropriate(util::last(m_machines));
 	});
 	xml.onElementEnd({ "mame", "machine", "year" }, [this](std::u8string &&content)
 	{

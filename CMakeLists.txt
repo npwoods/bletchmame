@@ -76,8 +76,6 @@ add_library(BletchMAME_core
 	src/assetfinder.h
 	src/buildversion.cpp
 	src/buildversion.h
-	src/client.cpp
-	src/client.h
 	src/iconloader.cpp
 	src/iconloader.h
 	src/info.cpp
@@ -100,6 +98,8 @@ add_library(BletchMAME_core
 	src/mainwindow.ui
 	src/mameworkercontroller.cpp
 	src/mameworkercontroller.h
+	src/mametask.cpp
+	src/mametask.h
 	src/mameversion.cpp
 	src/mameversion.h
 	src/messagequeue.h
@@ -127,6 +127,8 @@ add_library(BletchMAME_core
 	src/tableviewmanager.h
 	src/task.cpp
 	src/task.h	
+	src/taskdispatcher.cpp
+	src/taskdispatcher.h
 	src/versiontask.cpp
 	src/versiontask.h
 	src/xmlparser.cpp
@@ -199,12 +201,12 @@ add_executable(BletchMAME_tests
 	src/tests/listxmlrunner.cpp
 	src/tests/mamerunner.cpp
 	src/tests/assetfinder_test.cpp
-	src/tests/client_test.cpp
 	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/listxmltask_test.cpp
 	src/tests/machinefoldertreemodel_test.cpp
 	src/tests/machinelistitemmodel_test.cpp
+	src/tests/mametask_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
 	src/tests/profile_test.cpp

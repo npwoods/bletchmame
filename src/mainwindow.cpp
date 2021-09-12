@@ -186,7 +186,7 @@ public:
 
 	virtual bool startedWithHashPaths() const
 	{
-		return m_host.m_client.GetCurrentTask<RunMachineTask>()->startedWithHashPaths();
+		return m_host.m_currentRunMachineTask->startedWithHashPaths();
 	}
 
 	virtual void changeSlots(std::map<QString, QString> &&changes)
@@ -685,9 +685,10 @@ static const int SOUND_ATTENUATION_ON = 0;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
-	, m_client(*this, m_prefs)
+	, m_taskDispatcher(*this, m_prefs)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
+	, m_currentLoadingDialog(nullptr)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -1163,7 +1164,7 @@ void MainWindow::on_actionCheats_triggered()
 
 void MainWindow::on_actionConsole_triggered()
 {
-	ConsoleDialog dialog(this, m_client.GetCurrentTask<RunMachineTask>(), *this);
+	ConsoleDialog dialog(this, RunMachineTask::ptr(m_currentRunMachineTask), *this);
 	dialog.exec();
 }
 
@@ -1306,9 +1307,17 @@ void MainWindow::on_actionBletchMameWebSite_triggered()
 bool MainWindow::event(QEvent *event)
 {
 	std::optional<bool> result = { };
-	if (event->type() == VersionResultEvent::eventId())
+	if (event->type() == FinalizeTaskEvent::eventId())
+	{
+		result = onFinalizeTask(static_cast<FinalizeTaskEvent &>(*event));
+	}
+	else if (event->type() == VersionResultEvent::eventId())
 	{
 		result = onVersionCompleted(static_cast<VersionResultEvent &>(*event));
+	}
+	else if (event->type() == ListXmlProgressEvent::eventId())
+	{
+		result = onListXmlProgress(static_cast<ListXmlProgressEvent &>(*event));
 	}
 	else if (event->type() == ListXmlResultEvent::eventId())
 	{
@@ -1403,9 +1412,14 @@ MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
 	if (!IsMameExecutablePresent())
 		return check_mame_info_status::MAME_NOT_FOUND;
 
+	// while we have an outstanding version task, put in a fake invalid MAME version
+	QString fakeVersion = "<<VERSIONTASK>>";
+	m_mame_version = fakeVersion;
+
 	// get the version - this should be blazingly fast
-	m_client.launch(createVersionTask());
-	while (m_client.IsTaskActive())
+	Task::ptr task = createVersionTask();
+	m_taskDispatcher.launch(std::move(task));
+	while (m_mame_version == fakeVersion)
 	{
 		QCoreApplication::processEvents();
 		QThread::yieldCurrentThread();
@@ -1452,22 +1466,25 @@ bool MainWindow::refreshMameInfoDatabase()
 		return false;
 
 	// list XML
-	QString db_path = m_prefs.getMameXmlDatabasePath();
-	m_client.launch(std::make_shared<ListXmlTask>(std::move(db_path)));
+	QString dbPath = m_prefs.getMameXmlDatabasePath();
+	Task::ptr task = std::make_shared<ListXmlTask>(std::move(dbPath));
+	m_taskDispatcher.launch(task);
 
 	// and show the dialog
 	{
-		LoadingDialog dlg(*this, [this]() { return !m_client.IsTaskActive(); });
+		LoadingDialog dlg(*this, [this, &task]() { return task->completed(); });
+		m_currentLoadingDialog = &dlg;
 		dlg.exec();
+		m_currentLoadingDialog = nullptr;
 		if (dlg.result() != QDialog::DialogCode::Accepted)
 		{
-			m_client.abort();
+			task->abort();
 			return false;
 		}
 	}
 
 	// we've succeeded; load the DB
-	if (!m_info_db.load(db_path))
+	if (!m_info_db.load(dbPath))
 	{
 		// a failure here is likely due to a very strange condition (e.g. - someone deleting the infodb
 		// file out from under me)
@@ -1484,14 +1501,11 @@ bool MainWindow::refreshMameInfoDatabase()
 
 info::machine MainWindow::getRunningMachine() const
 {
-	// get the currently running machine
-	std::shared_ptr<const RunMachineTask> task = m_client.GetCurrentTask<const RunMachineTask>();
-
 	// this call is only valid if we have a running machine
-	assert(task);
+	assert(m_currentRunMachineTask);
 
 	// return the machine
-	return task->getMachine();
+	return m_currentRunMachineTask->getMachine();
 }
 
 
@@ -1555,12 +1569,13 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	Pauser fake_pauser(*this, false);
 
 	// run the emulation
-	Task::ptr task = std::make_shared<RunMachineTask>(
+	RunMachineTask::ptr task = std::make_shared<RunMachineTask>(
 		machine,
 		std::move(software_name),
 		m_sessionBehavior->getOptions(),
 		attachWidgetId());
-	m_client.launch(std::move(task));
+	m_taskDispatcher.launch(task);
+	m_currentRunMachineTask = std::move(task);
 
 	// set up running state and subscribe to events
 	m_state.emplace();
@@ -1799,6 +1814,17 @@ bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 
 
 //-------------------------------------------------
+//  onFinalizeTask
+//-------------------------------------------------m
+
+bool MainWindow::onFinalizeTask(const FinalizeTaskEvent &event)
+{
+	m_taskDispatcher.finalize(event.task());
+	return true;
+}
+
+
+//-------------------------------------------------
 //  onVersionCompleted
 //-------------------------------------------------m
 
@@ -1830,7 +1856,18 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	if (!message.isEmpty())
 		messageBox(message);
 
-	m_client.waitForCompletion();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  onListXmlProgress
+//-------------------------------------------------
+
+bool MainWindow::onListXmlProgress(const ListXmlProgressEvent &event)
+{
+	if (m_currentLoadingDialog)
+		m_currentLoadingDialog->progress(event.machineName(), event.machineDescription());
 	return true;
 }
 
@@ -1867,7 +1904,6 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 		throw false;
 	}
 
-	m_client.waitForCompletion();
 	return true;
 }
 
@@ -1882,7 +1918,7 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	m_sessionBehavior->persistState(m_state->devslots().get(), m_state->images().get());
 
 	// clear out all of the state
-	m_client.waitForCompletion();
+	m_currentRunMachineTask.reset();
 	m_state.reset();
 	m_sessionBehavior.reset();
 
@@ -2099,7 +2135,7 @@ QString MainWindow::getTitleBarText()
 		: "%1: %2";
 
 	// get the machine description
-	const QString &machineDesc = m_client.GetCurrentTask<RunMachineTask>()->getMachine().description();
+	const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
 
 	// and apply the format
 	return titleTextFormat.arg(
@@ -2122,7 +2158,7 @@ void MainWindow::ensureProperFocus()
 	// In absence of a better way to handle this, we have some Windows specific
 	// code below.  Eventually this code should be retired once there is an understanding
 	// of the proper Qt techniques to apply here
-	if (!attachToMainWindow() && m_client.GetCurrentTask<RunMachineTask>())
+	if (!attachToMainWindow() && m_currentRunMachineTask)
 	{
 		if (::GetFocus() == (HWND)winId())
 			::SetFocus((HWND)m_ui->rootWidget->winId());
@@ -2145,11 +2181,8 @@ void MainWindow::ensureProperFocus()
 
 void MainWindow::issue(const std::vector<QString> &args)
 {
-	std::shared_ptr<RunMachineTask> task = m_client.GetCurrentTask<RunMachineTask>();
-	if (!task)
-		return;
-
-	task->issue(args);
+	if (m_currentRunMachineTask)
+		m_currentRunMachineTask->issue(args);
 }
 
 
