@@ -431,7 +431,7 @@ void truncateGridLayout(QGridLayout &gridLayout, int rows);
 
 // use these to avoid scaling
 class QPixmap;
-void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, const QSize &size);
+void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, QSize size);
 void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, int dimension);
 
 
