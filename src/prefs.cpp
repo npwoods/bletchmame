@@ -446,6 +446,21 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 
 
 //-------------------------------------------------
+//  garbageCollectMachineInfo
+//-------------------------------------------------
+
+void Preferences::garbageCollectMachineInfo()
+{
+	// remove all items from m_machine_info with default data
+	std::erase_if(m_machine_info, [](const auto &item)
+	{
+		const auto &[key, value] = item;
+		return value == MachineInfo();
+	});
+}
+
+
+//-------------------------------------------------
 //  load
 //-------------------------------------------------
 

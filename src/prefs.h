@@ -191,6 +191,7 @@ private:
 	void save(QIODevice &output);
 	QString getFileName(bool ensure_directory_exists);
 	const MachineInfo *getMachineInfo(const QString &machine_name) const;
+	void garbageCollectMachineInfo();
 };
 
 #endif // PREFS_H
