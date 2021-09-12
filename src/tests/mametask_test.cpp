@@ -1,15 +1,15 @@
 /***************************************************************************
 
-    client_test.cpp
+    mametask_test.cpp
 
-    Unit tests for client.cpp
+    Unit tests for mametask.cpp
 
 ***************************************************************************/
 
-#include "client.h"
+#include "mametask.h"
 #include "test.h"
 
-class MameClient::Test : public QObject
+class MameTask::Test : public QObject
 {
     Q_OBJECT
 
@@ -26,10 +26,10 @@ private slots:
 //  appendExtraArguments
 //-------------------------------------------------
 
-void MameClient::Test::appendExtraArguments()
+void MameTask::Test::appendExtraArguments()
 {
     QStringList argv = { "Alpha", "Bravo" };
-    MameClient::appendExtraArguments(argv, "Charlie \"Delta Echo\" Foxtrot");
+	MameTask::appendExtraArguments(argv, "Charlie \"Delta Echo\" Foxtrot");
 
     QVERIFY(argv.size() == 5);
     QVERIFY(argv[0] == "Alpha");
@@ -40,5 +40,5 @@ void MameClient::Test::appendExtraArguments()
 }
 
 
-static TestFixture<MameClient::Test> fixture;
-#include "client_test.moc"
+static TestFixture<MameTask::Test> fixture;
+#include "mametask_test.moc"

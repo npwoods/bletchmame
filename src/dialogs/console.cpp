@@ -21,7 +21,7 @@
 //  ctor
 //-------------------------------------------------
 
-ConsoleDialog::ConsoleDialog(QWidget *parent, std::shared_ptr<RunMachineTask> &&task, IConsoleDialogHost &host)
+ConsoleDialog::ConsoleDialog(QWidget *parent, RunMachineTask::ptr &&task, IConsoleDialogHost &host)
 	: QDialog(parent)
 	, m_host(host)
 	, m_task(std::move(task))

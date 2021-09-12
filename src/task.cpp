@@ -2,9 +2,11 @@
 
     task.cpp
 
-    Abstract base class for handling tasks for MAME
+    Abstract base class for asynchronous tasks
 
 ***************************************************************************/
+
+#include <QEvent>
 
 #include "task.h"
 
@@ -12,6 +14,16 @@
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
+
+//-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
+Task::Task()
+	: m_completed(false)
+{
+}
+
 
 //-------------------------------------------------
 //  dtor
@@ -23,20 +35,20 @@ Task::~Task()
 
 
 //-------------------------------------------------
-//  onChildProcessCompleted
+//  start
 //-------------------------------------------------
 
-void Task::onChildProcessCompleted(EmuError)
+void Task::start(Preferences &prefs)
 {
 	// by default, do nothing
 }
 
 
 //-------------------------------------------------
-//  onChildProcessKilled
+//  abort
 //-------------------------------------------------
 
-void Task::onChildProcessKilled()
+void Task::abort()
 {
 	// by default, do nothing
 }

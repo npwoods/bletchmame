@@ -34,9 +34,7 @@ class VersionResultEvent : public QEvent
 {
 public:
     VersionResultEvent(QString &&version);
-
     static QEvent::Type eventId() { return s_eventId; }
-
     QString	m_version;
 
 private:

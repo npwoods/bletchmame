@@ -14,7 +14,7 @@
 #include <QEvent>
 #include <optional>
 
-#include "task.h"
+#include "mametask.h"
 #include "messagequeue.h"
 #include "info.h"
 #include "mameworkercontroller.h"
@@ -86,10 +86,12 @@ private:
 
 // ======================> RunMachineTask
 
-class RunMachineTask : public Task
+class RunMachineTask : public MameTask
 {
 public:
 	class Test;
+
+	typedef std::shared_ptr<RunMachineTask> ptr;
 
 	RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QString &&attachWindowParameter);
 
@@ -104,7 +106,6 @@ protected:
 	virtual void process(QProcess &process, QObject &handler) override;
 	virtual void abort() override;
 	virtual void onChildProcessCompleted(EmuError status) override;
-	virtual void onChildProcessKilled() override;
 
 private:
     struct Message

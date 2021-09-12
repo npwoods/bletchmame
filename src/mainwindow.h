@@ -14,14 +14,14 @@
 #include <QFileDialog>
 #include <memory.h>
 
-#include "sessionbehavior.h"
-#include "prefs.h"
-#include "client.h"
 #include "info.h"
 #include "mainpanel.h"
+#include "prefs.h"
+#include "sessionbehavior.h"
 #include "softwarelist.h"
-#include "tableviewmanager.h"
 #include "status.h"
+#include "tableviewmanager.h"
+#include "taskdispatcher.h"
 #include "dialogs/console.h"
 
 
@@ -137,7 +137,8 @@ private:
 	std::unique_ptr<Ui::MainWindow>		m_ui;
 	MainPanel *							m_mainPanel;
 	Preferences							m_prefs;
-	MameClient							m_client;
+	TaskDispatcher						m_taskDispatcher;
+	RunMachineTask::ptr					m_currentRunMachineTask;
 	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
@@ -160,6 +161,7 @@ private:
 	observable::value<QString>			m_currentQuickState;
 
 	// task notifications
+	bool onFinalizeTask(const FinalizeTaskEvent &event);
 	bool onVersionCompleted(VersionResultEvent &event);
 	bool onListXmlCompleted(const ListXmlResultEvent &event);
 	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);

@@ -13,7 +13,7 @@
 
 #include <QEvent>
 
-#include "task.h"
+#include "mametask.h"
 
 
 //**************************************************************************
@@ -60,17 +60,17 @@ private:
 //**************************************************************************
 
 // ======================> ListXmlTask
-class ListXmlTask : public Task
+class ListXmlTask : public MameTask
 {
 public:
 	class Test;
 
 	// ctor
-	ListXmlTask(QString &&output_filename);
+	ListXmlTask(QString &&outputFilename);
 
 protected:
-	virtual QStringList getArguments(const Preferences &) const override;
-	virtual void process(QProcess &process, QObject &handler) override;
+	virtual QStringList getArguments(const Preferences &) const override final;
+	virtual void process(QProcess &process, QObject &handler) override final;
 	virtual void abort() override;
 
 private:
@@ -84,7 +84,7 @@ private:
 		QString						m_message;
 	};
 
-	QString			m_output_filename;
+	QString			m_outputFilename;
 	volatile bool	m_aborted;
 
 	void internalProcess(QIODevice &process);

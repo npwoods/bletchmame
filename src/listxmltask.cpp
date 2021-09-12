@@ -29,8 +29,8 @@ QEvent::Type ListXmlResultEvent::s_eventId = (QEvent::Type) QEvent::registerEven
 //  ctor
 //-------------------------------------------------
 
-ListXmlTask::ListXmlTask(QString &&output_filename)
-	: m_output_filename(std::move(output_filename))
+ListXmlTask::ListXmlTask(QString &&outputFilename)
+	: m_outputFilename(std::move(outputFilename))
 	, m_aborted(false)
 {
 }
@@ -107,15 +107,15 @@ void ListXmlTask::internalProcess(QIODevice &process)
 		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Error parsing XML from MAME -listxml: %1").arg(error_message));
 
 	// try creating the directory if its not present
-	QDir dir = QFileInfo(m_output_filename).dir();
+	QDir dir = QFileInfo(m_outputFilename).dir();
 	if (!dir.exists())
 		QDir().mkpath(dir.absolutePath());
 
 	// we finally have all of the info accumulated; now we can get to business with writing
 	// to the actual file
-	QFile file(m_output_filename);
+	QFile file(m_outputFilename);
 	if (!file.open(QIODevice::WriteOnly))
-		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_output_filename));
+		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_outputFilename));
 
 	// emit the data
 	builder.emit_info(file);

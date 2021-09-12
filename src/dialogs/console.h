@@ -31,12 +31,12 @@ public:
 class ConsoleDialog : public QDialog
 {
 public:
-	ConsoleDialog(QWidget *parent, std::shared_ptr<RunMachineTask> &&task, IConsoleDialogHost &host);
+	ConsoleDialog(QWidget *parent, RunMachineTask::ptr &&task, IConsoleDialogHost &host);
 	~ConsoleDialog();
 
 private:
 	IConsoleDialogHost &				m_host;
-	std::shared_ptr<RunMachineTask>		m_task;
+	RunMachineTask::ptr					m_task;
 	std::unique_ptr<Ui::ConsoleDialog>	m_ui;
 
 	void onInvoke();
