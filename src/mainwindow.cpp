@@ -700,7 +700,7 @@ MainWindow::MainWindow(QWidget *parent)
 	m_mainPanel = new MainPanel(
 		m_info_db,
 		m_prefs,
-		[this](const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) { run(machine, std::move(sessionBehavior)); },
+		*this,
 		m_ui->rootWidget);
 	m_ui->stackedLayout->addWidget(m_mainPanel);
 	m_ui->stackedLayout->setCurrentWidget(m_mainPanel);

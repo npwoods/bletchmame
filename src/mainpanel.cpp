@@ -100,11 +100,11 @@ static const TableViewManager::Description s_profileListTableViewDesc =
 //  ctor
 //-------------------------------------------------
 
-MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, std::function<void(const info::machine &, std::unique_ptr<SessionBehavior> &&)> &&runCallback, QWidget *parent)
+MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost &host, QWidget *parent)
 	: QWidget(parent)
 	, m_infoDb(infoDb)
 	, m_prefs(prefs)
-	, m_runCallback(std::move(runCallback))
+	, m_host(host)
 	, m_softwareListItemModel(nullptr)
 	, m_profileListItemModel(nullptr)
 	, m_iconLoader(prefs)
@@ -256,7 +256,7 @@ void MainPanel::run(std::shared_ptr<profiles::profile> &&profile)
 
 void MainPanel::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
-	m_runCallback(machine, std::move(sessionBehavior));
+	m_host.run(machine, std::move(sessionBehavior));
 }
 
 

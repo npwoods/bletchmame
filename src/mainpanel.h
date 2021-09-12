@@ -34,6 +34,15 @@ class SessionBehavior;
 class SoftwareListItemModel;
 
 
+// ======================> IMainPanelHost
+
+class IMainPanelHost
+{
+public:
+	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) = 0;
+};
+
+
 // ======================> MainPanel
 
 class MainPanel : public QWidget
@@ -41,7 +50,7 @@ class MainPanel : public QWidget
 	Q_OBJECT
 
 public:
-	MainPanel(info::database &infoDb, Preferences &prefs, std::function<void(const info::machine &, std::unique_ptr<SessionBehavior> &&)> &&runCallback, QWidget *parent = nullptr);
+	MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost &host, QWidget *parent = nullptr);
 	~MainPanel();
 
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
@@ -63,7 +72,7 @@ private:
 	// variables configured at startup
 	std::unique_ptr<Ui::MainPanel>													m_ui;
 	Preferences &																	m_prefs;
-	std::function<void(const info::machine &, std::unique_ptr<SessionBehavior> &&)>	m_runCallback;
+	IMainPanelHost &																m_host;
 	SoftwareListItemModel *															m_softwareListItemModel;
 	ProfileListItemModel *															m_profileListItemModel;
 
