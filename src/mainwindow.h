@@ -18,6 +18,7 @@
 #include "prefs.h"
 #include "client.h"
 #include "info.h"
+#include "mainpanel.h"
 #include "softwarelist.h"
 #include "tableviewmanager.h"
 #include "status.h"
@@ -47,7 +48,7 @@ class ChatterEvent;
 
 // ======================> MainWindow
 
-class MainWindow : public QMainWindow, private IConsoleDialogHost
+class MainWindow : public QMainWindow, private IConsoleDialogHost, private IMainPanelHost
 {
 	Q_OBJECT
 
@@ -189,7 +190,7 @@ private:
 	info::machine getRunningMachine() const;
 	bool attachToMainWindow() const;
 	QString attachWidgetId() const;
-	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
+	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
 	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);

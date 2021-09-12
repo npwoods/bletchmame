@@ -134,7 +134,7 @@ void truncateGridLayout(QGridLayout &gridLayout, int rows)
 //  setPixmapDevicePixelRatioToFit
 //-------------------------------------------------
 
-void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, const QSize &size)
+void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, QSize size)
 {
 	qreal xScaleFactor = pixmap.width() / (qreal)size.width();
 	qreal yScaleFactor = pixmap.height() / (qreal)size.height();
