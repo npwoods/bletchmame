@@ -688,6 +688,7 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_taskDispatcher(*this, m_prefs)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
+	, m_currentLoadingDialog(nullptr)
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
@@ -1314,6 +1315,10 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onVersionCompleted(static_cast<VersionResultEvent &>(*event));
 	}
+	else if (event->type() == ListXmlProgressEvent::eventId())
+	{
+		result = onListXmlProgress(static_cast<ListXmlProgressEvent &>(*event));
+	}
 	else if (event->type() == ListXmlResultEvent::eventId())
 	{
 		result = onListXmlCompleted(static_cast<ListXmlResultEvent &>(*event));
@@ -1468,7 +1473,9 @@ bool MainWindow::refreshMameInfoDatabase()
 	// and show the dialog
 	{
 		LoadingDialog dlg(*this, [this, &task]() { return task->completed(); });
+		m_currentLoadingDialog = &dlg;
 		dlg.exec();
+		m_currentLoadingDialog = nullptr;
 		if (dlg.result() != QDialog::DialogCode::Accepted)
 		{
 			task->abort();
@@ -1849,6 +1856,18 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	if (!message.isEmpty())
 		messageBox(message);
 
+	return true;
+}
+
+
+//-------------------------------------------------
+//  onListXmlProgress
+//-------------------------------------------------
+
+bool MainWindow::onListXmlProgress(const ListXmlProgressEvent &event)
+{
+	if (m_currentLoadingDialog)
+		m_currentLoadingDialog->progress(event.machineName(), event.machineDescription());
 	return true;
 }
 

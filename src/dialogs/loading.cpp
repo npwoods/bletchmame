@@ -52,3 +52,16 @@ void LoadingDialog::poll()
 	if (m_pollCompletionCheck())
 		done(QDialog::DialogCode::Accepted);
 }
+
+
+//-------------------------------------------------
+//	progress
+//-------------------------------------------------
+
+void LoadingDialog::progress(const QString &machineName, const QString &machineDescription)
+{
+	QString text = machineName == machineDescription
+		? machineDescription
+		: QString("%1 (%2)").arg(machineDescription, machineName);
+	m_ui->progressLabel->setText(text);
+}

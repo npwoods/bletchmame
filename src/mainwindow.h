@@ -40,7 +40,9 @@ QT_END_NAMESPACE
 class MainPanel;
 class MameVersion;
 class VersionResultEvent;
+class ListXmlProgressEvent;
 class ListXmlResultEvent;
+class LoadingDialog;
 class RunMachineCompletedEvent;
 class StatusUpdateEvent;
 class ChatterEvent;
@@ -155,6 +157,7 @@ private:
 	observable::value<bool>				m_menu_bar_shown;
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
+	LoadingDialog *						m_currentLoadingDialog;
 	observable::value<QString>			m_current_recording_movie_filename;
 	observable::unique_subscription		m_watch_subscription;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
@@ -163,6 +166,7 @@ private:
 	// task notifications
 	bool onFinalizeTask(const FinalizeTaskEvent &event);
 	bool onVersionCompleted(VersionResultEvent &event);
+	bool onListXmlProgress(const ListXmlProgressEvent &event);
 	bool onListXmlCompleted(const ListXmlResultEvent &event);
 	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);
 	bool onStatusUpdate(StatusUpdateEvent &event);

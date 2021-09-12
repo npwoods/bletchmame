@@ -23,9 +23,13 @@ QT_END_NAMESPACE
 class LoadingDialog : public QDialog
 {
 	Q_OBJECT
+
 public:
 	LoadingDialog(QWidget &parent, std::function<bool()> &&pollCompletionCheck);
 	~LoadingDialog();
+
+	// methods
+	void progress(const QString &machineName, const QString &machineDescription);
 
 private:
 	std::unique_ptr<Ui::LoadingDialog>				m_ui;

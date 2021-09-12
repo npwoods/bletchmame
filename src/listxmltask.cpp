@@ -22,6 +22,7 @@
 //  IMPLEMENTATION
 //**************************************************************************
 
+QEvent::Type ListXmlProgressEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
 QEvent::Type ListXmlResultEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 
 
@@ -62,12 +63,19 @@ void ListXmlTask::abort()
 
 void ListXmlTask::process(QProcess &process, QObject &handler)
 {
+	// callback
+	auto progressCallback = [this, &handler](std::u8string_view machineName, std::u8string_view machineDescription)
+	{
+		auto evt = std::make_unique<ListXmlProgressEvent>(util::toQString(machineName), util::toQString(machineDescription));
+		QCoreApplication::postEvent(&handler, evt.release());
+	};
+
 	ListXmlResultEvent::Status status;
 	QString errorMessage;
 	try
 	{
 		// process
-		internalProcess(process);
+		internalProcess(process, progressCallback);
 
 		// we've succeeded!
 		status = ListXmlResultEvent::Status::SUCCESS;
@@ -89,13 +97,13 @@ void ListXmlTask::process(QProcess &process, QObject &handler)
 //  InternalProcess
 //-------------------------------------------------
 
-void ListXmlTask::internalProcess(QIODevice &process)
+void ListXmlTask::internalProcess(QIODevice &process, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback)
 {
 	info::database_builder builder;
 
 	// first process the XML
 	QString error_message;
-	bool success = builder.process_xml(process, error_message);
+	bool success = builder.process_xml(process, error_message, progressCallback);
 
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected
@@ -120,6 +128,19 @@ void ListXmlTask::internalProcess(QIODevice &process)
 	// emit the data
 	builder.emit_info(file);
 }
+
+
+//-------------------------------------------------
+//  ListXmlProgressEvent ctor
+//-------------------------------------------------
+
+ListXmlProgressEvent::ListXmlProgressEvent(QString &&machineName, QString &&machineDescription)
+	: QEvent(eventId())
+	, m_machineName(std::move(machineName))
+	, m_machineDescription(std::move(machineDescription))
+{
+}
+
 
 
 //-------------------------------------------------

@@ -28,7 +28,7 @@ namespace info
 		database_builder(database_builder &&) = default;
 
 		// methods
-		bool process_xml(QIODevice &stream, QString &error_message);
+		bool process_xml(QIODevice &stream, QString &error_message, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback = { });
 		void emit_info(QIODevice &stream) const;
 
 	private:

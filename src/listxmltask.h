@@ -30,6 +30,28 @@
 //  TYPES
 //**************************************************************************
 
+// ======================> ListXmlProgressEvent
+
+class ListXmlProgressEvent : public QEvent
+{
+public:
+	// ctor
+	ListXmlProgressEvent(QString &&machineName, QString &&machineDescription);
+
+	// accessors
+	static QEvent::Type eventId() { return s_eventId; }
+	const QString &machineName() const { return m_machineName; }
+	const QString &machineDescription() const { return m_machineDescription; }
+
+private:
+	static QEvent::Type	s_eventId;
+	QString				m_machineName;
+	QString				m_machineDescription;
+};
+
+
+// ======================> ListXmlResultEvent
+
 class ListXmlResultEvent : public QEvent
 {
 public:
@@ -60,6 +82,7 @@ private:
 //**************************************************************************
 
 // ======================> ListXmlTask
+
 class ListXmlTask : public MameTask
 {
 public:
@@ -87,7 +110,7 @@ private:
 	QString			m_outputFilename;
 	volatile bool	m_aborted;
 
-	void internalProcess(QIODevice &process);
+	void internalProcess(QIODevice &process, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback = { });
 };
 
 #endif // LISTXMLTASK_H
