@@ -610,6 +610,17 @@ MachineFolderTreeModel &MainPanel::machineFolderTreeModel()
 
 
 //-------------------------------------------------
+//  machineListItemModel
+//-------------------------------------------------
+
+MachineListItemModel &MainPanel::machineListItemModel()
+{
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
+	return *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
+}
+
+
+//-------------------------------------------------
 //  sortFilterProxyModel
 //-------------------------------------------------
 
@@ -654,17 +665,13 @@ void MainPanel::updateSoftwareList()
 
 void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection)
 {
-	// get the relevant models
-	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
-	MachineListItemModel &machineListItemModel = *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
-
 	// identify the selection
 	QModelIndexList selectedIndexes = newSelection.indexes();
 	QModelIndex selectedIndex = !selectedIndexes.empty() ? selectedIndexes[0] : QModelIndex();
 
 	// and configure the filter
 	auto machineFilter = machineFolderTreeModel().getMachineFilter(selectedIndex);
-	machineListItemModel.setMachineFilter(std::move(machineFilter));
+	machineListItemModel().setMachineFilter(std::move(machineFilter));
 
 	// update preferences
 	QString path = machineFolderTreeModel().pathFromModelIndex(selectedIndex);

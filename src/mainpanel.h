@@ -28,6 +28,7 @@ class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
 class MachineFolderTreeModel;
+class MachineListItemModel;
 class ProfileListItemModel;
 class SessionBehavior;
 class SoftwareListItemModel;
@@ -94,6 +95,7 @@ private:
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
 	const MachineFolderTreeModel &machineFolderTreeModel() const;
 	MachineFolderTreeModel &machineFolderTreeModel();
+	MachineListItemModel &machineListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
 	void persistMachineSplitterSizes();
