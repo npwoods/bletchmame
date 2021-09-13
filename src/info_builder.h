@@ -36,13 +36,13 @@ namespace info
 		class string_table
 		{
 		public:
-			typedef std::array<char, 6> SsoBuffer;
+			typedef std::array<char8_t, 6> SsoBuffer;
 
 			string_table();
 			std::uint32_t get(std::u8string_view string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
-			const std::vector<char> &data() const;
-			const char *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
+			const std::vector<char8_t> &data() const;
+			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
 
 			template<typename T> void embed_value(T value)
 			{
@@ -51,7 +51,7 @@ namespace info
 			}
 
 		private:
-			std::vector<char>										m_data;
+			std::vector<char8_t>									m_data;
 			std::unordered_map<std::u8string_view, std::uint32_t>	m_map;
 		};
 
