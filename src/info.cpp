@@ -289,7 +289,7 @@ const QString &info::database::get_string(std::uint32_t offset) const
 		return iter->second;
 
 	QString string;
-	std::optional<std::array<char, 6>> smallString = tryDecodeAsSmallString(offset);
+	std::optional<std::array<char8_t, 6>> smallString = tryDecodeAsSmallString(offset);
 	if (smallString)
 	{
 		// this was a small string
@@ -357,15 +357,15 @@ std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::u8strin
 //  database::tryDecodeAsSmallString
 //-------------------------------------------------
 
-std::optional<std::array<char, 6>> info::database::tryDecodeAsSmallString(std::uint32_t value)
+std::optional<std::array<char8_t, 6>> info::database::tryDecodeAsSmallString(std::uint32_t value)
 {
-	std::optional<std::array<char, 6>> result = { };
+	std::optional<std::array<char8_t, 6>> result = { };
 
 	// small strings have the high two bits set; check for that first
 	if ((value & 0xC0000000) == 0xC0000000)
 	{
 		// unpack this into a buffer
-		char buffer[6] = { 0, };
+		char8_t buffer[6] = { 0, };
 		for (int i = 0; i < 5; i++)
 			buffer[i] = s_smallStringChars[(value >> (i * 6)) & 0x3F];
 

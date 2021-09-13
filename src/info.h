@@ -768,7 +768,7 @@ namespace info
 		void onChanged();
 		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char8_t ch);
 		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::u8string_view s);
-		static std::optional<std::array<char, 6>> tryDecodeAsSmallString(std::uint32_t value);
+		static std::optional<std::array<char8_t, 6>> tryDecodeAsSmallString(std::uint32_t value);
 	};
 
 	inline biosset::view				machine::biossets() const		{ return db().biossets().subview(inner().m_biossets_index, inner().m_biossets_count); }

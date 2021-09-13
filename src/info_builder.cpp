@@ -206,8 +206,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 			// it is, report it
 			lastProgress = now;
 			info::database_builder::string_table::SsoBuffer nameSso, descSso;
-			const char8_t *name = (const char8_t *) m_strings.lookup(machine.m_name_strindex, nameSso);
-			const char8_t *desc = (const char8_t *) m_strings.lookup(machine.m_description_strindex, descSso);
+			const char8_t *name = m_strings.lookup(machine.m_name_strindex, nameSso);
+			const char8_t *desc = m_strings.lookup(machine.m_description_strindex, descSso);
 			if (progressCallback)
 				progressCallback(name, desc);
 		}
@@ -553,9 +553,9 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		[this](const binaries::machine &a, const binaries::machine &b)
 		{
 			string_table::SsoBuffer ssoBufferA, ssoBufferB;
-			const char *aText = m_strings.lookup(a.m_name_strindex, ssoBufferA);
-			const char *bText = m_strings.lookup(b.m_name_strindex, ssoBufferB);
-			return strcmp(aText, bText) < 0;
+			std::u8string_view aText = m_strings.lookup(a.m_name_strindex, ssoBufferA);
+			std::u8string_view bText = m_strings.lookup(b.m_name_strindex, ssoBufferB);
+			return aText < bText;
 		});
 
 	// build a machine index map
@@ -679,7 +679,7 @@ std::uint32_t info::database_builder::string_table::get(const XmlParser::Attribu
 //  string_table::data
 //-------------------------------------------------
 
-const std::vector<char> &info::database_builder::string_table::data() const
+const std::vector<char8_t> &info::database_builder::string_table::data() const
 {
 	return m_data;
 }
@@ -689,11 +689,11 @@ const std::vector<char> &info::database_builder::string_table::data() const
 //  string_table::lookup
 //-------------------------------------------------
 
-const char *info::database_builder::string_table::lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const
+const char8_t *info::database_builder::string_table::lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const
 {
-	const char *result;
+	const char8_t *result;
 
-	std::optional<std::array<char, 6>> sso = info::database::tryDecodeAsSmallString(value);
+	std::optional<SsoBuffer> sso = info::database::tryDecodeAsSmallString(value);
 	if (sso)
 	{
 		ssoBuffer = std::move(*sso);
@@ -702,7 +702,7 @@ const char *info::database_builder::string_table::lookup(std::uint32_t value, Ss
 	else
 	{
 		assert(value < m_data.size());
-		assert(value + strlen(&m_data[value]) < m_data.size());
+		assert(value + strlen((const char *) &m_data[value]) < m_data.size());
 		result = &m_data[value];
 	}
 	return result;
