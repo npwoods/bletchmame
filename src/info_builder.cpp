@@ -187,7 +187,7 @@ static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::basi
 //  process_xml()
 //-------------------------------------------------
 
-bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback)
+bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const ProcessXmlCallback &progressCallback)
 {
 	// sanity check; ensure we're fresh
 	assert(m_machines.empty());
@@ -209,7 +209,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 			const char8_t *name = m_strings.lookup(machine.m_name_strindex, nameSso);
 			const char8_t *desc = m_strings.lookup(machine.m_description_strindex, descSso);
 			if (progressCallback)
-				progressCallback(name, desc);
+				progressCallback(m_machines.size(), name, desc);
 		}
 	};
 
