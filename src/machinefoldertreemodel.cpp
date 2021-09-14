@@ -89,9 +89,9 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 //  getFolderIconResourceNames
 //-------------------------------------------------
 
-std::array<const char *, (int)MachineFolderTreeModel::FolderIcon::Count> MachineFolderTreeModel::getFolderIconResourceNames()
+MachineFolderTreeModel::FolderIconResourceNameArray MachineFolderTreeModel::getFolderIconResourceNames()
 {
-	std::array<const char *, (int)MachineFolderTreeModel::FolderIcon::Count> result;
+	FolderIconResourceNameArray result;
 	std::fill(result.begin(), result.end(), nullptr);
 	result[(int)FolderIcon::Cpu]			= ":/resources/cpu.ico";
 	result[(int)FolderIcon::Folder]			= ":/resources/folder.ico";

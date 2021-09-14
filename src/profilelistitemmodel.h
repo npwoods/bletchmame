@@ -32,7 +32,8 @@ public:
 		Name,
 		Machine,
 		Path,
-		Count
+		
+		Max = Path
 	};
 
 	// ctor

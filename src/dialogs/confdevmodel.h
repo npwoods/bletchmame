@@ -94,7 +94,8 @@ private:
 	{
 		Tag,
 		Options,
-		Count
+
+		Max = Options
 	};
 
 

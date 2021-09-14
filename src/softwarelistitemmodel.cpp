@@ -121,7 +121,7 @@ int SoftwareListItemModel::rowCount(const QModelIndex &parent) const
 
 int SoftwareListItemModel::columnCount(const QModelIndex &parent) const
 {
-    return (int)Column::Count;
+	return util::enum_count<Column>();
 }
 
 

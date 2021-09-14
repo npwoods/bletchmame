@@ -670,7 +670,7 @@ int ConfigurableDevicesModel::rowCount(const QModelIndex &parent) const
 
 int ConfigurableDevicesModel::columnCount(const QModelIndex &parent) const
 {
-	return (int)Column::Count;
+	return util::enum_count<Column>();
 }
 
 
