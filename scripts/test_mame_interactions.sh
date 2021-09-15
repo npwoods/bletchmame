@@ -32,3 +32,6 @@ curl -f -L "https://github.com/mamedev/mame/releases/download/${MAME_VERSION}/${
 
 # Finally clean up after ourselves
 rm -rf deps/${MAME_VERSION}b_64bit.exe deps/${MAME_VERSION}/
+
+# Report success
+echo "Testing with $MAME_VERSION was successful"
