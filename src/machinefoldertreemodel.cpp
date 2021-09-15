@@ -116,7 +116,7 @@ bool containsEntry(const std::vector<T> &vec, const T &obj)
 	if (vec.size() > 0)
 	{
 		size_t offset = &obj - &vec[0];
-		result = offset >= 0 && offset < vec.size();
+		result = offset < vec.size();
 	}
 	return result;
 }
@@ -271,8 +271,13 @@ void MachineFolderTreeModel::populateVariableFolders()
 				case info::chip::type_t::CPU:
 					cpus.emplace(chip.name());
 					break;
+
 				case info::chip::type_t::AUDIO:
 					sounds.emplace(chip.name());
+					break;
+
+				default:
+					// ignore anything we don't know about
 					break;
 				}
 			}

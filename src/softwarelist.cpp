@@ -91,7 +91,7 @@ std::optional<software_list> software_list::try_load(const QStringList &hash_pat
 			QString error_message;
 
 			if (softlist.load(file, error_message))
-				return std::move(softlist);
+				return softlist;
 		}
 	}
 

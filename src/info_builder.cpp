@@ -131,7 +131,7 @@ static std::uint32_t to_uint32(T &&value)
 	if (new_value != value)
 		throw std::logic_error("Array size cannot fit in 32 bits");
 	return new_value;
-};
+}
 
 
 //-------------------------------------------------
@@ -180,7 +180,7 @@ static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::basi
 	std::size_t pos = hex.has_value() ? util::binaryFromHex(dest, *hex) : 0;
 	std::fill(dest + pos, dest + N, 0);
 	return pos == N;
-};
+}
 
 
 //-------------------------------------------------
@@ -327,8 +327,6 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "disk" }, [this](const XmlParser::Attributes &attributes)
 	{
 		std::string data;
-		bool b;
-		info::disk::dump_status_t dump_status;
 
 		info::binaries::disk &disk = m_disks.emplace_back();
 		disk.m_name_strindex				= m_strings.get(attributes, "name");

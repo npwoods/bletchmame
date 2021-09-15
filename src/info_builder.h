@@ -76,7 +76,7 @@ namespace info
 		std::vector<info::binaries::ram_option>					m_ram_options;
 		string_table											m_strings;
 	};
-};
+}
 
 
 #endif // INFO_BUILDER_H

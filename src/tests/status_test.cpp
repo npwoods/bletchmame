@@ -27,7 +27,7 @@ namespace
         void statusUpdateRead(const char *resourceName);
         void statusUpdateReadError(const char *bogusXmlString);
     };
-};
+}
 
 
 //**************************************************************************

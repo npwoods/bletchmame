@@ -47,7 +47,7 @@ namespace util
 			result = ((result << 5) + result) + s[i];
 		return result;
 	}
-};
+}
 
 
 namespace std
@@ -413,7 +413,7 @@ QString build_command_line(const QString &executable, const std::vector<QString>
 
 //**************************************************************************
 
-}; // namespace util
+} // namespace util
 
 //**************************************************************************
 //  WXWIDGETS IMPERSONATION

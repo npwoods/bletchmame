@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	profile.h
 
@@ -93,6 +93,6 @@ namespace profiles
 
 		static std::optional<profile> load(QIODevice &stream, QString &&path, QString &&name);
 	};
-};
+}
 
 #endif // PROFILE_H
