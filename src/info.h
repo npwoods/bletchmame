@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     info.h
 
@@ -244,8 +244,8 @@ namespace info
 			std::uint16_t	m_magic2;
 			std::uint16_t	m_version;
 		};
-	};
-};
+	}
+}
 
 
 //**************************************************************************
@@ -784,7 +784,7 @@ namespace info
 	inline configuration_setting::view	configuration::settings() const	{ return db().configuration_settings().subview(inner().m_configuration_settings_index, inner().m_configuration_settings_count); }
 	inline software_list::view			machine::software_lists() const	{ return db().software_lists().subview(inner().m_software_lists_index, inner().m_software_lists_count); }
 	inline ram_option::view				machine::ram_options() const	{ return db().ram_options().subview(inner().m_ram_options_index, inner().m_ram_options_count); }
-};
+}
 
 
 #endif // INFO_H

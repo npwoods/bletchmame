@@ -66,6 +66,11 @@ endif()
 # Define installation directories
 include(GNUInstallDirs)
 
+# GCC specific stuff
+if (CMAKE_COMPILER_IS_GNUCXX)
+add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-sign-compare -Wno-missing-field-initializers -Wno-unused-parameter)
+endif()
+
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #

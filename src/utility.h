@@ -47,7 +47,7 @@ namespace util
 			result = ((result << 5) + result) + s[i];
 		return result;
 	}
-};
+}
 
 
 namespace std
@@ -241,6 +241,15 @@ public:
 };
 
 
+// ======================> enum_count
+
+template<class T>
+constexpr int enum_count()
+{
+	return static_cast<int>(T::Max) + 1;
+}
+
+
 //**************************************************************************
 //  QSTRING HELPERS
 //**************************************************************************
@@ -404,7 +413,7 @@ QString build_command_line(const QString &executable, const std::vector<QString>
 
 //**************************************************************************
 
-}; // namespace util
+} // namespace util
 
 //**************************************************************************
 //  WXWIDGETS IMPERSONATION

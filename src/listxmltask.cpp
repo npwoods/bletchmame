@@ -64,9 +64,9 @@ void ListXmlTask::abort()
 void ListXmlTask::process(QProcess &process, QObject &handler)
 {
 	// callback
-	auto progressCallback = [this, &handler](std::u8string_view machineName, std::u8string_view machineDescription)
+	auto progressCallback = [&handler](int count, std::u8string_view machineName, std::u8string_view machineDescription)
 	{
-		auto evt = std::make_unique<ListXmlProgressEvent>(util::toQString(machineName), util::toQString(machineDescription));
+		auto evt = std::make_unique<ListXmlProgressEvent>(count, util::toQString(machineName), util::toQString(machineDescription));
 		QCoreApplication::postEvent(&handler, evt.release());
 	};
 
@@ -97,7 +97,7 @@ void ListXmlTask::process(QProcess &process, QObject &handler)
 //  InternalProcess
 //-------------------------------------------------
 
-void ListXmlTask::internalProcess(QIODevice &process, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback)
+void ListXmlTask::internalProcess(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback)
 {
 	info::database_builder builder;
 
@@ -134,8 +134,9 @@ void ListXmlTask::internalProcess(QIODevice &process, const std::function<void(s
 //  ListXmlProgressEvent ctor
 //-------------------------------------------------
 
-ListXmlProgressEvent::ListXmlProgressEvent(QString &&machineName, QString &&machineDescription)
+ListXmlProgressEvent::ListXmlProgressEvent(int machineCount, QString &&machineName, QString &&machineDescription)
 	: QEvent(eventId())
+	, m_machineCount(machineCount)
 	, m_machineName(std::move(machineName))
 	, m_machineDescription(std::move(machineDescription))
 {

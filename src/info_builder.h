@@ -22,13 +22,15 @@ namespace info
 	class database_builder
 	{
 	public:
+		typedef std::function<void(int machineCount, std::u8string_view machineName, std::u8string_view machineDescription)> ProcessXmlCallback;
+
 		// ctors
 		database_builder() = default;
 		database_builder(const database_builder &) = delete;
 		database_builder(database_builder &&) = default;
 
 		// methods
-		bool process_xml(QIODevice &stream, QString &error_message, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback = { });
+		bool process_xml(QIODevice &stream, QString &error_message, const ProcessXmlCallback &progressCallback = { });
 		void emit_info(QIODevice &stream) const;
 
 	private:
@@ -74,7 +76,7 @@ namespace info
 		std::vector<info::binaries::ram_option>					m_ram_options;
 		string_table											m_strings;
 	};
-};
+}
 
 
 #endif // INFO_BUILDER_H

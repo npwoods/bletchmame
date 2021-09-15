@@ -28,7 +28,8 @@ public:
 		Description,
 		Year,
 		Manufacturer,
-		Count
+
+		Max = Manufacturer
 	};
 
 	SoftwareListItemModel(QObject *parent);

@@ -545,7 +545,7 @@ QFont ConfigurableDevicesModel::deviceOptionsDisplayFont(const ConfigurableDevic
 	QFont font;
 	font.setItalic(!text.has_value());
 	font.setBold(mandatoryImageMissing);
-	return std::move(font);
+	return font;
 }
 
 
@@ -604,6 +604,10 @@ QVariant ConfigurableDevicesModel::data(const QModelIndex &index, int role) cons
 			case Column::Options:
 				result = deviceOptionsDisplayFont(deviceNode);
 				break;
+
+			case Column::Tag:
+				// do nothing
+				break;
 			}
 			break;
 
@@ -612,6 +616,10 @@ QVariant ConfigurableDevicesModel::data(const QModelIndex &index, int role) cons
 			{
 			case Column::Options:
 				result = deviceOptionsDisplayForeground(deviceNode);
+				break;
+
+			case Column::Tag:
+				// do nothing
 				break;
 			}
 			break;
@@ -670,7 +678,7 @@ int ConfigurableDevicesModel::rowCount(const QModelIndex &parent) const
 
 int ConfigurableDevicesModel::columnCount(const QModelIndex &parent) const
 {
-	return (int)Column::Count;
+	return util::enum_count<Column>();
 }
 
 

@@ -346,6 +346,6 @@ namespace status
 		template<typename TStateField, typename TUpdateField>
 		bool take(TStateField &state_field, std::optional<TUpdateField> &update_field);
 	};
-};
+}
 
 #endif // STATUS_H

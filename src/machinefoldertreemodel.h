@@ -77,7 +77,8 @@ private:
 		Sound,
 		Source,
 		Year,
-		Count
+
+		Max = Year
 	};
 
 	class FolderEntry
@@ -105,6 +106,8 @@ private:
 		const std::vector<FolderEntry> *					m_children;
 	};
 
+	typedef std::array<const char *, util::enum_count<FolderIcon>()> FolderIconResourceNameArray;
+
 	info::database &							m_infoDb;
 	Preferences &								m_prefs;
 	std::array<RootFolderDesc, 18>				m_rootFolderList;
@@ -117,9 +120,9 @@ private:
 	std::vector<FolderEntry>					m_sound;
 	std::vector<FolderEntry>					m_source;
 	std::vector<FolderEntry>					m_year;
-	std::array<QPixmap, (int)FolderIcon::Count> m_folderIcons;
+	std::array<QPixmap, util::enum_count<FolderIcon>()> m_folderIcons;
 
-	static std::array<const char *, (int)FolderIcon::Count> getFolderIconResourceNames();
+	static FolderIconResourceNameArray getFolderIconResourceNames();
 	static const FolderEntry &folderEntryFromModelIndex(const QModelIndex &index);
 	const std::vector<FolderEntry> &childFolderEntriesFromModelIndex(const QModelIndex &parent) const;
 	void populateVariableFolders();

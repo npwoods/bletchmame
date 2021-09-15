@@ -38,9 +38,6 @@ public:
 	Task(Task &&) = delete;
 	virtual ~Task();
 
-	// accessors
-	bool completed() const { return m_completed; }
-
 	// called on the main thread to trigger a shutdown (e.g. - BletchMAME is closing)
 	virtual void abort();
 
@@ -50,9 +47,6 @@ protected:
 
 	// perform actual processing (should only be invoked from TaskClient within the thread proc)
 	virtual void process(QObject &eventHandler) = 0;
-
-private:
-	volatile bool m_completed;
 };
 
 

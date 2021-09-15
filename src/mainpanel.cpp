@@ -102,11 +102,11 @@ static const TableViewManager::Description s_profileListTableViewDesc =
 
 MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost &host, QWidget *parent)
 	: QWidget(parent)
-	, m_infoDb(infoDb)
 	, m_prefs(prefs)
 	, m_host(host)
 	, m_softwareListItemModel(nullptr)
 	, m_profileListItemModel(nullptr)
+	, m_infoDb(infoDb)
 	, m_iconLoader(prefs)
 {
 	// set up Qt form
@@ -921,6 +921,10 @@ void MainPanel::on_tabWidget_currentChanged(int index)
 	{
 	case Preferences::list_view_type::SOFTWARELIST:
 		updateSoftwareList();
+		break;
+
+	default:
+		// do nothing
 		break;
 	}
 }

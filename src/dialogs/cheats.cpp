@@ -70,8 +70,7 @@ namespace
         int             m_row;
         int             m_column;
     };
-
-};
+}
 
 
 // ======================> CheatWidgeterBase
@@ -390,7 +389,7 @@ CheatsDialog::CheatType CheatsDialog::classifyCheat(const status::cheat &cheat)
     {
         result = CheatType::OneShot;
     }
-    else if ((cheat.m_has_on_script && cheat.m_has_off_script) || cheat.m_has_run_script && !cheat.m_parameter)
+    else if ((cheat.m_has_on_script && cheat.m_has_off_script) || (cheat.m_has_run_script && !cheat.m_parameter))
     {
         result = CheatType::OnOff;
     }

@@ -85,16 +85,6 @@ static QString getListViewSelectionKey(std::u8string_view view_type, const QStri
 
 
 //-------------------------------------------------
-//  getListViewSelectionKey
-//-------------------------------------------------
-
-static QString getListViewSelectionKey(std::string_view view_type, const QString &softlist)
-{
-	return getListViewSelectionKey(std::u8string_view((const char8_t *)view_type.data(), view_type.size()), softlist);
-}
-
-
-//-------------------------------------------------
 //  splitListViewSelectionKey
 //-------------------------------------------------
 
@@ -165,8 +155,8 @@ FolderPrefs::FolderPrefs()
 
 Preferences::Preferences()
 	: m_size(950, 600)
-	, m_menu_bar_shown(true)
 	, m_selected_tab(list_view_type::MACHINE)
+	, m_menu_bar_shown(true)
 {
 	// default paths
 	setGlobalPath(global_path_type::CONFIG, getConfigDirectory(true));

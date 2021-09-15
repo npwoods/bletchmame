@@ -1472,7 +1472,7 @@ bool MainWindow::refreshMameInfoDatabase()
 
 	// and show the dialog
 	{
-		LoadingDialog dlg(*this, [this, &task]() { return task->completed(); });
+		LoadingDialog dlg(*this);
 		m_currentLoadingDialog = &dlg;
 		dlg.exec();
 		m_currentLoadingDialog = nullptr;
@@ -1878,6 +1878,8 @@ bool MainWindow::onListXmlProgress(const ListXmlProgressEvent &event)
 
 bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 {
+	int dialogResult;
+
 	// check the status
 	switch (event.status())
 	{
@@ -1887,10 +1889,12 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 			QString db_path = m_prefs.getMameXmlDatabasePath();
 			m_info_db.load(db_path);
 		}
+		dialogResult = QDialog::Accepted;
 		break;
 
 	case ListXmlResultEvent::Status::ABORTED:
 		// if we aborted, do nothing
+		dialogResult = QDialog::Rejected;
 		break;
 
 	case ListXmlResultEvent::Status::ERROR:
@@ -1898,11 +1902,16 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 		messageBox(!event.errorMessage().isEmpty()
 			? event.errorMessage()
 			: "Error building MAME info database");
+		dialogResult = QDialog::Rejected;
 		break;
 
 	default:
 		throw false;
 	}
+
+	// end the dialog
+	if (m_currentLoadingDialog)
+		m_currentLoadingDialog->done(dialogResult);
 
 	return true;
 }

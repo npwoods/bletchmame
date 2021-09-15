@@ -50,7 +50,7 @@ namespace
 		void loadExpectedVersion(const QString &fileName, const QString &expectedVersion);
 		static void garbagifyByteArray(QByteArray &byteArray, int garbageStart, int garbageCount);
 	};
-};
+}
 
 
 //**************************************************************************
@@ -105,20 +105,32 @@ void Test::general(const QString &fileName, bool skipDtd, int expectedMachineCou
 		for (info::configuration cfg : machine.configurations())
 		{
 			for (info::configuration_setting setting : cfg.settings())
+			{
+				(void)setting;
 				settingCount++;
+			}
 		}
 
 		for (info::software_list swlist : machine.software_lists())
+		{
+			(void)swlist;
 			softwareListCount++;
+		}
 
 		for (info::ram_option ramopt : machine.ram_options())
+		{
+			(void)ramopt;
 			ramOptionCount++;
+		}
 
 		for (info::slot slot : machine.devslots())
 		{
 			slotCount++;
 			for (info::slot_option opt : slot.options())
+			{
+				(void)opt;
 				slotOptionCount++;
+			}
 		}
 	}
 	QVERIFY(machineCount == db.machines().size());

@@ -27,7 +27,8 @@ public:
 		Description,
 		Year,
 		Manufacturer,
-		Count
+
+		Max = Manufacturer
 	};
 
 	MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader);

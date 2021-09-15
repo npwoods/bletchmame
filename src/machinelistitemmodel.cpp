@@ -114,7 +114,7 @@ int MachineListItemModel::rowCount(const QModelIndex &parent) const
 
 int MachineListItemModel::columnCount(const QModelIndex &parent) const
 {
-    return (int)Column::Count;
+	return util::enum_count<Column>();
 }
 
 
@@ -169,7 +169,7 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 QVariant MachineListItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     QVariant result;
-    if (orientation == Qt::Orientation::Horizontal && section >= 0 && section < (int)Column::Count)
+    if (orientation == Qt::Orientation::Horizontal && section >= 0 && section < util::enum_count<Column>())
     {
         Column column = (Column)section;
         switch (role)

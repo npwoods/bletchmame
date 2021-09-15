@@ -32,7 +32,8 @@ public:
 		Name,
 		Machine,
 		Path,
-		Count
+		
+		Max = Path
 	};
 
 	// ctor
@@ -41,7 +42,7 @@ public:
 	// methods
 	void refresh(bool updateProfileList, bool updateFileSystemWatcher);
 	void setOneTimeFswCallback(std::function<void()> &&fswCallback);
-	std::shared_ptr<profiles::profile> getProfileByIndex(int index);;
+	std::shared_ptr<profiles::profile> getProfileByIndex(int index);
 	QModelIndex findProfileIndex(const QString &path) const;
 
 	// virtuals

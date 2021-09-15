@@ -82,8 +82,8 @@ namespace bindata
 	public:
 		view() : m_db(nullptr), m_offset(0), m_count(0) { }
 		view(const TDatabase &db, const view_position &pos) : m_db(&db), m_offset(pos.offset()), m_count(pos.count()) { }
-		view(const view &that) = default;
-		view(view &&that) = default;
+		view(const view &) = default;
+		view(view &&) = default;
 
 		view &operator=(const view &that) = default;
 		bool operator==(const view &) const = default;
@@ -118,6 +118,8 @@ namespace bindata
 				, m_position(position)
 			{
 			}
+			iterator(const iterator &) = default;
+			iterator(iterator &&) = default;
 
 			using iterator_category = std::random_access_iterator_tag;
 			using value_type = TPublic;
@@ -214,6 +216,6 @@ namespace bindata
 		size_t				m_offset;
 		uint32_t			m_count;
 	};
-};
+}
 
 #endif // BINDATA_H

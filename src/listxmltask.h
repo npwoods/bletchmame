@@ -14,6 +14,7 @@
 #include <QEvent>
 
 #include "mametask.h"
+#include "info_builder.h"
 
 
 //**************************************************************************
@@ -36,15 +37,17 @@ class ListXmlProgressEvent : public QEvent
 {
 public:
 	// ctor
-	ListXmlProgressEvent(QString &&machineName, QString &&machineDescription);
+	ListXmlProgressEvent(int machineCount, QString &&machineName, QString &&machineDescription);
 
 	// accessors
 	static QEvent::Type eventId() { return s_eventId; }
+	int machineCount() const { return m_machineCount; }
 	const QString &machineName() const { return m_machineName; }
 	const QString &machineDescription() const { return m_machineDescription; }
 
 private:
 	static QEvent::Type	s_eventId;
+	int					m_machineCount;
 	QString				m_machineName;
 	QString				m_machineDescription;
 };
@@ -110,7 +113,7 @@ private:
 	QString			m_outputFilename;
 	volatile bool	m_aborted;
 
-	void internalProcess(QIODevice &process, const std::function<void(std::u8string_view, std::u8string_view)> &progressCallback = { });
+	void internalProcess(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback = { });
 };
 
 #endif // LISTXMLTASK_H

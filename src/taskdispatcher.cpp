@@ -95,9 +95,6 @@ void TaskDispatcher::taskThreadProc(Task &task)
 	// do the heavy lifting
 	task.process(m_eventHandler);
 
-	// mark this task as completed
-	task.m_completed = true;
-
 	// create another event to signal for this task to be finalized
 	std::unique_ptr<QEvent> finalizeEvent = std::make_unique<FinalizeTaskEvent>(task);
 

@@ -25,10 +25,10 @@ namespace
 	class VersionTask : public MameTask
 	{
 	protected:
-		virtual QStringList getArguments(const Preferences &) const;
+		virtual QStringList getArguments(const Preferences &) const override final;
 		virtual void process(QProcess &process, QObject &eventHandler) override final;
 	};
-};
+}
 
 
 //**************************************************************************
