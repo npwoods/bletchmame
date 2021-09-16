@@ -121,7 +121,7 @@ QString Preferences::Test::fixPaths(QString &&s)
 		s = s.replace("\\", "/");
 		s = s.replace(".exe", "");
 	}
-	return s;
+	return std::move(s);
 }
 
 
