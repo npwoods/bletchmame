@@ -668,7 +668,7 @@ QModelIndex ConfigurableDevicesModel::parent(const QModelIndex &index) const
 
 int ConfigurableDevicesModel::rowCount(const QModelIndex &parent) const
 {
-	return nodeFromModelIndex<Node>(parent).children().size();
+	return util::safe_static_cast<int>(nodeFromModelIndex<Node>(parent).children().size());
 }
 
 

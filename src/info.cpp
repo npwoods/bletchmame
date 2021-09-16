@@ -171,7 +171,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	newState.m_configuration_conditions_position	= getPosition<binaries::configuration_condition>(cursor, hdr.m_configuration_conditions_count);
 	newState.m_software_lists_position				= getPosition<binaries::software_list>(cursor, hdr.m_software_lists_count);
 	newState.m_ram_options_position					= getPosition<binaries::ram_option>(cursor, hdr.m_ram_options_count);
-	newState.m_string_table_offset					= cursor;
+	newState.m_string_table_offset					= static_cast<std::uint32_t>(cursor);
 
 	// sanity check the string table
 	if (newState.m_data.size() < (size_t)newState.m_string_table_offset + 1)
@@ -181,6 +181,8 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 	if (newState.m_data[newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END) - 1] != '\0')
 		return false;
 	if (!unaligned_check(&newState.m_data[newState.m_data.size() - sizeof(binaries::MAGIC_STRINGTABLE_END)], binaries::MAGIC_STRINGTABLE_END))
+		return false;
+	if (newState.m_string_table_offset != cursor)
 		return false;
 
 	// version check if appropriate

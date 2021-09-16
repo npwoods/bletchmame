@@ -495,7 +495,7 @@ QString MachineFolderTreeModel::customFolderForModelIndex(const QModelIndex &ind
 	if (index.isValid() && m_custom.size() > 0)
 	{
 		const FolderEntry &entry = folderEntryFromModelIndex(index);
-		if ((&entry - &m_custom[0] >= 0) && (&entry - &m_custom[0] < m_custom.size()))
+		if ((&entry >= &*m_custom.begin()) && (&entry < &*m_custom.end()))
 			result = entry.id();
 	}
 	return result;
@@ -534,7 +534,7 @@ QModelIndex MachineFolderTreeModel::parent(const QModelIndex &child) const
 			});
 			if (iter != m_root.end())
 			{
-				size_t row = iter - m_root.begin();
+				int row = util::safe_static_cast<int>(iter - m_root.begin());
 				result = index(row, 0);
 			}
 		}
@@ -549,7 +549,7 @@ QModelIndex MachineFolderTreeModel::parent(const QModelIndex &child) const
 
 int MachineFolderTreeModel::rowCount(const QModelIndex &parent) const
 {
-	return childFolderEntriesFromModelIndex(parent).size();
+	return util::safe_static_cast<int>(childFolderEntriesFromModelIndex(parent).size());
 }
 
 

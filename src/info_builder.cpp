@@ -209,7 +209,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 			const char8_t *name = m_strings.lookup(machine.m_name_strindex, nameSso);
 			const char8_t *desc = m_strings.lookup(machine.m_description_strindex, descSso);
 			if (progressCallback)
-				progressCallback(m_machines.size(), name, desc);
+				progressCallback(util::safe_static_cast<int>(m_machines.size()), name, desc);
 		}
 	};
 

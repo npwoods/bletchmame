@@ -66,9 +66,11 @@ endif()
 # Define installation directories
 include(GNUInstallDirs)
 
-# GCC specific stuff
+# Configure warnings for different compilers
 if (CMAKE_COMPILER_IS_GNUCXX)
 add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-sign-compare -Wno-missing-field-initializers -Wno-unused-parameter)
+elseif(MSVC)
+add_compile_options(/W3 /WX)
 endif()
 
 
