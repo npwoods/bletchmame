@@ -16,6 +16,8 @@
 #include <optional>
 #include <span>
 
+#include "utility.h"
+
 
 //**************************************************************************
 //  TYPE DECLARATIONS
@@ -54,9 +56,9 @@ namespace bindata
 	class view_position
 	{
 	public:
-		view_position(std::uint32_t offset = 0, std::uint32_t count = 0)
-			: m_offset(offset)
-			, m_count(count)
+		view_position(std::size_t offset = 0, std::size_t count = 0)
+			: m_offset(util::safe_static_cast<std::uint32_t>(offset))
+			, m_count(util::safe_static_cast<std::uint32_t>(count))
 		{
 		}
 
@@ -88,7 +90,7 @@ namespace bindata
 		view &operator=(const view &that) = default;
 		bool operator==(const view &) const = default;
 
-		TPublic operator[](std::uint32_t position) const
+		TPublic operator[](std::size_t position) const
 		{
 			if (position >= m_count)
 				throw false;
@@ -100,9 +102,9 @@ namespace bindata
 		size_t size() const { return m_count; }
 		bool empty() const { return size() == 0; }
 
-		view subview(std::uint32_t index, std::uint32_t count) const
+		view subview(std::size_t index, std::size_t count) const
 		{
-			if (index > size() || ((size_t)index + count > size()))
+			if (index > size() || (index + count > size()))
 				throw false;
 			return count > 0
 				? view(*m_db, view_position(m_offset + index * sizeof(TBinary), count))
@@ -113,9 +115,9 @@ namespace bindata
 		class iterator
 		{
 		public:
-			iterator(const view &view, uint32_t position)
+			iterator(const view &view, size_t position)
 				: m_view(view)
-				, m_position(position)
+				, m_position(util::safe_static_cast<std::uint32_t>(position))
 			{
 			}
 			iterator(const iterator &) = default;
@@ -213,8 +215,8 @@ namespace bindata
 
 	private:
 		const TDatabase *	m_db;
-		size_t				m_offset;
-		uint32_t			m_count;
+		std::uint32_t		m_offset;
+		std::uint32_t		m_count;
 	};
 }
 
