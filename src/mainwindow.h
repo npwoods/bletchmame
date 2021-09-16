@@ -58,7 +58,7 @@ public:
 	MainWindow(QWidget *parent = nullptr);
 	~MainWindow();
 
-	virtual bool event(QEvent *event);
+	virtual bool event(QEvent *event) override;
 
 private slots:
 	void on_actionStop_triggered();
@@ -204,7 +204,6 @@ private:
 	static QString InputClassText(status::input::input_class input_class, bool elipsis);
 	void issue(const std::vector<QString> &args);
 	void issue(const std::initializer_list<std::string> &args);
-	void issue(const char *command);
 	void waitForStatusUpdate();
 	void invokePing();
 	void invokeExit();
