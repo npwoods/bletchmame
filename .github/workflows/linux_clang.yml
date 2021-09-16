@@ -1,8 +1,8 @@
-##################################
-# BletchMAME Linux Github Action #
-##################################
+########################################
+# BletchMAME Linux Clang Github Action #
+########################################
 
-name: Linux
+name: Linux Clang
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -70,7 +70,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=g++-10 -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
+        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=clang++ -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
         make -j 8
         strip ./BletchMAME
 
