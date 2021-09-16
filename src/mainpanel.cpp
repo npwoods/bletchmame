@@ -527,12 +527,12 @@ void MainPanel::focusOnNewProfile(QString &&new_profile_path)
 	// we want the current profile to be renamed - do this with a callback
 	m_profileListItemModel->setOneTimeFswCallback([this, profilePath{ std::move(new_profile_path) }]()
 	{
-		QModelIndex actualIndex = m_profileListItemModel->findProfileIndex(profilePath);
-		if (!actualIndex.isValid())
+		QModelIndex index = m_profileListItemModel->findProfileIndex(profilePath);
+		if (!index.isValid())
 			return;
 
-		QModelIndex index = sortFilterProxyModel(*m_ui->profilesTableView).mapFromSource(index);
-		if (!index.isValid())
+		QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapFromSource(index);
+		if (!actualIndex.isValid())
 			return;
 
 		m_ui->profilesTableView->edit(actualIndex);
