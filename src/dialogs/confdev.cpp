@@ -338,7 +338,7 @@ void ConfigurableDevicesDialog::buildDeviceMenuSlotItems(QMenu &popupMenu, const
     std::sort(
         slotOptions.begin(),
         slotOptions.end(),
-        [this](const SlotOptionInfo &a, const SlotOptionInfo &b)
+        [](const SlotOptionInfo &a, const SlotOptionInfo &b)
         {
             int rc = QString::localeAwareCompare(a.m_text, b.m_text);
             return rc != 0
