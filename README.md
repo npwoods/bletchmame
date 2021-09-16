@@ -13,6 +13,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- The Paths Dialog will highlight file paths for snapshots and icons that are not valid archives in red
 	- Improving display of icon on the machine list on high resolution displays
 	- Fixed a bug that caused column sorts to not be honored on startup
+	- Fixed a bug that caused newly created profiles to not get selected when created
 	- Small optimizations to the building of MAME Info Database and general XML parsing
 
 - 2.8 (2021-Aug-29)
