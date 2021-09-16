@@ -190,7 +190,7 @@ private:
 	void showSwitchesDialog(status::input::input_class input_class);
 	bool isMameVersionAtLeast(const MameVersion &version) const;
 	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
-	virtual void SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func);
+	virtual void setChatterListener(std::function<void(const ChatterEvent &chatter)> &&func) override final;
 	void WatchForImageMount(const QString &tag);
 	void PlaceInRecentFiles(const QString &tag, const QString &path);
 	info::machine getRunningMachine() const;

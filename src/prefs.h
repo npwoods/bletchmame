@@ -30,10 +30,11 @@ struct ColumnPrefs
 };
 
 
-struct FolderPrefs
+class FolderPrefs
 {
+public:
 	FolderPrefs();
-	bool operator==(const FolderPrefs &that) const = default;
+	bool operator==(const FolderPrefs &) const = default;
 
 	bool							m_shown;
 };

@@ -453,7 +453,7 @@ void XmlParser::endElement(const char *)
 		// call back the end func, if appropriate
 		if (m_currentNode->m_endFunc)
 		{
-			m_currentNode->m_endFunc(std::move(m_currentContent.value_or(u8"")));
+			m_currentNode->m_endFunc(m_currentContent.has_value() ? std::move(*m_currentContent) : std::u8string());
 			m_currentContent.reset();
 		}
 

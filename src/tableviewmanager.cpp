@@ -45,7 +45,7 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
         m_proxyModel->setFilterFixedString(text);
 
         // make the search box functional
-        auto callback = [this, lineEdit, &tableView, descName{ desc.m_name }]()
+        auto callback = [this, lineEdit, descName{ desc.m_name }]()
         {
             // change the filter
             QString text = lineEdit->text();

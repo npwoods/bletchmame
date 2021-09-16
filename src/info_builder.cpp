@@ -339,7 +339,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		disk.m_optional						= encodeBool(attributes.get<bool>("optional").value_or(false));
 		util::last(m_machines).m_disks_count++;
 	});
-	xml.onElementBegin({ "mame", "machine", "feature" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "feature" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::feature &feature = m_features.emplace_back();
 		feature.m_type		= encodeEnum(attributes.get<info::feature::type_t>		("type", s_feature_type_parser));
@@ -347,7 +347,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		feature.m_overall	= encodeEnum(attributes.get<info::feature::quality_t>	("overall", s_feature_quality_parser));
 		util::last(m_machines).m_features_count++;
 	});
-	xml.onElementBegin({ "mame", "machine", "chip" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "chip" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::chip &chip = m_chips.emplace_back();
 		chip.m_type				= encodeEnum(attributes.get<info::chip::type_t>("type", s_chip_type_parser));
@@ -357,7 +357,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 
 		util::last(m_machines).m_chips_count++;
 	});
-	xml.onElementBegin({ "mame", "machine", "display" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "display" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::display &display = m_displays.emplace_back();
 		display.m_tag_strindex	= m_strings.get(attributes, "tag");
@@ -376,7 +376,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		display.m_flipx			= encodeBool(attributes.get<bool>("flipx"));
 		util::last(m_machines).m_displays_count++;
 	});
-	xml.onElementBegin({ "mame", "machine", "sample" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "sample" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::sample &sample = m_samples.emplace_back();
 		sample.m_name_strindex	= m_strings.get(attributes, "name");
@@ -432,7 +432,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	{
 		util::last(m_devices).m_instance_name_strindex = m_strings.get(attributes, "name");
 	});
-	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [&current_device_extensions](const XmlParser::Attributes &attributes)
 	{
 		std::optional<std::u8string_view> name = attributes.get<std::u8string_view>("name");
 		if (name)
@@ -446,7 +446,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
 	});
-	xml.onElementBegin({ "mame", "machine", "driver" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "driver" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::machine &machine = util::last(m_machines);
 		machine.m_quality_status		= encodeEnum(attributes.get<info::machine::driver_quality_t>("status",		s_driver_quality_parser),	machine.m_quality_status);
