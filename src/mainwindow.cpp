@@ -1048,7 +1048,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 void MainWindow::on_actionDebugger_triggered()
 {
-	issue("debugger");
+	issue({ "debugger" });
 }
 
 
@@ -1058,7 +1058,7 @@ void MainWindow::on_actionDebugger_triggered()
 
 void MainWindow::on_actionSoftReset_triggered()
 {
-	issue("soft_reset");
+	issue({ "soft_reset" });
 }
 
 
@@ -1068,7 +1068,7 @@ void MainWindow::on_actionSoftReset_triggered()
 
 void MainWindow::on_actionHardReset_triggered()
 {
-	issue("hard_reset");
+	issue({ "hard_reset" });
 }
 
 
@@ -1631,7 +1631,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 		dialog.exec();
 		if (dialog.result() != QDialog::DialogCode::Accepted)
 		{
-			issue("exit");
+			issue({ "exit" });
 			return;
 		}
 	}
@@ -2210,13 +2210,6 @@ void MainWindow::issue(const std::initializer_list<std::string> &args)
 }
 
 
-void MainWindow::issue(const char *command)
-{
-	QString command_string = command;
-	issue({ command_string });
-}
-
-
 //-------------------------------------------------
 //  waitForStatusUpdate
 //-------------------------------------------------
@@ -2244,7 +2237,7 @@ void MainWindow::invokePing()
 	if (!m_pinging && m_state.has_value())
 	{
 		m_pinging = true;
-		issue("ping");
+		issue({ "ping" });
 	}
 }
 
@@ -2273,7 +2266,7 @@ void MainWindow::invokeExit()
 
 void MainWindow::changePaused(bool paused)
 {
-	issue(paused ? "pause" : "resume");
+	issue({ paused ? "pause" : "resume" });
 }
 
 

@@ -67,9 +67,9 @@ endif()
 include(GNUInstallDirs)
 
 # Configure warnings for different compilers
-if (CMAKE_COMPILER_IS_GNUCXX)
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
 add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-sign-compare -Wno-missing-field-initializers -Wno-unused-parameter)
-elseif(MSVC)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 add_compile_options(/W3 /WX)
 endif()
 

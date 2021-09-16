@@ -88,7 +88,7 @@ public:
 	{
 	}
 
-	virtual const Node *parent() const
+	virtual const Node *parent() const override
 	{
 		return &m_parent;
 	}
