@@ -2037,10 +2037,10 @@ const QString &MainWindow::GetDeviceType(const info::machine &machine, const QSt
 
 
 //-------------------------------------------------
-//  SetChatterListener
+//  setChatterListener
 //-------------------------------------------------
 
-void MainWindow::SetChatterListener(std::function<void(const ChatterEvent &chatter)> &&func)
+void MainWindow::setChatterListener(std::function<void(const ChatterEvent &chatter)> &&func)
 {
 	m_on_chatter = std::move(func);
 }

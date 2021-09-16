@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     dialogs/console.cpp
 
@@ -35,7 +35,7 @@ ConsoleDialog::ConsoleDialog(QWidget *parent, RunMachineTask::ptr &&task, IConso
 	connect(m_ui->invokeLineEdit, &QLineEdit::textChanged, [this]() { m_ui->invokeButton->setEnabled(!m_ui->invokeLineEdit->text().isEmpty()); });
 
 	// listen to chatter
-	m_host.SetChatterListener([this](const ChatterEvent &chatter) { onChatter(chatter); });
+	m_host.setChatterListener([this](const ChatterEvent &chatter) { onChatter(chatter); });
 	m_task->setChatterEnabled(true);
 }
 
@@ -47,7 +47,7 @@ ConsoleDialog::ConsoleDialog(QWidget *parent, RunMachineTask::ptr &&task, IConso
 ConsoleDialog::~ConsoleDialog()
 {
 	m_task->setChatterEnabled(false);
-	m_host.SetChatterListener(nullptr);
+	m_host.setChatterListener(nullptr);
 }
 
 

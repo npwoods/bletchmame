@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     dialogs/console.h
 
@@ -19,14 +19,22 @@ namespace Ui { class ConsoleDialog; }
 QT_END_NAMESPACE
 
 
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
 class ChatterEvent;
+
+// ======================> IConsoleDialogHost
 
 class IConsoleDialogHost
 {
 public:
-	virtual void SetChatterListener(std::function<void(const ChatterEvent &)> &&func) = 0;
+	virtual void setChatterListener(std::function<void(const ChatterEvent &)> &&func) = 0;
 };
 
+
+// ======================> ConsoleDialog
 
 class ConsoleDialog : public QDialog
 {
