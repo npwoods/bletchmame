@@ -1666,7 +1666,7 @@ QString MainWindow::preflightCheck() const
 	// local function to check for plug in files
 	auto checkForPluginFiles = [&paths](const std::initializer_list<QString> &files)
 	{
-		bool success = util::find_if_ptr(paths, [&paths, &files](const QString &path)
+		bool success = util::find_if_ptr(paths, [&files](const QString &path)
 		{
 			for (const QString &file : files)
 			{		
