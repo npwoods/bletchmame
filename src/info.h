@@ -239,6 +239,14 @@ namespace info
 		public:
 			salt() : m_magic1(3133731337), m_magic2(0xF00D), m_version(1) { }
 
+			bool operator==(const salt &that) const
+			{
+				// appease clang
+				return m_magic1 == that.m_magic1
+					&& m_magic2 == that.m_magic2
+					&& m_version == that.m_version;
+			}
+
 		private:
 			std::uint32_t	m_magic1;
 			std::uint16_t	m_magic2;
@@ -625,7 +633,7 @@ namespace info
 		std::optional<bool> is_mechanical() const			{ return decode_optional_bool(inner().m_is_mechanical); }
 		std::optional<bool> unofficial() const				{ return decode_optional_bool(inner().m_unofficial); }
 		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
-		std::optional<int> sound_channels() const			{ return inner().m_sound_channels != ~0 ? inner().m_sound_channels : std::optional<int>(); }
+		std::optional<int> sound_channels() const			{ return inner().m_sound_channels != (std::uint8_t)~0 ? inner().m_sound_channels : std::optional<int>(); }
 		const QString &name() const							{ return get_string(inner().m_name_strindex); }
 		const QString &sourcefile() const					{ return get_string(inner().m_sourcefile_strindex); }
 		const QString &description() const					{ return get_string(inner().m_description_strindex); }
