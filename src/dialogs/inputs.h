@@ -174,7 +174,6 @@ private:
 
 	struct InputEntryDesc;
 
-	class SingularInputEntry;
 	class MultiAxisInputEntry;
 
 	class MultiAxisInputDialog;
