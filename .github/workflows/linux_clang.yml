@@ -1,0 +1,79 @@
+##################################
+# BletchMAME Linux Github Action #
+##################################
+
+name: Linux
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 6.1.2
+        modules: 'qt5compat'
+        dir: ${{ github.workspace }}
+
+    # Install OpenGL
+    - name: Install OpenGL
+      uses: openrndr/setup-opengl@v1.1
+
+    # Install Packages
+    - name: Install Packages
+      run: |
+        sudo apt update
+        sudo apt install -y freeglut3-dev libalut-dev libasound2-dev libc6-dev libgl1-mesa-dev libglu1-mesa-dev llvm-6.0 libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxxf86vm-dev mesa-utils pkg-config xorg-dev xvfb
+
+    # Retrieve QuaZip
+    - name: Retrieve QuaZip
+      run: |        
+        git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git deps/quazip
+
+    # Build QuaZip
+    - name: Build QuaZip
+      run: |
+        cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
+        cmake --build deps/build/ubuntu/quazip --parallel
+        cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
+
+    # Generate buildversion.txt
+    - name: Generate buildversion.txt
+      run: |
+        git describe --tags | python version.py | tee buildversion.txt
+
+    # Generate src/buildversion.gen.cpp
+    - name: Generate src/buildversion.gen.cpp
+      run: |
+        sh >src/buildversion.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat buildversion.txt 2>NUL)\"\;'
+        sh >>src/buildversion.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
+        sh >>src/buildversion.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
+
+    # Build BletchMAME
+    - name: Build BletchMAME
+      run: |
+        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=clang++ -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
+        make -j 8
+        strip ./BletchMAME
+
+    # Run Acceptance Tests
+    - name: Run Acceptance Tests
+      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/6.1.2/gcc_64/lib ; ./BletchMAME_tests
