@@ -495,7 +495,7 @@ QString MachineFolderTreeModel::customFolderForModelIndex(const QModelIndex &ind
 	if (index.isValid() && m_custom.size() > 0)
 	{
 		const FolderEntry &entry = folderEntryFromModelIndex(index);
-		if ((&entry >= &*m_custom.begin()) && (&entry < &*m_custom.end()))
+		if ((&entry >= &m_custom[0]) && (&entry <= &m_custom[m_custom.size() - 1]))
 			result = entry.id();
 	}
 	return result;
