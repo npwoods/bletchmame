@@ -61,7 +61,7 @@ public:
 		CHEATS,
 		SNAPSHOTS,
 
-		COUNT
+		Max = SNAPSHOTS
 	};
 
 	// paths that are per-machine
@@ -70,7 +70,7 @@ public:
 		WORKING_DIRECTORY,
 		LAST_SAVE_STATE,
 
-		COUNT
+		Max = LAST_SAVE_STATE
 	};
 
 	// is this path type for a file, a directory, or multiple directories?
@@ -89,7 +89,7 @@ public:
 		SOFTWARELIST,
 		PROFILE,
 
-		COUNT
+		Max = PROFILE
 	};
 
 	Preferences();
@@ -173,9 +173,9 @@ private:
 		std::map<QString, std::vector<QString>>     m_recentDeviceFiles;
 	};
 
-	static std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	s_path_names;
+	static std::array<const char *, util::enum_count<Preferences::global_path_type>()>			s_path_names;
 
-	std::array<QString, static_cast<size_t>(global_path_type::COUNT)>							m_paths;
+	std::array<QString, util::enum_count<Preferences::global_path_type>()>						m_paths;
 	QString                                                                 					m_mame_extra_arguments;
 	QSize																						m_size;
 	mutable std::unordered_map<std::u8string, std::unordered_map<std::u8string, ColumnPrefs>>	m_column_prefs;
