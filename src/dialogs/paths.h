@@ -48,7 +48,7 @@ private slots:
 private:
 	class PathListModel;
 
-	static const size_t PATH_COUNT = (size_t)Preferences::global_path_type::COUNT;
+	static const size_t PATH_COUNT = util::enum_count<Preferences::global_path_type>();
 	static const QStringList s_combo_box_strings;
 
 	std::unique_ptr<Ui::PathsDialog>				m_ui;

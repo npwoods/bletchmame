@@ -24,7 +24,7 @@
 //  LOCAL VARIABLES
 //**************************************************************************
 
-std::array<const char *, static_cast<size_t>(Preferences::global_path_type::COUNT)>	Preferences::s_path_names =
+std::array<const char *, util::enum_count<Preferences::global_path_type>()>	Preferences::s_path_names =
 {
 	"emu",
 	"roms",
@@ -479,7 +479,7 @@ bool Preferences::load()
 bool Preferences::load(QIODevice &input)
 {
 	XmlParser xml;
-	global_path_type type = global_path_type::COUNT;
+	std::optional<global_path_type> type;
 	QString current_machine_name;
 	QString current_device_type;
 	QString *current_list_view_parameter = nullptr;
@@ -505,16 +505,16 @@ bool Preferences::load(QIODevice &input)
 		if (type_string)
 		{
 			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), *type_string);
-			type = iter != s_path_names.cend()
-				? static_cast<global_path_type>(iter - s_path_names.cbegin())
-				: global_path_type::COUNT;
+			type.reset();
+			if (iter != s_path_names.cend())
+				type = static_cast<global_path_type>(iter - s_path_names.cbegin());
 		}
 	});
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
-		if (type < global_path_type::COUNT)
-			setGlobalPath(type, std::move(content));
-		type = global_path_type::COUNT;
+		if (type)
+			setGlobalPath(*type, std::move(content));
+		type.reset();
 	});
 	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
 	{
