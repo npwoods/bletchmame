@@ -105,12 +105,12 @@ add_library(BletchMAME_core
 	src/mainwindow.cpp
 	src/mainwindow.h
 	src/mainwindow.ui
-	src/mameworkercontroller.cpp
-	src/mameworkercontroller.h
 	src/mametask.cpp
 	src/mametask.h
 	src/mameversion.cpp
 	src/mameversion.h
+	src/mameworkercontroller.cpp
+	src/mameworkercontroller.h
 	src/messagequeue.h
 	src/prefs.cpp
 	src/prefs.h
@@ -130,14 +130,14 @@ add_library(BletchMAME_core
 	src/splitterviewtoggler.h
 	src/status.cpp
 	src/status.h
-	src/utility.cpp
-	src/utility.h
 	src/tableviewmanager.cpp
 	src/tableviewmanager.h
 	src/task.cpp
 	src/task.h	
 	src/taskdispatcher.cpp
 	src/taskdispatcher.h
+	src/utility.cpp
+	src/utility.h
 	src/versiontask.cpp
 	src/versiontask.h
 	src/xmlparser.cpp
@@ -207,14 +207,14 @@ install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(BletchMAME_tests	
 	src/tests/test.cpp
 	src/tests/test.h
-	src/tests/listxmlrunner.cpp
-	src/tests/mamerunner.cpp
 	src/tests/assetfinder_test.cpp
-	src/tests/info_test.cpp
 	src/tests/info_builder_test.cpp
+	src/tests/info_test.cpp
+	src/tests/listxmlrunner.cpp
 	src/tests/listxmltask_test.cpp
 	src/tests/machinefoldertreemodel_test.cpp
 	src/tests/machinelistitemmodel_test.cpp
+	src/tests/mamerunner.cpp
 	src/tests/mametask_test.cpp
 	src/tests/mameversion_test.cpp
 	src/tests/prefs_test.cpp
