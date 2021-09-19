@@ -213,7 +213,7 @@ int Audit::setupPaths(const Preferences &prefs, std::optional<info::machine> mac
 	}
 
 	// record our position; we want to record it
-	position = m_pathList.size();
+	position = util::safe_static_cast<int>(m_pathList.size());
 
 	// and put the results on our path list
 	m_pathList.emplace_back(std::move(paths));

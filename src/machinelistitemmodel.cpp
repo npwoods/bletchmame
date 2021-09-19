@@ -56,7 +56,7 @@ void MachineListItemModel::setMachineFilter(std::function<bool(const info::machi
 void MachineListItemModel::auditStatusesChanged()
 {
 	QModelIndex topLeft = createIndex(0, (int)Column::Machine);
-	QModelIndex bottomRight = createIndex(m_indexes.size() - 1, (int)Column::Machine);
+	QModelIndex bottomRight = createIndex(util::safe_static_cast<int>(m_indexes.size()) - 1, (int)Column::Machine);
 	QVector<int> roles = { Qt::DecorationRole };
 	dataChanged(topLeft, bottomRight, roles);
 }
