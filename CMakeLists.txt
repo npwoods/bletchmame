@@ -83,6 +83,8 @@ endif()
 add_library(BletchMAME_core
 	src/assetfinder.cpp
 	src/assetfinder.h
+	src/audit.cpp
+	src/audit.h
 	src/buildversion.cpp
 	src/buildversion.h
 	src/iconloader.cpp
@@ -208,6 +210,7 @@ add_executable(BletchMAME_tests
 	src/tests/test.cpp
 	src/tests/test.h
 	src/tests/assetfinder_test.cpp
+	src/tests/audit_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/info_test.cpp
 	src/tests/listxmlrunner.cpp

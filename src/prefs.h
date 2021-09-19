@@ -22,6 +22,17 @@
 #include "utility.h"
 
 
+// ======================> AuditStatus
+
+enum class AuditStatus
+{
+	Unknown,
+	Found,
+	MissingOptional,
+	Missing
+};
+
+
 struct ColumnPrefs
 {
 	int								m_width;
