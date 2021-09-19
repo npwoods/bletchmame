@@ -18,12 +18,12 @@
 MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader)
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
-    , m_iconLoader(iconLoader)
+	, m_iconLoader(iconLoader)
 {
-    m_infoDb.addOnChangedHandler([this]
-    {
-        populateIndexes();
-    });
+	m_infoDb.addOnChangedHandler([this]
+	{
+		populateIndexes();
+	});
 }
 
 
@@ -33,7 +33,7 @@ MachineListItemModel::MachineListItemModel(QObject *parent, info::database &info
 
 info::machine MachineListItemModel::machineFromIndex(const QModelIndex &index) const
 {
-    return m_infoDb.machines()[m_indexes[index.row()]];
+	return m_infoDb.machines()[m_indexes[index.row()]];
 }
 
 
@@ -43,8 +43,8 @@ info::machine MachineListItemModel::machineFromIndex(const QModelIndex &index) c
 
 void MachineListItemModel::setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter)
 {
-    m_machineFilter = std::move(machineFilter);
-    populateIndexes();
+	m_machineFilter = std::move(machineFilter);
+	populateIndexes();
 }
 
 
@@ -54,27 +54,27 @@ void MachineListItemModel::setMachineFilter(std::function<bool(const info::machi
 
 void MachineListItemModel::populateIndexes()
 {
-    beginResetModel();
+	beginResetModel();
 
-    m_indexes.clear();
-    m_indexes.reserve(m_infoDb.machines().size());
-    for (int i = 0; i < m_infoDb.machines().size(); i++)
-    {
-        info::machine machine = m_infoDb.machines()[i];
+	m_indexes.clear();
+	m_indexes.reserve(m_infoDb.machines().size());
+	for (int i = 0; i < m_infoDb.machines().size(); i++)
+	{
+		info::machine machine = m_infoDb.machines()[i];
 
-        // we only use runnable machines
-        if (machine.runnable())
-        {
-            // and we need to apply a filter (if we have one)
-            if (!m_machineFilter || m_machineFilter(machine))
-            {
-                m_indexes.push_back(i);
-            }
-        }
-    }
-    m_indexes.shrink_to_fit();
+		// we only use runnable machines
+		if (machine.runnable())
+		{
+			// and we need to apply a filter (if we have one)
+			if (!m_machineFilter || m_machineFilter(machine))
+			{
+				m_indexes.push_back(i);
+			}
+		}
+	}
+	m_indexes.shrink_to_fit();
 
-    endResetModel();
+	endResetModel();
 }
 
 
@@ -84,7 +84,7 @@ void MachineListItemModel::populateIndexes()
 
 QModelIndex MachineListItemModel::index(int row, int column, const QModelIndex &parent) const
 {
-    return createIndex(row, column);
+	return createIndex(row, column);
 }
 
 
@@ -94,7 +94,7 @@ QModelIndex MachineListItemModel::index(int row, int column, const QModelIndex &
 
 QModelIndex MachineListItemModel::parent(const QModelIndex &child) const
 {
-    return QModelIndex();
+	return QModelIndex();
 }
 
 
@@ -104,7 +104,7 @@ QModelIndex MachineListItemModel::parent(const QModelIndex &child) const
 
 int MachineListItemModel::rowCount(const QModelIndex &parent) const
 {
-    return util::safe_static_cast<int>(m_indexes.size());
+	return util::safe_static_cast<int>(m_indexes.size());
 }
 
 
@@ -124,41 +124,41 @@ int MachineListItemModel::columnCount(const QModelIndex &parent) const
 
 QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 {
-    QVariant result;
-    if (index.isValid()
-        && index.row() >= 0
-        && index.row() < m_indexes.size())
-    {
-        info::machine machine = machineFromIndex(index);
-        Column column = (Column)index.column();
+	QVariant result;
+	if (index.isValid()
+		&& index.row() >= 0
+		&& index.row() < m_indexes.size())
+	{
+		info::machine machine = machineFromIndex(index);
+		Column column = (Column)index.column();
 
-        switch (role)
-        {
-        case Qt::DisplayRole:
-            switch (column)
-            {
-            case Column::Machine:
-                result = machine.name();
-                break;
-            case Column::Description:
-                result = machine.description();
-                break;
-            case Column::Year:
-                result = machine.year();
-                break;
-            case Column::Manufacturer:
-                result = machine.manufacturer();
-                break;
-            }
-            break;
+		switch (role)
+		{
+		case Qt::DisplayRole:
+			switch (column)
+			{
+			case Column::Machine:
+				result = machine.name();
+				break;
+			case Column::Description:
+				result = machine.description();
+				break;
+			case Column::Year:
+				result = machine.year();
+				break;
+			case Column::Manufacturer:
+				result = machine.manufacturer();
+				break;
+			}
+			break;
 
-        case Qt::DecorationRole:
-            if (column == Column::Machine)
-                result = m_iconLoader.getIcon(machine);
-            break;
-        }
-    }
-    return result;
+		case Qt::DecorationRole:
+			if (column == Column::Machine)
+				result = m_iconLoader.getIcon(machine);
+			break;
+		}
+	}
+	return result;
 }
 
 
@@ -168,30 +168,30 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 
 QVariant MachineListItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    QVariant result;
-    if (orientation == Qt::Orientation::Horizontal && section >= 0 && section < util::enum_count<Column>())
-    {
-        Column column = (Column)section;
-        switch (role)
-        {
-        case Qt::DisplayRole:
-            switch (column)
-            {
-            case Column::Machine:
-                result = "Machine";
-                break;
-            case Column::Description:
-                result = "Description";
-                break;
-            case Column::Year:
-                result = "Year";
-                break;
-            case Column::Manufacturer:
-                result = "Manufacturer";
-                break;
-            }
-            break;
-        }
-    }
-    return result;
+	QVariant result;
+	if (orientation == Qt::Orientation::Horizontal && section >= 0 && section < util::enum_count<Column>())
+	{
+		Column column = (Column)section;
+		switch (role)
+		{
+		case Qt::DisplayRole:
+			switch (column)
+			{
+			case Column::Machine:
+				result = "Machine";
+				break;
+			case Column::Description:
+				result = "Description";
+				break;
+			case Column::Year:
+				result = "Year";
+				break;
+			case Column::Manufacturer:
+				result = "Manufacturer";
+				break;
+			}
+			break;
+		}
+	}
+	return result;
 }

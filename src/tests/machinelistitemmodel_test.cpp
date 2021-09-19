@@ -14,25 +14,25 @@
 
 namespace
 {
-    class Test : public QObject
-    {
-        Q_OBJECT
+	class Test : public QObject
+	{
+		Q_OBJECT
 
-    private slots:
-        void general();
-    };
+	private slots:
+		void general();
+	};
 
-    class MockIconLoader : public IIconLoader
-    {
-    public:
-        virtual const QPixmap &getIcon(const info::machine &machine) override
-        {
-            return m_pixmap;
-        }
+	class MockIconLoader : public IIconLoader
+	{
+	public:
+		virtual const QPixmap &getIcon(const info::machine &machine) override
+		{
+			return m_pixmap;
+		}
 
-    private:
-        QPixmap m_pixmap;
-    };
+	private:
+		QPixmap m_pixmap;
+	};
 }
 
 
@@ -46,33 +46,33 @@ namespace
 
 void Test::general()
 {
-    // create a MachineListItemModel
-    info::database db;
-    MockIconLoader iconLoader;
-    MachineListItemModel model(nullptr, db, iconLoader);
-    QVERIFY(model.rowCount(QModelIndex()) == 0);
+	// create a MachineListItemModel
+	info::database db;
+	MockIconLoader iconLoader;
+	MachineListItemModel model(nullptr, db, iconLoader);
+	QVERIFY(model.rowCount(QModelIndex()) == 0);
 
-    // load an info DB
-    {
-        QByteArray byteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
-        QBuffer buffer(&byteArray);
-        QVERIFY(buffer.open(QIODevice::ReadOnly));
-        QVERIFY(db.load(buffer));
-    }
+	// load an info DB
+	{
+		QByteArray byteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
+		QBuffer buffer(&byteArray);
+		QVERIFY(buffer.open(QIODevice::ReadOnly));
+		QVERIFY(db.load(buffer));
+	}
 
-    // verify that we got rows
-    QVERIFY(model.rowCount(QModelIndex()) == 15);
+	// verify that we got rows
+	QVERIFY(model.rowCount(QModelIndex()) == 15);
 
-    // try loading a different one
-    {
-        QByteArray byteArray = buildInfoDatabase(":/resources/listxml_alienar.xml");
-        QBuffer buffer(&byteArray);
-        QVERIFY(buffer.open(QIODevice::ReadOnly));
-        QVERIFY(db.load(buffer));
-    }
+	// try loading a different one
+	{
+		QByteArray byteArray = buildInfoDatabase(":/resources/listxml_alienar.xml");
+		QBuffer buffer(&byteArray);
+		QVERIFY(buffer.open(QIODevice::ReadOnly));
+		QVERIFY(db.load(buffer));
+	}
 
-    // verify that we got rows
-    QVERIFY(model.rowCount(QModelIndex()) == 1);
+	// verify that we got rows
+	QVERIFY(model.rowCount(QModelIndex()) == 1);
 }
 
 
