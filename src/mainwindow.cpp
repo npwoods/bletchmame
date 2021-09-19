@@ -18,10 +18,13 @@
 #include <QSortFilterProxyModel>
 #include <QTextStream>
 
+#include <chrono>
+
 #include "mainwindow.h"
 #include "mainpanel.h"
 #include "mameversion.h"
 #include "ui_mainwindow.h"
+#include "audittask.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "versiontask.h"
@@ -686,10 +689,15 @@ MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
 	, m_taskDispatcher(*this, m_prefs)
+	, m_auditQueue(m_prefs, m_info_db)
+	, m_auditTimer(nullptr)
+	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 	, m_currentLoadingDialog(nullptr)
 {
+	using namespace std::chrono_literals;
+
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
 	m_ui->setupUi(this);
@@ -711,6 +719,11 @@ MainWindow::MainWindow(QWidget *parent)
 	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::invokePing);
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
+	// set up the audit timer
+	m_auditTimer = new QTimer(this);
+	m_auditTimer->setInterval(500ms);
+	connect(m_auditTimer, &QTimer::timeout, this, &MainWindow::dispatchAuditTasks);
+
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect(*m_ui->stackedLayout,					&QStackedLayout::currentWidget,	&QStackedLayout::setCurrentWidget,	{ },								[this]() { return attachToMainWindow() ? nullptr : m_ui->emulationPanel; });
 	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,			&QWidget::setWindowTitle,			&status::state::paused,				[this]() { return getTitleBarText(); });
@@ -724,6 +737,10 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionToggleRecordMovie,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
+	setupPropSyncAspect(*m_ui->actionAuditingDisabled,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								false);
+	setupPropSyncAspect(*m_ui->actionAuditingAutomatic,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								false);
+	setupPropSyncAspect(*m_ui->actionAuditingManual,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								false);
+	setupPropSyncAspect(*m_ui->actionAuditThis,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								false);
 	setupPropSyncAspect(*m_ui->actionDebugger,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionSoftReset,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionHardReset,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
@@ -1043,6 +1060,77 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 
 //-------------------------------------------------
+//  on_menuAuditing_aboutToShow
+//-------------------------------------------------
+
+void MainWindow::on_menuAuditing_aboutToShow()
+{
+	// set the checkmark for the current AuditingState
+	Preferences::AuditingState auditingState = m_prefs.getAuditingState();
+	m_ui->actionAuditingDisabled->setChecked(auditingState == Preferences::AuditingState::Disabled);
+	m_ui->actionAuditingAutomatic->setChecked(auditingState == Preferences::AuditingState::Automatic);
+	m_ui->actionAuditingManual->setChecked(auditingState == Preferences::AuditingState::Manual);
+
+	// identify the currently selected machine
+	std::optional<info::machine> selectedMachine;
+	if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
+		selectedMachine = m_mainPanel->currentlySelectedMachine();
+
+	// update the "Audit This" item
+	m_ui->actionAuditThis->setChecked(selectedMachine.has_value());
+	QString actionAuditThisText = selectedMachine
+		? QString("Audit \"%1\"").arg(selectedMachine->description())
+		: QString("Audit This");
+	m_ui->actionAuditThis->setText(actionAuditThisText);
+}
+
+
+//-------------------------------------------------
+//  on_actionAuditingDisabled_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionAuditingDisabled_triggered()
+{
+	changeAuditingState(Preferences::AuditingState::Disabled);
+}
+
+
+//-------------------------------------------------
+//  on_actionAuditingAutomatic_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionAuditingAutomatic_triggered()
+{
+	changeAuditingState(Preferences::AuditingState::Automatic);
+}
+
+
+//-------------------------------------------------
+//  on_actionAuditingManual_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionAuditingManual_triggered()
+{
+	changeAuditingState(Preferences::AuditingState::Manual);
+}
+
+
+//-------------------------------------------------
+//  on_actionAuditThis_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionAuditThis_triggered()
+{
+	std::optional<info::machine> selectedMachine;
+	if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
+		selectedMachine = m_mainPanel->currentlySelectedMachine();
+
+	if (selectedMachine)
+		m_mainPanel->manualAudit(*selectedMachine);
+}
+
+
+//-------------------------------------------------
 //  on_actionDebugger_triggered
 //-------------------------------------------------
 
@@ -1265,6 +1353,14 @@ void MainWindow::on_actionPaths_triggered()
 		}
 	}
 
+	// did the user change the roms or samples paths?
+	if (util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES))
+	{
+		// if so we have to refresh auditing
+		m_prefs.dropAllMachineAuditStatuses();
+		updateAuditTimer();
+	}
+
 	m_mainPanel->pathsChanged(changed_paths);
 }
 
@@ -1330,6 +1426,10 @@ bool MainWindow::event(QEvent *event)
 	else if (event->type() == StatusUpdateEvent::eventId())
 	{
 		result = onStatusUpdate(static_cast<StatusUpdateEvent &>(*event));
+	}
+	else if (event->type() == AuditResultEvent::eventId())
+	{
+		result = onAuditResult(static_cast<AuditResultEvent &>(*event));
 	}
 	else if (event->type() == ChatterEvent::eventId())
 	{
@@ -2321,4 +2421,104 @@ void MainWindow::changeThrottleRate(int adjustment)
 void MainWindow::changeSound(bool sound_enabled)
 {
 	issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
+}
+
+
+//-------------------------------------------------
+//  changeAuditingState
+//-------------------------------------------------
+
+void MainWindow::changeAuditingState(Preferences::AuditingState auditingState)
+{
+	// only do things if this is not a no-op
+	if (m_prefs.getAuditingState() != auditingState)
+	{
+		// set the new auditing state
+		m_prefs.setAuditingState(auditingState);
+
+		// audit statuses may have changed
+		m_mainPanel->machineAuditStatusesChanged();
+
+		// we may need to kick the timer
+		updateAuditTimer();
+	}
+}
+
+
+//-------------------------------------------------
+//  auditIfAppropriate
+//-------------------------------------------------
+
+void MainWindow::auditIfAppropriate(const info::machine &machine)
+{
+	// if we're not automatically auditing, don't audit
+	if (m_prefs.getAuditingState() != Preferences::AuditingState::Automatic)
+		return;
+
+	// if we're running an emulation, don't audit
+	if (m_currentRunMachineTask)
+		return;
+
+	// if we have an audit status, don't audit
+	if (m_prefs.getMachineAuditStatus(machine.name()) != AuditStatus::Unknown)
+		return;
+
+	m_auditQueue.push(machine);
+	updateAuditTimer();
+}
+
+
+//-------------------------------------------------
+//  updateAuditTimer
+//-------------------------------------------------
+
+void MainWindow::updateAuditTimer()
+{
+	// we only actively audit when all of these conditions apply
+	bool auditingActive = m_prefs.getAuditingState() == Preferences::AuditingState::Automatic		// we're automatically auditing and...
+		&& !m_currentRunMachineTask																	// no active emulation is running and...
+		&& m_auditQueue.hasUndispatched()															// there are undispatched audits in the queue and...
+		&& m_taskDispatcher.countActiveTasksByType<AuditTask>() < m_maximumConcurrentAuditTasks;	// we're below the amount of concurrent audit tasks
+
+	if (auditingActive)
+		m_auditTimer->start();
+	else
+		m_auditTimer->stop();
+}
+
+
+//-------------------------------------------------
+//  dispatchAuditTasks
+//-------------------------------------------------
+
+void MainWindow::dispatchAuditTasks()
+{
+	// find out how many active tasks are present
+	std::size_t activeTaskCount = m_taskDispatcher.countActiveTasksByType<AuditTask>();
+
+	// spin up tasks
+	AuditTask::ptr auditTask;
+	while (activeTaskCount < m_maximumConcurrentAuditTasks && (auditTask = m_auditQueue.tryCreateAuditTask()) != nullptr)
+	{
+		m_taskDispatcher.launch(std::move(auditTask));
+		activeTaskCount++;
+	}
+
+	updateAuditTimer();
+}
+
+
+//-------------------------------------------------
+//  onAuditResult
+//-------------------------------------------------
+
+bool MainWindow::onAuditResult(const AuditResultEvent &event)
+{
+	// only use this event if the cookies match
+	if (event.cookie() == m_auditQueue.currentCookie())
+	{
+		// they do in fact match; update the statuses
+		m_mainPanel->setMachineAuditStatuses(event.results());
+	}
+	return true;
 }

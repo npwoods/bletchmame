@@ -6,6 +6,8 @@
 
 ***************************************************************************/
 
+#include <QPainter>
+
 #include "iconloader.h"
 #include "prefs.h"
 
@@ -32,6 +34,12 @@ IconLoader::IconLoader(Preferences &prefs)
 	// QPixmap starts with uninitialized data; make "blank" be blank
 	m_blankIcon.fill(Qt::transparent);
 
+	// load the other icons
+	loadBuiltinIcon(m_missingRomIcon,			":/resources/roms_missing.ico");
+	loadBuiltinIcon(m_optionalMissingRomIcon,	":/resources/roms_missing_optional.ico");
+	loadBuiltinIcon(m_unknownRomStatusIcon,		":/resources/roms_unknown.ico");
+
+	// and refresh
 	refreshIcons();
 }
 
@@ -42,6 +50,22 @@ IconLoader::IconLoader(Preferences &prefs)
 
 IconLoader::~IconLoader()
 {
+}
+
+
+//-------------------------------------------------
+//  loadBuiltinIcon
+//-------------------------------------------------
+
+void IconLoader::loadBuiltinIcon(QPixmap &pixmap, const QString &fileName)
+{
+	// load the icon
+	bool success = pixmap.load(fileName);
+	setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
+
+	// treat failure to load as a catastrophic error; its probably a build problem
+	if (!success)
+		throw false;
 }
 
 
@@ -65,10 +89,40 @@ void IconLoader::refreshIcons()
 
 const QPixmap &IconLoader::getIcon(const info::machine &machine)
 {
-	const QPixmap *result = getIconByName(machine.name());
+	// get the AuditStatus for display purposes
+	AuditStatus status;
+	if (m_prefs.getAuditingState() != Preferences::AuditingState::Disabled)
+		status = m_prefs.getMachineAuditStatus(machine.name());
+	else
+		status = AuditStatus::Found;	// auditing disabled?  treat things as if they were found
+
+	// and retrieve the icon
+	const QPixmap *result = getIconByName(machine.name(), status);
 	if (!result && machine.clone_of())
-		result = getIconByName(machine.clone_of()->name());	
-	return result ? *result : m_blankIcon;
+		result = getIconByName(machine.clone_of()->name(), status);
+	return result ? *result : defaultIcon(status);
+}
+
+
+//-------------------------------------------------
+//  defaultIcon
+//-------------------------------------------------
+
+const QPixmap &IconLoader::defaultIcon(AuditStatus status) const
+{
+	switch (status)
+	{
+	case AuditStatus::Unknown:
+		return m_unknownRomStatusIcon;
+	case AuditStatus::Found:
+		return m_blankIcon;
+	case AuditStatus::Missing:
+		return m_missingRomIcon;
+	case AuditStatus::MissingOptional:
+		return m_optionalMissingRomIcon;
+	default:
+		throw false;
+	}
 }
 
 
@@ -76,16 +130,19 @@ const QPixmap &IconLoader::getIcon(const info::machine &machine)
 //  getIconByName
 //-------------------------------------------------
 
-const QPixmap *IconLoader::getIconByName(const QString &iconName)
+const QPixmap *IconLoader::getIconByName(const QString &machineName, AuditStatus status)
 {
+	// set up a key that captures both the machine name and the status
+	auto key = std::make_tuple(machineName, status);
+
 	// look up the result in the icon map
-	auto iter = m_icon_map.find(iconName);
+	auto iter = m_icon_map.find(key);
 
 	// did we come up empty?
 	if (iter == m_icon_map.end())
 	{
 		// we have not tried to load this icon - first determine the real file name
-		QString iconFileName = iconName + ".ico";
+		QString iconFileName = machineName + ".ico";
 
 		// and try to load the icon
 		std::optional<QByteArray> byteArray = m_assetFinder.findAssetBytes(iconFileName);
@@ -93,10 +150,10 @@ const QPixmap *IconLoader::getIconByName(const QString &iconName)
 		{
 			// we've found an entry - try to load the icon; note that while this can
 			// fail, we want to memoize the failure
-			std::optional<QPixmap> icon = loadIcon(*byteArray);
+			std::optional<QPixmap> icon = loadIcon(*byteArray, status);
 
 			// record the result in the icon map
-			iter = m_icon_map.emplace(iconName, std::move(icon)).first;
+			iter = m_icon_map.emplace(std::move(key), std::move(icon)).first;
 		}
 	}
 
@@ -112,7 +169,7 @@ const QPixmap *IconLoader::getIconByName(const QString &iconName)
 //  loadIcon
 //-------------------------------------------------
 
-std::optional<QPixmap> IconLoader::loadIcon(const QByteArray &byteArray)
+std::optional<QPixmap> IconLoader::loadIcon(const QByteArray &byteArray, AuditStatus status)
 {
 	std::optional<QPixmap> result;
 
@@ -123,8 +180,55 @@ std::optional<QPixmap> IconLoader::loadIcon(const QByteArray &byteArray)
 		// we've load the icon; normalize it
 		setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
 
+		// and composite the audit status icon (if appropriate)
+		if (status != AuditStatus::Found)
+			adornIcon(pixmap, defaultIcon(status));
+
 		// and return it
 		result = std::move(pixmap);
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  adornIcon
+//-------------------------------------------------
+
+void IconLoader::adornIcon(QPixmap &basePixmap, const QPixmap &ornamentPixmap)
+{
+	// identify the target rectangle on basePixmap
+	qreal basePixmapDevicePixelRatio = basePixmap.devicePixelRatio();
+	qreal basePixmapWidth = basePixmap.width() / basePixmapDevicePixelRatio;
+	qreal basePixmapHeight = basePixmap.height() / basePixmapDevicePixelRatio;
+	QRectF targetRect(basePixmapWidth / 2, basePixmapHeight / 2, basePixmapWidth / 2, basePixmapHeight / 2);
+
+	// and the sourceRect on ornamentPixmap
+	QRectF sourceRect(0, 0, ornamentPixmap.width(), ornamentPixmap.height());
+
+	// and draw the pixmap
+	QPainter painter(&basePixmap);
+	painter.drawPixmap(targetRect, ornamentPixmap, sourceRect);
+}
+
+
+//-------------------------------------------------
+//  IconMapHash::operator()
+//-------------------------------------------------
+
+std::size_t IconLoader::IconMapHash::operator()(const std::tuple<QString, AuditStatus> &x) const noexcept
+{
+	return std::hash<QString>{}(std::get<0>(x))
+		^ std::hash<AuditStatus>{}(std::get<1>(x));
+}
+
+
+//-------------------------------------------------
+//  IconMapEquals::operator()
+//-------------------------------------------------
+
+bool IconLoader::IconMapEquals::operator()(const std::tuple<QString, AuditStatus> &lhs, const std::tuple<QString, AuditStatus> &rhs) const
+{
+	return std::get<0>(lhs) == std::get<0>(rhs)
+		&& std::get<1>(lhs) == std::get<1>(rhs);
 }

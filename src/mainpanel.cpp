@@ -12,7 +12,10 @@
 #include <QProcess>
 #include <QSortFilterProxyModel>
 
+#include <unordered_set>
+
 #include "assetfinder.h"
+#include "audittask.h"
 #include "machinefoldertreemodel.h"
 #include "machinelistitemmodel.h"
 #include "mainpanel.h"
@@ -114,7 +117,11 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	m_ui->setupUi(this);
 
 	// set up machines view
-	MachineListItemModel &machineListItemModel = *new MachineListItemModel(this, m_infoDb, m_iconLoader);
+	MachineListItemModel &machineListItemModel = *new MachineListItemModel(
+		this,
+		m_infoDb,
+		m_iconLoader,
+		[this](info::machine machine) { m_host.auditIfAppropriate(machine); });
 	TableViewManager::setup(
 		*m_ui->machinesTableView,
 		machineListItemModel,
@@ -201,6 +208,10 @@ MainPanel::~MainPanel()
 
 void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths)
 {
+	// did the user change the roms or samples paths?
+	if (util::contains(changedPaths, Preferences::global_path_type::ROMS) || util::contains(changedPaths, Preferences::global_path_type::SAMPLES))
+		machineListItemModel().auditStatusesChanged();
+
 	// did the user change the profiles path?
 	if (util::contains(changedPaths, Preferences::global_path_type::PROFILES))
 		m_profileListItemModel->refresh(true, true);
@@ -212,12 +223,24 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 	// did the user change the snapshots path?
 	if (util::contains(changedPaths, Preferences::global_path_type::SNAPSHOTS))
 	{
-		QString machineName;
-		QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
-		if (selection.size() > 0)
-			machineName = machineFromModelIndex(selection[0]).name();
+		std::optional<info::machine> selectedMachine = currentlySelectedMachine();
+		QString machineName = selectedMachine ? selectedMachine->name() : QString();
 		updateInfoPanel(machineName);
 	}
+}
+
+
+//-------------------------------------------------
+//  currentlySelectedMachine
+//-------------------------------------------------
+
+std::optional<info::machine> MainPanel::currentlySelectedMachine()
+{
+	std::optional<info::machine> result;
+	QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
+		result = machineFromModelIndex(selection[0]);
+	return result;
 }
 
 
@@ -331,6 +354,16 @@ void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list:
 
 			// and refresh the folder list
 			machineFolderTreeModel().refresh();
+		});
+	}
+
+	// audit action
+	if (!software)
+	{
+		popupMenu.addSeparator();
+		popupMenu.addAction(QString("Audit \"%1\"").arg(description), [this, machine]()
+		{
+			manualAudit(machine);
 		});
 	}
 
@@ -765,6 +798,72 @@ void MainPanel::iterateItemModelIndexes(QAbstractItemModel &model, const std::fu
 			}
 		}
 	}
+}
+
+
+//-------------------------------------------------
+//  manualAudit
+//-------------------------------------------------
+
+void MainPanel::manualAudit(const info::machine &machine)
+{
+	// prepare an audit
+	Audit audit;
+	audit.addMediaForMachine(m_prefs, machine);
+
+	// run the audit
+	AuditStatus status = audit.run();
+
+	// and record the status
+	setMachineAuditStatus(machine.name(), status);
+}
+
+
+//-------------------------------------------------
+//  setMachineAuditStatuses
+//-------------------------------------------------
+
+void MainPanel::setMachineAuditStatuses(const std::vector<AuditResult> &results)
+{
+	bool anyStatusChanged = false;
+
+	// update all statuses
+	for (const AuditResult &result : results)
+	{
+		// is this a cahange?
+		if (m_prefs.getMachineAuditStatus(result.machineName()) != result.status())
+		{
+			// if so, record it
+			m_prefs.setMachineAuditStatus(result.machineName(), result.status());
+			anyStatusChanged = true;
+		}
+	}
+
+	// did anything change?
+	if (anyStatusChanged)
+		machineAuditStatusesChanged();
+}
+
+
+//-------------------------------------------------
+//  machineAuditStatusesChanged
+//-------------------------------------------------
+
+void MainPanel::machineAuditStatusesChanged()
+{
+	machineListItemModel().auditStatusesChanged();
+}
+
+
+//-------------------------------------------------
+//  setMachineAuditStatus
+//-------------------------------------------------
+
+void MainPanel::setMachineAuditStatus(const QString &machineName, AuditStatus status)
+{
+	std::vector<AuditResult> results;
+	results.emplace_back(machineName, status);
+	setMachineAuditStatuses(results);
 }
 
 

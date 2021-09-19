@@ -23,6 +23,7 @@ class AssetFinder
 public:
 	// ctor/dtor
 	AssetFinder();
+	AssetFinder(QStringList &&paths);
 	AssetFinder(const Preferences &prefs, Preferences::global_path_type pathType);
 	AssetFinder(const AssetFinder &) = delete;
 	AssetFinder(AssetFinder &&) = delete;

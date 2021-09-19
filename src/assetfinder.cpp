@@ -96,6 +96,16 @@ AssetFinder::AssetFinder()
 //  ctor
 //-------------------------------------------------
 
+AssetFinder::AssetFinder(QStringList &&paths)
+{
+	setPaths(std::move(paths));
+}
+
+
+//-------------------------------------------------
+//  ctor
+//-------------------------------------------------
+
 AssetFinder::AssetFinder(const Preferences &prefs, Preferences::global_path_type pathType)
 {
 	setPaths(prefs, pathType);

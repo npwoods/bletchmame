@@ -19,6 +19,7 @@
 
 #include "info.h"
 #include "assetfinder.h"
+#include "audit.h"
 
 class Preferences;
 
@@ -45,13 +46,32 @@ public:
 	virtual const QPixmap &getIcon(const info::machine &machine) final;
 
 private:
-	Preferences &										m_prefs;
-	std::unordered_map<QString, std::optional<QPixmap>>	m_icon_map;
-	AssetFinder											m_assetFinder;
-	QPixmap												m_blankIcon;
+	struct IconMapHash
+	{
+		std::size_t operator()(const std::tuple<QString, AuditStatus> &x) const noexcept;
+	};
 
-	const QPixmap *getIconByName(const QString &iconName);
-	static std::optional<QPixmap> loadIcon(const QByteArray &byteArray);
+	struct IconMapEquals
+	{
+		bool operator()(const std::tuple<QString, AuditStatus> &lhs, const std::tuple<QString, AuditStatus> &rhs) const;
+	};
+
+	typedef std::unordered_map<std::tuple<QString, AuditStatus>, std::optional<QPixmap>, IconMapHash, IconMapEquals> IconMap;
+	
+	Preferences &	m_prefs;
+	IconMap			m_icon_map;
+	AssetFinder		m_assetFinder;
+	QPixmap			m_unknownRomStatusIcon;
+	QPixmap			m_blankIcon;
+	QPixmap			m_missingRomIcon;
+	QPixmap			m_optionalMissingRomIcon;
+
+	const QPixmap &defaultIcon(AuditStatus status) const;
+	const QPixmap *getIconByName(const QString &machineName, AuditStatus status);
+	std::optional<QPixmap> loadIcon(const QByteArray &byteArray, AuditStatus status);
+	static void loadBuiltinIcon(QPixmap &pixmap, const QString &fileName);
+	static void adornIcon(QPixmap &basePixmap, const QPixmap &ornamentPixmap);
 };
+
 
 #endif // ICONLOADER_H
