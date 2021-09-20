@@ -24,6 +24,13 @@ class Hash::Test : public QObject
 private slots:
 	void calculate();
 	void calculateForEmptyFile();
+	void mask_00()	{ mask(false, false, ""); }
+	void mask_01()	{ mask(false, true, "SHA1(0123456789abcdef0123456789abcdef01234567)"); }
+	void mask_10()	{ mask(true, false, "CRC(0123abcd)"); }
+	void mask_11()	{ mask(true, true, "CRC(0123abcd) SHA1(0123456789abcdef0123456789abcdef01234567)"); }
+
+private:
+	void mask(bool useCrc32, bool useSha1, const char *expected);
 };
 
 
@@ -68,6 +75,26 @@ void Hash::Test::calculateForEmptyFile()
 	Hash::calculate(emptyBuffer);
 }
 
+
+//-------------------------------------------------
+//  mask
+//-------------------------------------------------
+
+void Hash::Test::mask(bool useCrc32, bool useSha1, const char *expected)
+{
+	// create a hash
+	std::array<std::uint8_t, 20> sha1({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67 });
+	Hash hash(0x0123ABCD, sha1);
+
+	// mask it
+	Hash result = hash.mask(useCrc32, useSha1);
+
+	// validate
+	QVERIFY(result.toString() == expected);
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<Hash::Test> fixture;
 #include "hash_test.moc"

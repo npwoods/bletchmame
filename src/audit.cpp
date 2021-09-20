@@ -163,9 +163,9 @@ void Audit::auditSingleMedia(Session &session, const Entry &entry, std::vector<s
 		Hash actualHash = Hash::calculate(*stream);
 
 		// get a hash for comparison purposes
-		Hash comparisonHash = Hash(
-			entry.expectedHash().crc32()	? actualHash.crc32()	: std::nullopt,
-			entry.expectedHash().sha1()		? actualHash.sha1()		: std::nullopt);
+		Hash comparisonHash = actualHash.mask(
+			entry.expectedHash().crc32().has_value(),
+			entry.expectedHash().sha1().has_value());
 
 		// do they match?
 		if (entry.expectedHash() != comparisonHash)

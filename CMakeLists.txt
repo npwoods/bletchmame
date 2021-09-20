@@ -103,6 +103,8 @@ add_library(BletchMAME_core
 	src/job.h
 	src/listxmltask.cpp
 	src/listxmltask.h
+	src/liveinstancetracker.cpp
+	src/liveinstancetracker.h
 	src/machinefoldertreemodel.cpp
 	src/machinefoldertreemodel.h
 	src/machinelistitemmodel.cpp
@@ -221,6 +223,7 @@ add_executable(BletchMAME_tests
 	src/tests/info_test.cpp
 	src/tests/listxmlrunner.cpp
 	src/tests/listxmltask_test.cpp
+	src/tests/liveinstancetracker_test.cpp
 	src/tests/machinefoldertreemodel_test.cpp
 	src/tests/machinelistitemmodel_test.cpp
 	src/tests/mamerunner.cpp
