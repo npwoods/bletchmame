@@ -30,6 +30,7 @@
 #include "versiontask.h"
 #include "utility.h"
 #include "dialogs/about.h"
+#include "dialogs/audit.h"
 #include "dialogs/cheats.h"
 #include "dialogs/confdev.h"
 #include "dialogs/console.h"
@@ -1430,6 +1431,10 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onAuditResult(static_cast<AuditResultEvent &>(*event));
 	}
+	else if (event->type() == AuditSingleMediaEvent::eventId())
+	{
+		result = onAuditSingleMedia(static_cast<AuditSingleMediaEvent &>(*event));
+	}
 	else if (event->type() == ChatterEvent::eventId())
 	{
 		result = onChatter(static_cast<ChatterEvent &>(*event));
@@ -2487,6 +2492,20 @@ void MainWindow::updateAuditTimer()
 
 
 //-------------------------------------------------
+//  auditDialogStarted
+//-------------------------------------------------
+
+void MainWindow::auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask)
+{
+	// track the dialog
+	m_currentAuditDialog.track(auditDialog);
+
+	// and dispatch the task
+	m_taskDispatcher.launch(std::move(auditTask));
+}
+
+
+//-------------------------------------------------
 //  dispatchAuditTasks
 //-------------------------------------------------
 
@@ -2513,11 +2532,23 @@ void MainWindow::dispatchAuditTasks()
 
 bool MainWindow::onAuditResult(const AuditResultEvent &event)
 {
-	// only use this event if the cookies match
-	if (event.cookie() == m_auditQueue.currentCookie())
+	// if we have a positive cookie, only use it if it matches
+	if (event.cookie() < 0 || event.cookie() == m_auditQueue.currentCookie())
 	{
 		// they do in fact match; update the statuses
 		m_mainPanel->setMachineAuditStatuses(event.results());
 	}
+	return true;
+}
+
+
+//-------------------------------------------------
+//  onAuditSingleMedia
+//-------------------------------------------------
+
+bool MainWindow::onAuditSingleMedia(const AuditSingleMediaEvent &event)
+{
+	if (m_currentAuditDialog)
+		m_currentAuditDialog->singleMediaAudited(event.entryIndex(), event.verdict());
 	return true;
 }

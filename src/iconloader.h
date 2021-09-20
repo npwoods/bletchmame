@@ -44,6 +44,7 @@ public:
 	// methods
 	void refreshIcons();
 	virtual const QPixmap &getIcon(const info::machine &machine) final;
+	const QPixmap &getIcon(const info::machine &machine, AuditStatus status);
 
 private:
 	struct IconMapHash

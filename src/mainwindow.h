@@ -44,6 +44,7 @@ class MameVersion;
 class VersionResultEvent;
 class ListXmlProgressEvent;
 class ListXmlResultEvent;
+class AuditDialog;
 class LoadingDialog;
 class RunMachineCompletedEvent;
 class StatusUpdateEvent;
@@ -171,6 +172,7 @@ private:
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
 	LiveInstanceTracker<LoadingDialog>	m_currentLoadingDialog;
+	LiveInstanceTracker<AuditDialog>	m_currentAuditDialog;
 	observable::value<QString>			m_current_recording_movie_filename;
 	observable::unique_subscription		m_watch_subscription;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;
@@ -184,6 +186,7 @@ private:
 	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);
 	bool onStatusUpdate(StatusUpdateEvent &event);
 	bool onAuditResult(const AuditResultEvent &event);
+	bool onAuditSingleMedia(const AuditSingleMediaEvent &event);
 	bool onChatter(const ChatterEvent &event);
 
 	// templated property/action binding
@@ -230,6 +233,7 @@ private:
 	void changeAuditingState(Preferences::AuditingState auditingState);
 	virtual void auditIfAppropriate(const info::machine &machine) override;
 	void updateAuditTimer();
+	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
 	void dispatchAuditTasks();
 };
 
