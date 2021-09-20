@@ -81,6 +81,18 @@ QString Hash::toString() const
 
 
 //-------------------------------------------------
+//  mask
+//-------------------------------------------------
+
+Hash Hash::mask(bool useCrc32, bool useSha1) const
+{
+	return Hash(
+		useCrc32 ? crc32() : std::nullopt,
+		useSha1 ? sha1() : std::nullopt);
+}
+
+
+//-------------------------------------------------
 //  hexString
 //-------------------------------------------------
 

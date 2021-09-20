@@ -42,10 +42,12 @@ public:
 	Hash(Hash &&) = default;
 
 	// operators
+	Hash &operator=(const Hash &) = default;
 	bool operator==(const Hash &) const = default;
 
 	// methods
 	QString toString() const;
+	Hash mask(bool useCrc32, bool useSha1) const;
 
 	// statics
 	static Hash calculate(QIODevice &stream);
