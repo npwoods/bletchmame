@@ -6,8 +6,6 @@
 
 ***************************************************************************/
 
-#include <QCryptographicHash>
-
 #include "audit.h"
 #include "assetfinder.h"
 
@@ -38,130 +36,12 @@ private:
 //  IMPLEMENTATION
 //**************************************************************************
 
-std::array<quint32, 256> Audit::s_crcTable = calculateCrc32Table();
-
-
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
 Audit::Audit()
 {
-}
-
-
-//-------------------------------------------------
-//  calculateCrc32Table
-//-------------------------------------------------
-
-std::array<quint32, 256> Audit::calculateCrc32Table()
-{
-	std::array<quint32, 256> result;
-
-	// initialize CRC table
-	for (int i = 0; i < std::size(result); i++)
-	{
-		quint32 crc = i;
-		for (int j = 0; j < 8; j++)
-			crc = crc & 1 ? (crc >> 1) ^ 0xEDB88320UL : crc >> 1;
-
-		result[i] = crc;
-	}
-
-	return result;
-}
-
-
-//-------------------------------------------------
-//  calculateHashes - calculates CRC32 and SHA-1
-//-------------------------------------------------
-
-void Audit::calculateHashes(QIODevice &stream, std::uint32_t *crc32, QByteArray *sha1)
-{
-	// Qt has SHA-1 functionality
-	std::optional<QCryptographicHash> cryptographicHash;
-	if (sha1)
-		cryptographicHash.emplace(QCryptographicHash::Algorithm::Sha1);
-
-	if (crc32)
-		*crc32 = ~0;
-	while (!stream.atEnd())
-	{
-		// read into a buffer
-		char buffer[15000];
-		int len = (int) stream.read(buffer, std::size(buffer));
-
-		// CRC32 processing
-		if (crc32)
-		{
-			for (int i = 0; i < len; i++)
-				*crc32 = s_crcTable[(*crc32 ^ buffer[i]) & 0xFF] ^ (*crc32 >> 8);
-		}
-
-		// SHA-1 processing
-		if (cryptographicHash)
-			cryptographicHash->addData(buffer, len);
-	}
-
-	// we're done; return the right results
-	if (crc32)
-		*crc32 ^= ~0;
-	if (sha1 && cryptographicHash)
-		*sha1 = cryptographicHash->result();
-}
-
-
-//-------------------------------------------------
-//  byteArrayEquals
-//-------------------------------------------------
-
-template<std::size_t N>
-bool Audit::byteArrayEquals(const QByteArray &byteArray, const std::array<std::uint8_t, N> &stdArray)
-{
-	return byteArray.size() == N
-		&& !memcmp(byteArray.constData(), &stdArray[0], N);
-}
-
-
-//-------------------------------------------------
-//  hexString
-//-------------------------------------------------
-
-QString Audit::hexString(const void *ptr, size_t sz)
-{
-	const std::uint8_t *bytePtr = (const std::uint8_t *)ptr;
-	QString result;
-	for (size_t i = 0; i < sz; i++)
-		result += QString::number(bytePtr[i], 16);
-	return result;
-}
-
-
-//-------------------------------------------------
-//  hashString
-//-------------------------------------------------
-
-QString Audit::hashString(std::optional<std::uint32_t> crc32, const QByteArray &sha1)
-{
-	QString result;
-	if (crc32)
-		result = QString("CRC(%1) ").arg(QString::number(*crc32, 16));
-
-	QString sha1Hex = hexString(sha1.constData(), sha1.size());
-	result += QString("SHA1(%1)").arg(sha1Hex);
-	return result;    
-}
-
-
-//-------------------------------------------------
-//  addMediaForMachine
-//-------------------------------------------------
-
-template<std::size_t N>
-QString Audit::hashString(std::optional<std::uint32_t> crc32, const std::array<uint8_t, N> &sha1)
-{
-	QByteArray sha1ByteArray((const char *)&sha1[0], std::size(sha1));
-	return hashString(crc32, sha1ByteArray);
 }
 
 
@@ -177,15 +57,15 @@ void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &ma
 
 	// audit ROMs
 	for (info::rom rom : machine.roms())
-		m_entries.emplace_back(rom.name(), romsPathsPos, rom.status(), rom.size(), rom.crc32(), rom.sha1(), rom.optional());
+		m_entries.emplace_back(rom.name(), romsPathsPos, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
 
 	// audit disks
 	for (info::disk disk : machine.disks())
-		m_entries.emplace_back(disk.name(), romsPathsPos, disk.status(), std::optional<std::uint32_t>(), std::optional<std::uint32_t>(), disk.sha1(), disk.optional());
+		m_entries.emplace_back(disk.name(), romsPathsPos, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
 
 	// audit samples
 	for (info::sample sample : machine.samples())
-		m_entries.emplace_back(sample.name(), samplesPathsPos, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), std::optional<std::uint32_t>(), std::array<uint8_t, 20>(), true);
+		m_entries.emplace_back(sample.name(), samplesPathsPos, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
 }
 
 
@@ -279,20 +159,21 @@ void Audit::auditSingleMedia(Session &session, const Entry &entry, std::vector<s
 	// do we have good dumps?
 	if (entry.dumpStatus() != info::rom::dump_status_t::NODUMP)
 	{
-		// calculate the hashes
-		std::optional<std::uint32_t> actualCrc32;
-		QByteArray actualSha1;
-		if (entry.expectedCrc32())
-			actualCrc32.emplace(0);
-		calculateHashes(*stream, entry.expectedCrc32() ? &*actualCrc32 : nullptr, &actualSha1);
+		// calculate the hash
+		Hash actualHash = Hash::calculate(*stream);
+
+		// get a hash for comparison purposes
+		Hash comparisonHash = Hash(
+			entry.expectedHash().crc32()	? actualHash.crc32()	: std::nullopt,
+			entry.expectedHash().sha1()		? actualHash.sha1()		: std::nullopt);
 
 		// do they match?
-		if (entry.expectedCrc32() != actualCrc32 || !byteArrayEquals(actualSha1, entry.expectedSha1()))
+		if (entry.expectedHash() != comparisonHash)
 		{
 			QString msg = QString("%1 WRONG CHECKSUMS\nEXPECTED %2\nFOUND %3").arg(
 				entry.name(),
-				hashString(entry.expectedCrc32(), entry.expectedSha1()),
-				hashString(actualCrc32, actualSha1));
+				entry.expectedHash().toString(),
+				actualHash.toString());
 			session.message(entry.optional() ? AuditStatus::MissingOptional : AuditStatus::Missing, std::move(msg));
 		}
 	}
@@ -303,14 +184,12 @@ void Audit::auditSingleMedia(Session &session, const Entry &entry, std::vector<s
 //  Entry ctor
 //-------------------------------------------------
 
-Audit::Entry::Entry(const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize,
-	std::optional<std::uint32_t> expectedCrc32, const std::array<uint8_t, 20> &expectedSha1, bool optional)
+Audit::Entry::Entry(const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
 	: m_name(name)
 	, m_pathsPosition(pathsPosition)
 	, m_dumpStatus(dumpStatus)
 	, m_expectedSize(expectedSize)
-	, m_expectedCrc32(expectedCrc32)
-	, m_expectedSha1(expectedSha1)
+	, m_expectedHash(expectedHash)
 	, m_optional(optional)
 {
 }

@@ -91,6 +91,8 @@ add_library(BletchMAME_core
 	src/audittask.h
 	src/buildversion.cpp
 	src/buildversion.h
+	src/hash.cpp
+	src/hash.h
 	src/iconloader.cpp
 	src/iconloader.h
 	src/info.cpp
@@ -214,7 +216,7 @@ add_executable(BletchMAME_tests
 	src/tests/test.cpp
 	src/tests/test.h
 	src/tests/assetfinder_test.cpp
-	src/tests/audit_test.cpp
+	src/tests/hash_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/info_test.cpp
 	src/tests/listxmlrunner.cpp
