@@ -17,6 +17,7 @@
 #include "auditqueue.h"
 #include "info.h"
 #include "mainpanel.h"
+#include "liveinstancetracker.h"
 #include "prefs.h"
 #include "sessionbehavior.h"
 #include "softwarelist.h"
@@ -169,7 +170,7 @@ private:
 	observable::value<bool>				m_menu_bar_shown;
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
-	LoadingDialog *						m_currentLoadingDialog;
+	LiveInstanceTracker<LoadingDialog>	m_currentLoadingDialog;
 	observable::value<QString>			m_current_recording_movie_filename;
 	observable::unique_subscription		m_watch_subscription;
 	std::function<void(const ChatterEvent &)>	m_on_chatter;

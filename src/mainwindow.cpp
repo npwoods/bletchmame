@@ -694,7 +694,6 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
-	, m_currentLoadingDialog(nullptr)
 {
 	using namespace std::chrono_literals;
 
@@ -1573,9 +1572,9 @@ bool MainWindow::refreshMameInfoDatabase()
 	// and show the dialog
 	{
 		LoadingDialog dlg(*this);
-		m_currentLoadingDialog = &dlg;
+		m_currentLoadingDialog.track(dlg);
+
 		dlg.exec();
-		m_currentLoadingDialog = nullptr;
 		if (dlg.result() != QDialog::DialogCode::Accepted)
 		{
 			task->abort();
