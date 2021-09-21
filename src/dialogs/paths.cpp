@@ -102,7 +102,14 @@ PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 	m_ui->comboBox->setModel(&comboBoxModel);
 
 	// listen to selection changes
-	connect(m_ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &, const QItemSelection &) { updateButtonsEnabled(); });
+	connect(m_ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &, const QItemSelection &)
+	{
+		updateButtonsEnabled();
+	});
+	connect(&model, &QAbstractItemModel::modelReset, this, [this]()
+	{
+		updateButtonsEnabled();
+	});
 	updateButtonsEnabled();
 }
 
@@ -159,10 +166,7 @@ void PathsDialog::on_comboBox_currentIndexChanged(int index)
 
 void PathsDialog::on_browseButton_clicked()
 {
-	QModelIndexList selectedIndexes = m_ui->listView->selectionModel()->selectedIndexes();
-	int item = selectedIndexes.size() == 1
-		? selectedIndexes[0].row()
-		: listModel().pathCount();
+	int item = getSingularSelection();
 	browseForPath(item);
 }
 
@@ -174,7 +178,7 @@ void PathsDialog::on_browseButton_clicked()
 void PathsDialog::on_insertButton_clicked()
 {
 	// identify the correct item to edit
-	int item = m_ui->listView->currentIndex().row();
+	int item = getSingularSelection();
 
 	// if we're not appending, insert an item
 	if (item < listModel().pathCount())
@@ -192,7 +196,16 @@ void PathsDialog::on_insertButton_clicked()
 
 void PathsDialog::on_deleteButton_clicked()
 {
-	listModel().erase(m_ui->listView->currentIndex().row());
+	QModelIndexList selectedIndexes = m_ui->listView->selectionModel()->selectedIndexes();
+	for (const QModelIndex &selectedIndex : selectedIndexes)
+	{
+		// is this a "real" row?
+		if (selectedIndex.row() < listModel().pathCount())
+		{
+			// if so, delete it
+			listModel().erase(selectedIndex.row());
+		}
+	}
 }
 
 
@@ -212,13 +225,53 @@ void PathsDialog::on_listView_activated(const QModelIndex &index)
 
 void PathsDialog::updateButtonsEnabled()
 {	
-	std::optional<int> selectedItem = m_ui->listView->selectionModel()->hasSelection()
-		? m_ui->listView->selectionModel()->selectedRows()[0].row()
-		: std::optional<int>();
-	bool isSelectingPath = selectedItem.has_value() && selectedItem.value() < listModel().pathCount();
+	// get the selection
+	QModelIndexList selectedIndexes = m_ui->listView->selectionModel()->selectedIndexes();
+	int selectedCount = selectedIndexes.count();
 
-	m_ui->insertButton->setEnabled(listModel().isExpandable());
-	m_ui->deleteButton->setEnabled(listModel().isExpandable() && isSelectingPath);
+	// are we selecting any bonafide paths?
+	bool selectedAnyPaths = false;
+	for (const QModelIndex &selectedIndex : selectedIndexes)
+	{
+		// only real paths count
+		if (selectedIndex.row() < listModel().pathCount())
+		{
+			selectedAnyPaths = true;
+			break;
+		}
+	}
+
+	// set the buttons accordingly
+	m_ui->browseButton->setEnabled(selectedCount <= 1);
+	m_ui->insertButton->setEnabled(selectedCount <= 1 && (listModel().isExpandable() || listModel().pathCount() == 0));
+	m_ui->deleteButton->setEnabled(selectedAnyPaths);
+}
+
+
+//-------------------------------------------------
+//  getSingularSelection - identify the "one"
+//	selected item, or the final ghost element if
+//	there is none
+//-------------------------------------------------
+
+int PathsDialog::getSingularSelection() const
+{
+	int selectedItem;
+	if (listModel().isExpandable())
+	{
+		// if we're expandable, we choose the selection only if there is just one; otherwise
+		// use the ghost append item
+		QModelIndexList selectedIndexes = m_ui->listView->selectionModel()->selectedIndexes();
+		selectedItem = selectedIndexes.count() == 1
+			? selectedIndexes[0].row()
+			: listModel().pathCount();
+	}
+	else
+	{
+		// non expandable, we're always selecting zero
+		selectedItem = 0;
+	}
+	return selectedItem;
 }
 
 
@@ -391,6 +444,16 @@ QString PathsDialog::browseForPathDialog(QWidget &parent, Preferences::global_pa
 PathsDialog::PathListModel &PathsDialog::listModel()
 {
 	return *dynamic_cast<PathListModel *>(m_ui->listView->model());
+}
+
+
+//-------------------------------------------------
+//  listModel
+//-------------------------------------------------
+
+const PathsDialog::PathListModel &PathsDialog::listModel() const
+{
+	return *dynamic_cast<const PathListModel *>(m_ui->listView->model());
 }
 
 

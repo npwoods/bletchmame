@@ -64,6 +64,8 @@ private:
 	Preferences::global_path_type getCurrentPath() const;
 	bool browseForPath(int item);
 	PathListModel &listModel();
+	const PathListModel &listModel() const;
+	int getSingularSelection() const;
 
 	// static methods
 	static QStringList buildComboBoxStrings();
