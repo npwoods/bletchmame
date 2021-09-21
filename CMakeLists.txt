@@ -192,6 +192,8 @@ add_library(BletchMAME_core
 	src/dialogs/paths.cpp
 	src/dialogs/paths.h
 	src/dialogs/paths.ui
+	src/dialogs/pathslistviewmodel.cpp
+	src/dialogs/pathslistviewmodel.h
 	src/dialogs/switches.cpp
 	src/dialogs/switches.h
 	${TS_FILES}
@@ -240,6 +242,7 @@ add_executable(BletchMAME_tests
 	src/tests/dialogs/confdevmodel_test.cpp
 	src/tests/dialogs/inputs_test.cpp
 	src/tests/dialogs/paths_test.cpp
+	src/tests/dialogs/pathslistviewmodel_test.cpp
 	src/tests/resources.qrc
 	src/resources.qrc
 )
