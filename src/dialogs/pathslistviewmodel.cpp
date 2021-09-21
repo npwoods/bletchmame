@@ -70,7 +70,7 @@ std::optional<int> PathsListViewModel::getBrowseTargetForSelection(const QModelI
 	{
 	case 0:
 		if (m_isMulti || (m_entries.size() == 0))
-			result = m_entries.size();
+			result = util::safe_static_cast<int>(m_entries.size());
 		break;
 
 	case 1:
@@ -96,7 +96,7 @@ std::optional<int> PathsListViewModel::getInsertTargetForSelection(const QModelI
 	{
 	case 0:
 		if (m_isMulti || (m_entries.size() == 0))
-			result = m_entries.size();
+			result = util::safe_static_cast<int>(m_entries.size());
 		break;
 
 	case 1:
