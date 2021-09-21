@@ -23,6 +23,9 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class PathsDialog; }
 QT_END_NAMESPACE
 
+class PathsListViewModel;
+
+
 // ======================> PathsDialog
 
 class PathsDialog : public QDialog
@@ -46,8 +49,6 @@ private slots:
 	void on_listView_activated(const QModelIndex &index);
 
 private:
-	class PathListModel;
-
 	static const size_t PATH_COUNT = util::enum_count<Preferences::global_path_type>();
 	static const QStringList s_combo_box_strings;
 
@@ -63,13 +64,14 @@ private:
 	void updateButtonsEnabled();
 	Preferences::global_path_type getCurrentPath() const;
 	bool browseForPath(int item);
-	PathListModel &listModel();
-	const PathListModel &listModel() const;
-	int getSingularSelection() const;
+	PathsListViewModel &listModel();
+	const PathsListViewModel &listModel() const;
+	bool canonicalizeAndValidate(QString &path);
 
 	// static methods
 	static QStringList buildComboBoxStrings();
-	static bool isDirPathType(Preferences::global_path_type type);
+	static QStringList splitPaths(const QString &paths);
+	static QString joinPaths(const QStringList &pathList);
 };
 
 
