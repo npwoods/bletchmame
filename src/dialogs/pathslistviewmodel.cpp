@@ -39,7 +39,7 @@ void PathsListViewModel::setPaths(QStringList &&paths, bool isMulti)
 	for (QString &path : paths)
 	{
 		if (m_isMulti || m_entries.size() == 0)
-			internalSetPath(m_entries.size(), std::move(path));
+			internalSetPath(util::safe_static_cast<int>(m_entries.size()), std::move(path));
 	}
 
 	endResetModel();
