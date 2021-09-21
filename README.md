@@ -11,7 +11,10 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.9 (TBD)
 	- Added experimental MAMEUI-style media auditing capabilities
 	- When refreshing the MAME Info Database (-listxml handling), names and descriptions of machines will be displayed
-	- The Paths Dialog will highlight file paths for snapshots and icons that are not valid archives in red
+	- Various enhancements to the Paths Dialog
+		- Highlighting file paths for snapshots and icons that are not valid archives in red
+		- Multi selection of paths is now supported
+		- Minor bug fixes to the logic that updates the status of the Browse/Insert/Delete buttons
 	- Improving display of icon on the machine list on high resolution displays
 	- Fixed a bug that caused column sorts to not be honored on startup
 	- Fixed a bug that caused newly created profiles to not get selected when created
