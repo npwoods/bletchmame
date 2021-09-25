@@ -27,6 +27,7 @@
 #include "tableviewmanager.h"
 #include "utility.h"
 #include "ui_mainpanel.h"
+#include "dialogs/audit.h"
 #include "dialogs/choosesw.h"
 #include "dialogs/newcustomfolder.h"
 
@@ -807,15 +808,21 @@ void MainPanel::iterateItemModelIndexes(QAbstractItemModel &model, const std::fu
 
 void MainPanel::manualAudit(const info::machine &machine)
 {
-	// prepare an audit
-	Audit audit;
-	audit.addMediaForMachine(m_prefs, machine);
+	// set up the audit task
+	AuditTask::ptr auditTask = std::make_shared<AuditTask>(true, -1);
+	const Audit &audit = auditTask->addMachineAudit(m_prefs, machine);
 
-	// run the audit
-	AuditStatus status = audit.run();
+	// get the icon for this machine
+	const QPixmap &pixmap = m_iconLoader.getIcon(machine, AuditStatus::Found);
 
-	// and record the status
-	setMachineAuditStatus(machine.name(), status);
+	// set up the dialog
+	AuditDialog auditDialog(audit, machine.name(), machine.description(), pixmap);
+
+	// kick off the audit dialog process (keep a copy of the auditTask here)
+	m_host.auditDialogStarted(auditDialog, AuditTask::ptr(auditTask));
+
+	// and run the dialog
+	auditDialog.exec();
 }
 
 

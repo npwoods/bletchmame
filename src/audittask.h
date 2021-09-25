@@ -60,6 +60,25 @@ private:
 };
 
 
+// ======================> AuditSingleMediaEvent
+
+class AuditSingleMediaEvent : public QEvent
+{
+public:
+	AuditSingleMediaEvent(int entryIndex, Audit::Verdict verdict);
+	static QEvent::Type eventId() { return s_eventId; }
+
+	// accessors
+	int entryIndex() const { return m_entryIndex; }
+	const Audit::Verdict &verdict() const { return m_verdict; }
+
+private:
+	static QEvent::Type	s_eventId;
+	int					m_entryIndex;
+	Audit::Verdict		m_verdict;
+};
+
+
 // ======================> AuditTask
 
 class AuditTask : public Task
@@ -68,10 +87,10 @@ public:
 	typedef std::shared_ptr<AuditTask> ptr;
 
 	// ctor
-	AuditTask(int cookie);
+	AuditTask(bool reportSingleMedia, int cookie);
 
 	// methods
-	void addMachineAudit(const Preferences &prefs, const info::machine &machine);
+	const Audit &addMachineAudit(const Preferences &prefs, const info::machine &machine);
 
 protected:
 	// virtuals
@@ -85,6 +104,7 @@ private:
 	};
 
 	std::vector<Entry>	m_entries;
+	bool				m_reportSingleMedia;
 	int					m_cookie;
 };
 

@@ -95,7 +95,7 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 AuditTask::ptr AuditQueue::createAuditTask(const std::vector<Entry> &entries)
 {
 	// create an audit task with a single audit
-	AuditTask::ptr auditTask = std::make_shared<AuditTask>(currentCookie());
+	AuditTask::ptr auditTask = std::make_shared<AuditTask>(false, currentCookie());
 
 	for (const Entry &entry : entries)
 	{

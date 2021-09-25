@@ -26,6 +26,42 @@ class AssetFinder;
 class Audit
 {
 public:
+	// ======================> Audit::Verdict
+
+	class Verdict
+	{
+	public:
+		enum class Type
+		{
+			// successful verdicts
+			Ok,
+			OkNoGoodDump,
+
+			// error conditions
+			NotFound,
+			IncorrectSize,
+			Mismatch
+		};
+
+		// ctor
+		Verdict(Type type, std::uint64_t actualSize, Hash actualHash);
+		Verdict(const Verdict &) = default;
+		Verdict(Verdict &&) = default;
+
+		// accessors
+		Type type() const					{ return m_type; }
+		std::uint64_t actualSize() const	{ return m_actualSize; }
+		const Hash &actualHash() const		{ return m_actualHash; }
+
+	private:
+		Type			m_type;
+		std::uint64_t	m_actualSize;
+		Hash			m_actualHash;
+	};
+
+
+	// ======================> Audit::Entry
+
 	class Entry
 	{
 		friend class Audit;
@@ -52,15 +88,17 @@ public:
 		bool							m_optional;
 	};
 
+	typedef std::function<void(int entryIndex, const Verdict &verdict)> Callback;
+
 	// ctor
 	Audit();
 
 	// accessors
-	const std::vector<Entry> &entries() const { return m_entries; }
+	const std::vector<Entry> &entries() const	{ return m_entries; }
 
 	// methods
 	void addMediaForMachine(const Preferences &prefs, const info::machine &machine);
-	AuditStatus run(const std::function<void(QString &&)> &callback = { }) const;
+	AuditStatus run(const Callback &callback = { }) const;
 
 private:
 	class Session;
@@ -71,7 +109,8 @@ private:
 
 	// methods
 	int setupPaths(const Preferences &prefs, std::optional<info::machine> machine, Preferences::global_path_type pathType);
-	void auditSingleMedia(Session &session, const Entry &entry, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const;
+	void auditSingleMedia(Session &session, int entryIndex, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const;
+	static bool isVerdictSuccessful(Audit::Verdict::Type verdictType);
 };
 
 

@@ -97,6 +97,16 @@ const QPixmap &IconLoader::getIcon(const info::machine &machine)
 		status = AuditStatus::Found;	// auditing disabled?  treat things as if they were found
 
 	// and retrieve the icon
+	return getIcon(machine, status);
+}
+
+
+//-------------------------------------------------
+//  getIcon
+//-------------------------------------------------
+
+const QPixmap &IconLoader::getIcon(const info::machine &machine, AuditStatus status)
+{
 	const QPixmap *result = getIconByName(machine.name(), status);
 	if (!result && machine.clone_of())
 		result = getIconByName(machine.clone_of()->name(), status);

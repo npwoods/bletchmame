@@ -155,6 +155,11 @@ add_library(BletchMAME_core
 	src/dialogs/about.cpp
 	src/dialogs/about.h
 	src/dialogs/about.ui
+	src/dialogs/audit.cpp
+	src/dialogs/audit.h
+	src/dialogs/audit.ui
+	src/dialogs/audititemmodel.cpp
+	src/dialogs/audititemmodel.h
 	src/dialogs/cheats.cpp
 	src/dialogs/cheats.h
 	src/dialogs/cheats.ui

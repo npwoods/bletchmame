@@ -18,17 +18,17 @@ class Audit::Session
 {
 public:
 	// ctor
-	Session(const std::function<void(QString &&)> &callback);
+	Session(const Callback &callback);
 
 	// accessors
 	AuditStatus status() const { return m_status; }
 
 	// methods
-	void message(AuditStatus newStatus, QString &&message);
+	void message(AuditStatus newStatus, int entryIndex, const Verdict &verdict);
 
 private:
-	const std::function<void(QString &&)> &	m_callback;
-	AuditStatus								m_status;
+	const Callback &	m_callback;
+	AuditStatus				m_status;
 };
 
 
@@ -105,14 +105,14 @@ int Audit::setupPaths(const Preferences &prefs, std::optional<info::machine> mac
 //  run
 //-------------------------------------------------
 
-AuditStatus Audit::run(const std::function<void(QString &&)> &callback) const
+AuditStatus Audit::run(const Callback &callback) const
 {
 	Session session(callback);
 	std::vector<std::unique_ptr<AssetFinder>> assetFinders;
 
 	// loop through all entries
-	for (const Entry &entry : m_entries)
-		auditSingleMedia(session, entry, assetFinders);
+	for (int i = 0; i < m_entries.size(); i++)
+		auditSingleMedia(session, i, assetFinders);
 
 	return session.status();
 }
@@ -122,8 +122,11 @@ AuditStatus Audit::run(const std::function<void(QString &&)> &callback) const
 //  auditSingleMedia
 //-------------------------------------------------
 
-void Audit::auditSingleMedia(Session &session, const Entry &entry, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const
+void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const
 {
+	// find the entry
+	const Entry &entry = m_entries[entryIndex];
+
 	// ensure that an assetFinder is available
 	if (entry.pathsPosition() >= assetFinders.size())
 	{
@@ -142,41 +145,101 @@ void Audit::auditSingleMedia(Session &session, const Entry &entry, std::vector<s
 	// try to find the asset
 	std::unique_ptr<QIODevice> stream = assetFinder.findAsset(entry.name());
 
-	// do we have anything at all
+	// get critical information
+	std::uint64_t actualSize;
+	Hash actualHash;
+
+	// and time to get a verdict
+	Verdict::Type verdictType;
 	if (!stream)
 	{
-		session.message(AuditStatus::Missing, QString("%1: NOT FOUND").arg(entry.name()));
-		return;
+		// this entry was not found at all
+		verdictType = Verdict::Type::NotFound;
+		actualSize = 0;
 	}
-
-	// does the size match?
-	if (entry.expectedSize() && stream->size() != entry.expectedSize())
+	else
 	{
-		session.message(AuditStatus::Missing, QString("%1: INCORRECT LENGTH: %2 bytes").arg(entry.name(), stream->size()));
-		return;
-	}
+		// we have something; process it
+		actualSize = stream->size();
+		actualHash = Hash::calculate(*stream);
 
-	// do we have good dumps?
-	if (entry.dumpStatus() != info::rom::dump_status_t::NODUMP)
-	{
-		// calculate the hash
-		Hash actualHash = Hash::calculate(*stream);
-
-		// get a hash for comparison purposes
-		Hash comparisonHash = actualHash.mask(
-			entry.expectedHash().crc32().has_value(),
-			entry.expectedHash().sha1().has_value());
-
-		// do they match?
-		if (entry.expectedHash() != comparisonHash)
+		if (entry.expectedSize() && actualSize != entry.expectedSize())
 		{
-			QString msg = QString("%1 WRONG CHECKSUMS\nEXPECTED %2\nFOUND %3").arg(
-				entry.name(),
-				entry.expectedHash().toString(),
-				actualHash.toString());
-			session.message(entry.optional() ? AuditStatus::MissingOptional : AuditStatus::Missing, std::move(msg));
+			// this entry has the wrong tisze
+			verdictType = Verdict::Type::IncorrectSize;
+		}
+		else if (entry.dumpStatus() == info::rom::dump_status_t::NODUMP)
+		{
+			// this entry has no good dump
+			verdictType = Verdict::Type::OkNoGoodDump;
+		}
+		else
+		{
+			// get a hash for comparison purposes
+			Hash comparisonHash = actualHash.mask(
+				entry.expectedHash().crc32().has_value(),
+				entry.expectedHash().sha1().has_value());
+
+			// do they match?
+			verdictType = entry.expectedHash() == comparisonHash
+				? Verdict::Type::Ok
+				: Verdict::Type::Mismatch;
 		}
 	}
+
+	// build the actual verdict
+	Verdict verdict(verdictType, actualSize, actualHash);
+
+	// determine the audit status
+	AuditStatus status;
+	if (isVerdictSuccessful(verdictType))
+		status = AuditStatus::Found;
+	else if (entry.optional())
+		status = AuditStatus::MissingOptional;
+	else
+		status = AuditStatus::Missing;
+
+	// and report this stuff
+	session.message(status, entryIndex, verdict);
+}
+
+
+//-------------------------------------------------
+//  isVerdictSuccessful
+//-------------------------------------------------
+
+bool Audit::isVerdictSuccessful(Audit::Verdict::Type verdictType)
+{
+	bool result;
+	switch (verdictType)
+	{
+	case Audit::Verdict::Type::Ok:
+	case Audit::Verdict::Type::OkNoGoodDump:
+		result = true;
+		break;
+
+	case Audit::Verdict::Type::NotFound:
+	case Audit::Verdict::Type::IncorrectSize:
+	case Audit::Verdict::Type::Mismatch:
+		result = false;
+		break;
+
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  Verdict ctor
+//-------------------------------------------------
+
+Audit::Verdict::Verdict(Type type, std::uint64_t actualSize, Hash actualHash)
+	: m_type(type)
+	, m_actualSize(actualSize)
+	, m_actualHash(actualHash)
+{
 }
 
 
@@ -199,7 +262,7 @@ Audit::Entry::Entry(const QString &name, int pathsPosition, info::rom::dump_stat
 //  Session ctor
 //-------------------------------------------------
 
-Audit::Session::Session(const std::function<void(QString &&)> &callback)
+Audit::Session::Session(const Callback &callback)
 	: m_callback(callback)
 	, m_status(AuditStatus::Found)
 {
@@ -210,10 +273,10 @@ Audit::Session::Session(const std::function<void(QString &&)> &callback)
 //  Session::message
 //-------------------------------------------------
 
-void Audit::Session::message(AuditStatus newStatus, QString &&message)
+void Audit::Session::message(AuditStatus newStatus, int entryIndex, const Verdict &verdict)
 {
 	if (newStatus > m_status)
 		m_status = newStatus;
 	if (m_callback)
-		m_callback(std::move(message));
+		m_callback(entryIndex, verdict);
 }
