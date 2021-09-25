@@ -184,6 +184,19 @@ static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::basi
 
 
 //-------------------------------------------------
+//  binaryWipe
+//-------------------------------------------------
+
+template<class T>
+static void binaryWipe(T &x)
+{
+	// this is to ensure that the binaries that info DB built are deterministic; in
+	// practice all bytes in the structure should be replaced except for padding
+	memset(&x, 0xCD, sizeof(x));
+}
+
+
+//-------------------------------------------------
 //  process_xml()
 //-------------------------------------------------
 
@@ -244,6 +257,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::machine &machine = m_machines.emplace_back();
+		binaryWipe(machine);
 		machine.m_runnable				= encodeBool(attributes.get<bool>("runnable").value_or(true));
 		machine.m_name_strindex			= m_strings.get(attributes, "name");
 		machine.m_sourcefile_strindex	= m_strings.get(attributes, "sourcefile");
@@ -303,6 +317,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "biosset" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::biosset &biosset = m_biossets.emplace_back();
+		binaryWipe(biosset);
 		biosset.m_name_strindex				= m_strings.get(attributes, "name");
 		biosset.m_description_strindex		= m_strings.get(attributes, "description");
 		biosset.m_default					= encodeBool(attributes.get<bool>("default").value_or(false));
@@ -311,6 +326,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "rom" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::rom &rom = m_roms.emplace_back();
+		binaryWipe(rom);
 		rom.m_name_strindex					= m_strings.get(attributes, "name");
 		rom.m_bios_strindex					= m_strings.get(attributes, "bios");
 		rom.m_size							= attributes.get<std::uint32_t>("size").value_or(0);
@@ -329,6 +345,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		std::string data;
 
 		info::binaries::disk &disk = m_disks.emplace_back();
+		binaryWipe(disk);
 		disk.m_name_strindex				= m_strings.get(attributes, "name");
 		binaryFromHex(disk.m_sha1,			  attributes.get<std::u8string_view>("sha1"));
 		disk.m_merge_strindex				= m_strings.get(attributes, "merge");
@@ -342,6 +359,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "feature" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::feature &feature = m_features.emplace_back();
+		binaryWipe(feature);
 		feature.m_type		= encodeEnum(attributes.get<info::feature::type_t>		("type", s_feature_type_parser));
 		feature.m_status	= encodeEnum(attributes.get<info::feature::quality_t>	("status", s_feature_quality_parser));
 		feature.m_overall	= encodeEnum(attributes.get<info::feature::quality_t>	("overall", s_feature_quality_parser));
@@ -350,6 +368,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "chip" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::chip &chip = m_chips.emplace_back();
+		binaryWipe(chip);
 		chip.m_type				= encodeEnum(attributes.get<info::chip::type_t>("type", s_chip_type_parser));
 		chip.m_name_strindex	= m_strings.get(attributes, "name");
 		chip.m_tag_strindex		= m_strings.get(attributes, "tag");
@@ -360,6 +379,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "display" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::display &display = m_displays.emplace_back();
+		binaryWipe(display);
 		display.m_tag_strindex	= m_strings.get(attributes, "tag");
 		display.m_width			= attributes.get<std::uint32_t>("width").value_or(~0);
 		display.m_height		= attributes.get<std::uint32_t>("height").value_or(~0);
@@ -379,6 +399,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "sample" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::sample &sample = m_samples.emplace_back();
+		binaryWipe(sample);
 		sample.m_name_strindex	= m_strings.get(attributes, "name");
 		util::last(m_machines).m_samples_count++;
 	});
@@ -386,6 +407,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 						 { "mame", "machine", "dipswitch" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::configuration &configuration = m_configurations.emplace_back();
+		binaryWipe(configuration);
 		configuration.m_name_strindex					= m_strings.get(attributes, "name");
 		configuration.m_tag_strindex					= m_strings.get(attributes, "tag");
 		configuration.m_mask							= attributes.get<std::uint32_t>("mask").value_or(0);
@@ -398,6 +420,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 						 { "mame", "machine", "dipswitch", "dipvalue" } }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::configuration_setting &configuration_setting = m_configuration_settings.emplace_back();
+		binaryWipe(configuration_setting);
 		configuration_setting.m_name_strindex		= m_strings.get(attributes, "name");
 		configuration_setting.m_conditions_index	= to_uint32(m_configuration_conditions.size());
 		configuration_setting.m_value				= attributes.get<std::uint32_t>("value").value_or(0);
@@ -409,6 +432,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	{
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = m_configuration_conditions.emplace_back();
+		binaryWipe(configuration_condition);
 		configuration_condition.m_tag_strindex			= m_strings.get(attributes, "tag");
 		configuration_condition.m_relation				= encodeEnum(attributes.get<info::configuration_condition::relation_t>("relation", s_relation_parser));
 		configuration_condition.m_mask					= attributes.get<std::uint32_t>("mask").value_or(0);
@@ -417,6 +441,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::device &device = m_devices.emplace_back();
+		binaryWipe(device);
 		device.m_type_strindex			= m_strings.get(attributes, "type");
 		device.m_tag_strindex			= m_strings.get(attributes, "tag");
 		device.m_interface_strindex		= m_strings.get(attributes, "interface");
@@ -459,6 +484,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "slot" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::slot &slot = m_slots.emplace_back();
+		binaryWipe(slot);
 		slot.m_name_strindex					= m_strings.get(attributes, "name");
 		slot.m_slot_options_index				= to_uint32(m_slot_options.size());
 		slot.m_slot_options_count				= 0;
@@ -467,6 +493,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "slot", "slotoption" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::slot_option &slot_option = m_slot_options.emplace_back();
+		binaryWipe(slot_option);
 		slot_option.m_name_strindex				= m_strings.get(attributes, "name");
 		slot_option.m_devname_strindex			= m_strings.get(attributes, "devname");
 		slot_option.m_is_default				= encodeBool(attributes.get<bool>("default").value_or(false));
@@ -475,6 +502,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::software_list &software_list = m_software_lists.emplace_back();
+		binaryWipe(software_list);
 		software_list.m_name_strindex			= m_strings.get(attributes, "name");
 		software_list.m_filter_strindex			= m_strings.get(attributes, "filter");
 		software_list.m_status					= encodeEnum(attributes.get<info::software_list::status_type>("status", s_status_parser));
@@ -483,6 +511,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
 	{
 		info::binaries::ram_option &ram_option = m_ram_options.emplace_back();
+		binaryWipe(ram_option);
 		ram_option.m_name_strindex				= m_strings.get(attributes, "name");
 		ram_option.m_is_default					= encodeBool(attributes.get<bool>("default").value_or(false));
 		ram_option.m_value						= 0;
