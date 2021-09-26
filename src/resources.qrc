@@ -8,6 +8,7 @@
         <file>resources/foldopen.ico</file>
         <file>resources/harddisk.ico</file>
         <file>resources/manufact.ico</file>
+        <file>resources/rom.ico</file>
         <file>resources/rom_missing.ico</file>
         <file>resources/rom_missing_optional.ico</file>
         <file>resources/rom_unknown.ico</file>

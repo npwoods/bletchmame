@@ -820,7 +820,7 @@ void MainPanel::manualAudit(const info::machine &machine)
 	QPixmap pixmap = m_iconLoader.getIcon(machine, false);
 
 	// set up the dialog
-	AuditDialog auditDialog(audit, machine.name(), machine.description(), pixmap);
+	AuditDialog auditDialog(audit, machine.name(), machine.description(), pixmap, m_iconLoader);
 
 	// kick off the audit dialog process (keep a copy of the auditTask here)
 	m_host.auditDialogStarted(auditDialog, AuditTask::ptr(auditTask));

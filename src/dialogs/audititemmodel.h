@@ -14,6 +14,12 @@
 #include "../audit.h"
 
 
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
+class IconLoader;
+
 // ======================> AuditItemModel
 
 class AuditItemModel : public QAbstractItemModel
@@ -30,7 +36,7 @@ public:
 	};
 
 	// ctor
-	AuditItemModel(const Audit &audit, QObject *parent = nullptr);
+	AuditItemModel(const Audit &audit, IconLoader &iconLoader, QObject *parent = nullptr);
 
 	// methods
 	void singleMediaAudited(int entryIndex, const Audit::Verdict &verdict);
@@ -45,7 +51,12 @@ public:
 
 private:
 	const Audit &								m_audit;
+	IconLoader &								m_iconLoader;
 	std::vector<std::optional<Audit::Verdict>>	m_verdicts;
+
+	// statics
+	static std::u8string_view iconFromAuditEntryType(Audit::Entry::Type entryType);
+	static AuditStatus auditStatusFromVerdict(const std::optional<Audit::Verdict> &verdict, bool optional);
 };
 
 
