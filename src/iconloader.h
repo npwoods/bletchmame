@@ -17,24 +17,18 @@
 #include <memory>
 #include <unordered_map>
 
-#include "info.h"
 #include "assetfinder.h"
-#include "audit.h"
+#include "info.h"
+#include "prefs.h"
 
-class Preferences;
 
-// ======================> IIconLoader
-
-class IIconLoader
-{
-public:
-	virtual const QPixmap &getIcon(const info::machine &machine) = 0;
-};
-
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
 
 // ======================> IconLoader
 
-class IconLoader : public IIconLoader
+class IconLoader
 {
 public:
 	// ctor / dtor
@@ -43,35 +37,32 @@ public:
 
 	// methods
 	void refreshIcons();
-	virtual const QPixmap &getIcon(const info::machine &machine) final;
-	const QPixmap &getIcon(const info::machine &machine, AuditStatus status);
+	std::optional<QPixmap> getIcon(std::u8string_view iconName, std::u8string_view adornment = { });
+	QPixmap getIcon(const info::machine &machine, std::optional<bool> showAuditAdornment = false);
 
 private:
+	typedef std::tuple<std::u8string, std::u8string> IconMapKey;
+
 	struct IconMapHash
 	{
-		std::size_t operator()(const std::tuple<QString, AuditStatus> &x) const noexcept;
+		std::size_t operator()(const IconMapKey &x) const noexcept;
 	};
 
 	struct IconMapEquals
 	{
-		bool operator()(const std::tuple<QString, AuditStatus> &lhs, const std::tuple<QString, AuditStatus> &rhs) const;
+		bool operator()(const IconMapKey &lhs, const IconMapKey &rhs) const;
 	};
 
-	typedef std::unordered_map<std::tuple<QString, AuditStatus>, std::optional<QPixmap>, IconMapHash, IconMapEquals> IconMap;
+	typedef std::unordered_map<IconMapKey, std::optional<QPixmap>, IconMapHash, IconMapEquals> IconMap;
 	
-	Preferences &	m_prefs;
-	IconMap			m_icon_map;
-	AssetFinder		m_assetFinder;
-	QPixmap			m_unknownRomStatusIcon;
-	QPixmap			m_blankIcon;
-	QPixmap			m_missingRomIcon;
-	QPixmap			m_optionalMissingRomIcon;
+	const Preferences &	m_prefs;
+	IconMap				m_iconMap;
+	AssetFinder			m_assetFinder;
+	QPixmap				m_blankIcon;
 
-	const QPixmap &defaultIcon(AuditStatus status) const;
-	const QPixmap *getIconByName(const QString &machineName, AuditStatus status);
-	std::optional<QPixmap> loadIcon(const QByteArray &byteArray, AuditStatus status);
-	static void loadBuiltinIcon(QPixmap &pixmap, const QString &fileName);
-	static void adornIcon(QPixmap &basePixmap, const QPixmap &ornamentPixmap);
+	std::optional<QPixmap> loadIcon(std::u8string_view iconName);
+	static void adornIcon(QPixmap &basePixmap, const QPixmap &adornmentPixmap);
+	static std::u8string_view getAdornmentForAuditStatus(AuditStatus machineAuditStatus);
 };
 
 

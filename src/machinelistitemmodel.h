@@ -13,8 +13,12 @@
 
 #include "info.h"
 
-class IIconLoader;
 
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
+class IconLoader;
 
 // ======================> MachineListItemModel
 
@@ -31,7 +35,7 @@ public:
 		Max = Manufacturer
 	};
 
-	MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback);
+	MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader *iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback);
 
 	// methods
 	info::machine machineFromIndex(const QModelIndex &index) const;
@@ -48,7 +52,7 @@ public:
 
 private:
 	info::database &									m_infoDb;
-	IIconLoader &										m_iconLoader;
+	IconLoader *										m_iconLoader;
 	std::function<bool(const info::machine &machine)>	m_machineFilter;
 	std::vector<int>									m_indexes;
 	std::function<void(info::machine)>					m_machineIconAccessedCallback;

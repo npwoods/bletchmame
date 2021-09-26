@@ -23,6 +23,9 @@ namespace
 		void enum_parser();
 		void return_value_substitutor();
 
+		void toQString();
+		void toU8String();
+
 	private:
 		template<typename TStr>
 		void string_split()
@@ -127,6 +130,30 @@ void Test::binaryFromHex()
 	QVERIFY(buffer[7] == 0xEF);
 	QVERIFY(buffer[8] == 0x12);
 	QVERIFY(buffer[9] == 0x34);
+}
+
+
+//-------------------------------------------------
+//  toQString
+//-------------------------------------------------
+
+void Test::toQString()
+{
+	std::u8string str = u8"Hey \u5582";
+	QString qstr = util::toQString(str);
+	QVERIFY(qstr == QString::fromWCharArray(L"Hey \u5582"));
+}
+
+
+//-------------------------------------------------
+//  toU8String
+//-------------------------------------------------
+
+void Test::toU8String()
+{
+	QString qstr = QString::fromWCharArray(L"Hey \u5582");
+	std::u8string str = util::toU8String(qstr);
+	QVERIFY(str == u8"Hey \u5582");
 }
 
 
