@@ -272,6 +272,17 @@ inline QString toQString(std::u8string_view s)
 
 
 //-------------------------------------------------
+//  toU8String
+//-------------------------------------------------
+
+inline std::u8string toU8String(const QString &s)
+{
+	QByteArray byteArray = s.toUtf8();
+	return std::u8string((const char8_t *) byteArray.data(), (size_t) byteArray.size());
+}
+
+
+//-------------------------------------------------
 //  string_split
 //-------------------------------------------------
 
