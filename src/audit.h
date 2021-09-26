@@ -65,13 +65,22 @@ public:
 	class Entry
 	{
 		friend class Audit;
+
 	public:
+		enum class Type
+		{
+			Rom,
+			Disk,
+			Sample
+		};
+
 		// ctor
-		Entry(const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional);
+		Entry(Type type, const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional);
 		Entry(const Entry &) = default;
 		Entry(Entry &&) = default;
 
 		// accessors
+		Type type() const									{ return m_type; }
 		const QString &name() const							{ return m_name; }
 		int pathsPosition() const							{ return m_pathsPosition; }
 		info::rom::dump_status_t dumpStatus() const			{ return m_dumpStatus; }
@@ -80,6 +89,7 @@ public:
 		bool optional() const								{ return m_optional; }
 
 	private:
+		Type							m_type;
 		QString							m_name;
 		int								m_pathsPosition;
 		info::rom::dump_status_t		m_dumpStatus;
