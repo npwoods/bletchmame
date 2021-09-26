@@ -33,11 +33,6 @@ IconLoader::IconLoader(Preferences &prefs)
 {
 	// QPixmap starts with uninitialized data; make "blank" be blank
 	m_blankIcon.fill(Qt::transparent);
-
-	// load the other icons
-	loadBuiltinIcon(m_missingRomIcon,			":/resources/roms_missing.ico");
-	loadBuiltinIcon(m_optionalMissingRomIcon,	":/resources/roms_missing_optional.ico");
-	loadBuiltinIcon(m_unknownRomStatusIcon,		":/resources/roms_unknown.ico");
 }
 
 
@@ -51,29 +46,13 @@ IconLoader::~IconLoader()
 
 
 //-------------------------------------------------
-//  loadBuiltinIcon
-//-------------------------------------------------
-
-void IconLoader::loadBuiltinIcon(QPixmap &pixmap, const QString &fileName)
-{
-	// load the icon
-	bool success = pixmap.load(fileName);
-	setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
-
-	// treat failure to load as a catastrophic error; its probably a build problem
-	if (!success)
-		throw false;
-}
-
-
-//-------------------------------------------------
 //  refreshIcons
 //-------------------------------------------------
 
 void IconLoader::refreshIcons()
 {
 	// clear out the icon map
-	m_icon_map.clear();
+	m_iconMap.clear();
 
 	// set up the asset finder
 	m_assetFinder.setPaths(m_prefs, Preferences::global_path_type::ICONS);
@@ -84,90 +63,55 @@ void IconLoader::refreshIcons()
 //  getIcon
 //-------------------------------------------------
 
-const QPixmap &IconLoader::getIcon(const info::machine &machine)
+std::optional<QPixmap> IconLoader::getIcon(std::u8string_view iconName, std::u8string_view adornment)
 {
-	// get the AuditStatus for display purposes
-	AuditStatus status;
-	if (m_prefs.getAuditingState() != Preferences::AuditingState::Disabled)
-		status = m_prefs.getMachineAuditStatus(machine.name());
-	else
-		status = AuditStatus::Found;	// auditing disabled?  treat things as if they were found
+	std::optional<QPixmap> result;
 
-	// and retrieve the icon
-	return getIcon(machine, status);
-}
-
-
-//-------------------------------------------------
-//  getIcon
-//-------------------------------------------------
-
-const QPixmap &IconLoader::getIcon(const info::machine &machine, AuditStatus status)
-{
-	const QPixmap *result = getIconByName(machine.name(), status);
-	if (!result && machine.clone_of())
-		result = getIconByName(machine.clone_of()->name(), status);
-	return result ? *result : defaultIcon(status);
-}
-
-
-//-------------------------------------------------
-//  defaultIcon
-//-------------------------------------------------
-
-const QPixmap &IconLoader::defaultIcon(AuditStatus status) const
-{
-	switch (status)
-	{
-	case AuditStatus::Unknown:
-		return m_unknownRomStatusIcon;
-	case AuditStatus::Found:
-		return m_blankIcon;
-	case AuditStatus::Missing:
-		return m_missingRomIcon;
-	case AuditStatus::MissingOptional:
-		return m_optionalMissingRomIcon;
-	default:
-		throw false;
-	}
-}
-
-
-//-------------------------------------------------
-//  getIconByName
-//-------------------------------------------------
-
-const QPixmap *IconLoader::getIconByName(const QString &machineName, AuditStatus status)
-{
-	// set up a key that captures both the machine name and the status
-	auto key = std::make_tuple(machineName, status);
+	// set up a key that captures both the icon name and adornment
+	auto key = std::make_tuple(std::u8string(iconName), std::u8string(adornment));
 
 	// look up the result in the icon map
-	auto iter = m_icon_map.find(key);
+	auto iter = m_iconMap.find(key);
 
-	// did we come up empty?
-	if (iter == m_icon_map.end())
+	// did we find something?
+	if (iter != m_iconMap.end())
 	{
-		// we have not tried to load this icon - first determine the real file name
-		QString iconFileName = machineName + ".ico";
-
-		// and try to load the icon
-		std::optional<QByteArray> byteArray = m_assetFinder.findAssetBytes(iconFileName);
-		if (byteArray)
-		{
-			// we've found an entry - try to load the icon; note that while this can
-			// fail, we want to memoize the failure
-			std::optional<QPixmap> icon = loadIcon(*byteArray, status);
-
-			// record the result in the icon map
-			iter = m_icon_map.emplace(std::move(key), std::move(icon)).first;
-		}
+		// we found something
+		result = iter->second;
 	}
+	else if (iconName.empty() && adornment.empty())
+	{
+		// blank icon; this is easy
+		result = m_blankIcon;
+	}
+	else
+	{
+		// we have to load something that ends up in the map
+		if (adornment.empty())
+		{
+			// load this unadorned icon
+			result = loadIcon(iconName);
+		}
+		else
+		{
+			// this is an icon requiring adornment; first try to get the base icon because
+			// that is more likely to fail
+			std::optional<QPixmap> baseIcon = getIcon(iconName);
+			if (baseIcon)
+			{
+				std::optional<QPixmap> adornmentIcon = getIcon(adornment);
+				if (adornmentIcon)
+				{
+					result = *baseIcon;
+					adornIcon(*result, *adornmentIcon);
+				}
+			}
+		}
 
-	// if we found (or added) something, return it
-	const QPixmap *result = (iter != m_icon_map.end() && iter->second.has_value())
-		? &*iter->second
-		: nullptr;
+		// be slightly careful regarding what we put into the map
+		if (result || adornment.empty())
+			m_iconMap.emplace(std::move(key), result);
+	}
 	return result;
 }
 
@@ -176,23 +120,42 @@ const QPixmap *IconLoader::getIconByName(const QString &machineName, AuditStatus
 //  loadIcon
 //-------------------------------------------------
 
-std::optional<QPixmap> IconLoader::loadIcon(const QByteArray &byteArray, AuditStatus status)
+std::optional<QPixmap> IconLoader::loadIcon(std::u8string_view iconName)
 {
-	std::optional<QPixmap> result;
+	// set up the filename
+	QString iconFileName = util::toQString(iconName);
+	if (!iconFileName.endsWith(".ico"))
+		iconFileName += ".ico";
 
-	// load the icon into a file
-	QPixmap pixmap;
-	if (pixmap.loadFromData(byteArray))
+	// get the byte array
+	std::optional<QByteArray> byteArray;
+	if (iconName[0] == ':')
 	{
-		// we've load the icon; normalize it
-		setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
+		// it is a resource; we expect this to succeed
+		QFile iconFile(iconFileName);
+		if (!iconFile.open(QIODevice::ReadOnly))
+			throw false;
+		byteArray = iconFile.readAll();
+	}
+	else
+	{
+		// not a resource, use the asset finder
+		byteArray = m_assetFinder.findAssetBytes(iconFileName);
+	}
 
-		// and composite the audit status icon (if appropriate)
-		if (status != AuditStatus::Found)
-			adornIcon(pixmap, defaultIcon(status));
+	// we tried to get a byte array, now try for a pixmap
+	std::optional<QPixmap> result;
+	if (byteArray)
+	{
+		QPixmap pixmap;
+		if (pixmap.loadFromData(*byteArray))
+		{
+			// we've load the icon; normalize it
+			setPixmapDevicePixelRatioToFit(pixmap, ICON_SIZE);
 
-		// and return it
-		result = std::move(pixmap);
+			// and return it
+			result = std::move(pixmap);
+		}
 	}
 	return result;
 }
@@ -220,13 +183,83 @@ void IconLoader::adornIcon(QPixmap &basePixmap, const QPixmap &ornamentPixmap)
 
 
 //-------------------------------------------------
+//  getIcon
+//-------------------------------------------------
+
+QPixmap IconLoader::getIcon(const info::machine &machine, std::optional<bool> showAuditAdornment)
+{
+	using namespace std::literals;
+
+	// do we need to get audit adornment from prefs?
+	bool actualShowAuditAdornment = showAuditAdornment.has_value()
+		? *showAuditAdornment
+		: m_prefs.getAuditingState() != Preferences::AuditingState::Disabled;
+
+	// identify the correct adornment
+	std::u8string_view adornment = actualShowAuditAdornment
+		? getAdornmentForAuditStatus(m_prefs.getMachineAuditStatus(machine.name()))
+		: u8""sv;
+
+	// look up the correct icon
+	std::optional<QPixmap> result;
+	std::optional<info::machine> thisMachine = machine;
+	while (!result && thisMachine)
+	{
+		std::u8string name = util::toU8String(thisMachine->name().toUtf8());
+		result = getIcon(name, adornment);
+		thisMachine = thisMachine->clone_of();
+	}
+
+	// if we still have not got anything, just use the adornment
+	if (!result)
+		result = getIcon(adornment).value();
+
+	return *result;
+}
+
+
+//-------------------------------------------------
+//  getAdornmentForAuditStatus
+//-------------------------------------------------
+
+std::u8string_view IconLoader::getAdornmentForAuditStatus(AuditStatus machineAuditStatus)
+{
+	using namespace std::literals;
+
+	std::u8string_view result;
+	switch (machineAuditStatus)
+	{
+	case AuditStatus::Unknown:
+		result = u8":/resources/roms_unknown.ico"sv;
+		break;
+
+	case AuditStatus::Found:
+		result = u8""sv;
+		break;
+
+	case AuditStatus::Missing:
+		result = u8":/resources/roms_missing.ico"sv;
+		break;
+
+	case AuditStatus::MissingOptional:
+		result = u8":/resources/roms_missing_optional.ico"sv;
+		break;
+
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  IconMapHash::operator()
 //-------------------------------------------------
 
-std::size_t IconLoader::IconMapHash::operator()(const std::tuple<QString, AuditStatus> &x) const noexcept
+std::size_t IconLoader::IconMapHash::operator()(const IconMapKey &x) const noexcept
 {
-	return std::hash<QString>{}(std::get<0>(x))
-		^ std::hash<AuditStatus>{}(std::get<1>(x));
+	return std::hash<std::u8string>{}(std::get<0>(x))
+		^ std::hash<std::u8string>{}(std::get<1>(x));
 }
 
 
@@ -234,7 +267,7 @@ std::size_t IconLoader::IconMapHash::operator()(const std::tuple<QString, AuditS
 //  IconMapEquals::operator()
 //-------------------------------------------------
 
-bool IconLoader::IconMapEquals::operator()(const std::tuple<QString, AuditStatus> &lhs, const std::tuple<QString, AuditStatus> &rhs) const
+bool IconLoader::IconMapEquals::operator()(const IconMapKey &lhs, const IconMapKey &rhs) const
 {
 	return std::get<0>(lhs) == std::get<0>(rhs)
 		&& std::get<1>(lhs) == std::get<1>(rhs);

@@ -11,6 +11,10 @@
 #include "utility.h"
 
 
+//**************************************************************************
+//  IMPLEMENTATION
+//**************************************************************************
+
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
@@ -171,7 +175,7 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 			{
 				// load this icon (assuming we have an icon loader)
 				if (m_iconLoader)
-					result = m_iconLoader->getIcon(machine);
+					result = m_iconLoader->getIcon(machine, std::nullopt);
 
 				// invoke the "accessed" callback, which can trigger an audit when autoauditing
 				if (m_machineIconAccessedCallback)

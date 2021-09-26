@@ -817,7 +817,7 @@ void MainPanel::manualAudit(const info::machine &machine)
 	const Audit &audit = auditTask->addMachineAudit(m_prefs, machine);
 
 	// get the icon for this machine
-	const QPixmap &pixmap = m_iconLoader.getIcon(machine, AuditStatus::Found);
+	QPixmap pixmap = m_iconLoader.getIcon(machine, false);
 
 	// set up the dialog
 	AuditDialog auditDialog(audit, machine.name(), machine.description(), pixmap);
