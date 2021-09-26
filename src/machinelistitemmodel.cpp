@@ -15,7 +15,7 @@
 //  ctor
 //-------------------------------------------------
 
-MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IIconLoader &iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback)
+MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader *iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback)
 	: QAbstractItemModel(parent)
 	, m_infoDb(infoDb)
 	, m_iconLoader(iconLoader)
@@ -169,8 +169,11 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 		case Qt::DecorationRole:
 			if (column == Column::Machine)
 			{
-				result = m_iconLoader.getIcon(machine);
+				// load this icon (assuming we have an icon loader)
+				if (m_iconLoader)
+					result = m_iconLoader->getIcon(machine);
 
+				// invoke the "accessed" callback, which can trigger an audit when autoauditing
 				if (m_machineIconAccessedCallback)
 					m_machineIconAccessedCallback(machine);
 			}

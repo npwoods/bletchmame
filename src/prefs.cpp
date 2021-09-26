@@ -181,8 +181,6 @@ Preferences::Preferences()
 	setGlobalPath(global_path_type::NVRAM, getConfigDirectory(true));
 	setGlobalPath(global_path_type::PLUGINS, getDefaultPluginsDirectory());
 	setGlobalPath(global_path_type::PROFILES, getConfigDirectory(true) + QDir::separator() + QString("profiles"));
-
-    load();
 }
 
 

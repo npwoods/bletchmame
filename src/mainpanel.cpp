@@ -117,11 +117,15 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	m_ui = std::make_unique<Ui::MainPanel>();
 	m_ui->setupUi(this);
 
+	// load preferences and refresh icons
+	m_prefs.load();
+	m_iconLoader.refreshIcons();
+
 	// set up machines view
 	MachineListItemModel &machineListItemModel = *new MachineListItemModel(
 		this,
 		m_infoDb,
-		m_iconLoader,
+		&m_iconLoader,
 		[this](info::machine machine) { m_host.auditIfAppropriate(machine); });
 	TableViewManager::setup(
 		*m_ui->machinesTableView,

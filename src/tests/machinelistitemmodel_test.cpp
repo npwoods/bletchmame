@@ -10,7 +10,6 @@
 
 #include "machinelistitemmodel.h"
 #include "test.h"
-#include "iconloader.h"
 
 namespace
 {
@@ -20,18 +19,6 @@ namespace
 
 	private slots:
 		void general();
-	};
-
-	class MockIconLoader : public IIconLoader
-	{
-	public:
-		virtual const QPixmap &getIcon(const info::machine &machine) override
-		{
-			return m_pixmap;
-		}
-
-	private:
-		QPixmap m_pixmap;
 	};
 }
 
@@ -48,8 +35,7 @@ void Test::general()
 {
 	// create a MachineListItemModel
 	info::database db;
-	MockIconLoader iconLoader;
-	MachineListItemModel model(nullptr, db, iconLoader, { });
+	MachineListItemModel model(nullptr, db, nullptr, { });
 	QVERIFY(model.rowCount(QModelIndex()) == 0);
 
 	// load an info DB

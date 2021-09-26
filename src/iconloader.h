@@ -21,20 +21,16 @@
 #include "assetfinder.h"
 #include "audit.h"
 
+
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
 class Preferences;
-
-// ======================> IIconLoader
-
-class IIconLoader
-{
-public:
-	virtual const QPixmap &getIcon(const info::machine &machine) = 0;
-};
-
 
 // ======================> IconLoader
 
-class IconLoader : public IIconLoader
+class IconLoader
 {
 public:
 	// ctor / dtor
@@ -43,7 +39,7 @@ public:
 
 	// methods
 	void refreshIcons();
-	virtual const QPixmap &getIcon(const info::machine &machine) final;
+	const QPixmap &getIcon(const info::machine &machine);
 	const QPixmap &getIcon(const info::machine &machine, AuditStatus status);
 
 private:

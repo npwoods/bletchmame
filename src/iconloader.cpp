@@ -38,9 +38,6 @@ IconLoader::IconLoader(Preferences &prefs)
 	loadBuiltinIcon(m_missingRomIcon,			":/resources/roms_missing.ico");
 	loadBuiltinIcon(m_optionalMissingRomIcon,	":/resources/roms_missing_optional.ico");
 	loadBuiltinIcon(m_unknownRomStatusIcon,		":/resources/roms_unknown.ico");
-
-	// and refresh
-	refreshIcons();
 }
 
 
