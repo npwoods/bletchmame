@@ -57,15 +57,15 @@ void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &ma
 
 	// audit ROMs
 	for (info::rom rom : machine.roms())
-		m_entries.emplace_back(rom.name(), romsPathsPos, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
+		m_entries.emplace_back(Entry::Type::Rom, rom.name(), romsPathsPos, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
 
 	// audit disks
 	for (info::disk disk : machine.disks())
-		m_entries.emplace_back(disk.name(), romsPathsPos, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
+		m_entries.emplace_back(Entry::Type::Disk, disk.name(), romsPathsPos, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
 
 	// audit samples
 	for (info::sample sample : machine.samples())
-		m_entries.emplace_back(sample.name(), samplesPathsPos, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
+		m_entries.emplace_back(Entry::Type::Sample, sample.name(), samplesPathsPos, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
 }
 
 
@@ -247,8 +247,9 @@ Audit::Verdict::Verdict(Type type, std::uint64_t actualSize, Hash actualHash)
 //  Entry ctor
 //-------------------------------------------------
 
-Audit::Entry::Entry(const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
-	: m_name(name)
+Audit::Entry::Entry(Type type, const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
+	: m_type(type)
+	, m_name(name)
 	, m_pathsPosition(pathsPosition)
 	, m_dumpStatus(dumpStatus)
 	, m_expectedSize(expectedSize)

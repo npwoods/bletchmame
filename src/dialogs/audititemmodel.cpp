@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include "dialogs/audititemmodel.h"
+#include "iconloader.h"
 #include "utility.h"
 
 
@@ -18,9 +19,10 @@
 //  ctor
 //-------------------------------------------------
 
-AuditItemModel::AuditItemModel(const Audit &audit, QObject *parent)
+AuditItemModel::AuditItemModel(const Audit &audit, IconLoader &iconLoader, QObject *parent)
 	: QAbstractItemModel(parent)
 	, m_audit(audit)
+	, m_iconLoader(iconLoader)
 {
 	m_verdicts.resize(audit.entries().size());
 }
@@ -39,6 +41,73 @@ void AuditItemModel::singleMediaAudited(int entryIndex, const Audit::Verdict &ve
 	QModelIndex topLeft = createIndex(entryIndex, 0);
 	QModelIndex bottomRight = createIndex(entryIndex, (int)Column::Max);
 	dataChanged(topLeft, bottomRight);
+}
+
+
+//-------------------------------------------------
+//  iconFromAuditEntryType
+//-------------------------------------------------
+
+std::u8string_view AuditItemModel::iconFromAuditEntryType(Audit::Entry::Type entryType)
+{
+	using namespace std::literals;
+
+	std::u8string_view result;
+	switch (entryType)
+	{
+	case Audit::Entry::Type::Rom:
+		result = u8":/resources/rom.ico"sv;
+		break;
+
+	case Audit::Entry::Type::Disk:
+		result = u8":/resources/harddisk.ico"sv;
+		break;
+
+	case Audit::Entry::Type::Sample:
+		result = u8":/resources/sound.ico"sv;
+		break;
+
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  auditStatusFromVerdict
+//-------------------------------------------------
+
+AuditStatus AuditItemModel::auditStatusFromVerdict(const std::optional<Audit::Verdict> &verdict, bool optional)
+{
+	AuditStatus result;
+	if (verdict.has_value())
+	{
+		switch (verdict->type())
+		{
+		case Audit::Verdict::Type::Ok:
+		case Audit::Verdict::Type::OkNoGoodDump:
+			result = AuditStatus::Found;
+			break;
+
+		case Audit::Verdict::Type::NotFound:
+			result = optional ? AuditStatus::MissingOptional : AuditStatus::Missing;
+			break;
+
+		case Audit::Verdict::Type::IncorrectSize:
+		case Audit::Verdict::Type::Mismatch:
+			result = AuditStatus::Missing;
+			break;
+
+		default:
+			throw false;
+		}
+	}
+	else
+	{
+		result = AuditStatus::Unknown;
+	}
+	return result;
 }
 
 
@@ -95,6 +164,7 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 	{
 		const Audit::Entry &entry = m_audit.entries()[index.row()];
 		const std::optional<Audit::Verdict> &verdict = m_verdicts[index.row()];
+		bool verdictFailed = verdict.has_value() && !Audit::isVerdictSuccessful(verdict->type());
 		Column column = (Column)index.column();
 
 		switch (role)
@@ -146,6 +216,42 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 					result = "???";
 				}
 				break;
+			}
+			break;
+
+		case Qt::DecorationRole:
+			if (column == Column::Media)
+			{
+				// determine the icon
+				std::u8string_view icon = iconFromAuditEntryType(entry.type());
+
+				// determine the adornment
+				AuditStatus auditStatus = auditStatusFromVerdict(verdict, entry.optional());
+				std::u8string_view adornment = IconLoader::getAdornmentForAuditStatus(auditStatus);
+
+				// and get the icon
+				std::optional<QPixmap> pixmap = m_iconLoader.getIcon(icon, adornment);
+				if (pixmap)
+					result = std::move(*pixmap);
+			}
+			break;
+
+		case Qt::FontRole:
+			if (column == Column::Status && verdictFailed)
+			{
+				QFont font;
+				font.setBold(true);
+				result = std::move(font);
+			}
+			break;
+
+		case Qt::ForegroundRole:
+			if (column == Column::Status && verdictFailed)
+			{
+				// the audit failed, show a color
+				result = entry.optional()
+					? QColorConstants::DarkYellow
+					: QColorConstants::Red;
 			}
 			break;
 		}

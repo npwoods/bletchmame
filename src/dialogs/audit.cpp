@@ -19,7 +19,7 @@
 //  ctor
 //-------------------------------------------------
 
-AuditDialog::AuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, QWidget *parent)
+AuditDialog::AuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, IconLoader &iconLoader, QWidget *parent)
 	: QDialog(parent)
 {
 	// set up the UI
@@ -36,7 +36,7 @@ AuditDialog::AuditDialog(const Audit &audit, const QString &name, const QString 
 	m_ui->iconLabel->setPixmap(newPixmap);
 
 	// set up the model
-	AuditItemModel &model = *new AuditItemModel(audit, this);
+	AuditItemModel &model = *new AuditItemModel(audit, iconLoader, this);
 	m_ui->tableView->setModel(&model);
 }
 

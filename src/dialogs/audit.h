@@ -14,9 +14,18 @@
 #include "info.h"
 #include "../audit.h"
 
+
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class AuditDialog; }
 QT_END_NAMESPACE
+
+class IconLoader;
+
+// ======================> AuditDialog
 
 class AuditDialog : public QDialog
 {
@@ -24,7 +33,7 @@ class AuditDialog : public QDialog
 
 public:
 	// ctor/dtor
-	AuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, QWidget *parent = nullptr);
+	AuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, IconLoader &iconLoader, QWidget *parent = nullptr);
 	~AuditDialog();
 
 	// methods

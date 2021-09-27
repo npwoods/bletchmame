@@ -40,6 +40,9 @@ public:
 	std::optional<QPixmap> getIcon(std::u8string_view iconName, std::u8string_view adornment = { });
 	QPixmap getIcon(const info::machine &machine, std::optional<bool> showAuditAdornment = false);
 
+	// statics
+	static std::u8string_view getAdornmentForAuditStatus(AuditStatus machineAuditStatus);
+
 private:
 	typedef std::tuple<std::u8string, std::u8string> IconMapKey;
 
@@ -62,7 +65,6 @@ private:
 
 	std::optional<QPixmap> loadIcon(std::u8string_view iconName);
 	static void adornIcon(QPixmap &basePixmap, const QPixmap &adornmentPixmap);
-	static std::u8string_view getAdornmentForAuditStatus(AuditStatus machineAuditStatus);
 };
 
 

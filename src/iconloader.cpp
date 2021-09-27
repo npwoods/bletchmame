@@ -230,7 +230,7 @@ std::u8string_view IconLoader::getAdornmentForAuditStatus(AuditStatus machineAud
 	switch (machineAuditStatus)
 	{
 	case AuditStatus::Unknown:
-		result = u8":/resources/roms_unknown.ico"sv;
+		result = u8":/resources/rom_unknown.ico"sv;
 		break;
 
 	case AuditStatus::Found:
@@ -238,11 +238,11 @@ std::u8string_view IconLoader::getAdornmentForAuditStatus(AuditStatus machineAud
 		break;
 
 	case AuditStatus::Missing:
-		result = u8":/resources/roms_missing.ico"sv;
+		result = u8":/resources/rom_missing.ico"sv;
 		break;
 
 	case AuditStatus::MissingOptional:
-		result = u8":/resources/roms_missing_optional.ico"sv;
+		result = u8":/resources/rom_missing_optional.ico"sv;
 		break;
 
 	default:
