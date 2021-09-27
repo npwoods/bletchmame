@@ -164,6 +164,7 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 	{
 		const Audit::Entry &entry = m_audit.entries()[index.row()];
 		const std::optional<Audit::Verdict> &verdict = m_verdicts[index.row()];
+		bool verdictFailed = verdict.has_value() && !Audit::isVerdictSuccessful(verdict->type());
 		Column column = (Column)index.column();
 
 		switch (role)
@@ -232,6 +233,25 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 				std::optional<QPixmap> pixmap = m_iconLoader.getIcon(icon, adornment);
 				if (pixmap)
 					result = std::move(*pixmap);
+			}
+			break;
+
+		case Qt::FontRole:
+			if (column == Column::Status && verdictFailed)
+			{
+				QFont font;
+				font.setBold(true);
+				result = std::move(font);
+			}
+			break;
+
+		case Qt::ForegroundRole:
+			if (column == Column::Status && verdictFailed)
+			{
+				// the audit failed, show a color
+				result = entry.optional()
+					? QColorConstants::DarkYellow
+					: QColorConstants::Red;
 			}
 			break;
 		}

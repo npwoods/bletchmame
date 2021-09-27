@@ -110,6 +110,9 @@ public:
 	void addMediaForMachine(const Preferences &prefs, const info::machine &machine);
 	AuditStatus run(const Callback &callback = { }) const;
 
+	// statics
+	static bool isVerdictSuccessful(Audit::Verdict::Type verdictType);
+
 private:
 	class Session;
 
@@ -120,7 +123,6 @@ private:
 	// methods
 	int setupPaths(const Preferences &prefs, std::optional<info::machine> machine, Preferences::global_path_type pathType);
 	void auditSingleMedia(Session &session, int entryIndex, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const;
-	static bool isVerdictSuccessful(Audit::Verdict::Type verdictType);
 };
 
 
