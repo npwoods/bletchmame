@@ -385,14 +385,14 @@ void MainPanel::launchingListContextMenu(const QPoint &pos, const software_list:
 	}
 
 	// audit action
-	if (!software)
+	popupMenu.addSeparator();
+	popupMenu.addAction(auditThisActionText(description), [this, machine, software]()
 	{
-		popupMenu.addSeparator();
-		popupMenu.addAction(auditThisActionText(description), [this, machine]()
-		{
+		if (software)
+			manualAudit(*software);
+		else
 			manualAudit(machine);
-		});
-	}
+	});
 
 	// and execute the popup
 	popupMenu.exec(pos);
@@ -925,6 +925,21 @@ void MainPanel::manualAudit(const info::machine &machine)
 
 	// and run the dialog
 	runAuditDialog(audit, machine.name(), machine.description(), pixmap, auditTask);
+}
+
+
+//-------------------------------------------------
+//  manualAudit
+//-------------------------------------------------
+
+void MainPanel::manualAudit(const software_list::software &software)
+{
+	// set up the audit task
+	AuditTask::ptr auditTask = std::make_shared<AuditTask>(true, -1);
+	const Audit &audit = auditTask->addSoftwareAudit(m_prefs, software);
+
+	// and run the dialog
+	runAuditDialog(audit, software.name(), software.description(), QPixmap(), auditTask);
 }
 
 

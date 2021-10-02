@@ -1101,8 +1101,9 @@ void MainWindow::on_menuAuditing_aboutToShow()
 	m_ui->actionAuditingAutomatic->setChecked(auditingState == Preferences::AuditingState::Automatic);
 	m_ui->actionAuditingManual->setChecked(auditingState == Preferences::AuditingState::Manual);
 
-	// identify the currently selected machine
+	// identify the currently selected auditable
 	std::optional<info::machine> selectedMachine;
+	const software_list::software *selectedSoftware;
 	const QString *auditTargetText = nullptr;
 	switch (m_prefs.getSelectedTab())
 	{
@@ -1113,6 +1114,11 @@ void MainWindow::on_menuAuditing_aboutToShow()
 		break;
 
 	case Preferences::list_view_type::SOFTWARELIST:
+		selectedSoftware = m_mainPanel->currentlySelectedSoftware();
+		if (selectedSoftware)
+			auditTargetText = &selectedSoftware->description();
+		break;
+
 	case Preferences::list_view_type::PROFILE:
 		// do nothing
 		break;
@@ -1162,6 +1168,7 @@ void MainWindow::on_actionAuditingManual_triggered()
 void MainWindow::on_actionAuditThis_triggered()
 {
 	std::optional<info::machine> selectedMachine;
+	const software_list::software *selectedSoftware;
 
 	switch (m_prefs.getSelectedTab())
 	{
@@ -1172,6 +1179,11 @@ void MainWindow::on_actionAuditThis_triggered()
 		break;
 
 	case Preferences::list_view_type::SOFTWARELIST:
+		selectedSoftware = m_mainPanel->currentlySelectedSoftware();
+		if (selectedSoftware)
+			m_mainPanel->manualAudit(*selectedSoftware);
+		break;
+
 	case Preferences::list_view_type::PROFILE:
 		// should not get here; the menu should be disabled
 		break;

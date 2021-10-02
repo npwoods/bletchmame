@@ -70,6 +70,7 @@ public:
 	void machineAuditStatusesChanged();
 	void softwareAuditStatusesChanged();
 	void manualAudit(const info::machine &machine);
+	void manualAudit(const software_list::software &software);
 	static QString auditThisActionText(const QString &text);
 	static QString auditThisActionText(QString &&text);
 
