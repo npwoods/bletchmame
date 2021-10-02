@@ -18,6 +18,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Improving display of icon on the machine list on high resolution displays
 	- Fixed a bug that caused column sorts to not be honored on startup
 	- Fixed a bug that caused newly created profiles to not get selected when created
+	- Fixed a bug that caused the software list tab to not be populated is selected on start up
 	- Small optimizations to the building of MAME Info Database and general XML parsing
 
 - 2.8 (2021-Aug-29)
