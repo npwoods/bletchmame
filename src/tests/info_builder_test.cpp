@@ -143,7 +143,7 @@ void Test::compareBinaries(const QString &fileName)
 
 	// the moment of truth - is the binary that we built byte-for-byte identical to what is there?
 	QVERIFY(byteArray.size() == binByteArray.size());
-	for (size_t i = 0; i < byteArray.size(); i++)
+	for (int i = 0; i < byteArray.size(); i++)
 	{
 		if (byteArray[i] != binByteArray[i])
 		{
