@@ -195,6 +195,9 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	// set up a resize event filter to resize snapshot imagery
 	QObject &eventFilter = *new SnapshotViewEventFilter(*this);
 	m_ui->machinesSnapLabel->installEventFilter(&eventFilter);
+
+	// update the tab contents
+	updateTabContents();
 }
 
 
@@ -670,6 +673,27 @@ const QSortFilterProxyModel &MainPanel::sortFilterProxyModel(const QTableView &t
 
 
 //-------------------------------------------------
+//  updateTabContents
+//-------------------------------------------------
+
+void MainPanel::updateTabContents()
+{
+	Preferences::list_view_type list_view_type = m_prefs.getSelectedTab();
+
+	switch (list_view_type)
+	{
+	case Preferences::list_view_type::SOFTWARELIST:
+		updateSoftwareList();
+		break;
+
+	default:
+		// do nothing
+		break;
+	}
+}
+
+
+//-------------------------------------------------
 //  updateSoftwareList
 //-------------------------------------------------
 
@@ -1026,17 +1050,7 @@ void MainPanel::on_tabWidget_currentChanged(int index)
 {
 	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(index);
 	m_prefs.setSelectedTab(list_view_type);
-
-	switch (list_view_type)
-	{
-	case Preferences::list_view_type::SOFTWARELIST:
-		updateSoftwareList();
-		break;
-
-	default:
-		// do nothing
-		break;
-	}
+	updateTabContents();
 }
 
 

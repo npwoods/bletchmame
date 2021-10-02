@@ -58,6 +58,8 @@ public:
 	MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost &host, QWidget *parent = nullptr);
 	~MainPanel();
 
+	// methods
+	void updateTabContents();
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
 	std::optional<info::machine> currentlySelectedMachine();
 

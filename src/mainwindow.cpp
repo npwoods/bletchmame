@@ -795,6 +795,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// time for the initial check
 	InitialCheckMameInfoDatabase();
+	m_mainPanel->updateTabContents();
 }
 
 
