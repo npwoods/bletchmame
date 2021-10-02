@@ -48,6 +48,14 @@ static const util::enum_parser_bidirectional<Qt::SortOrder> s_column_sort_type_p
 };
 
 
+static const util::enum_parser_bidirectional<Preferences::WindowState> s_windowState_parser =
+{
+	{ "normal", Preferences::WindowState::Normal, },
+	{ "maximized", Preferences::WindowState::Maximized, },
+	{ "fullscreen", Preferences::WindowState::FullScreen }
+};
+
+
 static const util::enum_parser_bidirectional<Preferences::list_view_type> s_list_view_type_parser =
 {
 	{ "machine", Preferences::list_view_type::MACHINE, },
@@ -545,6 +553,7 @@ bool Preferences::load(QIODevice &input)
 	std::set<QString> *current_custom_folder = nullptr;
 
 	// clear out state
+	m_windowState = WindowState::Normal;
 	m_machine_info.clear();
 	m_custom_folders.clear();
 	m_auditingState = AuditingState::Default;
@@ -554,6 +563,10 @@ bool Preferences::load(QIODevice &input)
 		std::optional<bool> menu_bar_shown = attributes.get<bool>("menu_bar_shown");
 		if (menu_bar_shown)
 			setMenuBarShown(*menu_bar_shown);
+
+		std::optional<WindowState> windowState = attributes.get<WindowState>("window_state", s_windowState_parser);
+		if (windowState)
+			setWindowState(*windowState);
 
 		std::optional<list_view_type> selected_tab = attributes.get<list_view_type>("selected_tab", s_list_view_type_parser);
 		if (selected_tab)
@@ -732,6 +745,7 @@ void Preferences::save(QIODevice &output)
 	writer.writeComment("Preferences for BletchMAME");
 	writer.writeStartElement("preferences");
 	writer.writeAttribute("menu_bar_shown", QString::number(m_menu_bar_shown ? 1 : 0));
+	writer.writeAttribute("window_state", s_windowState_parser[getWindowState()]);
 	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
 	writer.writeAttribute("auditing", s_auditingStateParser[getAuditingState()]);
 
