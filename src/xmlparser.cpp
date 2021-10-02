@@ -196,7 +196,6 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 bool XmlParser::internalParse(QIODevice &input)
 {
 	bool done = false;
-	char buffer[8192];
 
 	if (LOG_XML)
 		qDebug("XmlParser::internalParse(): beginning parse");
@@ -206,19 +205,8 @@ bool XmlParser::internalParse(QIODevice &input)
 		// this seems to be necssary when reading from a QProcess
 		input.waitForReadyRead(-1);
 
-		// read data
-		int lastRead = input.read(buffer, sizeof(buffer));
-		if (LOG_XML)
-			qDebug("XmlParser::internalParse(): input.readRawData() returned %d", lastRead);
-
-		// figure out if we're done (note that with readRawData(), while the documentation states
-		// that '0' signifies end of input and a negative number signifies an error condition such
-		// as reading past the end of input, QProcess seems to (at least sometimes) return '-1'
-		// without returning '0'
-		done = lastRead <= 0;
-
-		// and feed this into expat
-		if (!XML_Parse(m_parser, buffer, done ? 0 : lastRead, done))
+		// parse one buffer
+		if (!parseSingleBuffer(input, done))
 		{
 			// an error happened; append the error and bail out
 			appendCurrentXmlError();
@@ -230,6 +218,35 @@ bool XmlParser::internalParse(QIODevice &input)
 	if (LOG_XML)
 		qDebug("XmlParser::internalParse(): ending parse (success=%s)", success ? "true" : "false");
 	return success;
+}
+
+
+//-------------------------------------------------
+//  parseSingleBuffer
+//-------------------------------------------------
+
+bool XmlParser::parseSingleBuffer(QIODevice &input, bool &done)
+{
+	const int bufferSize = 131072;
+
+	// get expat's buffer
+	void *buffer = XML_GetBuffer(m_parser, bufferSize);
+	if (!buffer)
+		return false;
+
+	// read data
+	int lastRead = input.read((char *) buffer, bufferSize);
+	if (LOG_XML)
+		qDebug("XmlParser::parseSingleBuffer(): input.read() returned %d", lastRead);
+
+	// figure out if we're done (note that with read(), while the documentation states that
+	// '0' signifies end of input and a negative number signifies an error condition such
+	// as reading past the end of input, QProcess seems to (at least sometimes) return '-1'
+	// without returning '0'
+	done = lastRead <= 0;
+
+	// and feed this into expat
+	return XML_ParseBuffer(m_parser, done ? 0 : lastRead, done) != XML_STATUS_ERROR;
 }
 
 
