@@ -195,6 +195,7 @@ private:
 	std::vector<Error>				m_errors;
 
 	bool internalParse(QIODevice &input);
+	bool parseSingleBuffer(QIODevice &input, bool &done);
 	void startElement(const char *name, const char **attributes);
 	void endElement(const char *name);
 	void characterData(const char *s, int len);
