@@ -891,18 +891,6 @@ void MainPanel::machineAuditStatusesChanged()
 
 
 //-------------------------------------------------
-//  setMachineAuditStatus
-//-------------------------------------------------
-
-void MainPanel::setMachineAuditStatus(const QString &machineName, AuditStatus status)
-{
-	std::vector<AuditResult> results;
-	results.emplace_back(machineName, status);
-	setMachineAuditStatuses(results);
-}
-
-
-//-------------------------------------------------
 //  on_machinesFolderTreeView_customContextMenuRequested
 //-------------------------------------------------
 
