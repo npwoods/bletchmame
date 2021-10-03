@@ -60,6 +60,10 @@ void MameTask::start(Preferences &prefs)
 	// identify the program
 	const QString &program = prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
+	// bail now if this can't meaningfully work
+	if (program.isEmpty())
+		return;
+
 	// get the arguments
 	QStringList arguments = getArguments(prefs);
 
@@ -81,16 +85,15 @@ void MameTask::start(Preferences &prefs)
 
 	// launch the process
 	m_process.start(program, arguments);
-	qint64 processId = m_process.processId();
-	if (!processId || !m_process.waitForStarted() || !m_process.waitForReadyRead())
-	{
-		// TODO - better error handling, especially when we're not pointed at the proper executable
-		qInfo() << "Failed to run MAME!\nstdout=" << m_process.readAllStandardOutput() << "\nstderr=" << m_process.readAllStandardError();
-		throw false;
-	}
 
 	// add the process to the job
-	s_job.addProcess(processId);
+	qint64 processId = m_process.processId();
+	if (processId)
+		s_job.addProcess(processId);
+
+	// wait for the process to get going
+	m_process.waitForStarted();
+	m_process.waitForReadyRead();
 }
 
 

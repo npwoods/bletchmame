@@ -814,9 +814,14 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
 	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 
-	// time for the initial check
-	InitialCheckMameInfoDatabase();
+	// prepare the main tab
 	m_mainPanel->updateTabContents();
+
+	// load the info DB
+	loadInfoDb();
+
+	// and launch a version check - most of the time this should just confirm that nothing has changed
+	launchVersionCheck(true);
 }
 
 
@@ -1351,29 +1356,7 @@ void MainWindow::on_actionPaths_triggered()
 
 	// did the user change the executable path?
 	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
-	{
-		// they did; check the MAME info DB
-		check_mame_info_status status = CheckMameInfoDatabase();
-		switch (status)
-		{
-		case check_mame_info_status::SUCCESS:
-			// we're good!
-			break;
-
-		case check_mame_info_status::MAME_NOT_FOUND:
-		case check_mame_info_status::DB_NEEDS_REBUILD:
-			// in both of these scenarios, we need to clear out the list
-			m_info_db.reset();
-
-			// start a rebuild if that is the only problem
-			if (status == check_mame_info_status::DB_NEEDS_REBUILD)
-				refreshMameInfoDatabase();
-			break;
-
-		default:
-			throw false;
-		}
-	}
+		launchVersionCheck(false);
 
 	// did the user change the roms or samples paths?
 	if (util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES))
@@ -1486,97 +1469,54 @@ bool MainWindow::IsMameExecutablePresent() const
 
 
 //-------------------------------------------------
-//  InitialCheckMameInfoDatabase - called when we
-//	load up for the very first time
+//  launchVersionCheck - launches a task to check
+//	MAME's version
 //-------------------------------------------------
 
-void MainWindow::InitialCheckMameInfoDatabase()
+void MainWindow::launchVersionCheck(bool promptIfMameNotFound)
 {
-	bool done = false;
-	while (!done)
-	{
-		switch (CheckMameInfoDatabase())
-		{
-		case check_mame_info_status::SUCCESS:
-			// we're good!
-			done = true;
-			break;
+	// record if we want to prompt if MAME is not found; this is the case on initial
+	// startup but it is not the case if the user consciously messed with the paths
+	m_promptIfMameNotFound = promptIfMameNotFound;
 
-		case check_mame_info_status::MAME_NOT_FOUND:
-			// prompt the user for the MAME executable
-			if (!PromptForMameExecutable())
-			{
-				// the (l)user gave up; guess we're done...
-				done = true;
-			}
-			break;
-
-		case check_mame_info_status::DB_NEEDS_REBUILD:
-			// start a rebuild; whether the process succeeds or fails, we're done
-			refreshMameInfoDatabase();
-			done = true;
-			break;
-
-		default:
-			throw false;
-		}
-	}
-}
-
-
-//-------------------------------------------------
-//  CheckMameInfoDatabase - checks the version and
-//	the MAME info DB
-//
-//	how to respond to failure conditions is up to
-//	the caller
-//-------------------------------------------------
-
-MainWindow::check_mame_info_status MainWindow::CheckMameInfoDatabase()
-{
-	// first thing, check to see if the executable is there
-	if (!IsMameExecutablePresent())
-		return check_mame_info_status::MAME_NOT_FOUND;
-
-	// while we have an outstanding version task, put in a fake invalid MAME version
-	QString fakeVersion = "<<VERSIONTASK>>";
-	m_mame_version = fakeVersion;
-
-	// get the version - this should be blazingly fast
+	// launch the actual task
 	Task::ptr task = createVersionTask();
 	m_taskDispatcher.launch(std::move(task));
-	while (m_mame_version == fakeVersion)
-	{
-		QCoreApplication::processEvents();
-		QThread::yieldCurrentThread();
-	}
-
-	// we didn't get a version?  treat this as if we cannot find the
-	// executable
-	if (m_mame_version.isEmpty())
-		return check_mame_info_status::MAME_NOT_FOUND;
-
-	// now let's try to open the info DB; we expect a specific version
-	QString db_path = m_prefs.getMameXmlDatabasePath();
-	if (!m_info_db.load(db_path, m_mame_version))
-		return check_mame_info_status::DB_NEEDS_REBUILD;
-
-	// success!  we can update the machine list
-	return check_mame_info_status::SUCCESS;
 }
 
 
 //-------------------------------------------------
-//  PromptForMameExecutable
+//  loadInfoDb
 //-------------------------------------------------
 
-bool MainWindow::PromptForMameExecutable()
+bool MainWindow::loadInfoDb()
 {
+	QString dbPath = m_prefs.getMameXmlDatabasePath();
+	return m_info_db.load(dbPath, m_mameVersion);
+}
+
+
+//-------------------------------------------------
+//  promptForMameExecutable
+//-------------------------------------------------
+
+bool MainWindow::promptForMameExecutable()
+{
+	// prompt the user
 	QString path = PathsDialog::browseForPathDialog(*this, Preferences::global_path_type::EMU_EXECUTABLE, m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
 	if (path.isEmpty())
 		return false;
 
-	m_prefs.setGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
+	// if this changed, act accordingly
+	if (path != m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE))
+	{
+		// set the path
+		m_prefs.setGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
+
+		// and trigger a version check
+		launchVersionCheck(false);
+	}
+
 	return true;
 }
 
@@ -1979,7 +1919,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 
 bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
 {
-	return MameVersion(m_mame_version).isAtLeast(version);
+	return MameVersion(m_mameVersion).isAtLeast(version);
 }
 
 
@@ -2000,12 +1940,12 @@ bool MainWindow::onFinalizeTask(const FinalizeTaskEvent &event)
 
 bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 {
-	// get the MAME version
-	m_mame_version = std::move(event.m_version);
+	// get the MAME version out of the event
+	m_mameVersion = std::move(event.m_version);
 
 	// if the current MAME version is problematic, generate a warning
 	QString message;
-	if (!isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
+	if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
 		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
 			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.major()),
@@ -2015,7 +1955,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	{
 		message = "MAME on this platform does not support -attach_window, and the MAME window will not properly be embedded within BletchMAME";
 	}
-	else if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
+	else if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
 	{
 		message = QString("MAME on this platform requires version of %1.%2 for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
 			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().major()),
@@ -2026,6 +1966,27 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	if (!message.isEmpty())
 		messageBox(message);
 
+	// the version check completed and we've dispensed with warnings; does this new version inform anything?
+	if (m_mameVersion.isEmpty())
+	{
+		// no MAME found - reset the database
+		m_info_db.reset();
+
+		// and prompt if that is in the plan
+		if (m_promptIfMameNotFound)
+			promptForMameExecutable();
+	}
+	else if (m_mameVersion != m_info_db.version())		
+	{
+		// we have MAME but need to load the database
+		if (!loadInfoDb())
+		{
+			// time to refresh the database
+			refreshMameInfoDatabase();
+		}
+	}
+
+	// we're done!
 	return true;
 }
 
@@ -2055,10 +2016,7 @@ bool MainWindow::onListXmlCompleted(const ListXmlResultEvent &event)
 	{
 	case ListXmlResultEvent::Status::SUCCESS:
 		// if it succeeded, try to load the DB
-		{
-			QString db_path = m_prefs.getMameXmlDatabasePath();
-			m_info_db.load(db_path);
-		}
+		loadInfoDb();
 		dialogResult = QDialog::Accepted;
 		break;
 

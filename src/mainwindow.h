@@ -108,14 +108,6 @@ protected:
 	virtual void changeEvent(QEvent *event) override;
 
 private:
-	// status of MAME version checks
-	enum class check_mame_info_status
-	{
-		SUCCESS,			// we've loaded an info DB that matches the expected MAME version
-		MAME_NOT_FOUND,		// we can't find the MAME executable
-		DB_NEEDS_REBUILD	// we've found MAME, but we must rebuild the database
-	};
-
 	class Pauser;
 	class ConfigurableDevicesDialogHost;
 	class InputsHost;
@@ -156,7 +148,8 @@ private:
 	std::vector<Aspect::ptr>			m_aspects;
 
 	// information retrieved by -version
-	QString								m_mame_version;
+	bool								m_promptIfMameNotFound;
+	QString								m_mameVersion;
 
 	// information retrieved by -listxml
 	info::database						m_info_db;
@@ -204,9 +197,9 @@ private:
 
 	// methods
 	bool IsMameExecutablePresent() const;
-	void InitialCheckMameInfoDatabase();
-	check_mame_info_status CheckMameInfoDatabase();
-	bool PromptForMameExecutable();
+	void launchVersionCheck(bool promptIfMameNotFound);
+	bool loadInfoDb();
+	bool promptForMameExecutable();
 	bool refreshMameInfoDatabase();
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	void showInputsDialog(status::input::input_class input_class);
