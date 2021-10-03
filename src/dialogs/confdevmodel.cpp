@@ -308,7 +308,7 @@ QString ConfigurableDevicesModel::prettifyImageFileName(const QString &deviceTag
 	if (software)
 	{
 		// if so, the pretty name is the description
-		result = software->m_description;
+		result = software->description();
 	}
 	else if (!fullPath && !fileName.isEmpty())
 	{

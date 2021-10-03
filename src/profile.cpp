@@ -197,7 +197,7 @@ void profiles::profile::create(QIODevice &stream, const info::machine &machine, 
 	profile new_profile;
 	new_profile.m_machine = machine.name();
 	if (software)
-		new_profile.m_software = software->m_name;
+		new_profile.m_software = software->name();
 	new_profile.save_as(stream);
 }
 

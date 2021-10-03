@@ -43,9 +43,9 @@ void SoftwareListItemModel::load(const software_list_collection &software_col, b
             if (load_parts)
             {
                 // we're loading individual parts; enumerate through them and add them
-                for (const software_list::part &part : software.m_parts)
+                for (const software_list::part &part : software.parts())
                 {
-                    if (dev_interface.isEmpty() || dev_interface == part.m_interface)
+                    if (dev_interface.isEmpty() || dev_interface == part.interface())
                         m_parts.emplace_back(software, &part);
                 }
             }
@@ -140,20 +140,19 @@ QVariant SoftwareListItemModel::data(const QModelIndex &index, int role) const
         const software_list::software &sw = m_parts[index.row()].software();
 
         Column column = (Column)index.column();
-        auto x = sw.m_name.toStdString();
         switch (column)
         {
         case Column::Name:
-            result = sw.m_name;
+            result = sw.name();
             break;
         case Column::Description:
-            result = sw.m_description;
+            result = sw.description();
             break;
         case Column::Year:
-            result = sw.m_year;
+            result = sw.year();
             break;
         case Column::Manufacturer:
-            result = sw.m_publisher;
+            result = sw.publisher();
             break;
         }
     }

@@ -52,7 +52,8 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 	});
 	xml.onElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
 	{
-		part &p = util::last(m_software).m_parts.emplace_back();
+		software &s		= util::last(m_software);
+		part &p			= s.m_parts.emplace_back();
 		p.m_name		= attributes.get<QString>("name").value_or("");
 		p.m_interface	= attributes.get<QString>("interface").value_or("");
 	});
@@ -141,10 +142,10 @@ const software_list::software *software_list_collection::find_software_by_name(c
 		{
 			const software_list::software *sw = util::find_if_ptr(swlist.get_software(), [&name, &dev_interface](const software_list::software &sw)
 			{
-				return sw.m_name == name
-					&& (dev_interface.isEmpty() || util::find_if_ptr(sw.m_parts, [&dev_interface](const software_list::part &x)
+				return sw.name() == name
+					&& (dev_interface.isEmpty() || util::find_if_ptr(sw.parts(), [&dev_interface](const software_list::part &x)
 					{
-						return x.m_interface == dev_interface;
+						return x.interface() == dev_interface;
 					}));
 			});
 			if (sw)
