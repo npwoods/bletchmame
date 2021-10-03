@@ -104,6 +104,7 @@ private slots:
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
 	virtual void keyPressEvent(QKeyEvent *event) override;
+	virtual void resizeEvent(QResizeEvent *event) override;
 	virtual void changeEvent(QEvent *event) override;
 
 private:
