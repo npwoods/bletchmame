@@ -30,20 +30,49 @@ class software_list
 {
 public:
 	class test;
-	struct software;
+	class software;
 
-	struct part
+	class part
 	{
-		QString			m_name;
-		QString			m_interface;
+		friend class software_list;
+
+	public:
+		// ctor
+		part() = default;
+		part(const part &) = delete;
+		part(part &&) = default;
+	
+		// accessors
+		const QString &name() const				{ return m_name; }
+		const QString &interface() const		{ return m_interface; }
+
+	private:
+		QString				m_name;
+		QString				m_interface;
 	};
 
-	struct software
+	class software
 	{
-		QString			m_name;
-		QString			m_description;
-		QString			m_year;
-		QString			m_publisher;
+		friend class software_list;
+
+	public:
+		// ctor
+		software() = default;
+		software(const software &) = delete;
+		software(software &&) = default;
+
+		// accessors
+		const QString &name() const				{ return m_name; }
+		const QString &description() const		{ return m_description; }
+		const QString &year() const				{ return m_year; }
+		const QString &publisher() const		{ return m_publisher; }
+		const std::vector<part> &parts() const	{ return m_parts; }
+
+	private:
+		QString				m_name;
+		QString				m_description;
+		QString				m_year;
+		QString				m_publisher;
 		std::vector<part>	m_parts;
 	};
 

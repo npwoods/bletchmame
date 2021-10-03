@@ -73,5 +73,5 @@ QString ChooseSoftlistPartDialog::selection() const
 	QModelIndexList selection = m_ui->tableView->selectionModel()->selectedIndexes();
 	QModelIndex actualIndex = dynamic_cast<QSortFilterProxyModel *>(m_ui->tableView->model())->mapToSource(selection[0]);
 	const software_list::software &sw = m_itemModel->getSoftwareByIndex(actualIndex.row());
-	return sw.m_name;
+	return sw.name();
 }

@@ -31,7 +31,7 @@ SessionBehavior::~SessionBehavior()
 //-------------------------------------------------
 
 NormalSessionBehavior::NormalSessionBehavior(const software_list::software *software)
-    : m_initialSoftware(software ? software->m_name : "")
+    : m_initialSoftware(software ? software->name() : "")
 {
 }
 

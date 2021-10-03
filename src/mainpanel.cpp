@@ -303,7 +303,7 @@ void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list:
 
 	// identify the description
 	const QString &description = software
-		? software->m_description
+		? software->description()
 		: machine.description();
 
 	// build the menu
@@ -458,7 +458,7 @@ void MainPanel::createProfile(const info::machine &machine, const software_list:
 
 	// identify the description, for use when we create the file name
 	const QString &description = software
-		? software->m_description
+		? software->description()
 		: machine.name();
 
 	// get the full path for a new profile
