@@ -815,7 +815,10 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 
 	// prepare the main tab
-	m_mainPanel->updateTabContents();
+	m_info_db.addOnChangedHandler([this]()
+	{
+		m_mainPanel->updateTabContents();
+	});
 
 	// load the info DB
 	loadInfoDb();
