@@ -16,6 +16,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 		- Multi selection of paths is now supported
 		- Minor bug fixes to the logic that updates the status of the Browse/Insert/Delete buttons
 	- Improving display of icon on the machine list on high resolution displays
+	- Now remembering the maximized/full screen state of the main window
 	- Fixed a bug that caused column sorts to not be honored on startup
 	- Fixed a bug that caused newly created profiles to not get selected when created
 	- Fixed a bug that caused the software list tab to not be populated is selected on start up

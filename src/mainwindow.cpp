@@ -17,6 +17,7 @@
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
 #include <QTextStream>
+#include <QWindowStateChangeEvent>
 
 #include <chrono>
 
@@ -718,6 +719,25 @@ MainWindow::MainWindow(QWidget *parent)
 	QTimer &pingTimer = *new QTimer(this);
 	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::invokePing);
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
+
+	// set the proper window state from preferences
+	switch (m_prefs.getWindowState())
+	{
+	case Preferences::WindowState::Normal:
+		// do nothing
+		break;
+
+	case Preferences::WindowState::Maximized:
+		showMaximized();
+		break;
+
+	case Preferences::WindowState::FullScreen:
+		showFullScreen();
+		break;
+
+	default:
+		throw false;
+	}
 
 	// set up the audit timer
 	m_auditTimer = new QTimer(this);
@@ -1879,6 +1899,39 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	// pressing ALT to bring up menus is not friendly when running the emulation
 	if (m_state.has_value() && (event->modifiers() & Qt::AltModifier))
 		event->ignore();
+}
+
+
+//-------------------------------------------------
+//  changeEvent
+//-------------------------------------------------
+
+void MainWindow::changeEvent(QEvent *event)
+{
+	if (event->type() == QEvent::WindowStateChange)
+	{
+		onWindowStateChange(*static_cast<QWindowStateChangeEvent *>(event));
+	}
+	QWidget::changeEvent(event);
+}
+
+
+//-------------------------------------------------
+//  onWindowStateChange
+//-------------------------------------------------
+
+void MainWindow::onWindowStateChange(QWindowStateChangeEvent &event)
+{
+	auto qtWindowState = windowState();
+
+	Preferences::WindowState prefsWindowState;
+	if (qtWindowState & Qt::WindowFullScreen)
+		prefsWindowState = Preferences::WindowState::FullScreen;
+	else if (qtWindowState & Qt::WindowMaximized)
+		prefsWindowState = Preferences::WindowState::Maximized;
+	else
+		prefsWindowState = Preferences::WindowState::Normal;
+	m_prefs.setWindowState(prefsWindowState);
 }
 
 

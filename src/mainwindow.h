@@ -37,6 +37,7 @@ class QLineEdit;
 class QTableWidgetItem;
 class QAbstractItemModel;
 class QTableView;
+class QWindowStateChangeEvent;
 QT_END_NAMESPACE
 
 class MainPanel;
@@ -103,6 +104,7 @@ private slots:
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
 	virtual void keyPressEvent(QKeyEvent *event) override;
+	virtual void changeEvent(QEvent *event) override;
 
 private:
 	// status of MAME version checks
@@ -188,6 +190,9 @@ private:
 	bool onAuditResult(const AuditResultEvent &event);
 	bool onAuditSingleMedia(const AuditSingleMediaEvent &event);
 	bool onChatter(const ChatterEvent &event);
+
+	// other events
+	void onWindowStateChange(QWindowStateChangeEvent &event);
 
 	// templated property/action binding
 	template<typename TStartAction, typename TStopAction>				void setupActionAspect(TStartAction &&startAction, TStopAction &&stopAction);
