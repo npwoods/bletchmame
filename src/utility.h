@@ -397,21 +397,24 @@ template<class T> T safe_static_cast(size_t sz)
 
 
 //-------------------------------------------------
-//  binaryFromHex
+//  bytesFromHex
 //-------------------------------------------------
 
-std::size_t binaryFromHex(std::span<uint8_t> &dest, std::string_view hex);
+std::size_t bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex);
 
-inline std::size_t binaryFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
-{
-	return binaryFromHex(dest, std::string_view((const char *)hex.data(), hex.size()));
-}
 
-template<std::size_t N, class Char>
-std::size_t binaryFromHex(uint8_t (&dest)[N], std::basic_string_view<Char> hex)
+//-------------------------------------------------
+//  fixedByteArrayFromHex
+//-------------------------------------------------
+
+template<std::size_t N>
+std::optional<std::array<std::uint8_t, N>> fixedByteArrayFromHex(std::optional<std::u8string_view> hex)
 {
-	std::span<uint8_t> destSpan(dest);
-	return binaryFromHex(destSpan, hex);
+	std::array<std::uint8_t, N> result;
+	std::span<std::uint8_t> span(result);
+	return hex.has_value() && bytesFromHex(span, *hex) == N
+		? result
+		: std::optional<std::array<std::uint8_t, N>>();
 }
 
 

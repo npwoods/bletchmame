@@ -174,12 +174,18 @@ static constexpr std::uint8_t encodeEnum(std::optional<T> &&value, std::uint8_t 
 //  binaryFromHex
 //-------------------------------------------------
 
-template<int N, class Char>
-static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::basic_string_view<Char>> &hex)
+template<int N>
+static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::u8string_view> &hex)
 {
-	std::size_t pos = hex.has_value() ? util::binaryFromHex(dest, *hex) : 0;
-	std::fill(dest + pos, dest + N, 0);
-	return pos == N;
+	std::optional<std::array<std::uint8_t, N>> result;
+	if (hex.has_value())
+		result = util::fixedByteArrayFromHex<N>(*hex);
+
+	if (result.has_value())
+		std::copy(result->begin(), result->end(), dest);
+	else
+		std::fill(dest, dest + N, 0);
+	return result.has_value();
 }
 
 

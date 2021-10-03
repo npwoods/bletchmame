@@ -24,7 +24,7 @@ const QString util::g_empty_string;
 //  hexDigit
 //-------------------------------------------------
 
-static std::optional<uint8_t> hexDigit(char ch)
+static std::optional<uint8_t> hexDigit(char8_t ch)
 {
 	std::optional<uint8_t> result;
 	switch (ch)
@@ -51,13 +51,13 @@ static std::optional<uint8_t> hexDigit(char ch)
 
 
 //-------------------------------------------------
-//  binaryFromHex
+//  bytesFromHex
 //-------------------------------------------------
 
-std::size_t util::binaryFromHex(std::span<uint8_t> &dest, std::string_view hex)
+std::size_t util::bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
 {
 	std::size_t pos = 0;
-	while (pos < dest.size() && pos < hex.size() * 2)
+	while (pos < dest.size() && pos < hex.size() / 2)
 	{
 		// parse two hex digits
 		std::optional<std::uint8_t> hiDigit = hexDigit(hex[pos * 2 + 0]);
