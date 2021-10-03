@@ -18,7 +18,10 @@ namespace
     private slots:
 		void string_split_string() { string_split<std::string>(); }
 		void string_split_wstring() { string_split<std::wstring>(); }
-		void binaryFromHex();
+		void fixedByteArrayFromHex();
+		void fixedByteArrayFromHex_parseError1()	{ fixedByteArrayFromHex_parseError(u8""); }
+		void fixedByteArrayFromHex_parseError2()	{ fixedByteArrayFromHex_parseError(u8"01234"); }
+		void fixedByteArrayFromHex_parseError3()	{ fixedByteArrayFromHex_parseError(u8"0123456X"); }
 
 		void enum_parser();
 		void return_value_substitutor();
@@ -49,6 +52,8 @@ namespace
 				str += string[i];
 			return str;
 		}
+
+		void fixedByteArrayFromHex_parseError(std::u8string_view s);
 	};
 }
 
@@ -110,26 +115,36 @@ void Test::return_value_substitutor()
 
 
 //-------------------------------------------------
-//  binaryFromHex
+//  fixedByteArrayFromHex
 //-------------------------------------------------
 
-void Test::binaryFromHex()
+void Test::fixedByteArrayFromHex()
 {
 	using namespace std::literals;
 
-	std::uint8_t buffer[10];
-	std::size_t rc = util::binaryFromHex(buffer, "BaaDF00DDEADBeeF12345678"sv);
-	QVERIFY(rc == 10);
-	QVERIFY(buffer[0] == 0xBA);
-	QVERIFY(buffer[1] == 0xAD);
-	QVERIFY(buffer[2] == 0xF0);
-	QVERIFY(buffer[3] == 0x0D);
-	QVERIFY(buffer[4] == 0xDE);
-	QVERIFY(buffer[5] == 0xAD);
-	QVERIFY(buffer[6] == 0xBE);
-	QVERIFY(buffer[7] == 0xEF);
-	QVERIFY(buffer[8] == 0x12);
-	QVERIFY(buffer[9] == 0x34);
+	auto buffer = util::fixedByteArrayFromHex<10>(u8"BaaDF00DDEADBeeF12345678"sv);
+	QVERIFY(buffer.has_value());
+	QVERIFY((*buffer)[0] == 0xBA);
+	QVERIFY((*buffer)[1] == 0xAD);
+	QVERIFY((*buffer)[2] == 0xF0);
+	QVERIFY((*buffer)[3] == 0x0D);
+	QVERIFY((*buffer)[4] == 0xDE);
+	QVERIFY((*buffer)[5] == 0xAD);
+	QVERIFY((*buffer)[6] == 0xBE);
+	QVERIFY((*buffer)[7] == 0xEF);
+	QVERIFY((*buffer)[8] == 0x12);
+	QVERIFY((*buffer)[9] == 0x34);
+}
+
+
+//-------------------------------------------------
+//  fixedByteArrayFromHex_parseError
+//-------------------------------------------------
+
+void Test::fixedByteArrayFromHex_parseError(std::u8string_view s)
+{
+	auto buffer = util::fixedByteArrayFromHex<4>(s);
+	QVERIFY(!buffer.has_value());
 }
 
 
