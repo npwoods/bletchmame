@@ -140,8 +140,8 @@ public:
 	const QString &getMameExtraArguments() const														{ return m_mame_extra_arguments; }
 	void setMameExtraArguments(QString &&extra_arguments)												{ m_mame_extra_arguments = std::move(extra_arguments); }
 
-	const QSize &getSize() const											 							{ return m_size; }
-	void setSize(const QSize &size)																		{ m_size = size; }
+	const std::optional<QSize> &getSize() const								 							{ return m_size; }
+	void setSize(const std::optional<QSize> &size)														{ m_size = size; }
 
 	WindowState getWindowState() const																	{ return m_windowState; }
 	void setWindowState(WindowState &state)																{ m_windowState = state; }
@@ -217,7 +217,7 @@ private:
 
 	std::array<QString, util::enum_count<Preferences::global_path_type>()>						m_paths;
 	QString                                                                 					m_mame_extra_arguments;
-	QSize																						m_size;
+	std::optional<QSize>																		m_size;
 	WindowState																					m_windowState;
 	mutable std::unordered_map<std::u8string, std::unordered_map<std::u8string, ColumnPrefs>>	m_column_prefs;
 	std::map<QString, MachineInfo>																m_machine_info;

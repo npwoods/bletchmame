@@ -179,8 +179,7 @@ FolderPrefs::FolderPrefs()
 //-------------------------------------------------
 
 Preferences::Preferences()
-	: m_size(950, 600)
-	, m_selected_tab(list_view_type::MACHINE)
+	: m_selected_tab(list_view_type::MACHINE)
 	, m_menu_bar_shown(true)
 	, m_auditingState(AuditingState::Default)
 {
@@ -762,10 +761,13 @@ void Preferences::save(QIODevice &output)
 	writer.writeComment("Miscellaneous");
 	if (!m_mame_extra_arguments.isEmpty())
 		writer.writeTextElement("mameextraarguments", m_mame_extra_arguments);
-	writer.writeStartElement("size");
-	writer.writeAttribute("width", QString::number(m_size.width()));
-	writer.writeAttribute("height", QString::number(m_size.height()));
-	writer.writeEndElement();
+	if (m_size)
+	{
+		writer.writeStartElement("size");
+		writer.writeAttribute("width", QString::number(m_size->width()));
+		writer.writeAttribute("height", QString::number(m_size->height()));
+		writer.writeEndElement();
+	}
 	if (!m_machine_splitter_sizes.isEmpty())
 		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
 

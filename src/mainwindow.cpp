@@ -724,7 +724,8 @@ MainWindow::MainWindow(QWidget *parent)
 	switch (m_prefs.getWindowState())
 	{
 	case Preferences::WindowState::Normal:
-		// do nothing
+		if (m_prefs.getSize().has_value())
+			resize(*m_prefs.getSize());
 		break;
 
 	case Preferences::WindowState::Maximized:
@@ -1883,6 +1884,17 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 	// yup, we're closing
 	event->accept();
+}
+
+
+//-------------------------------------------------
+//  resizeEvent
+//-------------------------------------------------
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+	m_prefs.setSize(size());
+	QWidget::resizeEvent(event);
 }
 
 
