@@ -61,8 +61,8 @@ private:
 		bool has_part() const { return m_part != nullptr; }
 
 	private:
-		const software_list::software &m_software;
-		const software_list::part *m_part;
+		const software_list::software &	m_software;
+		const software_list::part *		m_part;
 	};
 
 	std::vector<SoftwareAndPart>	m_parts;

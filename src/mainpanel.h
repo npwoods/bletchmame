@@ -125,7 +125,6 @@ private:
 	void updateSnapshot();
 	void identifyExpandedFolderTreeItems();
 	static void iterateItemModelIndexes(QAbstractItemModel &model, const std::function<void(const QModelIndex &)> &func, const QModelIndex &index = QModelIndex());
-	void setMachineAuditStatus(const QString &machineName, AuditStatus status);
 };
 
 
