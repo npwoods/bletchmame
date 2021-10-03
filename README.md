@@ -11,6 +11,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.9 (TBD)
 	- Added experimental MAMEUI-style media auditing capabilities
 	- When refreshing the MAME Info Database (-listxml handling), names and descriptions of machines will be displayed
+	- No longer waiting for the MAME version check to complete on startup
 	- Various enhancements to the Paths Dialog
 		- Highlighting file paths for snapshots and icons that are not valid archives in red
 		- Multi selection of paths is now supported
@@ -19,7 +20,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Now remembering the maximized/full screen and size state of the main window
 	- Fixed a bug that caused column sorts to not be honored on startup
 	- Fixed a bug that caused newly created profiles to not get selected when created
-	- Fixed a bug that caused the software list tab to not be populated is selected on start up
+	- Fixed a bug that caused the software list tab to not be populated is selected on startup
 	- Small optimizations to the building of MAME Info Database and general XML parsing
 
 - 2.8 (2021-Aug-29)
