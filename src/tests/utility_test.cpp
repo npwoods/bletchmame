@@ -16,8 +16,8 @@ namespace
         Q_OBJECT
 
     private slots:
-		void string_split_string() { string_split<std::string>(); }
-		void string_split_wstring() { string_split<std::wstring>(); }
+		void string_split_string()					{ string_split<std::string>(); }
+		void string_split_wstring()					{ string_split<std::wstring>(); }
 		void fixedByteArrayFromHex();
 		void fixedByteArrayFromHex_parseError1()	{ fixedByteArrayFromHex_parseError(u8""); }
 		void fixedByteArrayFromHex_parseError2()	{ fixedByteArrayFromHex_parseError(u8"01234"); }
