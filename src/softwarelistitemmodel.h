@@ -54,15 +54,13 @@ private:
 	class SoftwareAndPart
 	{
 	public:
-		SoftwareAndPart(const software_list &sl, const software_list::software &sw, const software_list::part *p);
+		SoftwareAndPart(const software_list::software &sw, const software_list::part *p);
 
-		const software_list &softlist() const { return m_softlist; }
 		const software_list::software &software() const { return m_software; }
 		const software_list::part &part() const { assert(m_part); return *m_part; }
 		bool has_part() const { return m_part != nullptr; }
 
 	private:
-		const software_list &m_softlist;
 		const software_list::software &m_software;
 		const software_list::part *m_part;
 	};

@@ -46,14 +46,14 @@ void SoftwareListItemModel::load(const software_list_collection &software_col, b
                 for (const software_list::part &part : software.m_parts)
                 {
                     if (dev_interface.isEmpty() || dev_interface == part.m_interface)
-                        m_parts.emplace_back(softlist, software, &part);
+                        m_parts.emplace_back(software, &part);
                 }
             }
             else
             {
                 // we're not loading individual parts
                 assert(dev_interface.isEmpty());
-                m_parts.emplace_back(softlist, software, nullptr);
+                m_parts.emplace_back(software, nullptr);
             }
         }
     }
@@ -200,9 +200,8 @@ QVariant SoftwareListItemModel::headerData(int section, Qt::Orientation orientat
 //  SoftwareAndPart ctor
 //-------------------------------------------------
 
-SoftwareListItemModel::SoftwareAndPart::SoftwareAndPart(const software_list &sl, const software_list::software &sw, const software_list::part *p)
-    : m_softlist(sl)
-    , m_software(sw)
+SoftwareListItemModel::SoftwareAndPart::SoftwareAndPart(const software_list::software &sw, const software_list::part *p)
+    : m_software(sw)
     , m_part(p)
 {
 }
