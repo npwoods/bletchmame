@@ -20,30 +20,6 @@ QEvent::Type AuditSingleMediaEvent::s_eventId = (QEvent::Type)QEvent::registerEv
 //**************************************************************************
 
 //-------------------------------------------------
-//  AuditResultEvent ctor
-//-------------------------------------------------
-
-AuditResultEvent::AuditResultEvent(std::vector<AuditResult> &&results, int cookie)
-	: QEvent(eventId())
-	, m_results(std::move(results))
-	, m_cookie(cookie)
-{
-}
-
-
-//-------------------------------------------------
-//  AuditSingleMediaEvent ctor
-//-------------------------------------------------
-
-AuditSingleMediaEvent::AuditSingleMediaEvent(int entryIndex, Audit::Verdict verdict)
-	: QEvent(eventId())
-	, m_entryIndex(entryIndex)
-	, m_verdict(verdict)
-{
-}
-
-
-//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -60,8 +36,9 @@ AuditTask::AuditTask(bool reportSingleMedia, int cookie)
 
 const Audit &AuditTask::addMachineAudit(const Preferences &prefs, const info::machine &machine)
 {
-	Entry &entry = *m_entries.emplace(m_entries.end());
-	entry.m_machineName = machine.name();
+	Entry &entry = *m_entries.emplace(
+		m_entries.end(),
+		MachineAuditIdentifier(machine.name()));
 	entry.m_audit.addMediaForMachine(prefs, machine);
 	return entry.m_audit;
 }
@@ -93,10 +70,76 @@ void AuditTask::process(QObject &eventHandler)
 		AuditStatus status = entry.m_audit.run(callback);
 
 		// and record the results
-		results.emplace_back(entry.m_machineName, status);
+		results.emplace_back(AuditIdentifier(entry.m_identifier), status);
 	}
 
 	// and respond with the event
 	auto evt = std::make_unique<AuditResultEvent>(std::move(results), m_cookie);
 	QCoreApplication::postEvent(&eventHandler, evt.release());
 }
+
+
+//-------------------------------------------------
+//  Entry ctor
+//-------------------------------------------------
+
+AuditTask::Entry::Entry(AuditIdentifier &&identifier)
+	: m_identifier(std::move(identifier))
+{
+}
+
+
+//-------------------------------------------------
+//  MachineAuditIdentifier ctor
+//-------------------------------------------------
+
+MachineAuditIdentifier::MachineAuditIdentifier(const QString &machineName)
+	: m_machineName(machineName)
+{
+}
+
+
+//-------------------------------------------------
+//  std::hash<MachineAuditIdentifier>::operator()
+//-------------------------------------------------
+
+std::size_t std::hash<MachineAuditIdentifier>::operator()(const MachineAuditIdentifier &identifier) const
+{
+	return std::hash<QString>()(identifier.machineName());
+}
+
+
+//-------------------------------------------------
+//  AuditResult ctor
+//-------------------------------------------------
+
+AuditResult::AuditResult(AuditIdentifier &&identifier, AuditStatus status)
+	: m_identifier(std::move(identifier))
+	, m_status(status)
+{
+}
+
+
+//-------------------------------------------------
+//  AuditResultEvent ctor
+//-------------------------------------------------
+
+AuditResultEvent::AuditResultEvent(std::vector<AuditResult> &&results, int cookie)
+	: QEvent(eventId())
+	, m_results(std::move(results))
+	, m_cookie(cookie)
+{
+}
+
+
+//-------------------------------------------------
+//  AuditSingleMediaEvent ctor
+//-------------------------------------------------
+
+AuditSingleMediaEvent::AuditSingleMediaEvent(int entryIndex, Audit::Verdict verdict)
+	: QEvent(eventId())
+	, m_entryIndex(entryIndex)
+	, m_verdict(verdict)
+{
+}
+

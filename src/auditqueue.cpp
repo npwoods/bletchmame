@@ -36,26 +36,23 @@ AuditQueue::AuditQueue(const Preferences &prefs, const info::database &infoDb)
 //  push
 //-------------------------------------------------
 
-void AuditQueue::push(const info::machine &machine)
+void AuditQueue::push(AuditIdentifier &&identifier)
 {
-	// create an entry
-	Entry entry(machine.name());
-
 	// has this entry already been pushed?
-	auto mapIter = m_entryTaskMap.find(entry);
-	if (mapIter == m_entryTaskMap.end())
+	auto mapIter = m_auditTaskMap.find(identifier);
+	if (mapIter == m_auditTaskMap.end())
 	{
 		// if not, add it
-		m_entryTaskMap.emplace(entry, AuditTask::ptr());
+		m_auditTaskMap.emplace(std::move(identifier), AuditTask::ptr());
 	}
 	else if (!mapIter->second)
 	{
 		// if it has but there is no dispatched task, put this at the front of the queue
-		auto iter = std::find(m_undispatchedEntries.begin(), m_undispatchedEntries.end(), entry);
-		if (iter != m_undispatchedEntries.end())
-			m_undispatchedEntries.erase(iter);
+		auto iter = std::find(m_undispatchedAudits.begin(), m_undispatchedAudits.end(), identifier);
+		if (iter != m_undispatchedAudits.end())
+			m_undispatchedAudits.erase(iter);
 	}
-	m_undispatchedEntries.push_front(std::move(entry));
+	m_undispatchedAudits.push_front(std::move(identifier));
 }
 
 
@@ -66,24 +63,26 @@ void AuditQueue::push(const info::machine &machine)
 AuditTask::ptr AuditQueue::tryCreateAuditTask()
 {
 	// come up with a list of entries
-	std::vector<Entry> entries;
+	std::vector<AuditIdentifier> entries;
 	entries.reserve(MAX_AUDITS_PER_TASK);
-	while (entries.size() < MAX_AUDITS_PER_TASK && !m_undispatchedEntries.empty())
+	while (entries.size() < MAX_AUDITS_PER_TASK && !m_undispatchedAudits.empty())
 	{
 		// find an undispatched entry
-		Entry &entry = m_undispatchedEntries.front();
+		AuditIdentifier &entry = m_undispatchedAudits.front();
 
 		// add it to our list
 		entries.push_back(std::move(entry));
 
 		// and pop it off the queue
-		m_undispatchedEntries.pop_front();
+		m_undispatchedAudits.pop_front();
 	}
 
-	// if we found any, create a task
-	AuditTask::ptr result;
-	if (entries.size() > 0)
-		result = createAuditTask(entries);
+	// create a teask for these entries
+	AuditTask::ptr result = createAuditTask(entries);
+
+	// only return something if we're not empty
+	if (result->isEmpty())
+		result.reset();
 	return result;
 }
 
@@ -92,57 +91,28 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 //  createAuditTask
 //-------------------------------------------------
 
-AuditTask::ptr AuditQueue::createAuditTask(const std::vector<Entry> &entries)
+AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers)
 {
 	// create an audit task with a single audit
 	AuditTask::ptr auditTask = std::make_shared<AuditTask>(false, currentCookie());
 
-	for (const Entry &entry : entries)
+	for (const AuditIdentifier &identifier : auditIdentifiers)
 	{
-		// what sort of audit is this?
-		if (!entry.machineName().isEmpty() && entry.softwareName().isEmpty())
+		std::visit([this, &auditTask](auto &&x)
 		{
-			// machine audit
-			info::machine machine = *m_infoDb.find_machine(entry.machineName());
-			auditTask->addMachineAudit(m_prefs, machine);
-		}
-		else
-		{
-			// should not get here
-			throw false;
-		}
+			using T = std::decay_t<decltype(x)>;
+			if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+			{
+				// machine audit
+				std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
+				if (machine.has_value())
+					auditTask->addMachineAudit(m_prefs, *machine);
+			}
+			else
+			{
+				throw false;
+			}
+		}, identifier);
 	}
 	return auditTask;
-}
-
-
-//-------------------------------------------------
-//  Entry ctor
-//-------------------------------------------------
-
-AuditQueue::Entry::Entry(const QString &machineName, const QString &softwareName)
-	: m_machineName(machineName)
-	, m_softwareName(softwareName)
-{
-}
-
-
-//-------------------------------------------------
-//  EntryMapHash::operator()
-//-------------------------------------------------
-
-std::size_t AuditQueue::EntryMapHash::operator()(const AuditQueue::Entry &x) const noexcept
-{
-	return std::hash<QString>()(x.machineName())
-		^ std::hash<QString>()(x.softwareName());
-}
-
-
-//-------------------------------------------------
-//  EntryMapEquals::operator()
-//-------------------------------------------------
-
-bool AuditQueue::EntryMapEquals::operator()(const Entry &lhs, const Entry &rhs) const
-{
-	return lhs == rhs;
 }

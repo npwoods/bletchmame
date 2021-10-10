@@ -230,6 +230,7 @@ private:
 	void ensureProperFocus();
 	void changeAuditingState(Preferences::AuditingState auditingState);
 	virtual void auditIfAppropriate(const info::machine &machine) override;
+	bool canAutomaticallyAudit() const;
 	void updateAuditTimer();
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
 	void dispatchAuditTasks();
