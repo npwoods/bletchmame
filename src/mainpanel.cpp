@@ -561,7 +561,7 @@ void MainPanel::focusOnNewProfile(QString &&new_profile_path)
 	m_ui->tabWidget->setCurrentWidget(m_ui->profilesTab);
 
 	// set the profile as selected, so we focus on it when we rebuild the list view
-	m_prefs.setListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
+	m_prefs.setListViewSelection(s_profileListTableViewDesc.m_name, QString(new_profile_path));
 
 	// we want the current profile to be renamed - do this with a callback
 	profileListItemModel().setOneTimeFswCallback([this, profilePath{ std::move(new_profile_path) }]()
