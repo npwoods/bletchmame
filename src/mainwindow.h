@@ -217,7 +217,6 @@ private:
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
 	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
 	QString getTitleBarText();
-	static QString InputClassText(status::input::input_class input_class, bool elipsis);
 	void issue(const std::vector<QString> &args);
 	void issue(const std::initializer_list<std::string> &args);
 	void waitForStatusUpdate();
