@@ -86,8 +86,6 @@ private:
 	std::unique_ptr<Ui::MainPanel>													m_ui;
 	Preferences &																	m_prefs;
 	IMainPanelHost &																m_host;
-	SoftwareListItemModel *															m_softwareListItemModel;
-	ProfileListItemModel *															m_profileListItemModel;
 
 	// information retrieved by -listxml
 	info::database &																m_infoDb;
@@ -118,6 +116,8 @@ private:
 	const MachineFolderTreeModel &machineFolderTreeModel() const;
 	MachineFolderTreeModel &machineFolderTreeModel();
 	MachineListItemModel &machineListItemModel();
+	SoftwareListItemModel &softwareListItemModel();
+	ProfileListItemModel &profileListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
 	void persistMachineSplitterSizes();

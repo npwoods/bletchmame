@@ -108,8 +108,6 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	: QWidget(parent)
 	, m_prefs(prefs)
 	, m_host(host)
-	, m_softwareListItemModel(nullptr)
-	, m_profileListItemModel(nullptr)
 	, m_infoDb(infoDb)
 	, m_iconLoader(prefs)
 {
@@ -162,23 +160,23 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	});
 
 	// set up software list view
-	m_softwareListItemModel = new SoftwareListItemModel(this);
+	SoftwareListItemModel &softwareListItemModel = *new SoftwareListItemModel(this);
 	TableViewManager::setup(
 		*m_ui->softwareTableView,
-		*m_softwareListItemModel,
+		softwareListItemModel,
 		m_ui->softwareSearchBox,
 		m_prefs,
 		ChooseSoftlistPartDialog::s_tableViewDesc);
 
 	// set up the profile list view
-	m_profileListItemModel = new ProfileListItemModel(this, m_prefs, m_infoDb, m_iconLoader);
+	ProfileListItemModel &profileListItemModel = *new ProfileListItemModel(this, m_prefs, m_infoDb, m_iconLoader);
 	TableViewManager::setup(
 		*m_ui->profilesTableView,
-		*m_profileListItemModel,
+		profileListItemModel,
 		nullptr,
 		m_prefs,
 		s_profileListTableViewDesc);
-	m_profileListItemModel->refresh(true, true);
+	profileListItemModel.refresh(true, true);
 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.getSelectedTab()));
@@ -222,7 +220,7 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 
 	// did the user change the profiles path?
 	if (util::contains(changedPaths, Preferences::global_path_type::PROFILES))
-		m_profileListItemModel->refresh(true, true);
+		profileListItemModel().refresh(true, true);
 
 	// did the user change the icons path?
 	if (util::contains(changedPaths, Preferences::global_path_type::ICONS))
@@ -447,7 +445,7 @@ void MainPanel::createProfile(const info::machine &machine, const software_list:
 	if (iter == paths.end())
 	{
 		iter = std::find_if(paths.begin(), paths.end(), DirExistsOrMake);
-		m_profileListItemModel->refresh(false, true);
+		profileListItemModel().refresh(false, true);
 	}
 	if (iter == paths.end())
 	{
@@ -566,9 +564,9 @@ void MainPanel::focusOnNewProfile(QString &&new_profile_path)
 	m_prefs.setListViewSelection(s_profileListTableViewDesc.m_name, std::move(new_profile_path));
 
 	// we want the current profile to be renamed - do this with a callback
-	m_profileListItemModel->setOneTimeFswCallback([this, profilePath{ std::move(new_profile_path) }]()
+	profileListItemModel().setOneTimeFswCallback([this, profilePath{ std::move(new_profile_path) }]()
 	{
-		QModelIndex index = m_profileListItemModel->findProfileIndex(profilePath);
+		QModelIndex index = profileListItemModel().findProfileIndex(profilePath);
 		if (!index.isValid())
 			return;
 
@@ -662,6 +660,28 @@ MachineListItemModel &MainPanel::machineListItemModel()
 
 
 //-------------------------------------------------
+//  softwareListItemModel
+//-------------------------------------------------
+
+SoftwareListItemModel &MainPanel::softwareListItemModel()
+{
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->softwareTableView);
+	return *dynamic_cast<SoftwareListItemModel *>(proxyModel.sourceModel());
+}
+
+
+//-------------------------------------------------
+//  profileListItemModel
+//-------------------------------------------------
+
+ProfileListItemModel &MainPanel::profileListItemModel()
+{
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->profilesTableView);
+	return *dynamic_cast<ProfileListItemModel *>(proxyModel.sourceModel());
+}
+
+
+//-------------------------------------------------
 //  sortFilterProxyModel
 //-------------------------------------------------
 
@@ -711,12 +731,12 @@ void MainPanel::updateSoftwareList()
 		m_softwareListCollection.load(m_prefs, machine);
 
 		// and load the model
-		m_softwareListItemModel->load(m_softwareListCollection, false);
+		softwareListItemModel().load(m_softwareListCollection, false);
 	}
 	else
 	{
 		// no machines are selected - reset the software list view
-		m_softwareListItemModel->reset();
+		softwareListItemModel().reset();
 	}
 }
 
@@ -965,7 +985,7 @@ void MainPanel::on_softwareTableView_activated(const QModelIndex &index)
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(index);
 
 	// identify the software
-	const software_list::software &software = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
+	const software_list::software &software = softwareListItemModel().getSoftwareByIndex(actualIndex.row());
 
 	// and run!
 	run(machine, &software);
@@ -981,7 +1001,7 @@ void MainPanel::on_softwareTableView_customContextMenuRequested(const QPoint &po
 	// identify the selected software
 	QModelIndexList selection = m_ui->softwareTableView->selectionModel()->selectedIndexes();
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(selection[0]);
-	const software_list::software &sw = m_softwareListItemModel->getSoftwareByIndex(actualIndex.row());
+	const software_list::software &sw = softwareListItemModel().getSoftwareByIndex(actualIndex.row());
 
 	// and launch the context menu
 	LaunchingListContextMenu(m_ui->softwareTableView->mapToGlobal(pos), &sw);
@@ -998,7 +1018,7 @@ void MainPanel::on_profilesTableView_activated(const QModelIndex &index)
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(index);
 
 	// identify the profile
-	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+	std::shared_ptr<profiles::profile> profile = profileListItemModel().getProfileByIndex(actualIndex.row());
 
 	// and run!
 	run(std::move(profile));
@@ -1016,7 +1036,7 @@ void MainPanel::on_profilesTableView_customContextMenuRequested(const QPoint &po
 	if (selection.count() <= 0)
 		return;
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
-	std::shared_ptr<profiles::profile> profile = m_profileListItemModel->getProfileByIndex(actualIndex.row());
+	std::shared_ptr<profiles::profile> profile = profileListItemModel().getProfileByIndex(actualIndex.row());
 
 	// build the popup menu
 	QMenu popupMenu;
