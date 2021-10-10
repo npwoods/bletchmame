@@ -71,17 +71,19 @@ void TaskDispatcher::launch(const Task::ptr &task)
 
 void TaskDispatcher::launch(Task::ptr &&task)
 {
+	assert(task);
+
 	// set up an active task
 	ActiveTask &activeTask = *m_activeTasks.emplace(m_activeTasks.end());
-	activeTask.m_task = std::move(task);
+	activeTask.m_task = task;
 
 	// start the task
 	activeTask.m_task->start(m_prefs);
 
 	// and perform processing on the thread proc
-	activeTask.m_thread = std::thread([this, &activeTask]
+	activeTask.m_thread = std::thread([this, task{ std::move(task) }]
 	{
-		taskThreadProc(*activeTask.m_task);
+		taskThreadProc(*task);
 	});
 }
 
