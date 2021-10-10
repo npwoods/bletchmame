@@ -2482,20 +2482,27 @@ void MainWindow::changeAuditingState(Preferences::AuditingState auditingState)
 
 void MainWindow::auditIfAppropriate(const info::machine &machine)
 {
-	// if we're not automatically auditing, don't audit
-	if (m_prefs.getAuditingState() != Preferences::AuditingState::Automatic)
-		return;
+	// if we can automatically audit, and this status is unknown...
+	if (canAutomaticallyAudit()
+		&& m_prefs.getMachineAuditStatus(machine.name()) == AuditStatus::Unknown)
+	{
+		// then add it to the queue
+		MachineAuditIdentifier identifier(machine.name());
+		m_auditQueue.push(std::move(identifier));
+		updateAuditTimer();
+	}
+}
 
-	// if we're running an emulation, don't audit
-	if (m_currentRunMachineTask)
-		return;
 
-	// if we have an audit status, don't audit
-	if (m_prefs.getMachineAuditStatus(machine.name()) != AuditStatus::Unknown)
-		return;
+//-------------------------------------------------
+//  canAutomaticallyAudit
+//-------------------------------------------------
 
-	m_auditQueue.push(machine);
-	updateAuditTimer();
+bool MainWindow::canAutomaticallyAudit() const
+{
+	// we have to be configured to automatically audit, and not be running an emulation
+	return (m_prefs.getAuditingState() == Preferences::AuditingState::Automatic)
+		&& !m_currentRunMachineTask;
 }
 
 
@@ -2563,7 +2570,7 @@ bool MainWindow::onAuditResult(const AuditResultEvent &event)
 	if (event.cookie() < 0 || event.cookie() == m_auditQueue.currentCookie())
 	{
 		// they do in fact match; update the statuses
-		m_mainPanel->setMachineAuditStatuses(event.results());
+		m_mainPanel->setAuditStatuses(event.results());
 	}
 	return true;
 }

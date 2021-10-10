@@ -64,7 +64,7 @@ public:
 	std::optional<info::machine> currentlySelectedMachine();
 
 	// auditing
-	void setMachineAuditStatuses(const std::vector<AuditResult> &results);
+	void setAuditStatuses(const std::vector<AuditResult> &results);
 	void machineAuditStatusesChanged();
 	void manualAudit(const info::machine &machine);
 

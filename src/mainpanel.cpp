@@ -875,27 +875,39 @@ void MainPanel::manualAudit(const info::machine &machine)
 
 
 //-------------------------------------------------
-//  setMachineAuditStatuses
+//  setAuditStatuses
 //-------------------------------------------------
 
-void MainPanel::setMachineAuditStatuses(const std::vector<AuditResult> &results)
+void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 {
-	bool anyStatusChanged = false;
+	bool machineStatusChanged = false;
 
 	// update all statuses
 	for (const AuditResult &result : results)
 	{
-		// is this a cahange?
-		if (m_prefs.getMachineAuditStatus(result.machineName()) != result.status())
+		// determine the type of audit
+		std::visit([this, &machineStatusChanged, &result](auto &&identifier)
 		{
-			// if so, record it
-			m_prefs.setMachineAuditStatus(result.machineName(), result.status());
-			anyStatusChanged = true;
-		}
+			using T = std::decay_t<decltype(identifier)>;
+			if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+			{
+				// does this machine audit result represent a change?
+				if (m_prefs.getMachineAuditStatus(identifier.machineName()) != result.status())
+				{
+					// if so, record it
+					m_prefs.setMachineAuditStatus(identifier.machineName(), result.status());
+					machineStatusChanged = true;
+				}
+			}
+			else
+			{
+				throw false;
+			}
+		}, result.identifier());
 	}
 
 	// did anything change?
-	if (anyStatusChanged)
+	if (machineStatusChanged)
 		machineAuditStatusesChanged();
 }
 

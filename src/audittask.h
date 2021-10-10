@@ -10,6 +10,7 @@
 #define AUDITTASK_H
 
 #include <QEvent>
+#include <variant>
 
 #include "audit.h"
 #include "info.h"
@@ -20,23 +21,56 @@
 //  TYPE DECLARATIONS
 //**************************************************************************
 
+// ======================> MachineAuditIdentifier
+
+class MachineAuditIdentifier
+{
+public:
+	// ctor
+	MachineAuditIdentifier(const QString &machineName);
+	MachineAuditIdentifier(const MachineAuditIdentifier &) = default;
+	MachineAuditIdentifier(MachineAuditIdentifier &&) = default;
+
+	// operators
+	MachineAuditIdentifier &operator=(const MachineAuditIdentifier &) = default;
+	bool operator==(const MachineAuditIdentifier &) const = default;
+
+	// accessors
+	const QString &machineName() const { return m_machineName; }
+
+private:
+	QString	m_machineName;
+};
+
+
+namespace std
+{
+	template<>
+	struct hash<MachineAuditIdentifier>
+	{
+		std::size_t operator()(const MachineAuditIdentifier &x) const;
+	};
+}
+
+
+// ======================> AuditIdentifier
+
+typedef std::variant<MachineAuditIdentifier> AuditIdentifier;
+
+
 // ======================> AuditResult
 
 class AuditResult
 {
 public:
-	AuditResult(const QString &machineName, AuditStatus status)
-		: m_machineName(machineName)
-		, m_status(status)
-	{
-	}
+	AuditResult(AuditIdentifier &&identifier, AuditStatus status);
 
 	// accessors
-	const QString &machineName() const { return m_machineName; }
+	const AuditIdentifier &identifier() const { return m_identifier; }
 	AuditStatus status() const { return m_status; }
 
 private:
-	QString		m_machineName;
+	AuditIdentifier	m_identifier;
 	AuditStatus	m_status;
 };
 
@@ -92,6 +126,9 @@ public:
 	// methods
 	const Audit &addMachineAudit(const Preferences &prefs, const info::machine &machine);
 
+	// accessors
+	bool isEmpty() const { return m_entries.empty(); }
+
 protected:
 	// virtuals
 	virtual void process(QObject &eventHandler) final override;
@@ -99,8 +136,10 @@ protected:
 private:
 	struct Entry
 	{
-		QString	m_machineName;
-		Audit	m_audit;
+		Entry(AuditIdentifier &&identifier);
+
+		AuditIdentifier	m_identifier;
+		Audit			m_audit;
 	};
 
 	std::vector<Entry>	m_entries;
