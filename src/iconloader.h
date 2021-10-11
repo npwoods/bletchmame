@@ -51,12 +51,7 @@ private:
 		std::size_t operator()(const IconMapKey &x) const noexcept;
 	};
 
-	struct IconMapEquals
-	{
-		bool operator()(const IconMapKey &lhs, const IconMapKey &rhs) const;
-	};
-
-	typedef std::unordered_map<IconMapKey, std::optional<QPixmap>, IconMapHash, IconMapEquals> IconMap;
+	typedef std::unordered_map<IconMapKey, std::optional<QPixmap>, IconMapHash> IconMap;
 	
 	const Preferences &	m_prefs;
 	IconMap				m_iconMap;
