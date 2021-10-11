@@ -143,7 +143,9 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 	const AssetFinder &assetFinder = *assetFinders[entry.pathsPosition()];
 
 	// try to find the asset
-	std::unique_ptr<QIODevice> stream = assetFinder.findAsset(entry.name());
+	std::unique_ptr<QIODevice> stream = assetFinder.findAsset(
+		entry.name(),
+		entry.expectedHash().crc32());
 
 	// get critical information
 	std::uint64_t actualSize;

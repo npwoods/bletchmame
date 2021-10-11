@@ -32,8 +32,8 @@ public:
 	// methods
 	void setPaths(QStringList &&paths);
 	void setPaths(const Preferences &prefs, Preferences::global_path_type pathType);
-	std::unique_ptr<QIODevice> findAsset(const QString &fileName) const;
-	std::optional<QByteArray> findAssetBytes(const QString &fileName) const;
+	std::unique_ptr<QIODevice> findAsset(const QString &fileName, std::optional<std::uint32_t> crc32 = { }) const;
+	std::optional<QByteArray> findAssetBytes(const QString &fileName, std::optional<std::uint32_t> crc32 = { }) const;
 
 	// statics
 	static bool isValidArchive(const QString &path);
