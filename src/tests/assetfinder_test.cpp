@@ -11,19 +11,19 @@
 
 namespace
 {
-    class Test : public QObject
-    {
-        Q_OBJECT
+	class Test : public QObject
+	{
+		Q_OBJECT
 
-    private slots:
-        void empty();
-        void zip();
-        void isValidArchive_zip()       { isValidArchive(":/resources/sample_archive.zip", true); }
-        void isValidArchive_garbage()   { isValidArchive(":/resources/garbage.bin", false); }
+	private slots:
+		void empty();
+		void zip();
+		void isValidArchive_zip()       { isValidArchive(":/resources/sample_archive.zip", true); }
+		void isValidArchive_garbage()   { isValidArchive(":/resources/garbage.bin", false); }
 
-    private:
-        void isValidArchive(const char *path, bool expectedResult);
-    };
+	private:
+		void isValidArchive(const char *path, bool expectedResult);
+	};
 }
 
 
@@ -37,8 +37,8 @@ namespace
 
 void Test::empty()
 {
-    AssetFinder assetFinder;
-    QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
+	AssetFinder assetFinder;
+	QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
 }
 
 
@@ -48,13 +48,24 @@ void Test::empty()
 
 void Test::zip()
 {
-    AssetFinder assetFinder;
-    assetFinder.setPaths({ ":/resources/sample_archive.zip" });
+	AssetFinder assetFinder;
+	assetFinder.setPaths({ ":/resources/sample_archive.zip" });
 
-    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("alpha.txt").value_or(QByteArray())) == "11111");
-    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("bravo.txt").value_or(QByteArray())) == "22222");
-    QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("charlie.txt").value_or(QByteArray())) == "33333");
-    QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
+	// basic lookups by filename
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("alpha.txt").value_or(QByteArray())) == "11111");
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("bravo.txt").value_or(QByteArray())) == "22222");
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("charlie.txt").value_or(QByteArray())) == "33333");
+
+	// MAME's zip support is case insensitive
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("CHaRLie.TXT").value_or(QByteArray())) == "33333");
+
+	// and MAME's zip support has searching by CRC32 in addition to name
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("FIND_CHARLIE_BY_CRC", 0xAFAB3DEB).value_or(QByteArray())) == "33333");
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("bravo.txt", 0xBAADF00D).value_or(QByteArray())) == "22222");
+
+	// unknown file lookups
+	QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
+	QVERIFY(!assetFinder.findAssetBytes("UNKNOWN_CRC", 0xBAADF00D));
 }
 
 
@@ -64,8 +75,8 @@ void Test::zip()
 
 void Test::isValidArchive(const char *path, bool expectedResult)
 {
-    bool result = AssetFinder::isValidArchive(path);
-    QVERIFY(result == expectedResult);
+	bool result = AssetFinder::isValidArchive(path);
+	QVERIFY(result == expectedResult);
 }
 
 

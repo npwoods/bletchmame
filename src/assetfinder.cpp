@@ -27,7 +27,7 @@ public:
 	Lookup(Lookup &&) = default;
 
 	virtual ~Lookup() { }
-	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName) = 0;
+	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName, std::optional<std::uint32_t> crc32) = 0;
 };
 
 
@@ -40,7 +40,7 @@ public:
 	{
 	}
 
-	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName) override
+	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName, std::optional<std::uint32_t> crc32) override
 	{
 		return std::make_unique<QFile>(m_path + "/" + fileName);
 	}
@@ -64,10 +64,10 @@ public:
 		return m_zip.open(QuaZip::Mode::mdUnzip);
 	}
 
-	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName) override
+	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName, std::optional<std::uint32_t> crc32) override
 	{
 		// find the file
-		if (!m_zip.setCurrentFile(fileName))
+		if (!findFileInZip(fileName, crc32))
 			return { };
 
 		// and return a QuaZipFile
@@ -76,6 +76,25 @@ public:
 
 private:
 	QuaZip	m_zip;
+
+	bool findFileInZip(const QString &fileName, std::optional<std::uint32_t> crc32)
+	{
+		for (bool more = m_zip.goToFirstFile(); more; more = m_zip.goToNextFile())
+		{
+			// check the file name
+			QString thisFileName = m_zip.getCurrentFileName();
+			if (QString::compare(fileName, thisFileName, Qt::CaseInsensitive) == 0)
+				return true;
+
+			// were we passed a CRC32, and if so does it match?
+			QuaZipFileInfo64 info;
+			if (crc32.has_value() && m_zip.getCurrentFileInfo(&info) && info.crc == crc32.value())
+				return true;
+		}
+
+		// couldn't find the file
+		return false;
+	}
 };
 
 
@@ -175,11 +194,11 @@ void AssetFinder::setPaths(const Preferences &prefs, Preferences::global_path_ty
 //  findAsset
 //-------------------------------------------------
 
-std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName) const
+std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName, std::optional<std::uint32_t> crc32) const
 {
 	for (const Lookup::ptr &lookup : m_lookups)
 	{
-		std::unique_ptr<QIODevice> stream = lookup->getAsset(fileName);
+		std::unique_ptr<QIODevice> stream = lookup->getAsset(fileName, crc32);
 		if (stream && stream->open(QIODevice::ReadOnly))
 			return stream;
 	}
@@ -191,10 +210,10 @@ std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName) const
 //  findAssetBytes
 //-------------------------------------------------
 
-std::optional<QByteArray> AssetFinder::findAssetBytes(const QString &fileName) const
+std::optional<QByteArray> AssetFinder::findAssetBytes(const QString &fileName, std::optional<std::uint32_t> crc32) const
 {
 	std::optional<QByteArray> result;
-	std::unique_ptr<QIODevice> stream = findAsset(fileName);
+	std::unique_ptr<QIODevice> stream = findAsset(fileName, crc32);
 	if (stream)
 		result = stream->readAll();
 	return result;
