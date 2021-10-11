@@ -261,14 +261,3 @@ std::size_t IconLoader::IconMapHash::operator()(const IconMapKey &x) const noexc
 	return std::hash<std::u8string>{}(std::get<0>(x))
 		^ std::hash<std::u8string>{}(std::get<1>(x));
 }
-
-
-//-------------------------------------------------
-//  IconMapEquals::operator()
-//-------------------------------------------------
-
-bool IconLoader::IconMapEquals::operator()(const IconMapKey &lhs, const IconMapKey &rhs) const
-{
-	return std::get<0>(lhs) == std::get<0>(rhs)
-		&& std::get<1>(lhs) == std::get<1>(rhs);
-}
