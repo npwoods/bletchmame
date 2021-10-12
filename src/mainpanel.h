@@ -67,6 +67,8 @@ public:
 	void setAuditStatuses(const std::vector<AuditResult> &results);
 	void machineAuditStatusesChanged();
 	void manualAudit(const info::machine &machine);
+	static QString auditThisActionText(const QString &text);
+	static QString auditThisActionText(QString &&text);
 
 private slots:
 	void on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos);

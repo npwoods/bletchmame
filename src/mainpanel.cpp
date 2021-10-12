@@ -367,7 +367,7 @@ void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list:
 	if (!software)
 	{
 		popupMenu.addSeparator();
-		popupMenu.addAction(QString("Audit \"%1\"").arg(description), [this, machine]()
+		popupMenu.addAction(auditThisActionText(description), [this, machine]()
 		{
 			manualAudit(machine);
 		});
@@ -919,6 +919,39 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 void MainPanel::machineAuditStatusesChanged()
 {
 	machineListItemModel().auditStatusesChanged();
+}
+
+
+//-------------------------------------------------
+//  auditThisActionText
+//-------------------------------------------------
+
+QString MainPanel::auditThisActionText(const QString &text)
+{
+	return auditThisActionText(QString(text));
+}
+
+
+//-------------------------------------------------
+//  auditThisActionText
+//-------------------------------------------------
+
+QString MainPanel::auditThisActionText(QString &&text)
+{
+	QString result;
+	if (!text.isEmpty())
+	{
+		// need to escape this text
+		text.replace(QString("&"), QString("&&"));
+
+		// build the result
+		result = QString("Audit \"%1\"").arg(text);
+	}
+	else
+	{
+		result = "Audit This";
+	}
+	return result;
 }
 
 

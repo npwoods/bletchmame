@@ -234,6 +234,7 @@ add_executable(BletchMAME_tests
 	src/tests/liveinstancetracker_test.cpp
 	src/tests/machinefoldertreemodel_test.cpp
 	src/tests/machinelistitemmodel_test.cpp
+	src/tests/mainpanel_test.cpp
 	src/tests/mamerunner.cpp
 	src/tests/mametask_test.cpp
 	src/tests/mameversion_test.cpp
