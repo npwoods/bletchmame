@@ -61,7 +61,7 @@ public:
 	// methods
 	void updateTabContents();
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
-	std::optional<info::machine> currentlySelectedMachine();
+	std::optional<info::machine> currentlySelectedMachine() const;
 
 	// auditing
 	void setAuditStatuses(const std::vector<AuditResult> &results);

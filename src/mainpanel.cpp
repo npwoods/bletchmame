@@ -240,7 +240,7 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 //  currentlySelectedMachine
 //-------------------------------------------------
 
-std::optional<info::machine> MainPanel::currentlySelectedMachine()
+std::optional<info::machine> MainPanel::currentlySelectedMachine() const
 {
 	std::optional<info::machine> result;
 	QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
