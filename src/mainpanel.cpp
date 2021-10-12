@@ -290,10 +290,10 @@ void MainPanel::run(const info::machine &machine, std::unique_ptr<SessionBehavio
 
 
 //-------------------------------------------------
-//  LaunchingListContextMenu
+//  launchingListContextMenu
 //-------------------------------------------------
 
-void MainPanel::LaunchingListContextMenu(const QPoint &pos, const software_list::software *software)
+void MainPanel::launchingListContextMenu(const QPoint &pos, const software_list::software *software)
 {
 	// identify the machine
 	QModelIndex index = m_ui->machinesTableView->selectionModel()->selectedIndexes()[0];
@@ -1013,7 +1013,7 @@ void MainPanel::on_machinesTableView_activated(const QModelIndex &index)
 
 void MainPanel::on_machinesTableView_customContextMenuRequested(const QPoint &pos)
 {
-	LaunchingListContextMenu(m_ui->machinesTableView->mapToGlobal(pos));
+	launchingListContextMenu(m_ui->machinesTableView->mapToGlobal(pos));
 }
 
 
@@ -1049,7 +1049,7 @@ void MainPanel::on_softwareTableView_customContextMenuRequested(const QPoint &po
 	const software_list::software &sw = softwareListItemModel().getSoftwareByIndex(actualIndex.row());
 
 	// and launch the context menu
-	LaunchingListContextMenu(m_ui->softwareTableView->mapToGlobal(pos), &sw);
+	launchingListContextMenu(m_ui->softwareTableView->mapToGlobal(pos), &sw);
 }
 
 

@@ -104,7 +104,7 @@ private:
 	void run(std::shared_ptr<profiles::profile> &&profile);
 	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	void updateSoftwareList();
-	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
+	void launchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
 	void createProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);
 	void duplicateProfile(const profiles::profile &profile);
