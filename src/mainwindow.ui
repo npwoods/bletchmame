@@ -56,6 +56,7 @@
      <addaction name="actionAuditingManual"/>
      <addaction name="separator"/>
      <addaction name="actionAuditThis"/>
+     <addaction name="actionResetAuditingStatuses"/>
     </widget>
     <addaction name="actionStop"/>
     <addaction name="actionPause"/>
@@ -443,6 +444,11 @@
   <action name="actionAuditThis">
    <property name="text">
     <string>Audit This</string>
+   </property>
+  </action>
+  <action name="actionResetAuditingStatuses">
+   <property name="text">
+    <string>Reset Auditing Statuses</string>
    </property>
   </action>
  </widget>

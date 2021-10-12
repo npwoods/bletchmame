@@ -1171,6 +1171,18 @@ void MainWindow::on_actionAuditThis_triggered()
 
 
 //-------------------------------------------------
+//  on_actionResetAuditingStatuses_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionResetAuditingStatuses_triggered()
+{
+	m_prefs.dropAllMachineAuditStatuses();
+	updateAuditTimer();
+	m_mainPanel->machineAuditStatusesChanged();
+}
+
+
+//-------------------------------------------------
 //  on_actionDebugger_triggered
 //-------------------------------------------------
 
