@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainpanel.h
 
@@ -118,6 +118,7 @@ private:
 	const MachineFolderTreeModel &machineFolderTreeModel() const;
 	MachineFolderTreeModel &machineFolderTreeModel();
 	MachineListItemModel &machineListItemModel();
+	const MachineListItemModel &machineListItemModel() const;
 	SoftwareListItemModel &softwareListItemModel();
 	ProfileListItemModel &profileListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;

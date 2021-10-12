@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainpanel.cpp
 
@@ -620,11 +620,8 @@ info::machine MainPanel::machineFromModelIndex(const QModelIndex &index) const
 	// map the index to the actual index
 	QModelIndex actualIndex = proxyModel.mapToSource(index);
 
-	// get the machine list item model
-	const MachineListItemModel &machineModel = *dynamic_cast<const MachineListItemModel *>(proxyModel.sourceModel());
-
 	// and return the machine
-	return machineModel.machineFromIndex(actualIndex);
+	return machineListItemModel().machineFromIndex(actualIndex);
 }
 
 
@@ -653,6 +650,17 @@ MachineFolderTreeModel &MainPanel::machineFolderTreeModel()
 //-------------------------------------------------
 
 MachineListItemModel &MainPanel::machineListItemModel()
+{
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
+	return *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
+}
+
+
+//-------------------------------------------------
+//  machineListItemModel
+//-------------------------------------------------
+
+const MachineListItemModel &MainPanel::machineListItemModel() const
 {
 	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->machinesTableView);
 	return *dynamic_cast<MachineListItemModel *>(proxyModel.sourceModel());
