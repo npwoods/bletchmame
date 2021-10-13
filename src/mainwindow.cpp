@@ -1103,14 +1103,24 @@ void MainWindow::on_menuAuditing_aboutToShow()
 
 	// identify the currently selected machine
 	std::optional<info::machine> selectedMachine;
-	if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
+	const QString *auditTargetText = nullptr;
+	switch (m_prefs.getSelectedTab())
+	{
+	case Preferences::list_view_type::MACHINE:
 		selectedMachine = m_mainPanel->currentlySelectedMachine();
+		if (selectedMachine)
+			auditTargetText = &selectedMachine->description();
+		break;
+
+	case Preferences::list_view_type::SOFTWARELIST:
+	case Preferences::list_view_type::PROFILE:
+		// do nothing
+		break;
+	}
 
 	// update the "Audit This" item
-	m_ui->actionAuditThis->setChecked(selectedMachine.has_value());
-	QString actionAuditThisText = selectedMachine
-		? QString("Audit \"%1\"").arg(selectedMachine->description())
-		: QString("Audit This");
+	QString actionAuditThisText = MainPanel::auditThisActionText(auditTargetText ? QString(*auditTargetText) : QString());
+	m_ui->actionAuditThis->setEnabled(auditTargetText);
 	m_ui->actionAuditThis->setText(actionAuditThisText);
 }
 
@@ -1157,6 +1167,18 @@ void MainWindow::on_actionAuditThis_triggered()
 
 	if (selectedMachine)
 		m_mainPanel->manualAudit(*selectedMachine);
+}
+
+
+//-------------------------------------------------
+//  on_actionResetAuditingStatuses_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionResetAuditingStatuses_triggered()
+{
+	m_prefs.dropAllMachineAuditStatuses();
+	updateAuditTimer();
+	m_mainPanel->machineAuditStatusesChanged();
 }
 
 

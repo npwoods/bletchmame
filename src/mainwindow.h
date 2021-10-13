@@ -78,6 +78,7 @@ private slots:
 	void on_actionAuditingAutomatic_triggered();
 	void on_actionAuditingManual_triggered();
 	void on_actionAuditThis_triggered();
+	void on_actionResetAuditingStatuses_triggered();	
 	void on_actionDebugger_triggered();
 	void on_actionSoftReset_triggered();
 	void on_actionHardReset_triggered();

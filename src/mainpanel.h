@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	mainpanel.h
 
@@ -61,12 +61,14 @@ public:
 	// methods
 	void updateTabContents();
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
-	std::optional<info::machine> currentlySelectedMachine();
+	std::optional<info::machine> currentlySelectedMachine() const;
 
 	// auditing
 	void setAuditStatuses(const std::vector<AuditResult> &results);
 	void machineAuditStatusesChanged();
 	void manualAudit(const info::machine &machine);
+	static QString auditThisActionText(const QString &text);
+	static QString auditThisActionText(QString &&text);
 
 private slots:
 	void on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos);
@@ -102,7 +104,7 @@ private:
 	void run(std::shared_ptr<profiles::profile> &&profile);
 	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	void updateSoftwareList();
-	void LaunchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
+	void launchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
 	void createProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);
 	void duplicateProfile(const profiles::profile &profile);
@@ -116,6 +118,7 @@ private:
 	const MachineFolderTreeModel &machineFolderTreeModel() const;
 	MachineFolderTreeModel &machineFolderTreeModel();
 	MachineListItemModel &machineListItemModel();
+	const MachineListItemModel &machineListItemModel() const;
 	SoftwareListItemModel &softwareListItemModel();
 	ProfileListItemModel &profileListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
