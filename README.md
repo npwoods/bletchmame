@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.9 (TBD)
 	- Added experimental MAMEUI-style media auditing capabilities
+		- ROMs, Samples, Disks and Software Lists are supported
 	- When refreshing the MAME Info Database (-listxml handling), names and descriptions of machines will be displayed
 	- No longer waiting for the MAME version check to complete on startup
 	- Various enhancements to the Paths Dialog

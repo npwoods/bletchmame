@@ -7,14 +7,17 @@
 ***************************************************************************/
 
 #include "softwarelistitemmodel.h"
+#include "iconloader.h"
 
 
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
-SoftwareListItemModel::SoftwareListItemModel(QObject *parent)
+SoftwareListItemModel::SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent)
     : QAbstractItemModel(parent)
+	, m_iconLoader(iconLoader)
+	, m_softwareIconAccessedCallback(std::move(softwareIconAccessedCallback))
 {
 }
 
@@ -31,14 +34,14 @@ void SoftwareListItemModel::load(const software_list_collection &software_col, b
     internalReset();
 
     // now enumerate through each list and build the m_parts vector
-    for (const software_list &softlist : software_col.software_lists())
+    for (const software_list::ptr &softlist : software_col.software_lists())
     {
         // if the name of this software list is not in m_softlist_names, add it
-        if (std::find(m_softlist_names.begin(), m_softlist_names.end(), softlist.name()) == m_softlist_names.end())
-            m_softlist_names.push_back(softlist.name());
+        if (std::find(m_softlist_names.begin(), m_softlist_names.end(), softlist->name()) == m_softlist_names.end())
+            m_softlist_names.push_back(softlist->name());
 
         // now enumerate through all software
-        for (const software_list::software &software : softlist.get_software())
+        for (const software_list::software &software : softlist->get_software())
         {
             if (load_parts)
             {
@@ -82,6 +85,19 @@ void SoftwareListItemModel::internalReset()
 {
     m_parts.clear();
     m_softlist_names.clear();
+}
+
+
+//-------------------------------------------------
+//  auditStatusesChanged
+//-------------------------------------------------
+
+void SoftwareListItemModel::auditStatusesChanged()
+{
+	QModelIndex topLeft = createIndex(0, (int)Column::Name);
+	QModelIndex bottomRight = createIndex(util::safe_static_cast<int>(m_parts.size()) - 1, (int)Column::Name);
+	QVector<int> roles = { Qt::DecorationRole };
+	dataChanged(topLeft, bottomRight, roles);
 }
 
 
@@ -134,27 +150,44 @@ QVariant SoftwareListItemModel::data(const QModelIndex &index, int role) const
     QVariant result;
     if (index.isValid()
         && index.row() >= 0
-        && index.row() < m_parts.size()
-        && role == Qt::DisplayRole)
+        && index.row() < m_parts.size())
     {
         const software_list::software &sw = m_parts[index.row()].software();
-
         Column column = (Column)index.column();
-        switch (column)
-        {
-        case Column::Name:
-            result = sw.name();
-            break;
-        case Column::Description:
-            result = sw.description();
-            break;
-        case Column::Year:
-            result = sw.year();
-            break;
-        case Column::Manufacturer:
-            result = sw.publisher();
-            break;
-        }
+
+		switch (role)
+		{
+		case Qt::DisplayRole:
+			switch (column)
+			{
+			case Column::Name:
+				result = sw.name();
+				break;
+			case Column::Description:
+				result = sw.description();
+				break;
+			case Column::Year:
+				result = sw.year();
+				break;
+			case Column::Manufacturer:
+				result = sw.publisher();
+				break;
+			}
+			break;
+
+		case Qt::DecorationRole:
+			if (column == Column::Name && m_iconLoader)
+			{
+				std::optional<QPixmap> icon = m_iconLoader->getIcon(sw);
+				if (icon.has_value())
+					result = std::move(icon.value());
+
+				// invoke the "accessed" callback, which can trigger an audit when autoauditing
+				if (m_softwareIconAccessedCallback)
+					m_softwareIconAccessedCallback(sw);
+			}
+			break;
+		}
     }
     return result;
 }

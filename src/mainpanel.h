@@ -16,6 +16,7 @@
 #include "profile.h"
 #include "prefs.h"
 #include "softwarelist.h"
+#include "audittask.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -28,8 +29,6 @@ class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
 class AuditDialog;
-class AuditResult;
-class AuditTask;
 class MachineFolderTreeModel;
 class MachineListItemModel;
 class ProfileListItemModel;
@@ -44,7 +43,9 @@ class IMainPanelHost
 public:
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) = 0;
 	virtual void auditIfAppropriate(const info::machine &machine) = 0;
+	virtual void auditIfAppropriate(const software_list::software &software) = 0;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) = 0;
+	virtual software_list_collection &getSoftwareListCollection() = 0;
 };
 
 
@@ -62,11 +63,14 @@ public:
 	void updateTabContents();
 	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
 	std::optional<info::machine> currentlySelectedMachine() const;
+	const software_list::software *currentlySelectedSoftware() const;
 
 	// auditing
 	void setAuditStatuses(const std::vector<AuditResult> &results);
 	void machineAuditStatusesChanged();
+	void softwareAuditStatusesChanged();
 	void manualAudit(const info::machine &machine);
+	void manualAudit(const software_list::software &software);
 	static QString auditThisActionText(const QString &text);
 	static QString auditThisActionText(QString &&text);
 
@@ -94,7 +98,6 @@ private:
 
 	// other
 	QString																			m_currentSoftwareList;
-	software_list_collection														m_softwareListCollection;
 	IconLoader																		m_iconLoader;
 	QPixmap																			m_currentSnapshot;
 	std::vector<QString>															m_expandedTreeItems;
@@ -115,11 +118,13 @@ private:
 	void deleteSelectedFolder();
 	void showInGraphicalShell(const QString &path) const;
 	info::machine machineFromModelIndex(const QModelIndex &index) const;
+	const software_list::software &softwareFromModelIndex(const QModelIndex &index) const;
 	const MachineFolderTreeModel &machineFolderTreeModel() const;
 	MachineFolderTreeModel &machineFolderTreeModel();
 	MachineListItemModel &machineListItemModel();
 	const MachineListItemModel &machineListItemModel() const;
 	SoftwareListItemModel &softwareListItemModel();
+	const SoftwareListItemModel &softwareListItemModel() const;
 	ProfileListItemModel &profileListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
@@ -128,6 +133,7 @@ private:
 	void updateSnapshot();
 	void identifyExpandedFolderTreeItems();
 	static void iterateItemModelIndexes(QAbstractItemModel &model, const std::function<void(const QModelIndex &)> &func, const QModelIndex &index = QModelIndex());
+	void runAuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, AuditTask::ptr auditTask);
 };
 
 

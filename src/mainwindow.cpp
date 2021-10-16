@@ -691,7 +691,7 @@ MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
 	, m_taskDispatcher(*this, m_prefs)
-	, m_auditQueue(m_prefs, m_info_db)
+	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
 	, m_pinging(false)
@@ -1101,8 +1101,9 @@ void MainWindow::on_menuAuditing_aboutToShow()
 	m_ui->actionAuditingAutomatic->setChecked(auditingState == Preferences::AuditingState::Automatic);
 	m_ui->actionAuditingManual->setChecked(auditingState == Preferences::AuditingState::Manual);
 
-	// identify the currently selected machine
+	// identify the currently selected auditable
 	std::optional<info::machine> selectedMachine;
+	const software_list::software *selectedSoftware;
 	const QString *auditTargetText = nullptr;
 	switch (m_prefs.getSelectedTab())
 	{
@@ -1113,6 +1114,11 @@ void MainWindow::on_menuAuditing_aboutToShow()
 		break;
 
 	case Preferences::list_view_type::SOFTWARELIST:
+		selectedSoftware = m_mainPanel->currentlySelectedSoftware();
+		if (selectedSoftware)
+			auditTargetText = &selectedSoftware->description();
+		break;
+
 	case Preferences::list_view_type::PROFILE:
 		// do nothing
 		break;
@@ -1162,11 +1168,26 @@ void MainWindow::on_actionAuditingManual_triggered()
 void MainWindow::on_actionAuditThis_triggered()
 {
 	std::optional<info::machine> selectedMachine;
-	if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
-		selectedMachine = m_mainPanel->currentlySelectedMachine();
+	const software_list::software *selectedSoftware;
 
-	if (selectedMachine)
-		m_mainPanel->manualAudit(*selectedMachine);
+	switch (m_prefs.getSelectedTab())
+	{
+	case Preferences::list_view_type::MACHINE:
+		selectedMachine = m_mainPanel->currentlySelectedMachine();
+		if (selectedMachine)
+			m_mainPanel->manualAudit(*selectedMachine);
+		break;
+
+	case Preferences::list_view_type::SOFTWARELIST:
+		selectedSoftware = m_mainPanel->currentlySelectedSoftware();
+		if (selectedSoftware)
+			m_mainPanel->manualAudit(*selectedSoftware);
+		break;
+
+	case Preferences::list_view_type::PROFILE:
+		// should not get here; the menu should be disabled
+		break;
+	}
 }
 
 
@@ -1176,9 +1197,7 @@ void MainWindow::on_actionAuditThis_triggered()
 
 void MainWindow::on_actionResetAuditingStatuses_triggered()
 {
-	m_prefs.dropAllMachineAuditStatuses();
-	updateAuditTimer();
-	m_mainPanel->machineAuditStatusesChanged();
+	resetAuditing(true, true);
 }
 
 
@@ -1383,13 +1402,10 @@ void MainWindow::on_actionPaths_triggered()
 	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
 		launchVersionCheck(false);
 
-	// did the user change the roms or samples paths?
-	if (util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES))
-	{
-		// if so we have to refresh auditing
-		m_prefs.dropAllMachineAuditStatuses();
-		updateAuditTimer();
-	}
+	// did the user cause audit statuses to be reset
+	bool resetMachineAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES);
+	bool resetSoftwareAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS);
+	resetAuditing(resetMachineAudit, resetSoftwareAudit);
 
 	m_mainPanel->pathsChanged(changed_paths);
 }
@@ -1729,6 +1745,16 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 
 	// unpause
 	changePaused(false);
+}
+
+
+//-------------------------------------------------
+//  getSoftwareListCollection
+//-------------------------------------------------
+
+software_list_collection &MainWindow::getSoftwareListCollection()
+{
+	return m_softwareListCollection;
 }
 
 
@@ -2491,6 +2517,7 @@ void MainWindow::changeAuditingState(Preferences::AuditingState auditingState)
 
 		// audit statuses may have changed
 		m_mainPanel->machineAuditStatusesChanged();
+		m_mainPanel->softwareAuditStatusesChanged();
 
 		// we may need to kick the timer
 		updateAuditTimer();
@@ -2517,6 +2544,24 @@ void MainWindow::auditIfAppropriate(const info::machine &machine)
 
 
 //-------------------------------------------------
+//  auditIfAppropriate
+//-------------------------------------------------
+
+void MainWindow::auditIfAppropriate(const software_list::software &software)
+{
+	// if we can automatically audit, and this status is unknown...
+	if (canAutomaticallyAudit()
+		&& m_prefs.getSoftwareAuditStatus(software.parent().name(), software.name()) == AuditStatus::Unknown)
+	{
+		// then add it to the queue
+		SoftwareAuditIdentifier identifier(software.parent().name(), software.name());
+		m_auditQueue.push(std::move(identifier));
+		updateAuditTimer();
+	}
+}
+
+
+//-------------------------------------------------
 //  canAutomaticallyAudit
 //-------------------------------------------------
 
@@ -2525,6 +2570,28 @@ bool MainWindow::canAutomaticallyAudit() const
 	// we have to be configured to automatically audit, and not be running an emulation
 	return (m_prefs.getAuditingState() == Preferences::AuditingState::Automatic)
 		&& !m_currentRunMachineTask;
+}
+
+
+//-------------------------------------------------
+//  resetAuditing
+//-------------------------------------------------
+
+void MainWindow::resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit)
+{
+	if (resetMachineAudit)
+	{
+		m_prefs.dropAllMachineAuditStatuses();
+		m_mainPanel->machineAuditStatusesChanged();
+	}
+	if (resetSoftwareAudit)
+	{
+		m_prefs.dropAllSoftwareAuditStatuses();
+		m_mainPanel->softwareAuditStatusesChanged();
+	}
+
+	if (resetMachineAudit || resetSoftwareAudit)
+		updateAuditTimer();
 }
 
 

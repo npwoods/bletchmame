@@ -45,6 +45,20 @@ const Audit &AuditTask::addMachineAudit(const Preferences &prefs, const info::ma
 
 
 //-------------------------------------------------
+//  addSoftwareAudit
+//-------------------------------------------------
+
+const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const software_list::software &software)
+{
+	Entry &entry = *m_entries.emplace(
+		m_entries.end(),
+		SoftwareAuditIdentifier(software.parent().name(), software.name()));
+	entry.m_audit.addMediaForSoftware(prefs, software);
+	return entry.m_audit;
+}
+
+
+//-------------------------------------------------
 //  process
 //-------------------------------------------------
 
@@ -106,6 +120,28 @@ MachineAuditIdentifier::MachineAuditIdentifier(const QString &machineName)
 std::size_t std::hash<MachineAuditIdentifier>::operator()(const MachineAuditIdentifier &identifier) const
 {
 	return std::hash<QString>()(identifier.machineName());
+}
+
+
+//-------------------------------------------------
+//  SoftwareAuditIdentifier ctor
+//-------------------------------------------------
+
+SoftwareAuditIdentifier::SoftwareAuditIdentifier(const QString &softwareList, const QString &software)
+	: m_softwareList(softwareList)
+	, m_software(software)
+{
+}
+
+
+//-------------------------------------------------
+//  std::hash<SoftwareAuditIdentifier>::operator()
+//-------------------------------------------------
+
+std::size_t std::hash<SoftwareAuditIdentifier>::operator()(const SoftwareAuditIdentifier &identifier) const
+{
+	return std::hash<QString>()(identifier.softwareList())
+		^ std::hash<QString>()(identifier.software());
 }
 
 

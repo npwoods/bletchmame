@@ -12,6 +12,7 @@
 #include "info.h"
 #include "prefs.h"
 #include "hash.h"
+#include "softwarelist.h"
 
 
 //**************************************************************************
@@ -108,6 +109,7 @@ public:
 
 	// methods
 	void addMediaForMachine(const Preferences &prefs, const info::machine &machine);
+	void addMediaForSoftware(const Preferences &prefs, const software_list::software &software);
 	AuditStatus run(const Callback &callback = { }) const;
 
 	// statics
@@ -121,7 +123,8 @@ private:
 	std::vector<Entry>						m_entries;
 
 	// methods
-	int setupPaths(const Preferences &prefs, std::optional<info::machine> machine, Preferences::global_path_type pathType);
+	QStringList buildMachinePaths(const Preferences &prefs, Preferences::global_path_type pathType, std::optional<info::machine> machine);
+	int appendPaths(QStringList &&paths);
 	void auditSingleMedia(Session &session, int entryIndex, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const;
 };
 

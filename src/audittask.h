@@ -53,9 +53,43 @@ namespace std
 }
 
 
+// ======================> SoftwareAuditIdentifier
+
+class SoftwareAuditIdentifier
+{
+public:
+	// ctor
+	SoftwareAuditIdentifier(const QString &softwareList, const QString &software);
+	SoftwareAuditIdentifier(const SoftwareAuditIdentifier &) = default;
+	SoftwareAuditIdentifier(SoftwareAuditIdentifier &&) = default;
+
+	// operators
+	SoftwareAuditIdentifier &operator=(const SoftwareAuditIdentifier &) = default;
+	bool operator==(const SoftwareAuditIdentifier &) const = default;
+
+	// accessors
+	const QString &softwareList() const { return m_softwareList; }
+	const QString &software() const { return m_software; }
+
+private:
+	QString	m_softwareList;
+	QString	m_software;
+};
+
+
+namespace std
+{
+	template<>
+	struct hash<SoftwareAuditIdentifier>
+	{
+		std::size_t operator()(const SoftwareAuditIdentifier &x) const;
+	};
+}
+
+
 // ======================> AuditIdentifier
 
-typedef std::variant<MachineAuditIdentifier> AuditIdentifier;
+typedef std::variant<MachineAuditIdentifier, SoftwareAuditIdentifier> AuditIdentifier;
 
 
 // ======================> AuditResult
@@ -125,6 +159,7 @@ public:
 
 	// methods
 	const Audit &addMachineAudit(const Preferences &prefs, const info::machine &machine);
+	const Audit &addSoftwareAudit(const Preferences &prefs, const software_list::software &software);
 
 	// accessors
 	bool isEmpty() const { return m_entries.empty(); }
