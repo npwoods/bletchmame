@@ -502,6 +502,44 @@ void Preferences::dropAllMachineAuditStatuses()
 
 
 //-------------------------------------------------
+//  getSoftwareAuditStatus
+//-------------------------------------------------
+
+AuditStatus Preferences::getSoftwareAuditStatus(const QString &softwareList, const QString &software) const
+{
+	auto key = std::make_tuple(softwareList, software);
+	auto iter = m_softwareAuditStatus.find(key);
+	return iter != m_softwareAuditStatus.end()
+		? iter->second
+		: AuditStatus::Unknown;
+}
+
+
+//-------------------------------------------------
+//  setSoftwareAuditStatus
+//-------------------------------------------------
+
+void Preferences::setSoftwareAuditStatus(const QString &softwareList, const QString &software, AuditStatus status)
+{
+	auto key = std::make_tuple(softwareList, software);
+	if (status != AuditStatus::Unknown)
+		m_softwareAuditStatus[key] = status;
+	else
+		m_softwareAuditStatus.erase(key);
+}
+
+
+//-------------------------------------------------
+//  dropAllSoftwareAuditStatuses
+//-------------------------------------------------
+
+void Preferences::dropAllSoftwareAuditStatuses()
+{
+	m_softwareAuditStatus.clear();
+}
+
+
+//-------------------------------------------------
 //  garbageCollectMachineInfo
 //-------------------------------------------------
 
@@ -554,6 +592,7 @@ bool Preferences::load(QIODevice &input)
 	// clear out state
 	m_windowState = WindowState::Normal;
 	m_machine_info.clear();
+	m_softwareAuditStatus.clear();
 	m_custom_folders.clear();
 	m_auditingState = AuditingState::Default;
 
@@ -712,6 +751,16 @@ bool Preferences::load(QIODevice &input)
 	{
 		getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
 	});
+	xml.onElementBegin({ "preferences", "software" }, [&](const XmlParser::Attributes &attributes)
+	{
+		std::optional<QString> list = attributes.get<QString>("list");
+		std::optional<QString> name = attributes.get<QString>("name");
+		if (list && name)
+		{
+			AuditStatus status = attributes.get<AuditStatus>("audit_status", s_audit_status_parser).value_or(AuditStatus::Unknown);
+			setSoftwareAuditStatus(list.value(), name.value(), status);
+		}
+	});
 	bool success = xml.parse(input);
 
 	return success;
@@ -866,6 +915,24 @@ void Preferences::save(QIODevice &output)
 				}
 			}
 
+			writer.writeEndElement();
+		}
+	}
+
+	// software list audits
+	if (!m_softwareAuditStatus.empty())
+	{
+		writer.writeComment("Software");
+		for (const auto & [ident, auditStatus] : m_softwareAuditStatus)
+		{
+			const QString &softwareList = std::get<0>(ident);
+			const QString &software = std::get<1>(ident);
+
+			writer.writeStartElement("software");
+			writer.writeAttribute("list", softwareList);
+			writer.writeAttribute("name", software);
+			if (auditStatus != AuditStatus::Unknown)
+				writer.writeAttribute("audit_status", s_audit_status_parser[auditStatus]);
 			writer.writeEndElement();
 		}
 	}

@@ -187,6 +187,10 @@ public:
 	void setMachineAuditStatus(const QString &machine_name, AuditStatus status);
 	void dropAllMachineAuditStatuses();
 
+	AuditStatus getSoftwareAuditStatus(const QString &softwareList, const QString &software) const;
+	void setSoftwareAuditStatus(const QString &softwareList, const QString &software, AuditStatus status);
+	void dropAllSoftwareAuditStatuses();
+
 	QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
 	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
@@ -221,6 +225,7 @@ private:
 	WindowState																					m_windowState;
 	mutable std::unordered_map<std::u8string, std::unordered_map<std::u8string, ColumnPrefs>>	m_column_prefs;
 	std::map<QString, MachineInfo>																m_machine_info;
+	std::map<std::tuple<QString, QString>, AuditStatus>											m_softwareAuditStatus;
 	list_view_type																				m_selected_tab;
 	QString																						m_machine_folder_tree_selection;
 	QList<int>																					m_machine_splitter_sizes;
