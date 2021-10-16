@@ -92,8 +92,8 @@ public:
 		const std::vector<dataarea> &dataareas() const { return m_dataareas; }
 
 	private:
-		QString				m_name;
-		QString				m_interface;
+		QString					m_name;
+		QString					m_interface;
 		std::vector<dataarea>	m_dataareas;
 	};
 
@@ -102,12 +102,14 @@ public:
 		friend class software_list;
 
 	public:
-		// ctor
-		software() = default;
+		// ctor/dtor
+		software(const software_list &software_list);
 		software(const software &) = delete;
 		software(software &&) = default;
+		~software();
 
 		// accessors
+		const software_list &software_list() const { return m_software_list; }
 		const QString &name() const				{ return m_name; }
 		const QString &description() const		{ return m_description; }
 		const QString &year() const				{ return m_year; }
@@ -115,30 +117,30 @@ public:
 		const std::vector<part> &parts() const	{ return m_parts; }
 
 	private:
-		QString				m_name;
-		QString				m_description;
-		QString				m_year;
-		QString				m_publisher;
-		std::vector<part>	m_parts;
+		const class software_list &	m_software_list;
+		QString						m_name;
+		QString						m_description;
+		QString						m_year;
+		QString						m_publisher;
+		std::vector<part>			m_parts;
 	};
 
+	// ctor
+	software_list() = default;
 	software_list(const software_list &) = delete;
-	software_list(software_list &&) = default;
+	software_list(software_list &&) = delete;
 
 	// attempts to load a software list from a list of paths
-	static std::optional<software_list> try_load(const QStringList &hash_paths, const QString &softlist_name);
+	static software_list::ptr try_load(const QStringList &hash_paths, const QString &softlist_name);
 
 	// accessors
 	const QString &name() const							{ return m_name; }
 	const std::vector<software> &get_software() const	{ return m_software; }
 
 private:
-	QString				m_name;
-	QString				m_description;
+	QString					m_name;
+	QString					m_description;
 	std::vector<software>	m_software;
-
-	// ctor
-	software_list() = default;
 
 	// methods
 	bool load(QIODevice &stream, QString &error_message);
@@ -154,14 +156,14 @@ public:
 	software_list_collection(software_list_collection &&) = default;
 
 	// accessors
-	const std::vector<software_list> &software_lists() const { return m_software_lists; }
+	const std::vector<software_list::ptr> &software_lists() const { return m_software_lists; }
 
 	// methods
 	void load(const Preferences &prefs, info::machine machine);
 	const software_list::software *find_software_by_name(const QString &name, const QString &dev_interface) const;
 
 private:
-	std::vector<software_list>		m_software_lists;
+	std::vector<software_list::ptr>		m_software_lists;
 };
 
 #endif // SOFTWARELIST_H

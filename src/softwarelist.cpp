@@ -30,7 +30,7 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 	});
 	xml.onElementBegin({ "softwarelist", "software" }, [this](const XmlParser::Attributes &attributes)
 	{
-		software &s = m_software.emplace_back();
+		software &s = m_software.emplace_back(*this);
 		s.m_name		= attributes.get<QString>("name").value_or("");
 		s.m_parts.reserve(16);
 	});
@@ -97,7 +97,7 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 //  try_load
 //-------------------------------------------------
 
-std::optional<software_list> software_list::try_load(const QStringList &hash_paths, const QString &softlist_name)
+software_list::ptr software_list::try_load(const QStringList &hash_paths, const QString &softlist_name)
 {
 	for (const QString &path : hash_paths)
 	{
@@ -106,15 +106,35 @@ std::optional<software_list> software_list::try_load(const QStringList &hash_pat
 
 		if (file.open(QIODevice::ReadOnly))
 		{
-			software_list softlist;
-			QString error_message;
+			software_list::ptr softlist = std::make_unique<software_list>();
 
-			if (softlist.load(file, error_message))
+			QString error_message;
+			if (softlist->load(file, error_message))
 				return softlist;
 		}
 	}
 
 	return { };
+}
+
+
+//-------------------------------------------------
+//  software_list::software ctor
+//-------------------------------------------------
+
+software_list::software::software(const class software_list &software_list)
+	: m_software_list(software_list)
+{
+}
+
+
+//-------------------------------------------------
+//  software_list::software dtor
+//-------------------------------------------------
+
+software_list::software::~software()
+{
+	// seem to need to declare this explicitly to avoid what appears to be a compiler bug
 }
 
 
@@ -132,9 +152,9 @@ void software_list_collection::load(const Preferences &prefs, info::machine mach
 	QStringList hash_paths = prefs.getSplitPaths(Preferences::global_path_type::HASH);
 	for (const info::software_list softlist_info : machine.software_lists())
 	{
-		std::optional<software_list> softlist = software_list::try_load(hash_paths, softlist_info.name());
-		if (softlist.has_value())
-			m_software_lists.push_back(std::move(softlist.value()));
+		software_list::ptr softlist = software_list::try_load(hash_paths, softlist_info.name());
+		if (softlist)
+			m_software_lists.push_back(std::move(softlist));
 	}
 }
 
@@ -156,9 +176,9 @@ const software_list::software *software_list_collection::find_software_by_name(c
 
 	if (!name.isEmpty() && !has_special_character())
 	{
-		for (const software_list &swlist : software_lists())
+		for (const software_list::ptr &swlist : software_lists())
 		{
-			const software_list::software *sw = util::find_if_ptr(swlist.get_software(), [&name, &dev_interface](const software_list::software &sw)
+			const software_list::software *sw = util::find_if_ptr(swlist->get_software(), [&name, &dev_interface](const software_list::software &sw)
 			{
 				return sw.name() == name
 					&& (dev_interface.isEmpty() || util::find_if_ptr(sw.parts(), [&dev_interface](const software_list::part &x)
