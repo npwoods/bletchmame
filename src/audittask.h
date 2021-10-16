@@ -159,6 +159,7 @@ public:
 
 	// methods
 	const Audit &addMachineAudit(const Preferences &prefs, const info::machine &machine);
+	const Audit &addSoftwareAudit(const Preferences &prefs, const software_list::software &software);
 
 	// accessors
 	bool isEmpty() const { return m_entries.empty(); }

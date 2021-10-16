@@ -44,6 +44,7 @@ public:
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) = 0;
 	virtual void auditIfAppropriate(const info::machine &machine) = 0;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) = 0;
+	virtual software_list_collection &getSoftwareListCollection() = 0;
 };
 
 
@@ -93,7 +94,6 @@ private:
 
 	// other
 	QString																			m_currentSoftwareList;
-	software_list_collection														m_softwareListCollection;
 	IconLoader																		m_iconLoader;
 	QPixmap																			m_currentSnapshot;
 	std::vector<QString>															m_expandedTreeItems;

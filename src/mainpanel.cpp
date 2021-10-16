@@ -734,12 +734,15 @@ void MainPanel::updateSoftwareList()
 		// load software lists for the current machine
 		const info::machine machine = machineFromModelIndex(selection[0]);
 
+		// get the software list collection
+		software_list_collection &softwareListCollection = m_host.getSoftwareListCollection();
+
 		// load the software
 		m_currentSoftwareList = machine.name();
-		m_softwareListCollection.load(m_prefs, machine);
+		softwareListCollection.load(m_prefs, machine);
 
 		// and load the model
-		softwareListItemModel().load(m_softwareListCollection, false);
+		softwareListItemModel().load(softwareListCollection, false);
 	}
 	else
 	{

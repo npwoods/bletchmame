@@ -1,4 +1,4 @@
-﻿/***************************************************************************
+/***************************************************************************
 
     audit.h
 
@@ -12,6 +12,7 @@
 #include "info.h"
 #include "prefs.h"
 #include "hash.h"
+#include "softwarelist.h"
 
 
 //**************************************************************************
@@ -108,6 +109,7 @@ public:
 
 	// methods
 	void addMediaForMachine(const Preferences &prefs, const info::machine &machine);
+	void addMediaForSoftware(const Preferences &prefs, const software_list::software &software);
 	AuditStatus run(const Callback &callback = { }) const;
 
 	// statics

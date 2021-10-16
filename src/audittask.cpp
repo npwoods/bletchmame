@@ -45,6 +45,20 @@ const Audit &AuditTask::addMachineAudit(const Preferences &prefs, const info::ma
 
 
 //-------------------------------------------------
+//  addSoftwareAudit
+//-------------------------------------------------
+
+const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const software_list::software &software)
+{
+	Entry &entry = *m_entries.emplace(
+		m_entries.end(),
+		SoftwareAuditIdentifier(software.software_list().name(), software.name()));
+	entry.m_audit.addMediaForSoftware(prefs, software);
+	return entry.m_audit;
+}
+
+
+//-------------------------------------------------
 //  process
 //-------------------------------------------------
 

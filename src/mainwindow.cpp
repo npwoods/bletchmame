@@ -691,7 +691,7 @@ MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
 	, m_taskDispatcher(*this, m_prefs)
-	, m_auditQueue(m_prefs, m_info_db)
+	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
 	, m_pinging(false)
@@ -1738,6 +1738,16 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 
 	// unpause
 	changePaused(false);
+}
+
+
+//-------------------------------------------------
+//  getSoftwareListCollection
+//-------------------------------------------------
+
+software_list_collection &MainWindow::getSoftwareListCollection()
+{
+	return m_softwareListCollection;
 }
 
 

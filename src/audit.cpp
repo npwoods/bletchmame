@@ -1,4 +1,4 @@
-﻿/***************************************************************************
+/***************************************************************************
 
     audit.cpp
 
@@ -94,6 +94,39 @@ QStringList Audit::buildMachinePaths(const Preferences &prefs, Preferences::glob
 		machine = machine->clone_of();
 	}
 	return results;
+}
+
+
+//-------------------------------------------------
+//  addMediaForSoftware
+//-------------------------------------------------
+
+void Audit::addMediaForSoftware(const Preferences &prefs, const software_list::software &software)
+{
+	// get base paths from preferences
+	QStringList basePaths = prefs.getSplitPaths(Preferences::global_path_type::ROMS);
+
+	// build the actual paths
+	QStringList paths;
+	for (const QString &basePath : basePaths)
+	{
+		paths.push_back(basePath + "/" + software.software_list().name() + "/" + software.name());
+		paths.push_back(basePath + "/" + software.software_list().name() + "/" + software.name() + ".zip");
+	};
+
+	// and append them
+	int pathsPos = appendPaths(std::move(paths));
+
+	for (const software_list::part &part : software.parts())
+	{
+		for (const software_list::dataarea &dataarea : part.dataareas())
+		{
+			for (const software_list::rom &rom : dataarea.roms())
+			{
+				m_entries.emplace_back(Entry::Type::Rom, rom.name(), pathsPos, info::rom::dump_status_t::GOOD, rom.size(), Hash(rom.crc32(), rom.sha1()), false);
+			}
+		}
+	}
 }
 
 

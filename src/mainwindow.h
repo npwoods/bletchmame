@@ -155,6 +155,9 @@ private:
 	// information retrieved by -listxml
 	info::database						m_info_db;
 
+	// software lists
+	software_list_collection			m_softwareListCollection;
+
 	// status of running emulation
 	std::unique_ptr<SessionBehavior>	m_sessionBehavior;
 	std::optional<status::state>		m_state;
@@ -214,6 +217,7 @@ private:
 	bool attachToMainWindow() const;
 	QString attachWidgetId() const;
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
+	virtual software_list_collection &getSoftwareListCollection() override final;
 	QString preflightCheck() const;
 	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
 	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
