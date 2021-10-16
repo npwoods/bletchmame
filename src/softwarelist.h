@@ -32,6 +32,50 @@ public:
 	class test;
 	class software;
 
+	typedef std::unique_ptr<software_list> ptr;
+
+	class rom
+	{
+		friend class software_list;
+
+	public:
+		// ctor
+		rom() = default;
+		rom(const rom &) = delete;
+		rom(rom &&) = default;
+
+		// accessors
+		const QString &name() const										{ return m_name; }
+		const std::optional<std::uint64_t> &size() const				{ return m_size; }
+		const std::optional<std::uint32_t> &crc32() const				{ return m_crc32; }
+		const std::optional<std::array<std::uint8_t, 20>> &sha1() const	{ return m_sha1; }
+
+	private:
+		QString										m_name;
+		std::optional<std::uint64_t>				m_size;
+		std::optional<std::uint32_t>				m_crc32;
+		std::optional<std::array<std::uint8_t, 20>>	m_sha1;
+	};
+
+	class dataarea
+	{
+		friend class software_list;
+
+	public:
+		// ctor
+		dataarea() = default;
+		dataarea(const dataarea &) = delete;
+		dataarea(dataarea &&) = default;
+
+		// accessors
+		const QString &name() const				{ return m_name; }
+		const std::vector<rom> &roms() const	{ return m_roms; }
+
+	private:
+		QString					m_name;
+		std::vector<rom>		m_roms;
+	};
+
 	class part
 	{
 		friend class software_list;
@@ -45,10 +89,12 @@ public:
 		// accessors
 		const QString &name() const				{ return m_name; }
 		const QString &interface() const		{ return m_interface; }
+		const std::vector<dataarea> &dataareas() const { return m_dataareas; }
 
 	private:
 		QString				m_name;
 		QString				m_interface;
+		std::vector<dataarea>	m_dataareas;
 	};
 
 	class software

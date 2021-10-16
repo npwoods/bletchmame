@@ -57,6 +57,24 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 		p.m_name		= attributes.get<QString>("name").value_or("");
 		p.m_interface	= attributes.get<QString>("interface").value_or("");
 	});
+	xml.onElementBegin({ "softwarelist", "software", "part", "dataarea" }, [this](const XmlParser::Attributes &attributes)
+	{
+		software &s		= util::last(m_software);
+		part &p			= util::last(s.m_parts);
+		dataarea &a		= p.m_dataareas.emplace_back();
+		a.m_name		= attributes.get<QString>("name").value_or("");
+	});
+	xml.onElementBegin({ "softwarelist", "software", "part", "dataarea", "rom" }, [this](const XmlParser::Attributes &attributes)
+	{
+		software &s		= util::last(m_software);
+		part &p			= util::last(s.m_parts);
+		dataarea &a		= util::last(p.m_dataareas);
+		rom &r			= a.m_roms.emplace_back();
+		r.m_name		= attributes.get<QString>("name").value_or("");
+		r.m_size		= attributes.get<std::uint64_t>("size");
+		r.m_crc32		= attributes.get<std::uint32_t>("crc", 16);
+		r.m_sha1		= util::fixedByteArrayFromHex<20>(attributes.get<std::u8string_view>("sha1"));
+	});
 
 	// parse the XML, but be bold and try to reserve lots of space
 	m_software.reserve(4000);

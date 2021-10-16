@@ -40,15 +40,27 @@ void software_list::test::general()
 	bool success = softlist.load(testAsset, error_message);
 
 	// did we succeed?
-	if (!success || !error_message.isEmpty())
-		throw false;
+	QVERIFY(success);
+	QVERIFY(error_message.isEmpty());
 
 	for (const software_list::software &sw : softlist.get_software())
 	{
-		for (const software_list::part &part : sw.m_parts)
+		for (const software_list::part &part : sw.parts())
 		{
-			if (part.m_interface.isEmpty() || part.m_name.isEmpty())
-				throw false;
+			QVERIFY(!part.interface().isEmpty());
+			QVERIFY(!part.name().isEmpty());
+			QVERIFY(!part.dataareas().empty());
+			
+			for (const software_list::dataarea &area : part.dataareas())
+			{
+				QVERIFY(!area.name().isEmpty());
+				QVERIFY(!area.roms().empty());
+
+				for (const software_list::rom &rom : area.roms())
+				{
+					QVERIFY(!rom.name().isEmpty());
+				}
+			}
 		}
 	}
 }
