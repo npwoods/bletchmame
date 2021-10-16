@@ -110,6 +110,28 @@ std::size_t std::hash<MachineAuditIdentifier>::operator()(const MachineAuditIden
 
 
 //-------------------------------------------------
+//  SoftwareAuditIdentifier ctor
+//-------------------------------------------------
+
+SoftwareAuditIdentifier::SoftwareAuditIdentifier(const QString &softwareList, const QString &software)
+	: m_softwareList(softwareList)
+	, m_software(software)
+{
+}
+
+
+//-------------------------------------------------
+//  std::hash<SoftwareAuditIdentifier>::operator()
+//-------------------------------------------------
+
+std::size_t std::hash<SoftwareAuditIdentifier>::operator()(const SoftwareAuditIdentifier &identifier) const
+{
+	return std::hash<QString>()(identifier.softwareList())
+		^ std::hash<QString>()(identifier.software());
+}
+
+
+//-------------------------------------------------
 //  AuditResult ctor
 //-------------------------------------------------
 
