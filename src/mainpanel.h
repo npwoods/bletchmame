@@ -16,6 +16,7 @@
 #include "profile.h"
 #include "prefs.h"
 #include "softwarelist.h"
+#include "audittask.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -28,8 +29,6 @@ class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
 class AuditDialog;
-class AuditResult;
-class AuditTask;
 class MachineFolderTreeModel;
 class MachineListItemModel;
 class ProfileListItemModel;
@@ -128,6 +127,7 @@ private:
 	void updateSnapshot();
 	void identifyExpandedFolderTreeItems();
 	static void iterateItemModelIndexes(QAbstractItemModel &model, const std::function<void(const QModelIndex &)> &func, const QModelIndex &index = QModelIndex());
+	void runAuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, AuditTask::ptr auditTask);
 };
 
 

@@ -871,11 +871,22 @@ void MainPanel::manualAudit(const info::machine &machine)
 	// get the icon for this machine
 	QPixmap pixmap = m_iconLoader.getIcon(machine, false);
 
+	// and run the dialog
+	runAuditDialog(audit, machine.name(), machine.description(), pixmap, auditTask);
+}
+
+
+//-------------------------------------------------
+//  runAuditDialog
+//-------------------------------------------------
+
+void MainPanel::runAuditDialog(const Audit &audit, const QString &name, const QString &description, const QPixmap &pixmap, AuditTask::ptr auditTask)
+{
 	// set up the dialog
-	AuditDialog auditDialog(audit, machine.name(), machine.description(), pixmap, m_iconLoader);
+	AuditDialog auditDialog(audit, name, description, pixmap, m_iconLoader);
 
 	// kick off the audit dialog process (keep a copy of the auditTask here)
-	m_host.auditDialogStarted(auditDialog, AuditTask::ptr(auditTask));
+	m_host.auditDialogStarted(auditDialog, std::move(auditTask));
 
 	// and run the dialog
 	auditDialog.exec();
