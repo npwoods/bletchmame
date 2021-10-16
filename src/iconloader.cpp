@@ -117,6 +117,17 @@ std::optional<QPixmap> IconLoader::getIcon(std::u8string_view iconName, std::u8s
 
 
 //-------------------------------------------------
+//  getIcon
+//-------------------------------------------------
+
+std::optional<QPixmap> IconLoader::getIcon(const QString &iconName, std::u8string_view adornment)
+{
+	std::u8string iconNameU8 = util::toU8String(iconName);
+	return getIcon(iconNameU8, adornment);
+}
+
+
+//-------------------------------------------------
 //  loadIcon
 //-------------------------------------------------
 
@@ -215,6 +226,33 @@ QPixmap IconLoader::getIcon(const info::machine &machine, std::optional<bool> sh
 		result = getIcon(adornment).value();
 
 	return *result;
+}
+
+
+//-------------------------------------------------
+//  getIcon
+//-------------------------------------------------
+
+std::optional<QPixmap> IconLoader::getIcon(const software_list::software &software)
+{
+	using namespace std::literals;
+
+	std::optional<QPixmap> result;
+
+	if (m_prefs.getAuditingState() != Preferences::AuditingState::Disabled)
+	{
+		AuditStatus status = m_prefs.getSoftwareAuditStatus(software.software_list().name(), software.name());
+		std::u8string_view adornment = getAdornmentForAuditStatus(status);
+
+		// try to find an icon using a few techniques
+		result = getIcon(QString("%1/%2").arg(software.software_list().name(), software.name()), adornment);
+		if (!result)
+			result = getIcon(QString("%1/%2").arg(software.software_list().name(), software.software_list().name()), adornment);
+		if (!result)
+			result = getIcon(adornment);
+	}
+
+	return result;
 }
 
 

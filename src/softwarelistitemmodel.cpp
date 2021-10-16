@@ -7,14 +7,17 @@
 ***************************************************************************/
 
 #include "softwarelistitemmodel.h"
+#include "iconloader.h"
 
 
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
-SoftwareListItemModel::SoftwareListItemModel(QObject *parent)
+SoftwareListItemModel::SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent)
     : QAbstractItemModel(parent)
+	, m_iconLoader(iconLoader)
+	, m_softwareIconAccessedCallback(std::move(softwareIconAccessedCallback))
 {
 }
 
@@ -86,6 +89,19 @@ void SoftwareListItemModel::internalReset()
 
 
 //-------------------------------------------------
+//  auditStatusesChanged
+//-------------------------------------------------
+
+void SoftwareListItemModel::auditStatusesChanged()
+{
+	QModelIndex topLeft = createIndex(0, (int)Column::Name);
+	QModelIndex bottomRight = createIndex(util::safe_static_cast<int>(m_parts.size()) - 1, (int)Column::Name);
+	QVector<int> roles = { Qt::DecorationRole };
+	dataChanged(topLeft, bottomRight, roles);
+}
+
+
+//-------------------------------------------------
 //  index
 //-------------------------------------------------
 
@@ -134,27 +150,44 @@ QVariant SoftwareListItemModel::data(const QModelIndex &index, int role) const
     QVariant result;
     if (index.isValid()
         && index.row() >= 0
-        && index.row() < m_parts.size()
-        && role == Qt::DisplayRole)
+        && index.row() < m_parts.size())
     {
         const software_list::software &sw = m_parts[index.row()].software();
-
         Column column = (Column)index.column();
-        switch (column)
-        {
-        case Column::Name:
-            result = sw.name();
-            break;
-        case Column::Description:
-            result = sw.description();
-            break;
-        case Column::Year:
-            result = sw.year();
-            break;
-        case Column::Manufacturer:
-            result = sw.publisher();
-            break;
-        }
+
+		switch (role)
+		{
+		case Qt::DisplayRole:
+			switch (column)
+			{
+			case Column::Name:
+				result = sw.name();
+				break;
+			case Column::Description:
+				result = sw.description();
+				break;
+			case Column::Year:
+				result = sw.year();
+				break;
+			case Column::Manufacturer:
+				result = sw.publisher();
+				break;
+			}
+			break;
+
+		case Qt::DecorationRole:
+			if (column == Column::Name && m_iconLoader)
+			{
+				std::optional<QPixmap> icon = m_iconLoader->getIcon(sw);
+				if (icon.has_value())
+					result = std::move(icon.value());
+
+				// invoke the "accessed" callback, which can trigger an audit when autoauditing
+				if (m_softwareIconAccessedCallback)
+					m_softwareIconAccessedCallback(sw);
+			}
+			break;
+		}
     }
     return result;
 }

@@ -1185,9 +1185,7 @@ void MainWindow::on_actionAuditThis_triggered()
 
 void MainWindow::on_actionResetAuditingStatuses_triggered()
 {
-	m_prefs.dropAllMachineAuditStatuses();
-	updateAuditTimer();
-	m_mainPanel->machineAuditStatusesChanged();
+	resetAuditing(true, true);
 }
 
 
@@ -1392,13 +1390,10 @@ void MainWindow::on_actionPaths_triggered()
 	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
 		launchVersionCheck(false);
 
-	// did the user change the roms or samples paths?
-	if (util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES))
-	{
-		// if so we have to refresh auditing
-		m_prefs.dropAllMachineAuditStatuses();
-		updateAuditTimer();
-	}
+	// did the user cause audit statuses to be reset
+	bool resetMachineAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES);
+	bool resetSoftwareAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS);
+	resetAuditing(resetMachineAudit, resetSoftwareAudit);
 
 	m_mainPanel->pathsChanged(changed_paths);
 }
@@ -2510,6 +2505,7 @@ void MainWindow::changeAuditingState(Preferences::AuditingState auditingState)
 
 		// audit statuses may have changed
 		m_mainPanel->machineAuditStatusesChanged();
+		m_mainPanel->softwareAuditStatusesChanged();
 
 		// we may need to kick the timer
 		updateAuditTimer();
@@ -2536,6 +2532,24 @@ void MainWindow::auditIfAppropriate(const info::machine &machine)
 
 
 //-------------------------------------------------
+//  auditIfAppropriate
+//-------------------------------------------------
+
+void MainWindow::auditIfAppropriate(const software_list::software &software)
+{
+	// if we can automatically audit, and this status is unknown...
+	if (canAutomaticallyAudit()
+		&& m_prefs.getSoftwareAuditStatus(software.software_list().name(), software.name()) == AuditStatus::Unknown)
+	{
+		// then add it to the queue
+		SoftwareAuditIdentifier identifier(software.software_list().name(), software.name());
+		m_auditQueue.push(std::move(identifier));
+		updateAuditTimer();
+	}
+}
+
+
+//-------------------------------------------------
 //  canAutomaticallyAudit
 //-------------------------------------------------
 
@@ -2544,6 +2558,28 @@ bool MainWindow::canAutomaticallyAudit() const
 	// we have to be configured to automatically audit, and not be running an emulation
 	return (m_prefs.getAuditingState() == Preferences::AuditingState::Automatic)
 		&& !m_currentRunMachineTask;
+}
+
+
+//-------------------------------------------------
+//  resetAuditing
+//-------------------------------------------------
+
+void MainWindow::resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit)
+{
+	if (resetMachineAudit)
+	{
+		m_prefs.dropAllMachineAuditStatuses();
+		m_mainPanel->machineAuditStatusesChanged();
+	}
+	if (resetSoftwareAudit)
+	{
+		m_prefs.dropAllSoftwareAuditStatuses();
+		m_mainPanel->softwareAuditStatusesChanged();
+	}
+
+	if (resetMachineAudit || resetSoftwareAudit)
+		updateAuditTimer();
 }
 
 

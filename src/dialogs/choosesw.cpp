@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	dialogs/choosesw.cpp
 
@@ -47,7 +47,7 @@ ChooseSoftlistPartDialog::ChooseSoftlistPartDialog(QWidget *parent, Preferences 
 	m_ui->setupUi(this);
 
 	// use the same model used for software lists
-	m_itemModel = new SoftwareListItemModel(this);
+	m_itemModel = new SoftwareListItemModel(nullptr, {}, this);
 	m_itemModel->load(software_col, true, dev_interface);
 
 	// set up a TableViewManager

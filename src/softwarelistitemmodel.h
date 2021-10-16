@@ -13,9 +13,14 @@
 
 #include "softwarelist.h"
 
-
 #define SOFTLIST_VIEW_DESC_NAME u8"softlist"
 
+
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
+class IconLoader;
 
 // ======================> SoftwareListItemModel
 
@@ -32,11 +37,12 @@ public:
 		Max = Manufacturer
 	};
 
-	SoftwareListItemModel(QObject *parent);
+	SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent);
 
 	// methods
 	void load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = "");
 	void reset();
+	void auditStatusesChanged();
 
 	// accessors
 	const software_list::software &getSoftwareByIndex(int index) const { return m_parts[index].software(); }
@@ -65,8 +71,10 @@ private:
 		const software_list::part *		m_part;
 	};
 
-	std::vector<SoftwareAndPart>	m_parts;
-	std::vector<QString>			m_softlist_names;
+	IconLoader *											m_iconLoader;
+	std::function<void(const software_list::software &)>	m_softwareIconAccessedCallback;
+	std::vector<SoftwareAndPart>							m_parts;
+	std::vector<QString>									m_softlist_names;
 
 	void internalReset();
 };

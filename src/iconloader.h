@@ -20,6 +20,7 @@
 #include "assetfinder.h"
 #include "info.h"
 #include "prefs.h"
+#include "softwarelist.h"
 
 
 //**************************************************************************
@@ -38,7 +39,9 @@ public:
 	// methods
 	void refreshIcons();
 	std::optional<QPixmap> getIcon(std::u8string_view iconName, std::u8string_view adornment = { });
+	std::optional<QPixmap> getIcon(const QString &iconName, std::u8string_view adornment = { });
 	QPixmap getIcon(const info::machine &machine, std::optional<bool> showAuditAdornment = false);
+	std::optional<QPixmap> getIcon(const software_list::software &software);
 
 	// statics
 	static std::u8string_view getAdornmentForAuditStatus(AuditStatus machineAuditStatus);

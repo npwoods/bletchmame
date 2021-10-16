@@ -160,7 +160,10 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	});
 
 	// set up software list view
-	SoftwareListItemModel &softwareListItemModel = *new SoftwareListItemModel(this);
+	SoftwareListItemModel &softwareListItemModel = *new SoftwareListItemModel(
+		&m_iconLoader,
+		[this](const software_list::software &software) { m_host.auditIfAppropriate(software); },
+		this);
 	TableViewManager::setup(
 		*m_ui->softwareTableView,
 		softwareListItemModel,
@@ -218,6 +221,10 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 	if (util::contains(changedPaths, Preferences::global_path_type::ROMS) || util::contains(changedPaths, Preferences::global_path_type::SAMPLES))
 		machineListItemModel().auditStatusesChanged();
 
+	// did the user change the roms or samples paths?
+	if (util::contains(changedPaths, Preferences::global_path_type::ROMS))
+		softwareListItemModel().auditStatusesChanged();
+
 	// did the user change the profiles path?
 	if (util::contains(changedPaths, Preferences::global_path_type::PROFILES))
 		profileListItemModel().refresh(true, true);
@@ -246,6 +253,20 @@ std::optional<info::machine> MainPanel::currentlySelectedMachine() const
 	QModelIndexList selection = m_ui->machinesTableView->selectionModel()->selectedIndexes();
 	if (selection.size() > 0)
 		result = machineFromModelIndex(selection[0]);
+	return result;
+}
+
+
+//-------------------------------------------------
+//  currentlySelectedSoftware
+//-------------------------------------------------
+
+const software_list::software *MainPanel::currentlySelectedSoftware() const
+{
+	const software_list::software *result = nullptr;
+	QModelIndexList selection = m_ui->softwareTableView->selectionModel()->selectedIndexes();
+	if (selection.size() > 0)
+		result = &softwareFromModelIndex(selection[0]);
 	return result;
 }
 
@@ -626,6 +647,23 @@ info::machine MainPanel::machineFromModelIndex(const QModelIndex &index) const
 
 
 //-------------------------------------------------
+//  softwareFromModelIndex
+//-------------------------------------------------
+
+const software_list::software &MainPanel::softwareFromModelIndex(const QModelIndex &index) const
+{
+	// get the proxy model
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->softwareTableView);
+
+	// map the index to the actual index
+	QModelIndex actualIndex = proxyModel.mapToSource(index);
+
+	// and return the software
+	return softwareListItemModel().getSoftwareByIndex(actualIndex.row());
+}
+
+
+//-------------------------------------------------
 //  machineFolderTreeModel
 //-------------------------------------------------
 
@@ -672,6 +710,17 @@ const MachineListItemModel &MainPanel::machineListItemModel() const
 //-------------------------------------------------
 
 SoftwareListItemModel &MainPanel::softwareListItemModel()
+{
+	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->softwareTableView);
+	return *dynamic_cast<SoftwareListItemModel *>(proxyModel.sourceModel());
+}
+
+
+//-------------------------------------------------
+//  softwareListItemModel
+//-------------------------------------------------
+
+const SoftwareListItemModel &MainPanel::softwareListItemModel() const
 {
 	const QSortFilterProxyModel &proxyModel = sortFilterProxyModel(*m_ui->softwareTableView);
 	return *dynamic_cast<SoftwareListItemModel *>(proxyModel.sourceModel());
@@ -903,12 +952,13 @@ void MainPanel::runAuditDialog(const Audit &audit, const QString &name, const QS
 void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 {
 	bool machineStatusChanged = false;
+	bool softwareStatusChanged = false;
 
 	// update all statuses
 	for (const AuditResult &result : results)
 	{
 		// determine the type of audit
-		std::visit([this, &machineStatusChanged, &result](auto &&identifier)
+		std::visit([this, &machineStatusChanged, &softwareStatusChanged, &result](auto &&identifier)
 		{
 			using T = std::decay_t<decltype(identifier)>;
 			if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
@@ -921,6 +971,16 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 					machineStatusChanged = true;
 				}
 			}
+			else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+			{
+				// does this software audit result represent a change?
+				if (m_prefs.getSoftwareAuditStatus(identifier.softwareList(), identifier.software()) != result.status())
+				{
+					// if so, record it
+					m_prefs.setSoftwareAuditStatus(identifier.softwareList(), identifier.software(), result.status());
+					softwareStatusChanged = true;
+				}
+			}
 			else
 			{
 				throw false;
@@ -931,6 +991,8 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 	// did anything change?
 	if (machineStatusChanged)
 		machineAuditStatusesChanged();
+	if (softwareStatusChanged)
+		softwareAuditStatusesChanged();
 }
 
 
@@ -941,6 +1003,16 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 void MainPanel::machineAuditStatusesChanged()
 {
 	machineListItemModel().auditStatusesChanged();
+}
+
+
+//-------------------------------------------------
+//  softwareAuditStatusesChanged
+//-------------------------------------------------
+
+void MainPanel::softwareAuditStatusesChanged()
+{
+	softwareListItemModel().auditStatusesChanged();
 }
 
 
