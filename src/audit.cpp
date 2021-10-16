@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     audit.cpp
 
@@ -51,9 +51,13 @@ Audit::Audit()
 
 void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &machine)
 {
-	// set up paths
-	int romsPathsPos = setupPaths(prefs, machine, Preferences::global_path_type::ROMS);
-	int samplesPathsPos = setupPaths(prefs, machine, Preferences::global_path_type::SAMPLES);
+	// set up ROM paths
+	QStringList romsPaths = buildMachinePaths(prefs, Preferences::global_path_type::ROMS, machine);
+	int romsPathsPos = appendPaths(std::move(romsPaths));
+
+	// set up Sample paths
+	QStringList samplesPaths = buildMachinePaths(prefs, Preferences::global_path_type::SAMPLES, machine);
+	int samplesPathsPos = appendPaths(std::move(samplesPaths));
 
 	// audit ROMs
 	for (info::rom rom : machine.roms())
@@ -70,30 +74,37 @@ void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &ma
 
 
 //-------------------------------------------------
-//  setupPaths
+//  buildMachinePaths
 //-------------------------------------------------
 
-int Audit::setupPaths(const Preferences &prefs, std::optional<info::machine> machine, Preferences::global_path_type pathType)
+QStringList Audit::buildMachinePaths(const Preferences &prefs, Preferences::global_path_type pathType, std::optional<info::machine> machine)
 {
-	int position;
-
 	// get base paths from preferences
 	QStringList basePaths = prefs.getSplitPaths(pathType);
 
 	// blow these out to machine paths
-	QStringList paths;
+	QStringList results;
 	while (machine)
 	{
 		for (const QString &path : basePaths)
 		{
-			paths.push_back(path + "/" + machine->name());
-			paths.push_back(path + "/" + machine->name() + ".zip");
+			results.push_back(path + "/" + machine->name());
+			results.push_back(path + "/" + machine->name() + ".zip");
 		}
 		machine = machine->clone_of();
 	}
+	return results;
+}
 
+
+//-------------------------------------------------
+//  appendPaths
+//-------------------------------------------------
+
+int Audit::appendPaths(QStringList &&paths)
+{
 	// record our position; we want to record it
-	position = util::safe_static_cast<int>(m_pathList.size());
+	int position = util::safe_static_cast<int>(m_pathList.size());
 
 	// and put the results on our path list
 	m_pathList.emplace_back(std::move(paths));

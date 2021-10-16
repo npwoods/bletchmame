@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     audit.h
 
@@ -121,7 +121,8 @@ private:
 	std::vector<Entry>						m_entries;
 
 	// methods
-	int setupPaths(const Preferences &prefs, std::optional<info::machine> machine, Preferences::global_path_type pathType);
+	QStringList buildMachinePaths(const Preferences &prefs, Preferences::global_path_type pathType, std::optional<info::machine> machine);
+	int appendPaths(QStringList &&paths);
 	void auditSingleMedia(Session &session, int entryIndex, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const;
 };
 
