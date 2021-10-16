@@ -2551,10 +2551,10 @@ void MainWindow::auditIfAppropriate(const software_list::software &software)
 {
 	// if we can automatically audit, and this status is unknown...
 	if (canAutomaticallyAudit()
-		&& m_prefs.getSoftwareAuditStatus(software.software_list().name(), software.name()) == AuditStatus::Unknown)
+		&& m_prefs.getSoftwareAuditStatus(software.parent().name(), software.name()) == AuditStatus::Unknown)
 	{
 		// then add it to the queue
-		SoftwareAuditIdentifier identifier(software.software_list().name(), software.name());
+		SoftwareAuditIdentifier identifier(software.parent().name(), software.name());
 		m_auditQueue.push(std::move(identifier));
 		updateAuditTimer();
 	}

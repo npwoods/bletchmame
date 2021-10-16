@@ -108,10 +108,12 @@ void Audit::addMediaForSoftware(const Preferences &prefs, const software_list::s
 
 	// build the actual paths
 	QStringList paths;
+	const QString &softwareListName = software.parent().name();
+	const QString &softwareName = software.name();
 	for (const QString &basePath : basePaths)
 	{
-		paths.push_back(basePath + "/" + software.software_list().name() + "/" + software.name());
-		paths.push_back(basePath + "/" + software.software_list().name() + "/" + software.name() + ".zip");
+		paths.push_back(basePath + "/" + softwareListName + "/" + softwareName);
+		paths.push_back(basePath + "/" + softwareListName + "/" + softwareName + ".zip");
 	};
 
 	// and append them

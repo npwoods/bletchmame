@@ -52,7 +52,7 @@ const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const softwar
 {
 	Entry &entry = *m_entries.emplace(
 		m_entries.end(),
-		SoftwareAuditIdentifier(software.software_list().name(), software.name()));
+		SoftwareAuditIdentifier(software.parent().name(), software.name()));
 	entry.m_audit.addMediaForSoftware(prefs, software);
 	return entry.m_audit;
 }

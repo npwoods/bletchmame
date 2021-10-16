@@ -241,13 +241,14 @@ std::optional<QPixmap> IconLoader::getIcon(const software_list::software &softwa
 
 	if (m_prefs.getAuditingState() != Preferences::AuditingState::Disabled)
 	{
-		AuditStatus status = m_prefs.getSoftwareAuditStatus(software.software_list().name(), software.name());
+		const QString &softwareListName = software.parent().name();
+		AuditStatus status = m_prefs.getSoftwareAuditStatus(softwareListName, software.name());
 		std::u8string_view adornment = getAdornmentForAuditStatus(status);
 
 		// try to find an icon using a few techniques
-		result = getIcon(QString("%1/%2").arg(software.software_list().name(), software.name()), adornment);
+		result = getIcon(QString("%1/%2").arg(softwareListName, softwareListName), adornment);
 		if (!result)
-			result = getIcon(QString("%1/%2").arg(software.software_list().name(), software.software_list().name()), adornment);
+			result = getIcon(QString("%1/%2").arg(softwareListName, softwareListName), adornment);
 		if (!result)
 			result = getIcon(adornment);
 	}

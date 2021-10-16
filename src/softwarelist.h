@@ -103,13 +103,13 @@ public:
 
 	public:
 		// ctor/dtor
-		software(const software_list &software_list);
+		software(const software_list &parent);
 		software(const software &) = delete;
 		software(software &&) = default;
 		~software();
 
 		// accessors
-		const software_list &software_list() const { return m_software_list; }
+		const software_list &parent() const		{ return m_parent; }
 		const QString &name() const				{ return m_name; }
 		const QString &description() const		{ return m_description; }
 		const QString &year() const				{ return m_year; }
@@ -117,12 +117,12 @@ public:
 		const std::vector<part> &parts() const	{ return m_parts; }
 
 	private:
-		const class software_list &	m_software_list;
-		QString						m_name;
-		QString						m_description;
-		QString						m_year;
-		QString						m_publisher;
-		std::vector<part>			m_parts;
+		const software_list &	m_parent;
+		QString					m_name;
+		QString					m_description;
+		QString					m_year;
+		QString					m_publisher;
+		std::vector<part>		m_parts;
 	};
 
 	// ctor

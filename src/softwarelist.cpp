@@ -122,8 +122,8 @@ software_list::ptr software_list::try_load(const QStringList &hash_paths, const 
 //  software_list::software ctor
 //-------------------------------------------------
 
-software_list::software::software(const class software_list &software_list)
-	: m_software_list(software_list)
+software_list::software::software(const class software_list &parent)
+	: m_parent(parent)
 {
 }
 
