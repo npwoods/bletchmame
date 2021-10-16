@@ -1162,11 +1162,20 @@ void MainWindow::on_actionAuditingManual_triggered()
 void MainWindow::on_actionAuditThis_triggered()
 {
 	std::optional<info::machine> selectedMachine;
-	if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
-		selectedMachine = m_mainPanel->currentlySelectedMachine();
 
-	if (selectedMachine)
-		m_mainPanel->manualAudit(*selectedMachine);
+	switch (m_prefs.getSelectedTab())
+	{
+	case Preferences::list_view_type::MACHINE:
+		selectedMachine = m_mainPanel->currentlySelectedMachine();
+		if (selectedMachine)
+			m_mainPanel->manualAudit(*selectedMachine);
+		break;
+
+	case Preferences::list_view_type::SOFTWARELIST:
+	case Preferences::list_view_type::PROFILE:
+		// should not get here; the menu should be disabled
+		break;
+	}
 }
 
 
