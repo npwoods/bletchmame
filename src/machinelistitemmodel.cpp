@@ -8,6 +8,7 @@
 
 #include "machinelistitemmodel.h"
 #include "iconloader.h"
+#include "perfprofiler.h"
 #include "utility.h"
 
 
@@ -142,6 +143,8 @@ int MachineListItemModel::columnCount(const QModelIndex &parent) const
 
 QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	QVariant result;
 	if (index.isValid()
 		&& index.row() >= 0

@@ -11,6 +11,7 @@
 
 #include "machinefoldertreemodel.h"
 #include "prefs.h"
+#include "perfprofiler.h"
 
 
 //**************************************************************************
@@ -569,6 +570,7 @@ int MachineFolderTreeModel::columnCount(const QModelIndex &parent) const
 
 QVariant MachineFolderTreeModel::data(const QModelIndex &index, int role) const
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
 	const FolderEntry &entry = folderEntryFromModelIndex(index);
 
 	QVariant result;

@@ -25,10 +25,21 @@ echo >$BLETCHMAME_DIR/src/buildversion.gen.cpp  "const char buildVersion[] = \"`
 echo >>$BLETCHMAME_DIR/src/buildversion.gen.cpp "const char buildRevision[] = \"`git rev-parse HEAD 2>NUL`\";"
 echo >>$BLETCHMAME_DIR/src/buildversion.gen.cpp "const char buildDateTime[] = \"`date -Ins`\";"
 
+# parse arguments
+USE_PROFILER=off
+while getopts "p" OPTION; do
+   case $OPTION in
+      p)
+         USE_PROFILER=1
+		 ;;
+   esac
+done
+
 # Set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}
 cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
 	-DUSE_SHARED_LIBS=off -DHAS_BUILDVERSION_GEN_CPP=1 							\
+	-DUSE_PROFILER=${USE_PROFILER}												\
 	-DQt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6									\
 	-DQt6BundledFreetype_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledFreetype	\
 	-DQt6BundledHarfbuzz_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledHarfbuzz	\

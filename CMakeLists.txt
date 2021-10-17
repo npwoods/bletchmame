@@ -75,6 +75,15 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 add_compile_options(/W3 /WX)
 endif()
 
+# Profiler
+if (USE_PROFILER)
+add_compile_options(-DUSE_PROFILER=1)
+MESSAGE(STATUS "Profiling support ENABLED")
+else()
+add_compile_options(-DUSE_PROFILER=0)
+MESSAGE(STATUS "Profiling support disabled")
+endif()
+
 
 #############################################################################
 # BletchMAME core (library shared by executable and tests)                  #
@@ -128,6 +137,8 @@ add_library(BletchMAME_core
 	src/profile.h
 	src/profilelistitemmodel.cpp
 	src/profilelistitemmodel.h
+	src/perfprofiler.cpp
+	src/perfprofiler.h
 	src/runmachinetask.cpp
 	src/runmachinetask.h
 	src/sessionbehavior.cpp
