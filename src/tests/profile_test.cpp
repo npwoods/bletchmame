@@ -73,6 +73,12 @@ void profiles::profile::Test::general()
 	QVERIFY(p2.images().size() == 1);
 	QVERIFY(p2.images()[0].m_tag == "ext:fdcv11:wd17xx:0:qd");
 	QVERIFY(p2.images()[0].m_path == "/MyDir/MyDisk.dsk");
+	
+	// verify that they are equal
+	QVERIFY(p == p2);
+
+	// and verify that it isn't equal to an empty profile
+	QVERIFY(p != profiles::profile());
 }
 
 
