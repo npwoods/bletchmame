@@ -49,6 +49,9 @@ namespace profiles
 		profile &operator =(const profile &) = delete;
 		profile &operator =(profile &&) = delete;
 
+		// operators
+		bool operator==(const profile &that) const = default;
+
 		// accessors
 		const QString &name() const					{ return m_name; }
 		const QString &path() const					{ return m_path; }
@@ -78,8 +81,6 @@ namespace profiles
 		static QString change_path_save_state(const QString &path);
 		static bool profile_file_rename(const QString &old_path, const QString &new_path);
 		static bool profile_file_remove(const QString &path);
-
-		bool operator==(const profile &that) const;
 
 	private:
 		profile();
