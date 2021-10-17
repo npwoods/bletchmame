@@ -24,6 +24,7 @@
 #include "mainwindow.h"
 #include "mainpanel.h"
 #include "mameversion.h"
+#include "perfprofiler.h"
 #include "ui_mainwindow.h"
 #include "audittask.h"
 #include "listxmltask.h"
@@ -719,6 +720,17 @@ MainWindow::MainWindow(QWidget *parent)
 	QTimer &pingTimer = *new QTimer(this);
 	connect(&pingTimer, &QTimer::timeout, this, &MainWindow::invokePing);
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
+
+	// set up profiler timer
+	if (PerformanceProfiler::instance().isReal())
+	{
+		QTimer &perfProfilerTimer = *new QTimer(this);
+		connect(&perfProfilerTimer, &QTimer::timeout, this, []()
+		{
+			PerformanceProfiler::instance().dump();
+		});
+		perfProfilerTimer.start(1500);
+	}
 
 	// set the proper window state from preferences
 	switch (m_prefs.getWindowState())

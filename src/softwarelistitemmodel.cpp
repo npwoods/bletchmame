@@ -8,6 +8,7 @@
 
 #include "softwarelistitemmodel.h"
 #include "iconloader.h"
+#include "perfprofiler.h"
 
 
 //-------------------------------------------------
@@ -147,7 +148,8 @@ int SoftwareListItemModel::columnCount(const QModelIndex &parent) const
 
 QVariant SoftwareListItemModel::data(const QModelIndex &index, int role) const
 {
-    QVariant result;
+	ProfilerScope prof(CURRENT_FUNCTION);
+	QVariant result;
     if (index.isValid()
         && index.row() >= 0
         && index.row() < m_parts.size())

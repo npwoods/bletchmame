@@ -9,6 +9,7 @@
 #include <QPainter>
 
 #include "iconloader.h"
+#include "perfprofiler.h"
 #include "prefs.h"
 
 
@@ -65,6 +66,7 @@ void IconLoader::refreshIcons()
 
 std::optional<QPixmap> IconLoader::getIcon(std::u8string_view iconName, std::u8string_view adornment)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
 	std::optional<QPixmap> result;
 
 	// set up a key that captures both the icon name and adornment
@@ -201,6 +203,8 @@ QPixmap IconLoader::getIcon(const info::machine &machine, std::optional<bool> sh
 {
 	using namespace std::literals;
 
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// do we need to get audit adornment from prefs?
 	bool actualShowAuditAdornment = showAuditAdornment.has_value()
 		? *showAuditAdornment
@@ -237,6 +241,7 @@ std::optional<QPixmap> IconLoader::getIcon(const software_list::software &softwa
 {
 	using namespace std::literals;
 
+	ProfilerScope prof(CURRENT_FUNCTION);
 	std::optional<QPixmap> result;
 
 	if (m_prefs.getAuditingState() != Preferences::AuditingState::Disabled)
