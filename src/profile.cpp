@@ -39,19 +39,6 @@ profiles::profile::profile()
 
 
 //-------------------------------------------------
-//  operator==
-//-------------------------------------------------
-
-bool profiles::profile::operator==(const profile &that) const
-{
-	return m_name == that.m_name
-		&& m_software == that.m_software
-		&& m_path == that.m_path
-		&& m_images == that.m_images;
-}
-
-
-//-------------------------------------------------
 //  is_valid
 //-------------------------------------------------
 
