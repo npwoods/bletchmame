@@ -10,6 +10,7 @@
 #include <quazipfile.h>
 
 #include "assetfinder.h"
+#include "perfprofiler.h"
 
 
 //**************************************************************************
@@ -196,6 +197,7 @@ void AssetFinder::setPaths(const Preferences &prefs, Preferences::global_path_ty
 
 std::unique_ptr<QIODevice> AssetFinder::findAsset(const QString &fileName, std::optional<std::uint32_t> crc32) const
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
 	for (const Lookup::ptr &lookup : m_lookups)
 	{
 		std::unique_ptr<QIODevice> stream = lookup->getAsset(fileName, crc32);
