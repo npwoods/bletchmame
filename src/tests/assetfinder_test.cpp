@@ -48,6 +48,7 @@ void Test::empty()
 
 void Test::zip()
 {
+	// the subtleties with these tests is that we need to specifically emulate MAME's behavior
 	AssetFinder assetFinder;
 	assetFinder.setPaths({ ":/resources/sample_archive.zip" });
 
@@ -62,6 +63,9 @@ void Test::zip()
 	// and MAME's zip support has searching by CRC32 in addition to name
 	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("FIND_CHARLIE_BY_CRC", 0xAFAB3DEB).value_or(QByteArray())) == "33333");
 	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("bravo.txt", 0xBAADF00D).value_or(QByteArray())) == "22222");
+
+	// given a clash between "correct filename wrong CRC32" and "wrong filename correct CRC32", the latter wins
+	QVERIFY(QString::fromUtf8(assetFinder.findAssetBytes("alpha.txt", 0xAFAB3DEB).value_or(QByteArray())) == "33333");
 
 	// unknown file lookups
 	QVERIFY(!assetFinder.findAssetBytes("unknown.txt"));
