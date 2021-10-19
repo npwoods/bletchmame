@@ -17,7 +17,7 @@ private slots:
 	void ctor();
 	void equals();
 	void hash();
-	void qString();
+	void toQString();
 };
 
 
@@ -70,13 +70,13 @@ void ProfilerLabel::Test::hash()
 
 
 //-------------------------------------------------
-//  ProfilerLabel::Test::qString
+//  ProfilerLabel::Test::toQString
 //-------------------------------------------------
 
-void ProfilerLabel::Test::qString()
+void ProfilerLabel::Test::toQString()
 {
 	ProfilerLabel x("foo");
-	QString y = x;
+	QString y = x.toQString();
 	QVERIFY(y == "foo");
 }
 

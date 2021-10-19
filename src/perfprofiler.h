@@ -70,14 +70,7 @@ public:
 	// operators
 	bool operator==(const ProfilerLabel &that) const = default;
 
-	operator QString() const
-	{
-		std::size_t len = 0;
-		while (len < std::size(m_text) && m_text[len])
-			len++;
-		std::u8string_view sv((const char8_t *)&m_text[0], len);
-		return util::toQString(sv);
-	}
+	QString toQString() const;
 
 	static constexpr ProfilerLabel fromPrettyFunction(const char *text)
 	{
