@@ -39,13 +39,23 @@
 
 namespace util
 {
-	template<class TStr>
-	std::size_t string_hash(const TStr *s, std::size_t length)
+	template<class T>
+	constexpr std::size_t array_hash(const T *ptr, std::size_t length) noexcept
 	{
-		std::size_t result = 31337;
+		const std::size_t p1 = 7;
+		const std::size_t p2 = 31;
+		const std::hash<T> hash;
+
+		std::size_t result = p1;
 		for (std::size_t i = 0; i < length; i++)
-			result = ((result << 5) + result) + s[i];
+			result = (result * p2) + hash(ptr[i]);
 		return result;
+	}
+
+	template<class T, std::size_t N>
+	constexpr std::size_t array_hash(const std::array<T, N> &arr) noexcept
+	{
+		return array_hash(&arr[0], arr.size());
 	}
 }
 
@@ -57,7 +67,7 @@ namespace std
 	public:
 		std::size_t operator()(const char *s) const
 		{
-			return util::string_hash(s, strlen(s));
+			return util::array_hash(s, strlen(s));
 		}
 	};
 
