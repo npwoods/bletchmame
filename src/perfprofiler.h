@@ -19,6 +19,8 @@
 #include <iterator>
 #include <unordered_map>
 
+#include "utility.h"
+
 
 //**************************************************************************
 //  CONSTANTS
@@ -50,15 +52,15 @@ class ProfilerLabel
 	friend struct std::hash<ProfilerLabel>;
 
 public:
-	static const int MAX_LABEL_LENGTH = 64;
+	class Test;
 
 	constexpr ProfilerLabel(const char *text)
 	{
 		bool b = true;
-		for (auto i = 0; i < std::size(m_u.m_text); i++)
+		for (auto i = 0; i < std::size(m_text); i++)
 		{
-			m_u.m_text[i] = b ? text[i] : '\0';
-			if (text[b] == '\0')
+			m_text[i] = b ? text[i] : '\0';
+			if (text[i] == '\0')
 				b = false;
 		}
 	}
@@ -66,12 +68,16 @@ public:
 	ProfilerLabel(ProfilerLabel &&) = default;
 
 	// operators
-	bool operator==(const ProfilerLabel &that) const noexcept
-	{
-		return !memcmp(m_u.m_text, that.m_u.m_text, sizeof(m_u.m_text));
-	}
+	bool operator==(const ProfilerLabel &that) const = default;
 
-	operator std::u8string_view() const;
+	operator QString() const
+	{
+		std::size_t len = 0;
+		while (len < std::size(m_text) && m_text[len])
+			len++;
+		std::u8string_view sv((const char8_t *)&m_text[0], len);
+		return util::toQString(sv);
+	}
 
 	static constexpr ProfilerLabel fromPrettyFunction(const char *text)
 	{
@@ -86,11 +92,7 @@ public:
 	}
 
 private:
-	union
-	{
-		char			m_text[MAX_LABEL_LENGTH];
-		std::uint64_t	m_longs[MAX_LABEL_LENGTH / sizeof(std::uint64_t)];
-	} m_u;
+	std::array<char, 64> m_text;
 };
 
 
@@ -101,13 +103,7 @@ namespace std
 	{
 		constexpr std::size_t operator()(const ProfilerLabel &x) const
 		{
-			const std::size_t p1 = 7;
-			const std::size_t p2 = 31;
-
-			std::size_t result = p1;
-			for (int i = 0; i < sizeof(x.m_u.m_longs) / sizeof(x.m_u.m_longs[0]); i++)
-				result = result * p2 + x.m_u.m_longs[i];
-			return result;
+			return util::array_hash(x.m_text);
 		}
 	};
 }

@@ -12,7 +12,6 @@
 #include <numeric>
 
 #include "perfprofiler.h"
-#include "utility.h"
 
 RealPerformanceProfiler RealPerformanceProfiler::g_instance;
 
@@ -44,7 +43,7 @@ RealPerformanceProfiler::RealPerformanceProfiler()
 
 std::size_t RealPerformanceProfiler::introduceNewLabel(const ProfilerLabel &label)
 {
-	QString labelText = util::toQString(label).leftJustified(70);
+	QString labelText = ((QString)label).leftJustified(70);
 
 	std::size_t result = m_labelMap.size();
 	m_labelMap.emplace(label, result);
@@ -118,17 +117,4 @@ RealPerformanceProfiler::Entry::Entry(QString &&label)
 	: m_label(std::move(label))
 	, m_accumulatedTime(0)
 {
-}
-
-
-//-------------------------------------------------
-//  ProfilerLabel::operator std::u8string_view()
-//-------------------------------------------------
-
-ProfilerLabel::operator std::u8string_view() const
-{
-	std::size_t len = 0;
-	while (len < std::size(m_u.m_text) && m_u.m_text[len])
-		len++;
-	return std::u8string_view((const char8_t *) &m_u.m_text[0], len);
 }
