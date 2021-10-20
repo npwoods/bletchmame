@@ -25,6 +25,7 @@ RealPerformanceProfiler RealPerformanceProfiler::g_instance;
 //-------------------------------------------------
 
 RealPerformanceProfiler::RealPerformanceProfiler()
+	: m_profilingThread(std::this_thread::get_id())
 {
 	const int RESERVE_LABEL_COUNT = 256;
 	m_labelMap.reserve(RESERVE_LABEL_COUNT);

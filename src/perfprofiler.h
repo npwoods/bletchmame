@@ -17,6 +17,7 @@
 #include <stack>
 #include <vector>
 #include <iterator>
+#include <thread>
 #include <unordered_map>
 
 #include "utility.h"
@@ -115,25 +116,31 @@ public:
 
 	void startScope(ProfilerLabel label)
 	{
-		// translate the label to an index and push it on the stack
-		std::size_t labelIndex = getLabelIndex(label);
-		m_stack.push(labelIndex);
+		if (isProfilingThisThread())
+		{
+			// translate the label to an index and push it on the stack
+			std::size_t labelIndex = getLabelIndex(label);
+			m_stack.push(labelIndex);
 
-		// record accumulated time
-		recordAccumulatedTime(labelIndex);
+			// record accumulated time
+			recordAccumulatedTime(labelIndex);
 
-		// bump the count
-		m_entries[labelIndex].m_count++;
+			// bump the count
+			m_entries[labelIndex].m_count++;
+		}
 	}
 
 	void endScope()
 	{
-		// pop a label off the stack
-		m_stack.pop();
-		std::size_t labelIndex = m_stack.top();
+		if (isProfilingThisThread())
+		{
+			// pop a label off the stack
+			m_stack.pop();
+			std::size_t labelIndex = m_stack.top();
 
-		// record accumulated time
-		recordAccumulatedTime(labelIndex);
+			// record accumulated time
+			recordAccumulatedTime(labelIndex);
+		}
 	}
 
 
@@ -152,6 +159,7 @@ private:
 	std::unordered_map<ProfilerLabel, std::size_t>	m_labelMap;
 	std::stack<std::size_t>							m_stack;
 	std::vector<Entry>								m_entries;
+	std::thread::id									m_profilingThread;
 
 	static RealPerformanceProfiler					g_instance;
 
@@ -180,6 +188,11 @@ private:
 		// and start tracking this one
 		m_currentLabelIndex = labelIndex;
 		m_currentStartTime = currentClock;
+	}
+
+	bool isProfilingThisThread() const
+	{
+		return std::this_thread::get_id() == m_profilingThread;
 	}
 
 	std::size_t introduceNewLabel(const ProfilerLabel &label);
