@@ -95,7 +95,10 @@ void RealPerformanceProfiler::dump(QTextStream &stream)
 		for (const Entry &entry : m_entries)
 		{
 			QString percent = QString::number((double)entry.m_accumulatedTime / totalTime * 100.0);
-			stream << QString("%1\t%2%\n").arg(entry.m_label, percent);
+			stream << QString("%1\t%2 / %3%\n").arg(
+				entry.m_label,
+				QString::number(entry.m_count),
+				percent);
 		}
 	}
 	else
@@ -105,7 +108,10 @@ void RealPerformanceProfiler::dump(QTextStream &stream)
 
 	// clear out times
 	for (Entry &entry : m_entries)
+	{
 		entry.m_accumulatedTime = 0;
+		entry.m_count = 0;
+	}
 }
 
 
@@ -116,6 +122,7 @@ void RealPerformanceProfiler::dump(QTextStream &stream)
 RealPerformanceProfiler::Entry::Entry(QString &&label)
 	: m_label(std::move(label))
 	, m_accumulatedTime(0)
+	, m_count(0)
 {
 }
 

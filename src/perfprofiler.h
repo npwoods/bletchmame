@@ -121,6 +121,9 @@ public:
 
 		// record accumulated time
 		recordAccumulatedTime(labelIndex);
+
+		// bump the count
+		m_entries[labelIndex].m_count++;
 	}
 
 	void endScope()
@@ -141,6 +144,7 @@ private:
 
 		QString			m_label;
 		std::clock_t	m_accumulatedTime;
+		int				m_count;
 	};
 
 	std::size_t										m_currentLabelIndex;
