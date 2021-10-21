@@ -19,6 +19,7 @@
 //**************************************************************************
 
 class IconLoader;
+class MachineAuditIdentifier;
 
 // ======================> MachineListItemModel
 
@@ -40,7 +41,8 @@ public:
 	// methods
 	info::machine machineFromIndex(const QModelIndex &index) const;
 	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
-	void auditStatusesChanged();
+	void auditStatusChanged(const MachineAuditIdentifier &identifier);
+	void allAuditStatusesChanged();
 
 	// virtuals
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
@@ -57,6 +59,7 @@ private:
 	std::vector<int>									m_indexes;
 	std::function<void(info::machine)>					m_machineIconAccessedCallback;
 
+	void iconsChanged(int startIndex, int endIndex);
 	void populateIndexes();
 };
 

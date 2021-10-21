@@ -57,6 +57,12 @@ void SoftwareListItemModel::load(const software_list_collection &software_col, b
 			{
 				// we're not loading individual parts
 				assert(dev_interface.isEmpty());
+
+				// add this to the software index map (needed for auditing)
+				SoftwareAuditIdentifier auditIdentifier(software.parent().name(), software.name());
+				m_softwareIndexMap.emplace(std::move(auditIdentifier), util::safe_static_cast<int>(m_parts.size()));
+
+				// and add it to the parts list
 				m_parts.emplace_back(software, nullptr);
 			}
 		}
@@ -86,17 +92,42 @@ void SoftwareListItemModel::internalReset()
 {
     m_parts.clear();
     m_softlist_names.clear();
+	m_softwareIndexMap.clear();
 }
 
 
 //-------------------------------------------------
-//  auditStatusesChanged
+//  auditStatusChanged
 //-------------------------------------------------
 
-void SoftwareListItemModel::auditStatusesChanged()
+void SoftwareListItemModel::auditStatusChanged(const SoftwareAuditIdentifier &identifier)
 {
-	QModelIndex topLeft = createIndex(0, (int)Column::Name);
-	QModelIndex bottomRight = createIndex(util::safe_static_cast<int>(m_parts.size()) - 1, (int)Column::Name);
+	ProfilerScope prof(CURRENT_FUNCTION);
+	auto iter = m_softwareIndexMap.find(identifier);
+	if (iter != m_softwareIndexMap.end())
+		iconsChanged(iter->second, iter->second);
+}
+
+
+//-------------------------------------------------
+//  allAuditStatusesChanged
+//-------------------------------------------------
+
+void SoftwareListItemModel::allAuditStatusesChanged()
+{
+	ProfilerScope prof(CURRENT_FUNCTION);
+	iconsChanged(0, util::safe_static_cast<int>(m_parts.size()) - 1);
+}
+
+
+//-------------------------------------------------
+//  iconsChanged
+//-------------------------------------------------
+
+void SoftwareListItemModel::iconsChanged(int startIndex, int endIndex)
+{
+	QModelIndex topLeft = createIndex(startIndex, (int)Column::Name);
+	QModelIndex bottomRight = createIndex(endIndex, (int)Column::Name);
 	QVector<int> roles = { Qt::DecorationRole };
 	dataChanged(topLeft, bottomRight, roles);
 }
