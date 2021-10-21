@@ -110,6 +110,7 @@ AuditTask::Entry::Entry(AuditIdentifier &&identifier)
 MachineAuditIdentifier::MachineAuditIdentifier(const QString &machineName)
 	: m_machineName(machineName)
 {
+	assert(!machineName.isEmpty());
 }
 
 
@@ -131,6 +132,8 @@ SoftwareAuditIdentifier::SoftwareAuditIdentifier(const QString &softwareList, co
 	: m_softwareList(softwareList)
 	, m_software(software)
 {
+	assert(!m_softwareList.isEmpty());
+	assert(!m_software.isEmpty());
 }
 
 
