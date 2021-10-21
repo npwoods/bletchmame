@@ -219,11 +219,11 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 {
 	// did the user change the roms or samples paths?
 	if (util::contains(changedPaths, Preferences::global_path_type::ROMS) || util::contains(changedPaths, Preferences::global_path_type::SAMPLES))
-		machineListItemModel().auditStatusesChanged();
+		machineAuditStatusesChanged();
 
 	// did the user change the roms or samples paths?
 	if (util::contains(changedPaths, Preferences::global_path_type::ROMS))
-		softwareListItemModel().auditStatusesChanged();
+		softwareAuditStatusesChanged();
 
 	// did the user change the profiles path?
 	if (util::contains(changedPaths, Preferences::global_path_type::PROFILES))
