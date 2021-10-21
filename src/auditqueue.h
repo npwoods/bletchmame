@@ -22,6 +22,8 @@
 class AuditQueue
 {
 public:
+	class Test;
+
 	// ctor
 	AuditQueue(const Preferences &prefs, const info::database &infoDb, const software_list_collection &softwareListCollection);
 
