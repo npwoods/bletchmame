@@ -24,6 +24,7 @@ class Hash::Test : public QObject
 private slots:
 	void calculate();
 	void calculateForEmptyFile();
+	void handleBadRead();
 	void mask_00()	{ mask(false, false, ""); }
 	void mask_01()	{ mask(false, true, "SHA1(0123456789abcdef0123456789abcdef01234567)"); }
 	void mask_10()	{ mask(true, false, "CRC(0123abcd)"); }
@@ -70,6 +71,25 @@ void Hash::Test::calculateForEmptyFile()
 	// create an empty buffer
 	QBuffer emptyBuffer;
 	QVERIFY(emptyBuffer.open(QIODevice::ReadOnly));
+
+	// process hashes
+	Hash::calculate(emptyBuffer);
+}
+
+
+//-------------------------------------------------
+//  handleBadRead
+//-------------------------------------------------
+
+void Hash::Test::handleBadRead()
+{
+	// set up a byte array; this is necessary so that QBuffer::atEnd() returns false
+	const char bytes[] = { 0x11, 0x22, 0x33, 0x44 };
+	QByteArray byteArray(bytes, sizeof(bytes));
+
+	// create an buffer pointed at that byte array
+	QBuffer emptyBuffer(&byteArray);
+	QVERIFY(emptyBuffer.open(QIODevice::WriteOnly));
 
 	// process hashes
 	Hash::calculate(emptyBuffer);
