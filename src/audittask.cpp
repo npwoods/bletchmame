@@ -59,6 +59,19 @@ const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const softwar
 
 
 //-------------------------------------------------
+//  getIdentifiers
+//-------------------------------------------------
+
+std::vector<AuditIdentifier> AuditTask::getIdentifiers() const
+{
+	std::vector<AuditIdentifier> result;
+	for (const Entry &entry : m_entries)
+		result.push_back(entry.m_identifier);
+	return result;
+}
+
+
+//-------------------------------------------------
 //  process
 //-------------------------------------------------
 
