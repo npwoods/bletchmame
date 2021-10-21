@@ -28,6 +28,8 @@ namespace
 		void deviceLookup_coco3()			{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
 		void loadExpectedVersion_coco()		{ loadExpectedVersion(":/resources/listxml_coco.xml", "0.229 (mame0229)"); }
 		void loadExpectedVersion_alienar()	{ loadExpectedVersion(":/resources/listxml_alienar.xml", "0.229 (mame0229)"); }
+		void badMachineLookup();
+		void badMachineIndexLookup();
 		void viewIterators();
 		void loadGarbage_0_0()				{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()			{ loadGarbage(0, 1000); }
@@ -170,6 +172,36 @@ void Test::machineLookup(const QString &fileName)
 		QVERIFY(foundMachine->description() == machine.description());
 		QVERIFY(foundMachine->devices().size() == machine.devices().size());
 	}
+}
+
+
+//-------------------------------------------------
+//	badMachineLookup
+//-------------------------------------------------
+
+void Test::badMachineLookup()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	QVERIFY(db.machines().size() > 0);
+
+	std::optional<info::machine> result = db.find_machine("this_is_an_invalid_machine");
+	QVERIFY(!result.has_value());
+}
+
+
+//-------------------------------------------------
+//	badMachineIndexLookup
+//-------------------------------------------------
+
+void Test::badMachineIndexLookup()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	QVERIFY(db.machines().size() > 0);
+
+	std::optional<int> result = db.find_machine_index("this_is_an_invalid_machine");
+	QVERIFY(!result.has_value());
 }
 
 
@@ -467,6 +499,9 @@ void Test::scrutinize_alienar()
 		QVERIFY(rom.bios().isEmpty());
 		QVERIFY(rom.merge().isEmpty());
 	}
+
+	std::optional<int> machineIndex = db.find_machine_index("alienar");
+	QVERIFY(machineIndex == 0);
 }
 
 
@@ -486,6 +521,9 @@ void Test::scrutinize_coco()
 	QVERIFY(!machine->clone_of().has_value());
 	QVERIFY(!machine->rom_of().has_value());
 	QVERIFY(machine->sound_channels() == 1);
+
+	std::optional<int> machineIndex = db.find_machine_index("coco");
+	QVERIFY(machineIndex == 9);
 }
 
 
@@ -507,6 +545,9 @@ void Test::scrutinize_coco2b()
 	QVERIFY(machine->rom_of().has_value());
 	QVERIFY(machine->rom_of()->name() == "coco");
 	QVERIFY(machine->sound_channels() == 3);
+
+	std::optional<int> machineIndex = db.find_machine_index("coco2b");
+	QVERIFY(machineIndex == 12);
 }
 
 

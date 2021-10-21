@@ -219,11 +219,11 @@ void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &c
 {
 	// did the user change the roms or samples paths?
 	if (util::contains(changedPaths, Preferences::global_path_type::ROMS) || util::contains(changedPaths, Preferences::global_path_type::SAMPLES))
-		machineListItemModel().auditStatusesChanged();
+		machineAuditStatusesChanged();
 
 	// did the user change the roms or samples paths?
 	if (util::contains(changedPaths, Preferences::global_path_type::ROMS))
-		softwareListItemModel().auditStatusesChanged();
+		softwareAuditStatusesChanged();
 
 	// did the user change the profiles path?
 	if (util::contains(changedPaths, Preferences::global_path_type::PROFILES))
@@ -966,14 +966,11 @@ void MainPanel::runAuditDialog(const Audit &audit, const QString &name, const QS
 
 void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 {
-	bool machineStatusChanged = false;
-	bool softwareStatusChanged = false;
-
 	// update all statuses
 	for (const AuditResult &result : results)
 	{
 		// determine the type of audit
-		std::visit([this, &machineStatusChanged, &softwareStatusChanged, &result](auto &&identifier)
+		std::visit([this, &result](auto &&identifier)
 		{
 			using T = std::decay_t<decltype(identifier)>;
 			if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
@@ -983,7 +980,7 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 				{
 					// if so, record it
 					m_prefs.setMachineAuditStatus(identifier.machineName(), result.status());
-					machineStatusChanged = true;
+					machineListItemModel().auditStatusChanged(identifier);
 				}
 			}
 			else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
@@ -993,7 +990,7 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 				{
 					// if so, record it
 					m_prefs.setSoftwareAuditStatus(identifier.softwareList(), identifier.software(), result.status());
-					softwareStatusChanged = true;
+					softwareListItemModel().auditStatusChanged(identifier);
 				}
 			}
 			else
@@ -1002,12 +999,6 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 			}
 		}, result.identifier());
 	}
-
-	// did anything change?
-	if (machineStatusChanged)
-		machineAuditStatusesChanged();
-	if (softwareStatusChanged)
-		softwareAuditStatusesChanged();
 }
 
 
@@ -1017,7 +1008,7 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 
 void MainPanel::machineAuditStatusesChanged()
 {
-	machineListItemModel().auditStatusesChanged();
+	machineListItemModel().allAuditStatusesChanged();
 }
 
 
@@ -1027,7 +1018,7 @@ void MainPanel::machineAuditStatusesChanged()
 
 void MainPanel::softwareAuditStatusesChanged()
 {
-	softwareListItemModel().auditStatusesChanged();
+	softwareListItemModel().allAuditStatusesChanged();
 }
 
 

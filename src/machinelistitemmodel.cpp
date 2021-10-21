@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include "machinelistitemmodel.h"
+#include "audittask.h"
 #include "iconloader.h"
 #include "perfprofiler.h"
 #include "utility.h"
@@ -55,13 +56,38 @@ void MachineListItemModel::setMachineFilter(std::function<bool(const info::machi
 
 
 //-------------------------------------------------
-//  auditStatusesChanged
+//  auditStatusChanged
 //-------------------------------------------------
 
-void MachineListItemModel::auditStatusesChanged()
+void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &identifier)
 {
-	QModelIndex topLeft = createIndex(0, (int)Column::Machine);
-	QModelIndex bottomRight = createIndex(util::safe_static_cast<int>(m_indexes.size()) - 1, (int)Column::Machine);
+	ProfilerScope prof(CURRENT_FUNCTION);
+	std::optional<int> machineIndex = m_infoDb.find_machine_index(identifier.machineName());
+	if (machineIndex)
+		iconsChanged(*machineIndex, *machineIndex);
+}
+
+
+
+//-------------------------------------------------
+//  allAuditStatusesChanged
+//-------------------------------------------------
+
+void MachineListItemModel::allAuditStatusesChanged()
+{
+	ProfilerScope prof(CURRENT_FUNCTION);
+	iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
+}
+
+
+//-------------------------------------------------
+//  iconsChanged
+//-------------------------------------------------
+
+void MachineListItemModel::iconsChanged(int startIndex, int endIndex)
+{
+	QModelIndex topLeft = createIndex(startIndex, (int)Column::Machine);
+	QModelIndex bottomRight = createIndex(endIndex, (int)Column::Machine);
 	QVector<int> roles = { Qt::DecorationRole };
 	dataChanged(topLeft, bottomRight, roles);
 }

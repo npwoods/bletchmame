@@ -12,6 +12,7 @@
 #include <QAbstractItemModel>
 
 #include "softwarelist.h"
+#include "audittask.h"
 
 #define SOFTLIST_VIEW_DESC_NAME u8"softlist"
 
@@ -42,7 +43,8 @@ public:
 	// methods
 	void load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = "");
 	void reset();
-	void auditStatusesChanged();
+	void auditStatusChanged(const SoftwareAuditIdentifier &identifier);
+	void allAuditStatusesChanged();
 
 	// accessors
 	const software_list::software &getSoftwareByIndex(int index) const { return m_parts[index].software(); }
@@ -75,8 +77,10 @@ private:
 	std::function<void(const software_list::software &)>	m_softwareIconAccessedCallback;
 	std::vector<SoftwareAndPart>							m_parts;
 	std::vector<QString>									m_softlist_names;
+	std::unordered_map<SoftwareAuditIdentifier, int>		m_softwareIndexMap;
 
 	void internalReset();
+	void iconsChanged(int startIndex, int endIndex);
 };
 
 #endif // SOFTWARELISTITEMMODEL_H
