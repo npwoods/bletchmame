@@ -28,6 +28,7 @@ namespace
 		void deviceLookup_coco3()			{ deviceLookup(":/resources/listxml_coco.xml", "coco3"); }
 		void loadExpectedVersion_coco()		{ loadExpectedVersion(":/resources/listxml_coco.xml", "0.229 (mame0229)"); }
 		void loadExpectedVersion_alienar()	{ loadExpectedVersion(":/resources/listxml_alienar.xml", "0.229 (mame0229)"); }
+		void badMachineLookup();
 		void viewIterators();
 		void loadGarbage_0_0()				{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()			{ loadGarbage(0, 1000); }
@@ -170,6 +171,21 @@ void Test::machineLookup(const QString &fileName)
 		QVERIFY(foundMachine->description() == machine.description());
 		QVERIFY(foundMachine->devices().size() == machine.devices().size());
 	}
+}
+
+
+//-------------------------------------------------
+//	badMachineLookup
+//-------------------------------------------------
+
+void Test::badMachineLookup()
+{
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	QVERIFY(db.machines().size() > 0);
+
+	std::optional<info::machine> result = db.find_machine("this_is_an_invalid_machine");
+	QVERIFY(!result.has_value());
 }
 
 
