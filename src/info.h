@@ -686,6 +686,7 @@ namespace info
 		bool load(QIODevice &input, const QString &expected_version = "");
 		bool load(const QByteArray &byteArray, const QString &expected_version = "");
 		void reset();
+		std::optional<int> find_machine_index(const QString &machine_name) const;
 		std::optional<machine> find_machine(const QString &machine_name) const;
 		const QString &version() const			{ return *m_version; }
 		void addOnChangedHandler(std::function<void()> &&onChanged);

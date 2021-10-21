@@ -452,10 +452,10 @@ std::optional<info::machine> info::slot_option::machine() const
 
 
 //-------------------------------------------------
-//  database::find_machine
+//  database::find_machine_index
 //-------------------------------------------------
 
-std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
+std::optional<int> info::database::find_machine_index(const QString &machine_name) const
 {
 	auto iter = std::lower_bound(
 		machines().begin(),
@@ -466,7 +466,20 @@ std::optional<info::machine> info::database::find_machine(const QString &machine
 			return a.name() < b;
 		});
 	return iter != machines().end() && iter->name() == machine_name
-		? *iter
+		? util::safe_static_cast<int>(iter - machines().begin())
+		: std::optional<int>();
+}
+
+
+//-------------------------------------------------
+//  database::find_machine
+//-------------------------------------------------
+
+std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
+{
+	std::optional<int> index = find_machine_index(machine_name);
+	return index
+		? machines()[util::safe_static_cast<size_t>(*index)]
 		: std::optional<info::machine>();
 }
 
