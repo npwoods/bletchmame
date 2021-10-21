@@ -44,7 +44,7 @@ void AuditQueue::push(AuditIdentifier &&identifier)
 	if (mapIter == m_auditTaskMap.end())
 	{
 		// if not, add it
-		m_auditTaskMap.emplace(std::move(identifier), AuditTask::ptr());
+		m_auditTaskMap.emplace(identifier, AuditTask::ptr());
 	}
 	else if (!mapIter->second)
 	{

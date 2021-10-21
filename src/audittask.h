@@ -163,6 +163,7 @@ public:
 
 	// accessors
 	bool isEmpty() const { return m_entries.empty(); }
+	std::vector<AuditIdentifier> getIdentifiers() const;
 
 protected:
 	// virtuals

@@ -59,6 +59,19 @@ const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const softwar
 
 
 //-------------------------------------------------
+//  getIdentifiers
+//-------------------------------------------------
+
+std::vector<AuditIdentifier> AuditTask::getIdentifiers() const
+{
+	std::vector<AuditIdentifier> result;
+	for (const Entry &entry : m_entries)
+		result.push_back(entry.m_identifier);
+	return result;
+}
+
+
+//-------------------------------------------------
 //  process
 //-------------------------------------------------
 
@@ -110,6 +123,7 @@ AuditTask::Entry::Entry(AuditIdentifier &&identifier)
 MachineAuditIdentifier::MachineAuditIdentifier(const QString &machineName)
 	: m_machineName(machineName)
 {
+	assert(!machineName.isEmpty());
 }
 
 
@@ -131,6 +145,8 @@ SoftwareAuditIdentifier::SoftwareAuditIdentifier(const QString &softwareList, co
 	: m_softwareList(softwareList)
 	, m_software(software)
 {
+	assert(!m_softwareList.isEmpty());
+	assert(!m_software.isEmpty());
 }
 
 
