@@ -29,40 +29,40 @@ SoftwareListItemModel::SoftwareListItemModel(IconLoader *iconLoader, std::functi
 
 void SoftwareListItemModel::load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface)
 {
-    beginResetModel();
+	beginResetModel();
 
-    // clear things out
-    internalReset();
+	// clear things out
+	internalReset();
 
-    // now enumerate through each list and build the m_parts vector
-    for (const software_list::ptr &softlist : software_col.software_lists())
-    {
-        // if the name of this software list is not in m_softlist_names, add it
-        if (std::find(m_softlist_names.begin(), m_softlist_names.end(), softlist->name()) == m_softlist_names.end())
-            m_softlist_names.push_back(softlist->name());
+	// now enumerate through each list and build the m_parts vector
+	for (const software_list::ptr &softlist : software_col.software_lists())
+	{
+		// if the name of this software list is not in m_softlist_names, add it
+		if (std::find(m_softlist_names.begin(), m_softlist_names.end(), softlist->name()) == m_softlist_names.end())
+			m_softlist_names.push_back(softlist->name());
 
-        // now enumerate through all software
-        for (const software_list::software &software : softlist->get_software())
-        {
-            if (load_parts)
-            {
-                // we're loading individual parts; enumerate through them and add them
-                for (const software_list::part &part : software.parts())
-                {
-                    if (dev_interface.isEmpty() || dev_interface == part.interface())
-                        m_parts.emplace_back(software, &part);
-                }
-            }
-            else
-            {
-                // we're not loading individual parts
-                assert(dev_interface.isEmpty());
-                m_parts.emplace_back(software, nullptr);
-            }
-        }
-    }
+		// now enumerate through all software
+		for (const software_list::software &software : softlist->get_software())
+		{
+			if (load_parts)
+			{
+				// we're loading individual parts; enumerate through them and add them
+				for (const software_list::part &part : software.parts())
+				{
+					if (dev_interface.isEmpty() || dev_interface == part.interface())
+						m_parts.emplace_back(software, &part);
+				}
+			}
+			else
+			{
+				// we're not loading individual parts
+				assert(dev_interface.isEmpty());
+				m_parts.emplace_back(software, nullptr);
+			}
+		}
+	}
 
-    endResetModel();
+	endResetModel();
 }
 
 
