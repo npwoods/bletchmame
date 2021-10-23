@@ -72,6 +72,17 @@ void AuditQueue::Test::test()
 	QVERIFY(auditQueue.m_auditTaskMap.size() == 4);
 	QVERIFY(auditQueue.m_undispatchedAudits.size() == 1);
 	QVERIFY(auditQueue.m_undispatchedAudits.front() == AuditIdentifier(MachineAuditIdentifier("coco2")));
+
+	// create another task
+	AuditTask::ptr auditTask2 = auditQueue.tryCreateAuditTask();
+	QVERIFY(auditTask2);
+	QVERIFY(auditQueue.m_auditTaskMap.size() == 4);
+	QVERIFY(auditQueue.m_undispatchedAudits.empty());
+	QVERIFY(auditTask2->getIdentifiers().size() == 1);
+
+	// try to create another task, because the queue is emptied out we should not get one
+	AuditTask::ptr auditTask3 = auditQueue.tryCreateAuditTask();
+	QVERIFY(!auditTask3);
 }
 
 
