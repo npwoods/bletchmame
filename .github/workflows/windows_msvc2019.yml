@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         config: [Debug, Release]
+        qt: [6.1.2, 6.2.0]
     runs-on: windows-latest
     defaults:
       run:
@@ -94,12 +95,12 @@ jobs:
     - name: Build QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/quazip_build_msvc2019.sh -c ${{ matrix.config }}
+        sh scripts/quazip_build_msvc2019.sh -c ${{ matrix.config }} -q ${{ matrix.qt }}
 
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        sh scripts/bletchmame_build_msvc2019.sh -c ${{ matrix.config }}
+        sh scripts/bletchmame_build_msvc2019.sh -c ${{ matrix.config }} -q ${{ matrix.qt }}
 
     # Run Unit Tests
     - name: Run Unit Tests

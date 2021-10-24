@@ -9,13 +9,6 @@ if [ -z "$BASH_SOURCE" ]; then
   echo "Null BASH_SOURCE"
   exit
 fi
-if [ -z "${QT6_INSTALL_DIR:-}" ]; then
-  QT6_INSTALL_DIR=/c/Qt/6.1.2/msvc2019_64
-fi
-if [ ! -d "$QT6_INSTALL_DIR" ]; then
-  echo "Bad QT6_INSTALL_DIR"
-  exit
-fi
 
 # identify directories
 BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
@@ -29,17 +22,31 @@ TOOLSET=v142
 # config is Release by default, or 
 CONFIG=Debug
 
+# QT version is 6.1.2 by default
+QT_VERSION=6.1.2
+
 # parse arguments
-while getopts "c:t:" OPTION; do
+while getopts "c:q:t:" OPTION; do
    case $OPTION in
       c)
          CONFIG=$OPTARG
+		 ;;
+      q)
+         QT_VERSION=6.1.2
 		 ;;
       t)
          TOOLSET=$OPTARG
 		 ;;
    esac
 done
+
+if [ -z "${QT6_INSTALL_DIR:-}" ]; then
+  QT6_INSTALL_DIR=/c/Qt/${QT_VERSION}/msvc2019_64
+fi
+if [ ! -d "$QT6_INSTALL_DIR" ]; then
+  echo "Bad QT6_INSTALL_DIR"
+  exit
+fi
 
 if [ "$CONFIG" = Debug ]; then
   QUAZIP_LIBNAME=quazip1-qt6d.lib

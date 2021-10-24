@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
+        qt: [6.1.2, 6.2.0]
     runs-on: windows-latest
     defaults:
       run:
@@ -63,7 +64,7 @@ jobs:
     - name: Retrieve Qt6
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/qt6_retrieve.sh
+        sh scripts/qt6_retrieve.sh -q ${{ matrix.qt }}
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
