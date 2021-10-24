@@ -17,10 +17,9 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - config: Debug
-          - config: Release
+        config: [Debug, Release]
     runs-on: windows-latest
     defaults:
       run:
