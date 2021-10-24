@@ -1,4 +1,4 @@
-\# Prerequisites
+# Prerequisites
 *.d
 
 # Compiled Object files
@@ -37,3 +37,16 @@ bin
 obj
 deps
 build
+
+# CMake artifacts
+BletchMAME
+BletchMAME_autogen
+BletchMAME_core_autogen
+BletchMAME_tests
+BletchMAME_tests_autogen
+CMakeCache.txt
+CMakeFiles
+CTestTestfile.cmake
+Makefile
+cmake_install.cmake
+config.tests
