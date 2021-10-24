@@ -8,6 +8,17 @@ if [ -z "$BASH_SOURCE" ]; then
   exit
 fi
 
+CONFIG=Debug
+
+# parse arguments
+while getopts "c:" OPTION; do
+   case $OPTION in
+      c)
+         CONFIG=$OPTARG
+         ;;
+   esac
+done
+
 # Identify directories
 ZLIB_DIR=$(dirname $BASH_SOURCE)/../deps/zlib
 ZLIB_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019/zlib
@@ -18,7 +29,5 @@ rm -rf $ZLIB_BUILD_DIR
 cmake -S$ZLIB_DIR -B$ZLIB_BUILD_DIR		\
 	--install-prefix $INSTALL_DIR		\
 	-G"Visual Studio 16 2019"
-cmake --build $ZLIB_BUILD_DIR --parallel --config Debug
-cmake --build $ZLIB_BUILD_DIR --parallel --config Release
-cmake --install $ZLIB_BUILD_DIR --config Debug
-cmake --install $ZLIB_BUILD_DIR --config Release
+cmake --build $ZLIB_BUILD_DIR --parallel --config $CONFIG
+cmake --install $ZLIB_BUILD_DIR --config $CONFIG

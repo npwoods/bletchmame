@@ -41,6 +41,12 @@ while getopts "c:t:" OPTION; do
    esac
 done
 
+if [ "$CONFIG" = Debug ]; then
+  QUAZIP_LIBNAME=quazip1-qt6d.lib
+else
+  QUAZIP_LIBNAME=quazip1-qt6.lib
+fi
+
 # Set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}
 cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
@@ -54,7 +60,7 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-DQt6Widgets_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6Widgets				\
 	-DQt6WidgetsTools_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6WidgetsTools	\
 	-DQuaZip-Qt6_DIR=$DEPS_INSTALL_DIR/lib/cmake/QuaZip-Qt6-1.1			\
-	-DQUAZIP_LIBRARIES=$DEPS_INSTALL_DIR/lib/quazip1-qt6d.lib			\
+	-DQUAZIP_LIBRARIES=$DEPS_INSTALL_DIR/lib/${QUAZIP_LIBNAME}			\
 	-DCMAKE_LIBRARY_PATH=$DEPS_INSTALL_DIR/lib							\
 	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include
 cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config ${CONFIG}

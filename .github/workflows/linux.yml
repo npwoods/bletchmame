@@ -17,10 +17,9 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - cxx: g++-10
-          - cxx: clang++
+        cxx: [clang++, g++-10]
     runs-on: ubuntu-latest
     steps:
 

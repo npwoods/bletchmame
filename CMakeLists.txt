@@ -31,6 +31,10 @@ endif()
 find_package( Threads )
 
 # Expat
+if(WIN32)
+# We ship a custom FindEXPAT module to support Windows debug libraries
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules")
+endif()
 include(FindEXPAT)
 find_package(EXPAT REQUIRED)
 include_directories(${EXPAT_INCLUDE_DIR})

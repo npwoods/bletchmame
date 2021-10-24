@@ -17,10 +17,9 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - config: Debug
-          - config: Release
+        config: [Debug, Release]
     runs-on: windows-latest
     defaults:
       run:
@@ -59,7 +58,7 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/msvc2019
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_retrieve.sh', 'scripts/expat_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/zlib_build_msvc2019.sh', 'scripts/expat_build_msvc2019.sh', 'scripts/quazip_build_msvc2019.sh')}}
+        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_retrieve.sh', 'scripts/expat_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/zlib_build_msvc2019.sh', 'scripts/expat_build_msvc2019.sh', 'scripts/quazip_build_msvc2019.sh')}}
 
     # Retrieve Zlib
     - name: Retrieve Zlib
@@ -83,19 +82,19 @@ jobs:
     - name: Build Zlib
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/zlib_build_msvc2019.sh
+        sh scripts/zlib_build_msvc2019.sh -c ${{ matrix.config }}
 
     # Build Expat
     - name: Build Expat
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/expat_build_msvc2019.sh
+        sh scripts/expat_build_msvc2019.sh -c ${{ matrix.config }}
 
     # Build QuaZip
     - name: Build QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/quazip_build_msvc2019.sh
+        sh scripts/quazip_build_msvc2019.sh -c ${{ matrix.config }}
 
     # Build BletchMAME
     - name: Build BletchMAME
