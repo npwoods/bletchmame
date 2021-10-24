@@ -26,9 +26,15 @@ DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
 # toolset is v142 (MSVC2019), but can also be ClangCL
 TOOLSET=v142
 
+# config is Release by default, or 
+CONFIG=Debug
+
 # parse arguments
-while getopts "t:" OPTION; do
+while getopts "c:t:" OPTION; do
    case $OPTION in
+      c)
+         CONFIG=$OPTARG
+		 ;;
       t)
          TOOLSET=$OPTARG
 		 ;;
@@ -51,6 +57,5 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-DQUAZIP_LIBRARIES=$DEPS_INSTALL_DIR/lib/quazip1-qt6d.lib			\
 	-DCMAKE_LIBRARY_PATH=$DEPS_INSTALL_DIR/lib							\
 	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include
-cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config Debug
-cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config Release
-cmake --install ${BLETCHMAME_INSTALL_DIR} --prefix ${BLETCHMAME_INSTALL_DIR} --config Debug
+cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config ${CONFIG}
+cmake --install ${BLETCHMAME_INSTALL_DIR} --prefix ${BLETCHMAME_INSTALL_DIR} --config ${CONFIG}
