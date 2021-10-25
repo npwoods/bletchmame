@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.10 (TBD)
+	- Various improvements to the CI/CD pipeline [Davide Cavalca]
+
 - 2.9 (2021-Oct-23)
 	- Added experimental MAMEUI-style media auditing capabilities
 		- ROMs, Samples, Disks and Software Lists are supported
