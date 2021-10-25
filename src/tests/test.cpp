@@ -131,18 +131,5 @@ int main(int argc, char *argv[])
         result = runTestFixtures(argc, argv);
     }
 
-    // did we have any failures?
-    if (result != 0)
-    {
-        // the monstrosity below is a consequence of seemingly not being able to
-        // report errors with exit codes under GitHub actions; for some reason exit
-        // codes are not working but the code below does trigger a failure
-        size_t i = 0;
-        do
-        {
-            *((long *)i++) = 0xDEADBEEF;
-        } while (rand() != rand());
-    }
-
     return result;
 }
