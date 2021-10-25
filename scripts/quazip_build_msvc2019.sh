@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -euo pipefail
+
 ###################################################################################
 # quazip_build_msvc.sh - Builds QuaZip for MSVC                                   #
 ###################################################################################
@@ -7,7 +11,7 @@ if [ -z "$BASH_SOURCE" ]; then
   echo "Null BASH_SOURCE"
   exit
 fi
-if [ -z "$QT6_INSTALL_DIR" ]; then
+if [ -z "${QT6_INSTALL_DIR:-}" ]; then
   QT6_INSTALL_DIR=/c/Qt/6.1.2/msvc2019_64
 fi
 if [ ! -d "$QT6_INSTALL_DIR" ]; then
@@ -38,7 +42,7 @@ else
 fi
 
 # Build and install it!
-rm -rf $QUAZIP_BUILD_DIR $QUAZIP_INSTALL_DIR
+rm -rf $QUAZIP_BUILD_DIR
 cmake -S$QUAZIP_DIR -B$QUAZIP_BUILD_DIR -DQUAZIP_QT_MAJOR_VERSION=6	\
 	--install-prefix $INSTALL_DIR									\
 	-G"Visual Studio 16 2019"										\

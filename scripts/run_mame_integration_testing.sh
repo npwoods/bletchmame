@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 ###################################################################################
 # run_mame_integration_testing.sh - Runs integration testing against actual MAME  #
 ###################################################################################

@@ -9,7 +9,7 @@ if [ -z "$BASH_SOURCE" ]; then
   echo "Null BASH_SOURCE"
   exit
 fi
-if [ -z "$QT6_INSTALL_DIR" ]; then
+if [ -z "${QT6_INSTALL_DIR:-}" ]; then
   QT6_INSTALL_DIR=/c/Qt/6.1.2/msvc2019_64
 fi
 if [ ! -d "$QT6_INSTALL_DIR" ]; then
