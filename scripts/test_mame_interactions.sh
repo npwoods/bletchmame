@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 #############################################################################################
 # test_mame_interactions.sh - Use BletchMAME_tests to exercise a particular version of MAME #
 #############################################################################################
