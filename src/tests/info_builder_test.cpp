@@ -96,7 +96,7 @@ QByteArray buildInfoDatabase(const QString &fileName, bool skipDtd)
 void Test::general()
 {
 	QByteArray byteArray = buildInfoDatabase();
-	QVERIFY(byteArray.size() > 0);
+	QVERIFY(byteArray.size() == 424242);
 }
 
 
