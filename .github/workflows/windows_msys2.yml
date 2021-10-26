@@ -90,7 +90,8 @@ jobs:
 
     # Run Unit Tests
     - name: Run Unit Tests
-      run: ./build/msys2/BletchMAME_tests.exe
+      run: |
+        sh -c "set -euo pipefail; ./BletchMAME_tests"
 
     # Run integration testing with actual MAME
     - name: Run integration testing with actual MAME
