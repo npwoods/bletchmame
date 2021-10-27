@@ -100,3 +100,8 @@ jobs:
     - name: Build BletchMAME
       run: |
         sh scripts/bletchmame_build_msvc2019.sh -c ${{ matrix.config }}
+
+    # Run Unit Tests
+    - name: Run Unit Tests
+      run: |
+        ./build/msvc2019/${{ matrix.config }}/BletchMAME_tests.exe
