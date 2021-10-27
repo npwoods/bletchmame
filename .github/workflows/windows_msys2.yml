@@ -92,7 +92,7 @@ jobs:
     - name: Run Unit Tests
       shell: bash
       run: |
-        ./build/msys2/BletchMAME_tests.exe && exit 1
+        ./build/msys2/BletchMAME_tests.exe
 
     # Run integration testing with actual MAME
     - name: Run integration testing with actual MAME

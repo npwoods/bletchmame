@@ -131,5 +131,11 @@ int main(int argc, char *argv[])
         result = runTestFixtures(argc, argv);
     }
 
+#ifdef WIN32
+	// for some reason the MSYS2 builds don't handle this
+	if (result)
+		throw false;
+#endif
+
     return result;
 }
