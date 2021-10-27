@@ -104,4 +104,5 @@ jobs:
     # Run Unit Tests
     - name: Run Unit Tests
       run: |
-        ./build/msvc2019/${{ matrix.config }}/BletchMAME_tests.exe
+		cp ./build/msvc2019/${{ matrix.config }}/BletchMAME_tests.exe ./build/msvc2019/bin
+		./build/msvc2019/bin/BletchMAME_tests.exe
