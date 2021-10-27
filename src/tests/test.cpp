@@ -92,7 +92,7 @@ static int runTestFixtures(int argc, char *argv[])
     }
 
     if (anyFailed)
-        std::cout << "TEST FAILURES OCCURRED - CRASHING" << std::endl;
+        std::cout << "TEST FAILURES OCCURRED" << std::endl;
     else
         std::cout << "All tests succeeded" << std::endl;
     return anyFailed ? 1 : 0;
