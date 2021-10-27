@@ -107,4 +107,4 @@ jobs:
         cp ./deps/msvc2019/bin/*.dll ./build/msvc2019/${{ matrix.config }}
         ls -l ./deps/msvc2019/bin
         ls -l ./build/msvc2019/${{ matrix.config }}
-        ./build/msvc2019/${{ matrix.config }}/BletchMAME_tests.exe
+        cd ./build/msvc2019/${{ matrix.config }} ; ./BletchMAME_tests.exe
