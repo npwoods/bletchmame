@@ -105,6 +105,7 @@ jobs:
     - name: Run Unit Tests
       run: |
         cp ./deps/msvc2019/bin/*.dll ./build/msvc2019/${{ matrix.config }}
+        cp $Qt6_DIR/bin/*.dll ./build/msvc2019/${{ matrix.config }}
         ls -l ./deps/msvc2019/bin
         ls -l ./build/msvc2019/${{ matrix.config }}
-        export PATH=$PATH;./deps/msvc2019/bin;$Qt6_DIR/bin ; echo $PATH ; ./build/msvc2019/${{ matrix.config }}/BletchMAME_tests.exe
+        cd ./build/msvc2019/${{ matrix.config }} ; ./BletchMAME_tests.exe
