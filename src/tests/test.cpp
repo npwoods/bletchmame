@@ -11,6 +11,22 @@
 
 
 //**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
+// on Windows, for unclear reasons (Qt?) the process return code will be zero even
+// if main() returns a non-zero value or std::exit is called, so we're using
+// std::abort() on that platform (sigh)
+//
+// this happens on both MSYS2 and MSVC
+#ifdef WIN32
+#define ABORT_ON_FAILURE	1
+#else // !WIN32
+#define ABORT_ON_FAILURE	0
+#endif // WIN32
+
+
+//**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
 
@@ -131,11 +147,9 @@ int main(int argc, char *argv[])
         result = runTestFixtures(argc, argv);
     }
 
-#ifdef WIN32
-	// for some reason the MSYS2 builds don't handle this
-	if (result)
-		throw false;
-#endif
+	// use std::abort() if we have to
+	if (ABORT_ON_FAILURE && result != 0)
+		std::abort();
 
     return result;
 }
