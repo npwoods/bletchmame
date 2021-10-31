@@ -16,6 +16,10 @@ on:
 jobs:
   # This workflow contains a single job called "build"
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
     runs-on: windows-latest
     defaults:
       run:
@@ -82,7 +86,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        sh scripts/bletchmame_build_msys2.sh
+        sh scripts/bletchmame_build_msys2.sh -b ${{ matrix.build_type }}
 
     # Validate DLL Imports
     - name: Validate DLL Imports
