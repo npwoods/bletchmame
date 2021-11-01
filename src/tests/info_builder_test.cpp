@@ -147,12 +147,10 @@ void Test::compareBinaries(const QString &fileName)
 	{
 		if (byteArray[i] != binByteArray[i])
 		{
-			char buffer[256];
-			snprintf(buffer, std::size(buffer), "Difference at index #%d (0x%02X vs 0x%02X)",
+			qWarning("Difference at index #%d (0x%02X vs 0x%02X)",
 				(int)i,
 				(unsigned)(std::uint8_t)byteArray[i],
 				(unsigned)(std::uint8_t)binByteArray[i]);
-			QWARN(buffer);
 			break;
 		}
 	}
