@@ -35,6 +35,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	, m_prefs(prefs)
 	, m_rootFolderList({
 		RootFolderDesc("all",			"All Systems"),
+		RootFolderDesc("available",		"Available"),
 		RootFolderDesc("bios",			"BIOS"),
 		RootFolderDesc("clones",		"Clones"),
 		RootFolderDesc("chd",			"CHD"),
@@ -94,14 +95,15 @@ MachineFolderTreeModel::FolderIconResourceNameArray MachineFolderTreeModel::getF
 {
 	FolderIconResourceNameArray result;
 	std::fill(result.begin(), result.end(), nullptr);
-	result[(int)FolderIcon::Cpu]			= ":/resources/cpu.ico";
-	result[(int)FolderIcon::Folder]			= ":/resources/folder.ico";
-	result[(int)FolderIcon::FolderOpen]		= ":/resources/foldopen.ico";
-	result[(int)FolderIcon::HardDisk]		= ":/resources/harddisk.ico";
-	result[(int)FolderIcon::Manufacturer]	= ":/resources/manufact.ico";
-	result[(int)FolderIcon::Sound]			= ":/resources/sound.ico";
-	result[(int)FolderIcon::Source]			= ":/resources/source.ico";
-	result[(int)FolderIcon::Year]			= ":/resources/year.ico";
+	result[(int)FolderIcon::Cpu]				= ":/resources/cpu.ico";
+	result[(int)FolderIcon::Folder]				= ":/resources/folder.ico";
+	result[(int)FolderIcon::FolderAvailable]	= ":/resources/foldavail.ico";
+	result[(int)FolderIcon::FolderOpen]			= ":/resources/foldopen.ico";
+	result[(int)FolderIcon::HardDisk]			= ":/resources/harddisk.ico";
+	result[(int)FolderIcon::Manufacturer]		= ":/resources/manufact.ico";
+	result[(int)FolderIcon::Sound]				= ":/resources/sound.ico";
+	result[(int)FolderIcon::Source]				= ":/resources/source.ico";
+	result[(int)FolderIcon::Year]				= ":/resources/year.ico";
 	return result;
 }
 
@@ -202,6 +204,8 @@ void MachineFolderTreeModel::populateVariableFolders()
 		{
 			if (!strcmp(desc.id(), "all"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
+			else if (!strcmp(desc.id(), "available"))
+				m_root.emplace_back(desc.id(), FolderIcon::FolderAvailable, desc.displayName(), [this](const info::machine &machine) { return m_prefs.getMachineAuditStatus(machine.name()) == AuditStatus::Found; });
 			else if (!strcmp(desc.id(), "bios"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_bios);
 			else if (!strcmp(desc.id(), "chd"))
