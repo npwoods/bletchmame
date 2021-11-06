@@ -71,6 +71,7 @@ private:
 	{
 		Cpu,
 		Folder,
+		FolderAvailable,
 		FolderOpen,
 		HardDisk,
 		Manufacturer,
@@ -110,7 +111,7 @@ private:
 
 	info::database &							m_infoDb;
 	Preferences &								m_prefs;
-	std::array<RootFolderDesc, 18>				m_rootFolderList;
+	std::array<RootFolderDesc, 19>				m_rootFolderList;
 	std::vector<FolderEntry>					m_root;
 	std::vector<FolderEntry>					m_bios;
 	std::vector<FolderEntry>					m_cpu;
