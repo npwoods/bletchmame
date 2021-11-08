@@ -29,6 +29,7 @@ public:
 
 	// accessors
 	bool hasUndispatched() const { return m_undispatchedAudits.size() > 0; }
+	bool isCloseToEmpty() const { return m_undispatchedAudits.size() < MAX_AUDITS_PER_TASK; }
 	int currentCookie() const { return m_currentCookie; }
 
 	// methods
@@ -36,6 +37,8 @@ public:
 	AuditTask::ptr tryCreateAuditTask();
 
 private:
+	const int MAX_AUDITS_PER_TASK = 3;
+
 	typedef std::unordered_map<AuditIdentifier, AuditTask::ptr> AuditTaskMap;
 
 	const Preferences &					m_prefs;

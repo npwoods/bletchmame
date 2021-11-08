@@ -14,6 +14,7 @@
 #include <QFileDialog>
 #include <memory.h>
 
+#include "auditcursor.h"
 #include "auditqueue.h"
 #include "info.h"
 #include "mainpanel.h"
@@ -167,6 +168,7 @@ private:
 	AuditQueue							m_auditQueue;
 	QTimer *							m_auditTimer;
 	unsigned int						m_maximumConcurrentAuditTasks;
+	MachineAuditCursor					m_machineAuditCursor;
 
 	// other
 	observable::value<bool>				m_menu_bar_shown;
@@ -241,11 +243,14 @@ private:
 	void resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit);
 	void updateAuditTimer();
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
+	void auditTimerProc();
 	void dispatchAuditTasks();
 	void reportAuditResults(const std::vector<AuditResult> &results);
 	bool reportAuditResult(const AuditResult &result);
 	const QString *auditIdentifierString(const AuditIdentifier &identifier) const;
 	static QString auditStatusString(AuditStatus status);
+	void addLowPriorityAudits();
+	AuditCursor *currentAuditCursor();
 };
 
 #endif // MAINWINDOW_H

@@ -98,6 +98,8 @@ add_library(BletchMAME_core
 	src/assetfinder.h
 	src/audit.cpp
 	src/audit.h
+	src/auditcursor.cpp
+	src/auditcursor.h
 	src/auditqueue.cpp
 	src/auditqueue.h
 	src/audittask.cpp
