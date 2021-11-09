@@ -132,6 +132,10 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 		m_prefs,
 		s_machineListTableViewDesc,
 		[this](const QString &machineName) { updateInfoPanel(machineName); });
+	connect(m_ui->machinesTableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	{
+		updateStatusFromSelection();
+	});
 
 	// set up machine folder tree
 	MachineFolderTreeModel &machineFolderTreeModel = *new MachineFolderTreeModel(this, m_infoDb, m_prefs);
@@ -170,6 +174,10 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 		m_ui->softwareSearchBox,
 		m_prefs,
 		ChooseSoftlistPartDialog::s_tableViewDesc);
+	connect(m_ui->softwareTableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	{
+		updateStatusFromSelection();
+	});
 
 	// set up the profile list view
 	ProfileListItemModel &profileListItemModel = *new ProfileListItemModel(this, m_prefs, m_infoDb, m_iconLoader);
@@ -179,6 +187,10 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 		nullptr,
 		m_prefs,
 		s_profileListTableViewDesc);
+	connect(m_ui->profilesTableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &newSelection, const QItemSelection &oldSelection)
+	{
+		updateStatusFromSelection();
+	});
 	profileListItemModel.refresh(true, true);
 
 	// set up the tab widget
@@ -267,6 +279,24 @@ const software_list::software *MainPanel::currentlySelectedSoftware() const
 	QModelIndexList selection = m_ui->softwareTableView->selectionModel()->selectedIndexes();
 	if (selection.size() > 0)
 		result = &softwareFromModelIndex(selection[0]);
+	return result;
+}
+
+
+//-------------------------------------------------
+//  currentlySelectedProfile
+//-------------------------------------------------
+
+std::shared_ptr<profiles::profile> MainPanel::currentlySelectedProfile()
+{
+	std::shared_ptr<profiles::profile> result;
+
+	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
+	if (selection.count() > 0)
+	{
+		QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
+		result = profileListItemModel().getProfileByIndex(actualIndex.row());
+	}
 	return result;
 }
 
@@ -802,6 +832,106 @@ void MainPanel::updateSoftwareList()
 
 
 //-------------------------------------------------
+//  updateStatusFromSelection
+//-------------------------------------------------
+
+void MainPanel::updateStatusFromSelection()
+{
+	std::optional<info::machine> selectedMachine;
+	const software_list::software *selectedSoftware;
+	std::shared_ptr<profiles::profile> selectedProfile;
+	QString description, statusString, totalString;
+	QTableView *tableView;
+
+	Preferences::list_view_type list_view_type = m_prefs.getSelectedTab();
+	switch (list_view_type)
+	{
+	case Preferences::list_view_type::MACHINE:
+		selectedMachine = currentlySelectedMachine();
+		if (selectedMachine)
+		{
+			description = selectedMachine->description();
+			statusString = machineStatusString(selectedMachine.value());
+		}
+		totalString = "%1 machines";
+		tableView = m_ui->machinesTableView;
+		break;
+
+	case Preferences::list_view_type::SOFTWARELIST:
+		selectedSoftware = currentlySelectedSoftware();
+		if (selectedSoftware)
+		{
+			description = selectedSoftware->description();
+		}
+		totalString = "%1 softwares";
+		tableView = m_ui->softwareTableView;
+		break;
+
+	case Preferences::list_view_type::PROFILE:
+		selectedProfile = currentlySelectedProfile();
+		if (selectedProfile)
+		{
+			description = selectedProfile->name();
+		}
+		totalString = "%1 profiles";
+		tableView = m_ui->profilesTableView;
+		break;
+
+	default:
+		throw false;
+	}
+
+	// actually return the status
+	std::array<QString, STATUS_ENTRIES> status;
+	status[0] = description.isEmpty() ? "No selection" : std::move(description);
+	status[1] = std::move(statusString);
+	status[2] = totalString.arg(tableView->model()->rowCount());
+	setStatus(status);
+}
+
+
+//-------------------------------------------------
+//  machineStatusString
+//-------------------------------------------------
+
+QString MainPanel::machineStatusString(const info::machine &machine) const
+{
+	QString result;
+	switch (m_prefs.getMachineAuditStatus(machine.name()))
+	{
+	case AuditStatus::Unknown:
+		result = "Unknown";
+		break;
+	case AuditStatus::Found:
+		switch (machine.quality_status())
+		{
+		case info::machine::driver_quality_t::UNKNOWN:
+		case info::machine::driver_quality_t::GOOD:
+		default:
+			result = "Working";
+			break;
+		case info::machine::driver_quality_t::IMPERFECT:
+			result = "Imperfect";
+			break;
+		case info::machine::driver_quality_t::PRELIMINARY:
+			result = "Preliminary";
+			break;
+		}
+		break;
+	case AuditStatus::MissingOptional:
+		result = "Optional Media Missing";
+		break;
+	case AuditStatus::Missing:
+		result = "Media Missing";
+		break;
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  machineFoldersTreeViewSelectionChanged
 //-------------------------------------------------
 
@@ -1056,6 +1186,20 @@ QString MainPanel::auditThisActionText(QString &&text)
 
 
 //-------------------------------------------------
+//  setStatus
+//-------------------------------------------------
+
+void MainPanel::setStatus(const std::array<QString, 3> &status)
+{
+	if (status != m_status)
+	{
+		m_status = status;
+		emit statusChanged(status);
+	}
+}
+
+
+//-------------------------------------------------
 //  on_machinesFolderTreeView_customContextMenuRequested
 //-------------------------------------------------
 
@@ -1176,12 +1320,10 @@ void MainPanel::on_profilesTableView_activated(const QModelIndex &index)
 
 void MainPanel::on_profilesTableView_customContextMenuRequested(const QPoint &pos)
 {
-	// identify the selected software
-	QModelIndexList selection = m_ui->profilesTableView->selectionModel()->selectedIndexes();
-	if (selection.count() <= 0)
+	// identify the selected profile
+	std::shared_ptr<profiles::profile> profile = currentlySelectedProfile();
+	if (!profile)
 		return;
-	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->profilesTableView).mapToSource(selection[0]);
-	std::shared_ptr<profiles::profile> profile = profileListItemModel().getProfileByIndex(actualIndex.row());
 
 	// build the popup menu
 	QMenu popupMenu;
@@ -1204,6 +1346,7 @@ void MainPanel::on_tabWidget_currentChanged(int index)
 	Preferences::list_view_type list_view_type = static_cast<Preferences::list_view_type>(index);
 	m_prefs.setSelectedTab(list_view_type);
 	updateTabContents();
+	updateStatusFromSelection();
 }
 
 

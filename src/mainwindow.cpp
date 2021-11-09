@@ -14,6 +14,7 @@
 #include <QDir>
 #include <QUrl>
 #include <QCloseEvent>
+#include <QLabel>
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
 #include <QTextStream>
@@ -715,6 +716,22 @@ MainWindow::MainWindow(QWidget *parent)
 		m_ui->rootWidget);
 	m_ui->stackedLayout->addWidget(m_mainPanel);
 	m_ui->stackedLayout->setCurrentWidget(m_mainPanel);
+
+	// set up status labels
+	for (auto i = 0; i < std::size(m_statusLabels); i++)
+	{
+		m_statusLabels[i] = new QLabel(this);
+		m_statusLabels[i]->setFixedWidth(120);
+		m_ui->statusBar->addPermanentWidget(m_statusLabels[i]);
+	}
+
+	// listen to status updates from MainPanel
+	connect(m_mainPanel, &MainPanel::statusChanged, this, [this](const auto &newStatus)
+	{
+		m_ui->statusBar->showMessage(newStatus[0]);
+		for (auto i = 0; i < std::min(std::size(m_statusLabels), std::size(newStatus) - 1); i++)
+			m_statusLabels[i]->setText(newStatus[i + 1]);
+	});
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);

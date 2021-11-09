@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.10 (TBD)
 	- Added an "Available" folder to the machine tree view (like MAMEUI)
+	- Current selections will be described in the status bar
 	- Various improvements to the CI/CD pipeline [Davide Cavalca]
 
 - 2.9 (2021-Oct-23)
