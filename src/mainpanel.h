@@ -89,18 +89,18 @@ private:
 	class SnapshotViewEventFilter;
 
 	// variables configured at startup
-	std::unique_ptr<Ui::MainPanel>													m_ui;
-	Preferences &																	m_prefs;
-	IMainPanelHost &																m_host;
+	std::unique_ptr<Ui::MainPanel>		m_ui;
+	Preferences &						m_prefs;
+	IMainPanelHost &					m_host;
 
 	// information retrieved by -listxml
-	info::database &																m_infoDb;
+	info::database &					m_infoDb;
 
 	// other
-	QString																			m_currentSoftwareList;
-	IconLoader																		m_iconLoader;
-	QPixmap																			m_currentSnapshot;
-	std::vector<QString>															m_expandedTreeItems;
+	QString								m_currentSoftwareList;
+	IconLoader							m_iconLoader;
+	QPixmap								m_currentSnapshot;
+	std::vector<QString>				m_expandedTreeItems;
 
 	// methods
 	void run(const info::machine &machine, const software_list::software *software = nullptr);
