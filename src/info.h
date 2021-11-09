@@ -632,6 +632,9 @@ namespace info
 		std::optional<bool> is_device() const				{ return decode_optional_bool(inner().m_is_device); }
 		std::optional<bool> is_mechanical() const			{ return decode_optional_bool(inner().m_is_mechanical); }
 		std::optional<bool> unofficial() const				{ return decode_optional_bool(inner().m_unofficial); }
+		driver_quality_t quality_status() const				{ return (driver_quality_t)inner().m_quality_status; }
+		driver_quality_t quality_emulation() const			{ return (driver_quality_t)inner().m_quality_emulation; }
+		driver_quality_t quality_cocktail() const			{ return (driver_quality_t)inner().m_quality_cocktail; }
 		std::optional<bool> save_state_supported() const	{ return decode_optional_bool(inner().m_save_state_supported); }
 		std::optional<int> sound_channels() const			{ return inner().m_sound_channels != (std::uint8_t)~0 ? inner().m_sound_channels : std::optional<int>(); }
 		const QString &name() const							{ return get_string(inner().m_name_strindex); }
