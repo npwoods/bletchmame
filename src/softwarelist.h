@@ -161,6 +161,7 @@ public:
 	// methods
 	void load(const Preferences &prefs, info::machine machine);
 	const software_list::software *find_software_by_name(const QString &name, const QString &dev_interface) const;
+	const software_list::software *find_software_by_list_and_name(const QString &softwareList, const QString &software) const;
 
 private:
 	std::vector<software_list::ptr>		m_software_lists;
