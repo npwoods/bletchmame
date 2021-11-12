@@ -242,6 +242,10 @@ private:
 	void updateAuditTimer();
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
 	void dispatchAuditTasks();
+	void reportAuditResults(const std::vector<AuditResult> &results);
+	bool reportAuditResult(const AuditResult &result);
+	const QString *auditIdentifierString(const AuditIdentifier &identifier) const;
+	static QString auditStatusString(AuditStatus status);
 };
 
 #endif // MAINWINDOW_H

@@ -2679,6 +2679,111 @@ void MainWindow::dispatchAuditTasks()
 
 
 //-------------------------------------------------
+//  reportAuditResults
+//-------------------------------------------------
+
+void MainWindow::reportAuditResults(const std::vector<AuditResult> &results)
+{
+	// we only want to report one of them (its silly to pop up multiple messages), but
+	// hypothetically reportAuditResult() can fail
+	for (const AuditResult &result : results)
+	{
+		if (reportAuditResult(result))
+		{
+			// we've reported something - break out
+			break;
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  reportAuditResult
+//-------------------------------------------------
+
+bool MainWindow::reportAuditResult(const AuditResult &result)
+{
+	using namespace std::chrono_literals;
+
+	// audit identifier string
+	const QString *identifierString = auditIdentifierString(result.identifier());
+	if (!identifierString)
+		return false;
+
+	// build the message
+	QString message = QString("Audited \"%1\": %2").arg(
+		*identifierString,
+		auditStatusString(result.status()));
+
+	// and show it
+	auto messageDuration = 5s;
+	m_ui->statusBar->showMessage(
+		message,
+		std::chrono::duration_cast<std::chrono::milliseconds>(messageDuration).count());
+	return true;
+}
+
+
+//-------------------------------------------------
+//  auditIdentifierString
+//-------------------------------------------------
+
+const QString *MainWindow::auditIdentifierString(const AuditIdentifier &identifier) const
+{
+	const QString *result = nullptr;
+
+	std::visit([this, &result](auto &&identifier)
+	{
+		using T = std::decay_t<decltype(identifier)>;
+		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		{
+			std::optional<info::machine> machine = m_info_db.find_machine(identifier.machineName());
+			if (machine)
+				result = &machine->description();
+		}
+		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		{
+			const software_list::software *software = m_softwareListCollection.find_software_by_list_and_name(
+				identifier.softwareList(),
+				identifier.software());
+			if (software)
+				result = &software->description();
+		}
+	}, identifier);
+
+	return result;
+}
+
+
+//-------------------------------------------------
+//  auditStatusString
+//-------------------------------------------------
+
+QString MainWindow::auditStatusString(AuditStatus status)
+{
+	QString result;
+	switch (status)
+	{
+	case AuditStatus::Unknown:
+		result = "Unknown";
+		break;
+	case AuditStatus::Found:
+		result = "All Media Found";
+		break;
+	case AuditStatus::MissingOptional:
+		result = "Optional Media Missing";
+		break;
+	case AuditStatus::Missing:
+		result = "Media Missing";
+		break;
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  onAuditResult
 //-------------------------------------------------
 
@@ -2689,6 +2794,9 @@ bool MainWindow::onAuditResult(const AuditResultEvent &event)
 	{
 		// they do in fact match; update the statuses
 		m_mainPanel->setAuditStatuses(event.results());
+
+		// and report the results in the status bar
+		reportAuditResults(event.results());
 	}
 	return true;
 }
