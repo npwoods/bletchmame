@@ -32,7 +32,7 @@ public:
 	int currentCookie() const { return m_currentCookie; }
 
 	// methods
-	void push(AuditIdentifier &&identifier);
+	void push(AuditIdentifier &&identifier, bool isPrioritized);
 	AuditTask::ptr tryCreateAuditTask();
 
 private:

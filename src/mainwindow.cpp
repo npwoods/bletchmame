@@ -2566,7 +2566,7 @@ void MainWindow::auditIfAppropriate(const info::machine &machine)
 	{
 		// then add it to the queue
 		MachineAuditIdentifier identifier(machine.name());
-		m_auditQueue.push(std::move(identifier));
+		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
 }
@@ -2584,7 +2584,7 @@ void MainWindow::auditIfAppropriate(const software_list::software &software)
 	{
 		// then add it to the queue
 		SoftwareAuditIdentifier identifier(software.parent().name(), software.name());
-		m_auditQueue.push(std::move(identifier));
+		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
 }

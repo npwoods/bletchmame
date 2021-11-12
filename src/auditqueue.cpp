@@ -37,23 +37,37 @@ AuditQueue::AuditQueue(const Preferences &prefs, const info::database &infoDb, c
 //  push
 //-------------------------------------------------
 
-void AuditQueue::push(AuditIdentifier &&identifier)
+void AuditQueue::push(AuditIdentifier &&identifier, bool isPrioritized)
 {
 	// has this entry already been pushed?
 	auto mapIter = m_auditTaskMap.find(identifier);
 	if (mapIter == m_auditTaskMap.end())
 	{
 		// if not, add it
-		m_auditTaskMap.emplace(identifier, AuditTask::ptr());
+		mapIter = m_auditTaskMap.emplace(identifier, AuditTask::ptr()).first;
 	}
-	else if (!mapIter->second)
+
+	// at this point, the identifier is definitely in the task map; we have to
+	// check to see if there is a task and if so, we can leave it alone
+	if (!mapIter->second)
 	{
-		// if it has but there is no dispatched task, put this at the front of the queue
+		// there is no task; try to find it in the undispatched audit queue
 		auto iter = std::find(m_undispatchedAudits.begin(), m_undispatchedAudits.end(), identifier);
-		if (iter != m_undispatchedAudits.end())
-			m_undispatchedAudits.erase(iter);
+
+		if (isPrioritized)
+		{
+			// if this has been prioritized, remove it if present and put it at the front
+			if (iter != m_undispatchedAudits.end())
+				m_undispatchedAudits.erase(iter);
+			m_undispatchedAudits.push_front(std::move(identifier));
+		}
+		else
+		{
+			// for non prioritized audits, add to the back if it is not there, leave alone otherwise
+			if (iter == m_undispatchedAudits.end())
+				m_undispatchedAudits.push_back(std::move(identifier));
+		}
 	}
-	m_undispatchedAudits.push_front(std::move(identifier));
 }
 
 

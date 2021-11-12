@@ -15,7 +15,8 @@ class AuditQueue::Test : public QObject
 	Q_OBJECT
 
 private slots:
-	void test();
+	void test1();
+	void test2();
 };
 
 
@@ -24,10 +25,10 @@ private slots:
 //**************************************************************************
 
 //-------------------------------------------------
-//  test
+//  test1
 //-------------------------------------------------
 
-void AuditQueue::Test::test()
+void AuditQueue::Test::test1()
 {
 	// dependencies
 	Preferences prefs;
@@ -39,11 +40,11 @@ void AuditQueue::Test::test()
 	AuditQueue auditQueue(prefs, infoDb, softwareListCollection);
 
 	// push some stuff
-	auditQueue.push(MachineAuditIdentifier("coco"));
-	auditQueue.push(MachineAuditIdentifier("coco2"));
-	auditQueue.push(MachineAuditIdentifier("coco2b"));
-	auditQueue.push(MachineAuditIdentifier("coco3"));
-	auditQueue.push(MachineAuditIdentifier("coco"));
+	auditQueue.push(MachineAuditIdentifier("coco"), true);
+	auditQueue.push(MachineAuditIdentifier("coco2"), true);
+	auditQueue.push(MachineAuditIdentifier("coco2b"), true);
+	auditQueue.push(MachineAuditIdentifier("coco3"), true);
+	auditQueue.push(MachineAuditIdentifier("coco"), true);
 
 	// validate that the audit queue's collections are of the expected sizes
 	QVERIFY(auditQueue.m_auditTaskMap.size() == 4);
@@ -83,6 +84,56 @@ void AuditQueue::Test::test()
 	// try to create another task, because the queue is emptied out we should not get one
 	AuditTask::ptr auditTask3 = auditQueue.tryCreateAuditTask();
 	QVERIFY(!auditTask3);
+}
+
+
+//-------------------------------------------------
+//  test2
+//-------------------------------------------------
+
+void AuditQueue::Test::test2()
+{
+	// dependencies
+	Preferences prefs;
+	info::database infoDb;
+	software_list_collection softwareListCollection;
+
+	// set up the audit queue
+	QVERIFY(infoDb.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
+	AuditQueue auditQueue(prefs, infoDb, softwareListCollection);
+
+	// push some stuff
+	auditQueue.push(MachineAuditIdentifier("coco"), false);
+	auditQueue.push(MachineAuditIdentifier("coco2"), false);
+	auditQueue.push(MachineAuditIdentifier("coco2b"), false);
+	auditQueue.push(MachineAuditIdentifier("coco2"), false);
+
+	// validate that the audit queue's collections are of the expected sizes
+	QVERIFY(auditQueue.m_auditTaskMap.size() == 3);
+	QVERIFY(auditQueue.m_undispatchedAudits.size() == 3);
+
+	// validate the state of the queue
+	auto iter = auditQueue.m_undispatchedAudits.cbegin();
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco")));
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco2")));
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco2b")));
+	QVERIFY(iter == auditQueue.m_undispatchedAudits.cend());
+
+	// push some more stuff
+	auditQueue.push(MachineAuditIdentifier("coco2"), false);
+	auditQueue.push(MachineAuditIdentifier("coco3"), false);
+
+	// validate that the audit queue's collections are of the expected sizes
+	QVERIFY(auditQueue.m_auditTaskMap.size() == 4);
+	QVERIFY(auditQueue.m_undispatchedAudits.size() == 4);
+
+	// validate the state of the queue
+	iter = auditQueue.m_undispatchedAudits.cbegin();
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco")));
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco2")));
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco2b")));
+	QVERIFY(*iter++ == AuditIdentifier(MachineAuditIdentifier("coco3")));
+	QVERIFY(iter == auditQueue.m_undispatchedAudits.cend());
 }
 
 
