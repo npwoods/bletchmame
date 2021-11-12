@@ -696,6 +696,7 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
+	, m_machineAuditCursor(m_prefs, m_info_db)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -772,7 +773,7 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up the audit timer
 	m_auditTimer = new QTimer(this);
 	m_auditTimer->setInterval(500ms);
-	connect(m_auditTimer, &QTimer::timeout, this, &MainWindow::dispatchAuditTasks);
+	connect(m_auditTimer, &QTimer::timeout, this, &MainWindow::auditTimerProc);
 
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect(*m_ui->stackedLayout,					&QStackedLayout::currentWidget,	&QStackedLayout::setCurrentWidget,	{ },								[this]() { return attachToMainWindow() ? nullptr : m_ui->emulationPanel; });
@@ -2566,7 +2567,7 @@ void MainWindow::auditIfAppropriate(const info::machine &machine)
 	{
 		// then add it to the queue
 		MachineAuditIdentifier identifier(machine.name());
-		m_auditQueue.push(std::move(identifier));
+		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
 }
@@ -2584,7 +2585,7 @@ void MainWindow::auditIfAppropriate(const software_list::software &software)
 	{
 		// then add it to the queue
 		SoftwareAuditIdentifier identifier(software.parent().name(), software.name());
-		m_auditQueue.push(std::move(identifier));
+		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
 }
@@ -2630,13 +2631,29 @@ void MainWindow::resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit)
 
 void MainWindow::updateAuditTimer()
 {
-	// we only actively audit when all of these conditions apply
-	bool auditingActive = m_prefs.getAuditingState() == Preferences::AuditingState::Automatic		// we're automatically auditing and...
-		&& !m_currentRunMachineTask																	// no active emulation is running and...
-		&& m_auditQueue.hasUndispatched()															// there are undispatched audits in the queue and...
-		&& m_taskDispatcher.countActiveTasksByType<AuditTask>() < m_maximumConcurrentAuditTasks;	// we're below the amount of concurrent audit tasks
+	// the timer has the role of dispatching audit tasks and also keeping the queue populated with
+	// low priority tasks, therefore this logic is somewhat knotty
 
-	if (auditingActive)
+	bool auditTimerActive;
+	if (m_prefs.getAuditingState() != Preferences::AuditingState::Automatic || m_currentRunMachineTask)
+	{
+		// either we're running an emulation or auditing is off
+		auditTimerActive = false;
+	}
+	else if (m_auditQueue.hasUndispatched())
+	{
+		// yes there are undispatched tasks - we need the timer
+		auditTimerActive = true;
+	}
+	else
+	{
+		// no pending audits - we will still need the timer for low priority audits
+		// from the audit cursor
+		AuditCursor *cursor = currentAuditCursor();
+		auditTimerActive = cursor && !cursor->isComplete();
+	}
+
+	if (auditTimerActive)
 		m_auditTimer->start();
 	else
 		m_auditTimer->stop();
@@ -2654,6 +2671,17 @@ void MainWindow::auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<Au
 
 	// and dispatch the task
 	m_taskDispatcher.launch(std::move(auditTask));
+}
+
+
+//-------------------------------------------------
+//  auditTimerProc
+//-------------------------------------------------
+
+void MainWindow::auditTimerProc()
+{
+	addLowPriorityAudits();
+	dispatchAuditTasks();
 }
 
 
@@ -2780,6 +2808,38 @@ QString MainWindow::auditStatusString(AuditStatus status)
 		throw false;
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  addLowPriorityAudits
+//-------------------------------------------------
+
+void MainWindow::addLowPriorityAudits()
+{
+	AuditCursor *cursor = currentAuditCursor();
+	if (cursor && !cursor->isComplete())
+	{
+		// get the current position so that we don't wrap around
+		int basePosition = cursor->currentPosition();
+
+		// keep on getting identifiers
+		std::optional<AuditIdentifier> identifier;
+		while (m_auditQueue.isCloseToEmpty() && (identifier = cursor->next(basePosition)).has_value())
+		{
+			m_auditQueue.push(std::move(identifier.value()), false);
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  currentAuditCursor
+//-------------------------------------------------
+
+AuditCursor *MainWindow::currentAuditCursor()
+{
+	return &m_machineAuditCursor;
 }
 
 
