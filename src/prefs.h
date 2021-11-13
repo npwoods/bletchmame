@@ -195,7 +195,7 @@ public:
 	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
-	static QString getConfigDirectory(bool ensure_directory_exists = false);
+	static QDir getConfigDirectory(bool ensure_directory_exists = false);
 
 	bool load();
 	bool load(QIODevice &input);

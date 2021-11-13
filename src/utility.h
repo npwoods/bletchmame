@@ -447,7 +447,6 @@ class wxFileName
 {
 public:
 	static bool IsPathSeparator(QChar ch);
-	static void SplitPath(const QString &fullpath, QString *path, QString *name, QString *ext);
 };
 
 
