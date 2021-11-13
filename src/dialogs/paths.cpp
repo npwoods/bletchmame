@@ -86,26 +86,17 @@ PathsDialog::~PathsDialog()
 //  persist - persist all of our state to prefs
 //-------------------------------------------------
 
-std::vector<Preferences::global_path_type> PathsDialog::persist()
+void PathsDialog::persist()
 {
 	// first we want to make sure that m_pathLists is up to data
 	extractPathsFromListView();
 
-	// we want to return a vector identifying the paths that got changed
-	std::vector<Preferences::global_path_type> changedPaths;
+	// persist all paths
 	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
 	{
 		QString &path = m_pathLists[static_cast<size_t>(type)];
-
-		// has this path changed?
-		if (path != m_prefs.getGlobalPath(type))
-		{
-			// if so, record that it changed
-			m_prefs.setGlobalPath(type, std::move(path));
-			changedPaths.push_back(type);
-		}
+		m_prefs.setGlobalPath(type, std::move(path));
 	}
-	return changedPaths;
 }
 
 

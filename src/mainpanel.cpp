@@ -209,6 +209,27 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	QObject &eventFilter = *new SnapshotViewEventFilter(*this);
 	m_ui->machinesSnapLabel->installEventFilter(&eventFilter);
 
+	// monitor prefs changes
+	connect(&m_prefs, &Preferences::globalPathRomsChanged, this, [this](const QString &newPath)
+	{
+		machineAuditStatusesChanged();
+		softwareAuditStatusesChanged();
+	});
+	connect(&m_prefs, &Preferences::globalPathSamplesChanged, this, [this](const QString &newPath)
+	{
+		machineAuditStatusesChanged();
+	});
+	connect(&m_prefs, &Preferences::globalPathIconsChanged, this, [this](const QString &newPath)
+	{
+		m_iconLoader.refreshIcons();
+	});
+	connect(&m_prefs, &Preferences::globalPathSnapshotsChanged, this, [this](const QString &newPath)
+	{
+		std::optional<info::machine> selectedMachine = currentlySelectedMachine();
+		QString machineName = selectedMachine ? selectedMachine->name() : QString();
+		updateInfoPanel(machineName);
+	});
+
 	// update the tab contents
 	updateTabContents();
 }
@@ -220,38 +241,6 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 
 MainPanel::~MainPanel()
 {
-}
-
-
-//-------------------------------------------------
-//  pathsChanged
-//-------------------------------------------------
-
-void MainPanel::pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths)
-{
-	// did the user change the roms or samples paths?
-	if (util::contains(changedPaths, Preferences::global_path_type::ROMS) || util::contains(changedPaths, Preferences::global_path_type::SAMPLES))
-		machineAuditStatusesChanged();
-
-	// did the user change the roms or samples paths?
-	if (util::contains(changedPaths, Preferences::global_path_type::ROMS))
-		softwareAuditStatusesChanged();
-
-	// did the user change the profiles path?
-	if (util::contains(changedPaths, Preferences::global_path_type::PROFILES))
-		profileListItemModel().refresh(true, true);
-
-	// did the user change the icons path?
-	if (util::contains(changedPaths, Preferences::global_path_type::ICONS))
-		m_iconLoader.refreshIcons();
-
-	// did the user change the snapshots path?
-	if (util::contains(changedPaths, Preferences::global_path_type::SNAPSHOTS))
-	{
-		std::optional<info::machine> selectedMachine = currentlySelectedMachine();
-		QString machineName = selectedMachine ? selectedMachine->name() : QString();
-		updateInfoPanel(machineName);
-	}
 }
 
 

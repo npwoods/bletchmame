@@ -178,8 +178,9 @@ FolderPrefs::FolderPrefs()
 //  ctor
 //-------------------------------------------------
 
-Preferences::Preferences()
-	: m_selected_tab(list_view_type::MACHINE)
+Preferences::Preferences(QObject *parent)
+	: QObject(parent)
+	, m_selected_tab(list_view_type::MACHINE)
 	, m_menu_bar_shown(true)
 	, m_auditingState(AuditingState::Default)
 {
@@ -275,13 +276,60 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 void Preferences::setGlobalPath(global_path_type type, QString &&path)
 {
-	m_paths[static_cast<size_t>(type)] = std::move(path);
+	if (m_paths[static_cast<size_t>(type)] != path)
+		internalSetGlobalPath(type, std::move(path));
 }
 
 
+//-------------------------------------------------
+//  setGlobalPath
+//-------------------------------------------------
+
 void Preferences::setGlobalPath(global_path_type type, const QString &path)
 {
-	setGlobalPath(type, QString(path));
+	if (m_paths[static_cast<size_t>(type)] != path)
+		internalSetGlobalPath(type, QString(path));
+}
+
+
+//-------------------------------------------------
+//  internalSetGlobalPath
+//-------------------------------------------------
+
+void Preferences::internalSetGlobalPath(global_path_type type, QString &&path)
+{
+	// find the destination, and this had better be a real change
+	QString &dest = m_paths[static_cast<size_t>(type)];
+	assert(dest != path);
+
+	// copy the data
+	dest = std::move(path);
+
+	// and raise the event
+	switch (type)
+	{
+	case global_path_type::EMU_EXECUTABLE:
+		emit globalPathEmuExecutableChanged(dest);
+		break;
+	case global_path_type::ROMS:
+		emit globalPathRomsChanged(dest);
+		break;
+	case global_path_type::SAMPLES:
+		emit globalPathSamplesChanged(dest);
+		break;
+	case global_path_type::ICONS:
+		emit globalPathIconsChanged(dest);
+		break;
+	case global_path_type::PROFILES:
+		emit globalPathProfilesChanged(dest);
+		break;
+	case global_path_type::SNAPSHOTS:
+		emit globalPathSnapshotsChanged(dest);
+		break;
+	default:
+		// do nothing
+		break;
+	}
 }
 
 
