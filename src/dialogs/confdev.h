@@ -27,6 +27,7 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class ConfigurableDevicesDialog; }
+class QFileDialog;
 class QLabel;
 class QLineEdit;
 class QMenu;
@@ -42,8 +43,7 @@ public:
 	virtual info::machine getMachine() = 0;
 	virtual observable::value<std::vector<status::image>> &getImages() = 0;
 	virtual observable::value<std::vector<status::slot>> &getSlots() = 0;
-	virtual const QString &getWorkingDirectory() const = 0;
-	virtual void setWorkingDirectory(QString &&dir) = 0;
+	virtual void associateFileDialogWithMachinePrefs(QFileDialog &fileDialog) = 0;
 	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const = 0;
 	virtual std::vector<QString> getExtensions(const QString &tag) const = 0;
 	virtual void createImage(const QString &tag, QString &&path) = 0;
@@ -93,7 +93,6 @@ private:
 	bool loadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface);
 	void unloadImage(const QString &tag);
 	QString getWildcardString(const QString &tag, bool support_zip) const;
-	void updateWorkingDirectory(const QString &path);
 };
 
 

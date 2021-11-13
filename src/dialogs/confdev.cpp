@@ -425,26 +425,24 @@ void ConfigurableDevicesDialog::buildImageMenuSlotItems(QMenu &popupMenu, const 
 
 bool ConfigurableDevicesDialog::createImage(const QString &tag)
 {
-    // show the fialog
-    QFileDialog dialog(
-        this,
-        "Create Image",
-        m_host.getWorkingDirectory(),
-        getWildcardString(tag, false));
-    dialog.setFileMode(QFileDialog::FileMode::AnyFile);
-    dialog.exec();
-    if (dialog.result() != QDialog::DialogCode::Accepted)
-        return false;
+	// show the fialog
+	QFileDialog dialog(
+		this,
+		"Create Image",
+		QString(),
+		getWildcardString(tag, false));
+	m_host.associateFileDialogWithMachinePrefs(dialog);
+	dialog.setFileMode(QFileDialog::FileMode::AnyFile);
+	dialog.exec();
+	if (dialog.result() != QDialog::DialogCode::Accepted)
+		return false;
 
-    // get the result from the dialog
-    QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
+	// get the result from the dialog
+	QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
 
-    // update our host's working directory
-    updateWorkingDirectory(path);
-
-    // and load the image
-    m_host.createImage(tag, std::move(path));
-    return true;
+	// and load the image
+	m_host.createImage(tag, std::move(path));
+	return true;
 }
 
 
@@ -454,26 +452,24 @@ bool ConfigurableDevicesDialog::createImage(const QString &tag)
 
 bool ConfigurableDevicesDialog::loadImage(const QString &tag)
 {
-    // show the fialog
-    QFileDialog dialog(
-        this,
-        "Load Image",
-        m_host.getWorkingDirectory(),
-        getWildcardString(tag, true));
-    dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
-    dialog.exec();
-    if (dialog.result() != QDialog::DialogCode::Accepted)
-        return false;
+	// show the fialog
+	QFileDialog dialog(
+		this,
+		"Load Image",
+		QString(),
+		getWildcardString(tag, true));
+	m_host.associateFileDialogWithMachinePrefs(dialog);
+	dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
+	dialog.exec();
+	if (dialog.result() != QDialog::DialogCode::Accepted)
+		return false;
 
-    // get the result from the dialog
-    QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
+	// get the result from the dialog
+	QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
 
-    // update our host's working directory
-    updateWorkingDirectory(path);
-
-    // and load the image
-    m_host.loadImage(tag, std::move(path));
-    return true;
+	// and load the image
+	m_host.loadImage(tag, std::move(path));
+	return true;
 }
 
 
@@ -531,16 +527,4 @@ QString ConfigurableDevicesDialog::getWildcardString(const QString &tag, bool su
     // and all files
     result += ";;All files (*.*)";
     return result;
-}
-
-
-//-------------------------------------------------
-//  updateWorkingDirectory
-//-------------------------------------------------
-
-void ConfigurableDevicesDialog::updateWorkingDirectory(const QString &path)
-{
-    QString dir;
-    wxFileName::SplitPath(path, &dir, nullptr, nullptr);
-    m_host.setWorkingDirectory(std::move(dir));
 }
