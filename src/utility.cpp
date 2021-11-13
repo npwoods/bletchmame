@@ -75,16 +75,6 @@ std::size_t util::bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
 
 
 //-------------------------------------------------
-//  wxFileName::IsPathSeparator
-//-------------------------------------------------
-
-bool wxFileName::IsPathSeparator(QChar ch)
-{
-	return ch == '/' || ch == QDir::separator();
-}
-
-
-//-------------------------------------------------
 //  globalPositionBelowWidget
 //-------------------------------------------------
 

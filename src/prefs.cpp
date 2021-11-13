@@ -257,21 +257,6 @@ Preferences::PathCategory Preferences::getPathCategory(machine_path_type path_ty
 
 
 //-------------------------------------------------
-//  ensureDirectoryPathsHaveFinalPathSeparator
-//-------------------------------------------------
-
-void Preferences::ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path)
-{
-	bool isDirectory = category == PathCategory::SingleDirectory
-		|| category == PathCategory::MultipleDirectories;
-	if (isDirectory && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
-	{
-		path += QDir::separator();
-	}
-}
-
-
-//-------------------------------------------------
 //  getMachineInfo
 //-------------------------------------------------
 
@@ -290,7 +275,6 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 void Preferences::setGlobalPath(global_path_type type, QString &&path)
 {
-	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(type), path);
 	m_paths[static_cast<size_t>(type)] = std::move(path);
 }
 
@@ -417,9 +401,6 @@ void Preferences::setListViewSelection(const char8_t *view_type, const QString &
 
 void Preferences::setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path)
 {
-	// ensure that if we have a path, it has a path separator at the end
-	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(path_type), path);
-
 	switch (path_type)
 	{
 	case machine_path_type::WORKING_DIRECTORY:
