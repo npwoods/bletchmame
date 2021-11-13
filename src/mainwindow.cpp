@@ -2282,8 +2282,7 @@ void MainWindow::associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, co
 	}
 
 	// monitor dialog acceptance
-	QObject *object = new QObject(&fileDialog);
-	connect(&fileDialog, &QFileDialog::accepted, object, [this, &fileDialog, machineName, pathType, pathIsFile]()
+	connect(&fileDialog, &QFileDialog::accepted, &fileDialog, [this, &fileDialog, machineName, pathType, pathIsFile]()
 	{
 		// get the result out of the dialog
 		QStringList selectedFiles = fileDialog.selectedFiles();
