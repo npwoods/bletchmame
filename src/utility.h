@@ -440,18 +440,6 @@ QString build_command_line(const QString &executable, const std::vector<QString>
 } // namespace util
 
 //**************************************************************************
-//  WXWIDGETS IMPERSONATION
-//**************************************************************************
-
-class wxFileName
-{
-public:
-	static bool IsPathSeparator(QChar ch);
-	static void SplitPath(const QString &fullpath, QString *path, QString *name, QString *ext);
-};
-
-
-//**************************************************************************
 //  MISCELLANEOUS QT HELPERS
 //**************************************************************************
 

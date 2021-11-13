@@ -122,14 +122,9 @@ public:
 		return m_host.m_state->devslots();
 	}
 
-	virtual const QString &getWorkingDirectory() const
+	virtual void associateFileDialogWithMachinePrefs(QFileDialog &fileDialog)
 	{
-		return m_host.m_prefs.getMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
-	}
-
-	virtual void setWorkingDirectory(QString &&dir)
-	{
-		m_host.m_prefs.setMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
+		m_host.associateFileDialogWithMachinePrefs(fileDialog, getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, false);
 	}
 
 	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
@@ -1082,11 +1077,12 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 		// If not, show a file dialog and start recording
 		Pauser pauser(*this);
-		QString path = GetFileDialogFilename(
+		QString path = getFileDialogFilename(
 			"Record Movie",
 			Preferences::machine_path_type::WORKING_DIRECTORY,
 			s_wc_record_movie,
-			QFileDialog::AcceptMode::AcceptSave);
+			QFileDialog::AcceptMode::AcceptSave,
+			false);
 		if (!path.isEmpty())
 		{
 			// determine the recording file type
@@ -2268,10 +2264,56 @@ bool MainWindow::onChatter(const ChatterEvent &event)
 
 
 //-------------------------------------------------
-//  GetFileDialogFilename
+//  associateFileDialogWithMachinePrefs
 //-------------------------------------------------
 
-QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode)
+void MainWindow::associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, const QString &machineName, Preferences::machine_path_type pathType, bool pathIsFile)
+{
+	const QString &prefsPath = m_prefs.getMachinePath(machineName, pathType);
+	if (!prefsPath.isEmpty())
+	{
+		// set the directory
+		QString path = QDir::fromNativeSeparators(prefsPath);
+		fileDialog.setDirectory(QFileInfo(path).dir());
+
+		// try to set the file, if appropriate
+		if (pathIsFile)
+			fileDialog.selectFile(path);
+	}
+
+	// monitor dialog acceptance
+	QObject *object = new QObject(&fileDialog);
+	connect(&fileDialog, &QFileDialog::accepted, object, [this, &fileDialog, machineName, pathType, pathIsFile]()
+	{
+		// get the result out of the dialog
+		QStringList selectedFiles = fileDialog.selectedFiles();
+		const QString &result = selectedFiles.first();
+
+		// figure out the path we need to persist
+		QString newPrefsPath;
+		if (pathIsFile)
+		{
+			newPrefsPath = QDir::toNativeSeparators(result);
+		}
+		else
+		{
+			QString absolutePath = QFileInfo(result).dir().absolutePath();
+			if (!absolutePath.endsWith("/"))
+				absolutePath += "/";
+			newPrefsPath = QDir::toNativeSeparators(absolutePath);
+		}
+
+		// and finally persist it
+		m_prefs.setMachinePath(machineName, pathType, std::move(newPrefsPath));
+	});
+}
+
+
+//-------------------------------------------------
+//  getFileDialogFilename
+//-------------------------------------------------
+
+QString MainWindow::getFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode, bool pathIsFile)
 {
 	// determine the file mode
 	QFileDialog::FileMode fileMode;
@@ -2294,11 +2336,10 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 	QFileInfo defaultPathInfo(QDir::fromNativeSeparators(defaultPath));
 
 	// prepare the dialog
-	QFileDialog dialog(this, caption, defaultPathInfo.dir().absolutePath(), filter);
+	QFileDialog dialog(this, caption, QString(), filter);
 	dialog.setFileMode(fileMode);
 	dialog.setAcceptMode(acceptMode);
-	if (!defaultPathInfo.fileName().isEmpty())
-		dialog.selectFile(defaultPathInfo.fileName());
+	associateFileDialogWithMachinePrefs(dialog, getRunningMachine().name(), pathType, pathIsFile);
 
 	// show the dialog
 	dialog.exec();
@@ -2315,25 +2356,12 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode)
 {
 	Pauser pauser(*this);
-	QString path = GetFileDialogFilename(caption, pathType, wildcard_string, acceptMode);
+	QString path = getFileDialogFilename(caption, pathType, wildcard_string, acceptMode, path_is_file);
 	if (path.isEmpty())
 		return { };
 
 	// append the resulting path to the command list
 	commands.push_back(path);
-
-	// put back the default
-	const QString &running_machine_name(getRunningMachine().name());
-	if (path_is_file)
-	{
-		m_prefs.setMachinePath(running_machine_name, pathType, QDir::toNativeSeparators(path));
-	}
-	else
-	{
-		QString new_dir;
-		wxFileName::SplitPath(path, &new_dir, nullptr, nullptr);
-		m_prefs.setMachinePath(running_machine_name, pathType, std::move(new_dir));
-	}
 
 	// finally issue the actual commands
 	issue(commands);

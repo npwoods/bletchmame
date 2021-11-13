@@ -184,10 +184,11 @@ Preferences::Preferences()
 	, m_auditingState(AuditingState::Default)
 {
 	// default paths
-	setGlobalPath(global_path_type::CONFIG, getConfigDirectory(true));
-	setGlobalPath(global_path_type::NVRAM, getConfigDirectory(true));
-	setGlobalPath(global_path_type::PLUGINS, getDefaultPluginsDirectory());
-	setGlobalPath(global_path_type::PROFILES, getConfigDirectory(true) + QDir::separator() + QString("profiles"));
+	QDir configDir = getConfigDirectory(true);
+	setGlobalPath(global_path_type::CONFIG,		QDir::toNativeSeparators(configDir.absolutePath()));
+	setGlobalPath(global_path_type::NVRAM,		QDir::toNativeSeparators(configDir.absolutePath()));
+	setGlobalPath(global_path_type::PLUGINS,	getDefaultPluginsDirectory());
+	setGlobalPath(global_path_type::PROFILES,	QDir::toNativeSeparators(configDir.filePath("profiles")));
 }
 
 
@@ -256,21 +257,6 @@ Preferences::PathCategory Preferences::getPathCategory(machine_path_type path_ty
 
 
 //-------------------------------------------------
-//  ensureDirectoryPathsHaveFinalPathSeparator
-//-------------------------------------------------
-
-void Preferences::ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path)
-{
-	bool isDirectory = category == PathCategory::SingleDirectory
-		|| category == PathCategory::MultipleDirectories;
-	if (isDirectory && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
-	{
-		path += QDir::separator();
-	}
-}
-
-
-//-------------------------------------------------
 //  getMachineInfo
 //-------------------------------------------------
 
@@ -289,7 +275,6 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 void Preferences::setGlobalPath(global_path_type type, QString &&path)
 {
-	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(type), path);
 	m_paths[static_cast<size_t>(type)] = std::move(path);
 }
 
@@ -416,9 +401,6 @@ void Preferences::setListViewSelection(const char8_t *view_type, const QString &
 
 void Preferences::setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path)
 {
-	// ensure that if we have a path, it has a path separator at the end
-	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(path_type), path);
-
 	switch (path_type)
 	{
 	case machine_path_type::WORKING_DIRECTORY:
@@ -1015,7 +997,8 @@ QString Preferences::applySubstitutions(const QString &path) const
 		if (var_name == "MAMEPATH")
 		{
 			const QString &path = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-			wxFileName::SplitPath(path, &result, nullptr, nullptr);
+			QFileInfo fileInfo(QDir::fromNativeSeparators(path));
+			result = fileInfo.dir().absolutePath();
 		}
 		else if (var_name == "BLETCHMAMEPATH")
 		{
@@ -1033,21 +1016,18 @@ QString Preferences::applySubstitutions(const QString &path) const
 QString Preferences::getMameXmlDatabasePath(bool ensure_directory_exists) const
 {
 	// get the configuration directory
-	QString config_dir = getConfigDirectory(ensure_directory_exists);
-	if (config_dir.isEmpty())
+	QDir configDir = getConfigDirectory(ensure_directory_exists);
+
+	// get the emulator executable (ie.- MAME) path
+	const QString &emuExecutablePath = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	if (emuExecutablePath.isEmpty())
 		return "";
 
-	// get the MAME path
-	const QString &mame_path = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-	if (mame_path.isEmpty())
-		return "";
-
-	// parse out the MAME filename
-	QString mame_filename;
-	wxFileName::SplitPath(mame_path, nullptr, &mame_filename, nullptr);
+	// parse out the MAME base name (no file extension)
+	QString emuExecutableBaseName = QFileInfo(emuExecutablePath).baseName();
 
 	// get the full name
-	return QDir(config_dir).filePath(mame_filename + ".infodb");
+	return configDir.filePath(emuExecutableBaseName + ".infodb");
 }
 
 
@@ -1057,8 +1037,8 @@ QString Preferences::getMameXmlDatabasePath(bool ensure_directory_exists) const
 
 QString Preferences::getFileName(bool ensure_directory_exists)
 {
-	QString directory = getConfigDirectory(ensure_directory_exists);
-	return QDir(directory).filePath("BletchMAME.xml");
+	QDir directory = getConfigDirectory(ensure_directory_exists);
+	return directory.filePath("BletchMAME.xml");
 }
 
 
@@ -1067,11 +1047,11 @@ QString Preferences::getFileName(bool ensure_directory_exists)
 //	directory, and optionally ensuring it exists
 //-------------------------------------------------
 
-QString Preferences::getConfigDirectory(bool ensure_directory_exists)
+QDir Preferences::getConfigDirectory(bool ensure_directory_exists)
 {
 	// this is currently a thin wrapper on GetUserDataDir(), but hypothetically
 	// we might want a command line option to override this directory
-	QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+	QDir directory(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
 	// if appropriate, ensure the directory exists
 	if (ensure_directory_exists)
@@ -1080,7 +1060,7 @@ QString Preferences::getConfigDirectory(bool ensure_directory_exists)
 		if (!dir.exists())
 			dir.mkpath(".");
 	}
-	return QDir::toNativeSeparators(directory);
+	return directory;
 }
 
 

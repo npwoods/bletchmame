@@ -75,32 +75,6 @@ std::size_t util::bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
 
 
 //-------------------------------------------------
-//  wxFileName::IsPathSeparator
-//-------------------------------------------------
-
-bool wxFileName::IsPathSeparator(QChar ch)
-{
-	return ch == '/' || ch == QDir::separator();
-}
-
-
-//-------------------------------------------------
-//  wxFileName::SplitPath
-//-------------------------------------------------
-
-void wxFileName::SplitPath(const QString &fullpath, QString *path, QString *name, QString *ext)
-{
-	QFileInfo fi(fullpath);
-	if (path)
-		*path = fi.dir().absolutePath();
-	if (name)
-		*name = fi.baseName();
-	if (ext)
-		*ext = fi.suffix();
-}
-
-
-//-------------------------------------------------
 //  globalPositionBelowWidget
 //-------------------------------------------------
 

@@ -127,7 +127,6 @@ public:
 
 	static PathCategory getPathCategory(global_path_type path_type);
 	static PathCategory getPathCategory(machine_path_type path_type);
-	static void ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path);
 
 	const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
 	void setGlobalPath(global_path_type type, QString &&path);
@@ -195,7 +194,7 @@ public:
 	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
-	static QString getConfigDirectory(bool ensure_directory_exists = false);
+	static QDir getConfigDirectory(bool ensure_directory_exists = false);
 
 	bool load();
 	bool load(QIODevice &input);
