@@ -186,11 +186,11 @@ public:
 
 	AuditStatus getMachineAuditStatus(const QString & machine_name) const;
 	void setMachineAuditStatus(const QString &machine_name, AuditStatus status);
-	void dropAllMachineAuditStatuses();
+	void bulkDropMachineAuditStatuses(const std::function<bool(const QString &machineName)> &predicate = {});
 
 	AuditStatus getSoftwareAuditStatus(const QString &softwareList, const QString &software) const;
 	void setSoftwareAuditStatus(const QString &softwareList, const QString &software, AuditStatus status);
-	void dropAllSoftwareAuditStatuses();
+	void bulkDropSoftwareAuditStatuses();
 
 	QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
 	QString applySubstitutions(const QString &path) const;
@@ -203,12 +203,17 @@ public:
 	void save();
 
 signals:
+	// global paths changed
 	void globalPathEmuExecutableChanged(const QString &newPath);
 	void globalPathRomsChanged(const QString &newPath);
 	void globalPathSamplesChanged(const QString &newPath);
 	void globalPathIconsChanged(const QString &newPath);
 	void globalPathProfilesChanged(const QString &newPath);
 	void globalPathSnapshotsChanged(const QString &newPath);
+
+	// bulk dropping of audit statuses
+	void bulkDroppedMachineAuditStatuses();
+	void bulkDroppedSoftwareAuditStatuses();
 
 private:
 	struct MachineInfo
