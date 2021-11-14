@@ -845,6 +845,17 @@ MainWindow::MainWindow(QWidget *parent)
 		m_mainPanel->updateTabContents();
 	});
 
+	// monitor general state
+	connect(&m_prefs, &Preferences::auditingStateChanged, this, [this]()
+	{
+		// audit statuses may have changed
+		m_mainPanel->machineAuditStatusesChanged();
+		m_mainPanel->softwareAuditStatusesChanged();
+
+		// we may need to kick the timer
+		updateAuditTimer();
+	});
+
 	// monitor prefs changes
 	connect(&m_prefs, &Preferences::globalPathEmuExecutableChanged, this, [this](const QString &newPath)
 	{
@@ -1200,7 +1211,7 @@ void MainWindow::on_menuAuditing_aboutToShow()
 
 void MainWindow::on_actionAuditingDisabled_triggered()
 {
-	changeAuditingState(Preferences::AuditingState::Disabled);
+	m_prefs.setAuditingState(Preferences::AuditingState::Disabled);
 }
 
 
@@ -1210,7 +1221,7 @@ void MainWindow::on_actionAuditingDisabled_triggered()
 
 void MainWindow::on_actionAuditingAutomatic_triggered()
 {
-	changeAuditingState(Preferences::AuditingState::Automatic);
+	m_prefs.setAuditingState(Preferences::AuditingState::Automatic);
 }
 
 
@@ -1220,7 +1231,7 @@ void MainWindow::on_actionAuditingAutomatic_triggered()
 
 void MainWindow::on_actionAuditingManual_triggered()
 {
-	changeAuditingState(Preferences::AuditingState::Manual);
+	m_prefs.setAuditingState(Preferences::AuditingState::Manual);
 }
 
 
@@ -2590,28 +2601,6 @@ void MainWindow::changeThrottleRate(int adjustment)
 void MainWindow::changeSound(bool sound_enabled)
 {
 	issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
-}
-
-
-//-------------------------------------------------
-//  changeAuditingState
-//-------------------------------------------------
-
-void MainWindow::changeAuditingState(Preferences::AuditingState auditingState)
-{
-	// only do things if this is not a no-op
-	if (m_prefs.getAuditingState() != auditingState)
-	{
-		// set the new auditing state
-		m_prefs.setAuditingState(auditingState);
-
-		// audit statuses may have changed
-		m_mainPanel->machineAuditStatusesChanged();
-		m_mainPanel->softwareAuditStatusesChanged();
-
-		// we may need to kick the timer
-		updateAuditTimer();
-	}
 }
 
 
