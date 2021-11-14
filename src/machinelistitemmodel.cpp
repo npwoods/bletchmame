@@ -64,7 +64,11 @@ void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &iden
 	ProfilerScope prof(CURRENT_FUNCTION);
 	std::optional<int> machineIndex = m_infoDb.find_machine_index(identifier.machineName());
 	if (machineIndex)
-		iconsChanged(*machineIndex, *machineIndex);
+	{
+		auto iter = m_reverseIndexes.find(machineIndex.value());
+		if (iter != m_reverseIndexes.end())
+			iconsChanged(iter->second, iter->second);
+	}
 }
 
 
@@ -86,10 +90,16 @@ void MachineListItemModel::allAuditStatusesChanged()
 
 void MachineListItemModel::iconsChanged(int startIndex, int endIndex)
 {
+	// sanity checks
+	assert(startIndex >= 0 && startIndex < m_indexes.size());
+	assert(endIndex >= 0 && endIndex < m_indexes.size());
+	assert(startIndex <= endIndex);
+
+	// emit a dataChanged event for decorations int he proper range
 	QModelIndex topLeft = createIndex(startIndex, (int)Column::Machine);
 	QModelIndex bottomRight = createIndex(endIndex, (int)Column::Machine);
 	QVector<int> roles = { Qt::DecorationRole };
-	dataChanged(topLeft, bottomRight, roles);
+	emit dataChanged(topLeft, bottomRight, roles);
 }
 
 
@@ -101,8 +111,13 @@ void MachineListItemModel::populateIndexes()
 {
 	beginResetModel();
 
+	// prep the indexes
 	m_indexes.clear();
 	m_indexes.reserve(m_infoDb.machines().size());
+	m_reverseIndexes.clear();
+	m_reverseIndexes.reserve(m_indexes.size());
+
+	// add all indexes
 	for (int i = 0; i < m_infoDb.machines().size(); i++)
 	{
 		info::machine machine = m_infoDb.machines()[i];
@@ -113,6 +128,7 @@ void MachineListItemModel::populateIndexes()
 			// and we need to apply a filter (if we have one)
 			if (!m_machineFilter || m_machineFilter(machine))
 			{
+				m_reverseIndexes.insert({ i, util::safe_static_cast<int>(m_indexes.size()) });
 				m_indexes.push_back(i);
 			}
 		}

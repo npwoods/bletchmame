@@ -126,10 +126,16 @@ void SoftwareListItemModel::allAuditStatusesChanged()
 
 void SoftwareListItemModel::iconsChanged(int startIndex, int endIndex)
 {
+	// sanity checks
+	assert(startIndex >= 0 && startIndex < m_parts.size());
+	assert(endIndex >= 0 && endIndex < m_parts.size());
+	assert(startIndex <= endIndex);
+
+	// emit a dataChanged event for decorations int he proper range
 	QModelIndex topLeft = createIndex(startIndex, (int)Column::Name);
 	QModelIndex bottomRight = createIndex(endIndex, (int)Column::Name);
 	QVector<int> roles = { Qt::DecorationRole };
-	dataChanged(topLeft, bottomRight, roles);
+	emit dataChanged(topLeft, bottomRight, roles);
 }
 
 
