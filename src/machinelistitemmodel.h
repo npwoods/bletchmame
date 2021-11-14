@@ -57,6 +57,7 @@ private:
 	IconLoader *										m_iconLoader;
 	std::function<bool(const info::machine &machine)>	m_machineFilter;
 	std::vector<int>									m_indexes;
+	std::unordered_map<int, int>						m_reverseIndexes;
 	std::function<void(info::machine)>					m_machineIconAccessedCallback;
 
 	void iconsChanged(int startIndex, int endIndex);
