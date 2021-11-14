@@ -38,7 +38,7 @@ public:
 		Max = Manufacturer
 	};
 
-	SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent);
+	SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent = nullptr);
 
 	// methods
 	void load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = "");

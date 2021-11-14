@@ -29,6 +29,7 @@ class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
 class AuditDialog;
+class MachineAuditCursor;
 class MachineFolderTreeModel;
 class MachineListItemModel;
 class ProfileListItemModel;
@@ -46,6 +47,8 @@ public:
 	virtual void auditIfAppropriate(const software_list::software &software) = 0;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) = 0;
 	virtual software_list_collection &getSoftwareListCollection() = 0;
+	virtual MachineAuditCursor &getMachineAuditCursor() = 0;
+	virtual void updateAuditTimer() = 0;
 };
 
 

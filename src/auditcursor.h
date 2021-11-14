@@ -30,6 +30,7 @@ public:
 
 	// methods
 	std::optional<AuditIdentifier> next(int basePosition);
+	void awaken();
 
 protected:
 	// abstract methods
@@ -49,14 +50,18 @@ public:
 	// ctor
 	MachineAuditCursor(const Preferences &prefs, const info::database &infoDb);
 
+	// methods
+	void setMachineFilter(const std::function<bool(const info::machine &machine)> &machineFilter);
+
 protected:
 	// abstract methods
 	virtual int getAuditableCount() const override final;
 	virtual std::optional<AuditIdentifier> getIdentifier(int position) const override final;
 
 private:
-	const Preferences &		m_prefs;
-	const info::database &	m_infoDb;
+	const Preferences &									m_prefs;
+	const info::database &								m_infoDb;
+	std::function<bool(const info::machine &machine)>	m_machineFilter;
 };
 
 

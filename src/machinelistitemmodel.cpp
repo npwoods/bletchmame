@@ -80,7 +80,8 @@ void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &iden
 void MachineListItemModel::allAuditStatusesChanged()
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
+	if (!m_indexes.empty())
+		iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
 }
 
 
@@ -122,15 +123,11 @@ void MachineListItemModel::populateIndexes()
 	{
 		info::machine machine = m_infoDb.machines()[i];
 
-		// we only use runnable machines
-		if (machine.runnable())
+		// we need to apply a filter (if we have one)
+		if (!m_machineFilter || m_machineFilter(machine))
 		{
-			// and we need to apply a filter (if we have one)
-			if (!m_machineFilter || m_machineFilter(machine))
-			{
-				m_reverseIndexes.insert({ i, util::safe_static_cast<int>(m_indexes.size()) });
-				m_indexes.push_back(i);
-			}
+			m_reverseIndexes.insert({ i, util::safe_static_cast<int>(m_indexes.size()) });
+			m_indexes.push_back(i);
 		}
 	}
 	m_indexes.shrink_to_fit();

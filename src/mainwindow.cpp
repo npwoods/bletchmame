@@ -1808,6 +1808,16 @@ software_list_collection &MainWindow::getSoftwareListCollection()
 
 
 //-------------------------------------------------
+//  getMachineAuditCursor
+//-------------------------------------------------
+
+MachineAuditCursor &MainWindow::getMachineAuditCursor()
+{
+	return m_machineAuditCursor;
+}
+
+
+//-------------------------------------------------
 //  preflightCheck - run checks on MAME to catch
 //	obvious problems when they are easier to
 //	diagnose (MAME's error reporting is hard for
@@ -2661,6 +2671,8 @@ void MainWindow::updateAuditTimer()
 {
 	// the timer has the role of dispatching audit tasks and also keeping the queue populated with
 	// low priority tasks, therefore this logic is somewhat knotty
+	//
+	// perhaps this could be driven by Qt signals?
 
 	bool auditTimerActive;
 	if (m_prefs.getAuditingState() != Preferences::AuditingState::Automatic || m_currentRunMachineTask)

@@ -86,7 +86,7 @@ private:
 	{
 	public:
 		// ctor
-		FolderEntry(const QString &id, FolderIcon icon, const QString &text, std::function<bool(const info::machine &machine)> &&filter);
+		template<typename TFunc> FolderEntry(const QString &id, FolderIcon icon, const QString &text, TFunc filter);
 		FolderEntry(const QString &id, FolderIcon icon, const QString &text, const std::vector<FolderEntry> &children);
 
 		// accessors
