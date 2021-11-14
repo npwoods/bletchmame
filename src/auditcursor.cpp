@@ -47,6 +47,17 @@ std::optional<AuditIdentifier> AuditCursor::next(int basePosition)
 
 
 //-------------------------------------------------
+//  AuditCursor::awaken
+//-------------------------------------------------
+
+void AuditCursor::awaken()
+{
+	if (m_position < 0)
+		m_position = 0;
+}
+
+
+//-------------------------------------------------
 //  MachineAuditCursor ctor
 //-------------------------------------------------
 
@@ -54,6 +65,16 @@ MachineAuditCursor::MachineAuditCursor(const Preferences &prefs, const info::dat
 	: m_prefs(prefs)
 	, m_infoDb(infoDb)
 {
+}
+
+
+//-------------------------------------------------
+//  MachineAuditCursor::setMachineFilter
+//-------------------------------------------------
+
+void MachineAuditCursor::setMachineFilter(const std::function<bool(const info::machine &machine)> &machineFilter)
+{
+	m_machineFilter = machineFilter;
 }
 
 
@@ -73,8 +94,15 @@ int MachineAuditCursor::getAuditableCount() const
 
 std::optional<AuditIdentifier> MachineAuditCursor::getIdentifier(int position) const
 {
-	const QString &machineName = m_infoDb.machines()[position].name();
-	return m_prefs.getMachineAuditStatus(machineName) == AuditStatus::Unknown
-		? MachineAuditIdentifier(machineName)
-		: std::optional<AuditIdentifier>();
+	std::optional<AuditIdentifier> result;
+
+	// check the filter
+	info::machine machine = m_infoDb.machines()[position];
+	if (!m_machineFilter || m_machineFilter(machine))
+	{
+		const QString &machineName = machine.name();
+		if (m_prefs.getMachineAuditStatus(machineName) == AuditStatus::Unknown)
+			result = MachineAuditIdentifier(machineName);
+	}
+	return result;
 }

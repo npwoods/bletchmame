@@ -221,6 +221,7 @@ private:
 	QString attachWidgetId() const;
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
 	virtual software_list_collection &getSoftwareListCollection() override final;
+	virtual MachineAuditCursor &getMachineAuditCursor() override final;
 	QString preflightCheck() const;
 	void associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, const QString &machineName, Preferences::machine_path_type pathType, bool pathIsFile);
 	QString getFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode, bool pathIsFile);
@@ -241,7 +242,7 @@ private:
 	virtual void auditIfAppropriate(const info::machine &machine) override;
 	virtual void auditIfAppropriate(const software_list::software &software) override;
 	bool canAutomaticallyAudit() const;
-	void updateAuditTimer();
+	virtual void updateAuditTimer() override final;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
 	void auditTimerProc();
 	void dispatchAuditTasks();

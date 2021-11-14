@@ -203,7 +203,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 		if (folderPrefs.m_shown)
 		{
 			if (!strcmp(desc.id(), "all"))
-				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return true; });
 			else if (!strcmp(desc.id(), "available"))
 				m_root.emplace_back(desc.id(), FolderIcon::FolderAvailable, desc.displayName(), [this](const info::machine &machine) { return m_prefs.getMachineAuditStatus(machine.name()) == AuditStatus::Found; });
 			else if (!strcmp(desc.id(), "bios"))
@@ -643,8 +643,9 @@ Qt::ItemFlags MachineFolderTreeModel::flags(const QModelIndex &index) const
 //  FolderEntry ctor
 //-------------------------------------------------
 
-MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, std::function<bool(const info::machine &machine)> &&filter)
-	: FolderEntry(id, icon, text, std::move(filter), nullptr)
+template<typename TFunc>
+MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, TFunc filter)
+	: FolderEntry(id, icon, text, [filter](const info::machine &machine) { return machine.runnable() && filter(machine); }, nullptr)
 {
 }
 
@@ -654,7 +655,7 @@ MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon i
 //-------------------------------------------------
 
 MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, const std::vector<FolderEntry> &children)
-	: FolderEntry(id, icon, text, { }, &children)
+	: FolderEntry(id, icon, text, [](const info::machine &machine) { return machine.runnable(); }, &children)
 {
 }
 

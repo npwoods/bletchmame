@@ -15,6 +15,7 @@
 #include <unordered_set>
 
 #include "assetfinder.h"
+#include "auditcursor.h"
 #include "audittask.h"
 #include "machinefoldertreemodel.h"
 #include "machinelistitemmodel.h"
@@ -926,12 +927,18 @@ QString MainPanel::machineStatusString(const info::machine &machine) const
 
 void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection)
 {
+	// awaken the machine audit cursor
+	MachineAuditCursor &machineAuditCursor = m_host.getMachineAuditCursor();
+	machineAuditCursor.awaken();
+	m_host.updateAuditTimer();
+
 	// identify the selection
 	QModelIndexList selectedIndexes = newSelection.indexes();
 	QModelIndex selectedIndex = !selectedIndexes.empty() ? selectedIndexes[0] : QModelIndex();
 
 	// and configure the filter
 	auto machineFilter = machineFolderTreeModel().getMachineFilter(selectedIndex);
+	machineAuditCursor.setMachineFilter(machineFilter);
 	machineListItemModel().setMachineFilter(std::move(machineFilter));
 
 	// update preferences
