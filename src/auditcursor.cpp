@@ -10,36 +10,89 @@
 
 
 //-------------------------------------------------
-//  AuditCursor ctor
+//  ctor
 //-------------------------------------------------
 
-AuditCursor::AuditCursor()
-	: m_position(0)
+AuditCursor::AuditCursor(Preferences &prefs, QObject *parent)
+	: QObject(parent)
+	, m_prefs(prefs)
+	, m_model(nullptr)
+	, m_position(-1)
 {
 }
 
 
 //-------------------------------------------------
-//  AuditCursor::next
+//  next
+//-------------------------------------------------
+
+void AuditCursor::setListItemModel(AuditableListItemModel *model)
+{
+	if (model != m_model)
+	{
+		// disconnect all connections
+		if (m_modelResetConnection.has_value())
+		{
+			disconnect(m_modelResetConnection.value());
+			m_modelResetConnection.reset();
+		}
+
+		// set the model
+		m_model = model;
+
+		// did we get assigned a model?
+		if (m_model)
+		{
+			// if so we have to do some connections
+			m_position = 0;
+			m_modelResetConnection = connect(m_model, &QAbstractItemModel::modelReset, this, [this]() { onModelReset(); });
+		}
+		else
+		{
+			m_position = -1;
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  next
 //-------------------------------------------------
 
 std::optional<AuditIdentifier> AuditCursor::next(int basePosition)
 {
-	// sanity checks
+	std::optional<AuditIdentifier> result;
+
+	// basic sanity checks
+	assert(m_model);
 	assert(basePosition >= 0);
 
-	// work out the basics
-	int auditableCount = getAuditableCount();
-	basePosition %= auditableCount;
-
-	// try to find the next auditable
-	std::optional<AuditIdentifier> result;
-	while (!result.has_value() && (m_position = (m_position + 1) % auditableCount) != basePosition)
-		result = getIdentifier(m_position);
-
-	// if we didn't find anything, mark ourselves complete
-	if (!result)
+	// get the row count
+	int rowCount = m_model->rowCount();
+	if (rowCount == 0)
 		m_position = -1;
+
+	// do nothing if we're not complete
+	if (m_position >= 0)
+	{
+		// recalibrate m_position and basePosition
+		m_position %= rowCount;
+		basePosition %= rowCount;
+
+		// try to find the next auditable
+		while (m_position >= 0 && !result.has_value())
+		{
+			// get the value at the cursor
+			result = getIdentifierAtCurrentPosition();
+
+			// and advance the cursor
+			m_position = (m_position + 1) % rowCount;
+
+			// if we're back to the base position, mark ourselves complete
+			if (m_position == basePosition)
+				m_position = -1;
+		}
+	}
 
 	// we're done - maybe we have one, maybe we don't
 	return result;
@@ -47,62 +100,47 @@ std::optional<AuditIdentifier> AuditCursor::next(int basePosition)
 
 
 //-------------------------------------------------
-//  AuditCursor::awaken
+//  getIdentifierAtCurrentPosition
 //-------------------------------------------------
 
-void AuditCursor::awaken()
+std::optional<AuditIdentifier> AuditCursor::getIdentifierAtCurrentPosition() const
 {
+	// sanity checks
+	assert(m_position >= 0);
+	assert(m_model);
+
+	// get an identifier
+	AuditIdentifier identifier = m_model->getAuditIdentifier(m_position);
+
+	// get the audit status
+	std::optional<AuditStatus> status;
+	std::visit([this, &status](auto &&identifier)
+	{
+		using T = std::decay_t<decltype(identifier)>;
+		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		{
+			status = m_prefs.getMachineAuditStatus(identifier.machineName());
+		}
+		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		{
+			status = m_prefs.getSoftwareAuditStatus(identifier.softwareList(), identifier.software());
+		}
+	}, identifier);
+
+	// only return the identifier if the audit status is unknown
+	return status == AuditStatus::Unknown
+		? std::move(identifier)
+		: std::optional<AuditIdentifier>();
+}
+
+
+//-------------------------------------------------
+//  onModelReset
+//-------------------------------------------------
+
+void AuditCursor::onModelReset()
+{
+	// someone reset the model; awaken if need be
 	if (m_position < 0)
 		m_position = 0;
-}
-
-
-//-------------------------------------------------
-//  MachineAuditCursor ctor
-//-------------------------------------------------
-
-MachineAuditCursor::MachineAuditCursor(const Preferences &prefs, const info::database &infoDb)
-	: m_prefs(prefs)
-	, m_infoDb(infoDb)
-{
-}
-
-
-//-------------------------------------------------
-//  MachineAuditCursor::setMachineFilter
-//-------------------------------------------------
-
-void MachineAuditCursor::setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter)
-{
-	m_machineFilter = std::move(machineFilter);
-}
-
-
-//-------------------------------------------------
-//  MachineAuditCursor::getAuditableCount
-//-------------------------------------------------
-
-int MachineAuditCursor::getAuditableCount() const
-{
-	return util::safe_static_cast<int>(m_infoDb.machines().size());
-}
-
-
-//-------------------------------------------------
-//  MachineAuditCursor::getIdentifier
-//-------------------------------------------------
-
-std::optional<AuditIdentifier> MachineAuditCursor::getIdentifier(int position) const
-{
-	std::optional<AuditIdentifier> result;
-
-	// check the filter
-	info::machine machine = m_infoDb.machines()[position];
-	if (!m_machineFilter || m_machineFilter(machine))
-	{
-		const QString &machineName = machine.name();
-		if (m_prefs.getMachineAuditStatus(machineName) == AuditStatus::Unknown)
-			result = MachineAuditIdentifier(machineName);
-	}
-	return result;
 }

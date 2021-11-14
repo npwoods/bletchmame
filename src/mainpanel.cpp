@@ -246,13 +246,25 @@ MainPanel::~MainPanel()
 
 
 //-------------------------------------------------
-//  isMachineVisible
+//  currentAuditableListItemModel
 //-------------------------------------------------
 
-bool MainPanel::isMachineVisible(const info::machine &machine) const
+AuditableListItemModel *MainPanel::currentAuditableListItemModel()
 {
-	return m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE
-		&& machineListItemModel().isMachineVisible(machine);
+	AuditableListItemModel *result;
+	switch (m_prefs.getSelectedTab())
+	{
+	case Preferences::list_view_type::MACHINE:
+		result = &machineListItemModel();
+		break;
+	case Preferences::list_view_type::SOFTWARELIST:
+		result = &softwareListItemModel();
+		break;
+	default:
+		result = nullptr;
+		break;
+	}
+	return result;
 }
 
 
@@ -939,8 +951,6 @@ QString MainPanel::machineStatusString(const info::machine &machine) const
 void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection)
 {
 	// awaken the machine audit cursor
-	MachineAuditCursor &machineAuditCursor = m_host.getMachineAuditCursor();
-	machineAuditCursor.awaken();
 	m_host.updateAuditTimer();
 
 	// identify the selection

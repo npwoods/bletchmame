@@ -16,7 +16,7 @@
 //-------------------------------------------------
 
 SoftwareListItemModel::SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent)
-    : QAbstractItemModel(parent)
+    : AuditableListItemModel(parent)
 	, m_iconLoader(iconLoader)
 	, m_softwareIconAccessedCallback(std::move(softwareIconAccessedCallback))
 {
@@ -265,6 +265,32 @@ QVariant SoftwareListItemModel::headerData(int section, Qt::Orientation orientat
         }
     }
     return result;
+}
+
+
+//-------------------------------------------------
+//  getAuditIdentifier
+//-------------------------------------------------
+
+AuditIdentifier SoftwareListItemModel::getAuditIdentifier(int row) const
+{
+	const software_list::software &software = m_parts[row].software();
+	return SoftwareAuditIdentifier(software.parent().name(), software.name());
+}
+
+
+//-------------------------------------------------
+//  isAuditIdentifierPresent
+//-------------------------------------------------
+
+bool SoftwareListItemModel::isAuditIdentifierPresent(const AuditIdentifier &identifier) const
+{
+	const SoftwareAuditIdentifier *softwareAuditIdentifier = std::get_if<SoftwareAuditIdentifier>(&identifier);
+	if (!softwareAuditIdentifier)
+		return false;
+
+	auto iter = m_softwareIndexMap.find(*softwareAuditIdentifier);
+	return iter != m_softwareIndexMap.end();
 }
 
 

@@ -11,57 +11,37 @@
 
 #include <optional>
 
-#include "audittask.h"
+#include "auditablelistitemmodel.h"
 #include "info.h"
 
 class Preferences;
 
 // ======================> AuditCursor
 
-class AuditCursor
+class AuditCursor : public QObject
 {
+	Q_OBJECT
 public:
 	// ctor
-	AuditCursor();
+	AuditCursor(Preferences &prefs, QObject *parent = nullptr);
 
 	// accessors
 	int currentPosition() const { assert(m_position >= 0); return m_position; }
 	bool isComplete() const { return m_position < 0; }
 
 	// methods
+	void setListItemModel(AuditableListItemModel *model);
 	std::optional<AuditIdentifier> next(int basePosition);
-	void awaken();
-
-protected:
-	// abstract methods
-	virtual int getAuditableCount() const = 0;
-	virtual std::optional<AuditIdentifier> getIdentifier(int position) const = 0;
 
 private:
-	int		m_position;
-};
+	Preferences &							m_prefs;
+	AuditableListItemModel *				m_model;
+	std::optional<QMetaObject::Connection>	m_modelResetConnection;
+	int										m_position;
 
-
-// ======================> MachineAuditCursor
-
-class MachineAuditCursor: public AuditCursor
-{
-public:
-	// ctor
-	MachineAuditCursor(const Preferences &prefs, const info::database &infoDb);
-
-	// methods
-	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
-
-protected:
-	// abstract methods
-	virtual int getAuditableCount() const override final;
-	virtual std::optional<AuditIdentifier> getIdentifier(int position) const override final;
-
-private:
-	const Preferences &									m_prefs;
-	const info::database &								m_infoDb;
-	std::function<bool(const info::machine &machine)>	m_machineFilter;
+	// private methods
+	std::optional<AuditIdentifier> getIdentifierAtCurrentPosition() const;
+	void onModelReset();
 };
 
 

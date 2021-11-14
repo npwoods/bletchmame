@@ -28,8 +28,8 @@ class QTableView;
 class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
+class AuditableListItemModel;
 class AuditDialog;
-class MachineAuditCursor;
 class MachineFolderTreeModel;
 class MachineListItemModel;
 class ProfileListItemModel;
@@ -47,7 +47,6 @@ public:
 	virtual void auditIfAppropriate(const software_list::software &software) = 0;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) = 0;
 	virtual software_list_collection &getSoftwareListCollection() = 0;
-	virtual MachineAuditCursor &getMachineAuditCursor() = 0;
 	virtual void updateAuditTimer() = 0;
 };
 
@@ -69,7 +68,7 @@ public:
 
 	// methods
 	void updateTabContents();
-	bool isMachineVisible(const info::machine &machine) const;
+	AuditableListItemModel *currentAuditableListItemModel();
 	std::optional<info::machine> currentlySelectedMachine() const;
 	const software_list::software *currentlySelectedSoftware() const;
 	std::shared_ptr<profiles::profile> currentlySelectedProfile();
