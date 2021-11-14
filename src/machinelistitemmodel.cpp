@@ -56,6 +56,16 @@ void MachineListItemModel::setMachineFilter(std::function<bool(const info::machi
 
 
 //-------------------------------------------------
+//  isMachineVisible
+//-------------------------------------------------
+
+bool MachineListItemModel::isMachineVisible(const info::machine &machine) const
+{
+	return !m_machineFilter || m_machineFilter(machine);
+}
+
+
+//-------------------------------------------------
 //  auditStatusChanged
 //-------------------------------------------------
 
@@ -124,7 +134,7 @@ void MachineListItemModel::populateIndexes()
 		info::machine machine = m_infoDb.machines()[i];
 
 		// we need to apply a filter (if we have one)
-		if (!m_machineFilter || m_machineFilter(machine))
+		if (isMachineVisible(machine))
 		{
 			m_reverseIndexes.insert({ i, util::safe_static_cast<int>(m_indexes.size()) });
 			m_indexes.push_back(i);

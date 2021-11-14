@@ -51,7 +51,7 @@ public:
 	MachineAuditCursor(const Preferences &prefs, const info::database &infoDb);
 
 	// methods
-	void setMachineFilter(const std::function<bool(const info::machine &machine)> &machineFilter);
+	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
 
 protected:
 	// abstract methods

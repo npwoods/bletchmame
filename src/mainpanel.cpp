@@ -246,6 +246,17 @@ MainPanel::~MainPanel()
 
 
 //-------------------------------------------------
+//  isMachineVisible
+//-------------------------------------------------
+
+bool MainPanel::isMachineVisible(const info::machine &machine) const
+{
+	return m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE
+		&& machineListItemModel().isMachineVisible(machine);
+}
+
+
+//-------------------------------------------------
 //  currentlySelectedMachine
 //-------------------------------------------------
 
@@ -938,7 +949,6 @@ void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &new
 
 	// and configure the filter
 	auto machineFilter = machineFolderTreeModel().getMachineFilter(selectedIndex);
-	machineAuditCursor.setMachineFilter(machineFilter);
 	machineListItemModel().setMachineFilter(std::move(machineFilter));
 
 	// update preferences

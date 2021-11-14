@@ -69,6 +69,7 @@ public:
 
 	// methods
 	void updateTabContents();
+	bool isMachineVisible(const info::machine &machine) const;
 	std::optional<info::machine> currentlySelectedMachine() const;
 	const software_list::software *currentlySelectedSoftware() const;
 	std::shared_ptr<profiles::profile> currentlySelectedProfile();

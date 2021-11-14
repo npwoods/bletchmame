@@ -158,3 +158,14 @@ const software_list::software *AuditQueue::findSoftware(const QString &softwareL
 	// we've succeeded!
 	return &*softwareIter;
 }
+
+
+//-------------------------------------------------
+//  bumpCookie
+//-------------------------------------------------
+
+void AuditQueue::bumpCookie()
+{
+	m_currentCookie++;
+}
+

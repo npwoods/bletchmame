@@ -247,6 +247,7 @@ private:
 	void dispatchAuditTasks();
 	void reportAuditResults(const std::vector<AuditResult> &results);
 	bool reportAuditResult(const AuditResult &result);
+	bool isAuditIdentifierVisible(const AuditIdentifier &identifier) const;
 	const QString *auditIdentifierString(const AuditIdentifier &identifier) const;
 	static QString auditStatusString(AuditStatus status);
 	void addLowPriorityAudits();
