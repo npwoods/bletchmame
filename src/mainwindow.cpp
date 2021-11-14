@@ -845,6 +845,20 @@ MainWindow::MainWindow(QWidget *parent)
 		m_mainPanel->updateTabContents();
 	});
 
+	// monitor prefs changes
+	connect(&m_prefs, &Preferences::globalPathEmuExecutableChanged, this, [this](const QString &newPath)
+	{
+		launchVersionCheck(false);
+	});
+	connect(&m_prefs, &Preferences::globalPathRomsChanged, this, [this](const QString &newPath)
+	{
+		resetAuditing(true, true);
+	});
+	connect(&m_prefs, &Preferences::globalPathSamplesChanged, this, [this](const QString &newPath)
+	{
+		resetAuditing(true, false);
+	});
+
 	// load the info DB
 	loadInfoDb();
 
@@ -1410,30 +1424,14 @@ void MainWindow::on_actionDipSwitches_triggered()
 
 void MainWindow::on_actionPaths_triggered()
 {
-	std::vector<Preferences::global_path_type> changed_paths;
-
-	// show the dialog
+	Pauser pauser(*this);
+	PathsDialog dialog(*this, m_prefs);
+	dialog.exec();
+	if (dialog.result() == QDialog::DialogCode::Accepted)
 	{
-		Pauser pauser(*this);
-		PathsDialog dialog(*this, m_prefs);
-		dialog.exec();
-		if (dialog.result() == QDialog::DialogCode::Accepted)
-		{
-			changed_paths = dialog.persist();
-			m_prefs.save();
-		}
+		dialog.persist();
+		m_prefs.save();
 	}
-
-	// did the user change the executable path?
-	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
-		launchVersionCheck(false);
-
-	// did the user cause audit statuses to be reset
-	bool resetMachineAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES);
-	bool resetSoftwareAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS);
-	resetAuditing(resetMachineAudit, resetSoftwareAudit);
-
-	m_mainPanel->pathsChanged(changed_paths);
 }
 
 
@@ -2282,8 +2280,7 @@ void MainWindow::associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, co
 	}
 
 	// monitor dialog acceptance
-	QObject *object = new QObject(&fileDialog);
-	connect(&fileDialog, &QFileDialog::accepted, object, [this, &fileDialog, machineName, pathType, pathIsFile]()
+	connect(&fileDialog, &QFileDialog::accepted, &fileDialog, [this, &fileDialog, machineName, pathType, pathIsFile]()
 	{
 		// get the result out of the dialog
 		QStringList selectedFiles = fileDialog.selectedFiles();

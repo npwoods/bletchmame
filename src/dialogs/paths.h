@@ -37,7 +37,7 @@ public:
 	PathsDialog(QWidget &parent, Preferences &prefs);
 	~PathsDialog();
 
-	std::vector<Preferences::global_path_type> persist();
+	void persist();
 
 	static QString browseForPathDialog(QWidget &parent, Preferences::global_path_type type, const QString &default_path);
 

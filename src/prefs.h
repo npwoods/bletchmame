@@ -51,8 +51,9 @@ public:
 };
 
 
-class Preferences
+class Preferences : public QObject
 {
+	Q_OBJECT
 public:
 	class Test;
 
@@ -121,7 +122,8 @@ public:
 		Max = Manual
 	};
 
-	Preferences();
+	// ctor
+	Preferences(QObject *parent = nullptr);
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
@@ -200,6 +202,14 @@ public:
 	bool load(QIODevice &input);
 	void save();
 
+signals:
+	void globalPathEmuExecutableChanged(const QString &newPath);
+	void globalPathRomsChanged(const QString &newPath);
+	void globalPathSamplesChanged(const QString &newPath);
+	void globalPathIconsChanged(const QString &newPath);
+	void globalPathProfilesChanged(const QString &newPath);
+	void globalPathSnapshotsChanged(const QString &newPath);
+
 private:
 	struct MachineInfo
 	{
@@ -239,6 +249,7 @@ private:
 	QString getFileName(bool ensure_directory_exists);
 	const MachineInfo *getMachineInfo(const QString &machine_name) const;
 	void garbageCollectMachineInfo();
+	void internalSetGlobalPath(global_path_type type, QString &&path);
 };
 
 #endif // PREFS_H
