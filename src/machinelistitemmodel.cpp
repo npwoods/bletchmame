@@ -80,7 +80,8 @@ void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &iden
 void MachineListItemModel::allAuditStatusesChanged()
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
+	if (!m_indexes.empty())
+		iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
 }
 
 

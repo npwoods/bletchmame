@@ -116,7 +116,8 @@ void SoftwareListItemModel::auditStatusChanged(const SoftwareAuditIdentifier &id
 void SoftwareListItemModel::allAuditStatusesChanged()
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	iconsChanged(0, util::safe_static_cast<int>(m_parts.size()) - 1);
+	if (!m_parts.empty())
+		iconsChanged(0, util::safe_static_cast<int>(m_parts.size()) - 1);
 }
 
 
