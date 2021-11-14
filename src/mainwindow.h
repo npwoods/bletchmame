@@ -241,7 +241,6 @@ private:
 	virtual void auditIfAppropriate(const info::machine &machine) override;
 	virtual void auditIfAppropriate(const software_list::software &software) override;
 	bool canAutomaticallyAudit() const;
-	void resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit);
 	void updateAuditTimer();
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
 	void auditTimerProc();

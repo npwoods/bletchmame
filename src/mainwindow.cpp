@@ -852,11 +852,34 @@ MainWindow::MainWindow(QWidget *parent)
 	});
 	connect(&m_prefs, &Preferences::globalPathRomsChanged, this, [this](const QString &newPath)
 	{
-		resetAuditing(true, true);
+		// reset machines and software
+		m_prefs.bulkDropMachineAuditStatuses([this](const QString &machineName)
+		{
+			std::optional<info::machine> machine = m_info_db.find_machine(machineName);
+			return machine && (!machine->roms().empty() || !machine->disks().empty());
+		});
+		m_prefs.bulkDropSoftwareAuditStatuses();
 	});
 	connect(&m_prefs, &Preferences::globalPathSamplesChanged, this, [this](const QString &newPath)
 	{
-		resetAuditing(true, false);
+		// reset machines
+		m_prefs.bulkDropMachineAuditStatuses([this](const QString &machineName)
+		{
+			std::optional<info::machine> machine = m_info_db.find_machine(machineName);
+			return machine && !machine->samples().empty();
+		});
+	});
+
+	// monitor bulk audit changes
+	connect(&m_prefs, &Preferences::bulkDroppedMachineAuditStatuses, this, [this]()
+	{
+		m_mainPanel->machineAuditStatusesChanged();
+		updateAuditTimer();
+	});
+	connect(&m_prefs, &Preferences::bulkDroppedSoftwareAuditStatuses, this, [this]()
+	{
+		m_mainPanel->softwareAuditStatusesChanged();
+		updateAuditTimer();
 	});
 
 	// load the info DB
@@ -1237,7 +1260,9 @@ void MainWindow::on_actionAuditThis_triggered()
 
 void MainWindow::on_actionResetAuditingStatuses_triggered()
 {
-	resetAuditing(true, true);
+	// reset machines and software
+	m_prefs.bulkDropMachineAuditStatuses();
+	m_prefs.bulkDropSoftwareAuditStatuses();
 }
 
 
@@ -2625,28 +2650,6 @@ bool MainWindow::canAutomaticallyAudit() const
 	// we have to be configured to automatically audit, and not be running an emulation
 	return (m_prefs.getAuditingState() == Preferences::AuditingState::Automatic)
 		&& !m_currentRunMachineTask;
-}
-
-
-//-------------------------------------------------
-//  resetAuditing
-//-------------------------------------------------
-
-void MainWindow::resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit)
-{
-	if (resetMachineAudit)
-	{
-		m_prefs.dropAllMachineAuditStatuses();
-		m_mainPanel->machineAuditStatusesChanged();
-	}
-	if (resetSoftwareAudit)
-	{
-		m_prefs.dropAllSoftwareAuditStatuses();
-		m_mainPanel->softwareAuditStatusesChanged();
-	}
-
-	if (resetMachineAudit || resetSoftwareAudit)
-		updateAuditTimer();
 }
 
 

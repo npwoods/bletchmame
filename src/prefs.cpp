@@ -517,17 +517,32 @@ void Preferences::setMachineAuditStatus(const QString &machine_name, AuditStatus
 
 
 //-------------------------------------------------
-//  dropAllMachineAuditStatuses
+//  bulkDropMachineAuditStatuses
 //-------------------------------------------------
 
-void Preferences::dropAllMachineAuditStatuses()
+void Preferences::bulkDropMachineAuditStatuses(const std::function<bool(const QString &machineName)> &predicate)
 {
+	int count = 0;
+
 	// drop all statuses
 	for (auto &[machineName, info] : m_machine_info)
-		info.m_auditStatus = AuditStatus::Unknown;
+	{
+		if ((!predicate || predicate(machineName)) && info.m_auditStatus != AuditStatus::Unknown)
+		{
+			info.m_auditStatus = AuditStatus::Unknown;
+			count++;
+		}
+	}
 
-	// after this update, its highly likely we have data worthy of garbage collection
-	garbageCollectMachineInfo();
+	// did we drop anything?
+	if (count > 0)
+	{
+		// if so its highly likely we have data worthy of garbage collection
+		garbageCollectMachineInfo();
+
+		// and emit the event
+		emit bulkDroppedMachineAuditStatuses();
+	}
 }
 
 
@@ -560,12 +575,20 @@ void Preferences::setSoftwareAuditStatus(const QString &softwareList, const QStr
 
 
 //-------------------------------------------------
-//  dropAllSoftwareAuditStatuses
+//  bulkDropSoftwareAuditStatuses
 //-------------------------------------------------
 
-void Preferences::dropAllSoftwareAuditStatuses()
+void Preferences::bulkDropSoftwareAuditStatuses()
 {
-	m_softwareAuditStatus.clear();
+	// do we have any audit statuses?
+	if (!m_softwareAuditStatus.empty())
+	{
+		// if so drop them
+		m_softwareAuditStatus.clear();
+
+		// and emit the event
+		emit bulkDroppedSoftwareAuditStatuses();
+	}
 }
 
 
