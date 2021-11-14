@@ -489,6 +489,20 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 
 
 //-------------------------------------------------
+//  setAuditingState
+//-------------------------------------------------
+
+void Preferences::setAuditingState(AuditingState auditingState)
+{
+	if (m_auditingState != auditingState)
+	{
+		m_auditingState = auditingState;
+		emit auditingStateChanged();
+	}
+}
+
+
+//-------------------------------------------------
 //  getMachineAuditStatus
 //-------------------------------------------------
 

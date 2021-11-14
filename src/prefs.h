@@ -176,7 +176,7 @@ public:
 	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
 
 	AuditingState getAuditingState() const																{ return m_auditingState; }
-	void setAuditingState(AuditingState auditingState)													{ m_auditingState = auditingState; }
+	void setAuditingState(AuditingState auditingState);
 
 	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
 	void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
@@ -203,6 +203,9 @@ public:
 	void save();
 
 signals:
+	// general status
+	void auditingStateChanged();
+
 	// global paths changed
 	void globalPathEmuExecutableChanged(const QString &newPath);
 	void globalPathRomsChanged(const QString &newPath);
