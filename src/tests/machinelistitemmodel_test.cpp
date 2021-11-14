@@ -50,7 +50,7 @@ void Test::general()
 	}
 
 	// verify that we got rows
-	QVERIFY(model.rowCount(QModelIndex()) == 15);
+	QVERIFY(model.rowCount(QModelIndex()) == 104);
 
 	// try loading a different one
 	{
@@ -61,7 +61,7 @@ void Test::general()
 	}
 
 	// verify that we got rows
-	QVERIFY(model.rowCount(QModelIndex()) == 1);
+	QVERIFY(model.rowCount(QModelIndex()) == 13);
 }
 
 
