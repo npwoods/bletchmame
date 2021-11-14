@@ -147,7 +147,7 @@ public:
 	WindowState getWindowState() const																	{ return m_windowState; }
 	void setWindowState(WindowState &state)																{ m_windowState = state; }
 
-	list_view_type getSelectedTab()																		{ return m_selected_tab; }
+	list_view_type getSelectedTab() const																{ return m_selected_tab; }
 	void setSelectedTab(list_view_type type)															{ m_selected_tab = type; }
 
 	const QString &getMachineFolderTreeSelection() const												{ return m_machine_folder_tree_selection; }

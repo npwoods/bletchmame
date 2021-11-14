@@ -843,6 +843,7 @@ MainWindow::MainWindow(QWidget *parent)
 	m_info_db.addOnChangedHandler([this]()
 	{
 		m_mainPanel->updateTabContents();
+		m_auditQueue.bumpCookie();
 	});
 
 	// monitor general state
@@ -891,6 +892,12 @@ MainWindow::MainWindow(QWidget *parent)
 	{
 		m_mainPanel->softwareAuditStatusesChanged();
 		updateAuditTimer();
+	});
+
+	// we want to skip over non-visible machines
+	m_machineAuditCursor.setMachineFilter([this](const info::machine &machine)
+	{
+		return m_mainPanel->isMachineVisible(machine);
 	});
 
 	// load the info DB
@@ -2762,6 +2769,11 @@ bool MainWindow::reportAuditResult(const AuditResult &result)
 {
 	using namespace std::chrono_literals;
 
+	// is this audit result visible?  while its ok to audit invisible items, we don't want
+	// to show anything in the status bar
+	if (!isAuditIdentifierVisible(result.identifier()))
+		return false;
+
 	// audit identifier string
 	const QString *identifierString = auditIdentifierString(result.identifier());
 	if (!identifierString)
@@ -2778,6 +2790,37 @@ bool MainWindow::reportAuditResult(const AuditResult &result)
 		message,
 		std::chrono::duration_cast<std::chrono::milliseconds>(messageDuration).count());
 	return true;
+}
+
+
+//-------------------------------------------------
+//  isAuditIdentifierVisible
+//-------------------------------------------------
+
+bool MainWindow::isAuditIdentifierVisible(const AuditIdentifier &identifier) const
+{
+	bool result = false;
+	std::visit([this, &result](auto &&identifier)
+	{
+		using T = std::decay_t<decltype(identifier)>;
+		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		{
+			if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
+			{
+				std::optional<info::machine> machine = m_info_db.find_machine(identifier.machineName());
+				if (machine && m_mainPanel->isMachineVisible(machine.value()))
+					result = true;
+			}
+		}
+		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		{
+			if (m_prefs.getSelectedTab() == Preferences::list_view_type::SOFTWARELIST)
+			{
+				result = true;
+			}
+		}
+	}, identifier);
+	return result;
 }
 
 

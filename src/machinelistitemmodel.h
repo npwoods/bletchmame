@@ -41,6 +41,7 @@ public:
 	// methods
 	info::machine machineFromIndex(const QModelIndex &index) const;
 	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
+	bool isMachineVisible(const info::machine &machine) const;
 	void auditStatusChanged(const MachineAuditIdentifier &identifier);
 	void allAuditStatusesChanged();
 

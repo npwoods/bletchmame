@@ -72,9 +72,9 @@ MachineAuditCursor::MachineAuditCursor(const Preferences &prefs, const info::dat
 //  MachineAuditCursor::setMachineFilter
 //-------------------------------------------------
 
-void MachineAuditCursor::setMachineFilter(const std::function<bool(const info::machine &machine)> &machineFilter)
+void MachineAuditCursor::setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter)
 {
-	m_machineFilter = machineFilter;
+	m_machineFilter = std::move(machineFilter);
 }
 
 

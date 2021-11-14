@@ -35,6 +35,7 @@ public:
 	// methods
 	void push(AuditIdentifier &&identifier, bool isPrioritized);
 	AuditTask::ptr tryCreateAuditTask();
+	void bumpCookie();
 
 private:
 	const int MAX_AUDITS_PER_TASK = 3;
