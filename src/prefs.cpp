@@ -489,6 +489,21 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 
 
 //-------------------------------------------------
+//  setSelectedTab
+//-------------------------------------------------
+
+void Preferences::setSelectedTab(list_view_type type)
+{
+	if (m_selected_tab != type)
+	{
+		m_selected_tab = type;
+		emit selectedTabChanged(m_selected_tab);
+	}
+}
+
+
+
+//-------------------------------------------------
 //  setAuditingState
 //-------------------------------------------------
 

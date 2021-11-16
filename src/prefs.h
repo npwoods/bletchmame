@@ -148,7 +148,7 @@ public:
 	void setWindowState(WindowState &state)																{ m_windowState = state; }
 
 	list_view_type getSelectedTab() const																{ return m_selected_tab; }
-	void setSelectedTab(list_view_type type)															{ m_selected_tab = type; }
+	void setSelectedTab(list_view_type type);
 
 	const QString &getMachineFolderTreeSelection() const												{ return m_machine_folder_tree_selection; }
 	void setMachineFolderTreeSelection(QString &&selection)												{ m_machine_folder_tree_selection = std::move(selection); }
@@ -204,6 +204,7 @@ public:
 
 signals:
 	// general status
+	void selectedTabChanged(list_view_type newSelectedTab);
 	void auditingStateChanged();
 
 	// global paths changed
