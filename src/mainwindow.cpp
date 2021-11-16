@@ -691,7 +691,7 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
-	, m_machineAuditCursor(m_prefs, m_info_db)
+	, m_auditCursor(m_prefs)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -847,6 +847,12 @@ MainWindow::MainWindow(QWidget *parent)
 	});
 
 	// monitor general state
+	connect(&m_prefs, &Preferences::selectedTabChanged, this, [this](Preferences::list_view_type newSelectedTab)
+	{
+		AuditableListItemModel *newModel = m_mainPanel->currentAuditableListItemModel();
+		m_auditCursor.setListItemModel(newModel);
+		updateAuditTimer();
+	});
 	connect(&m_prefs, &Preferences::auditingStateChanged, this, [this]()
 	{
 		// audit statuses may have changed
@@ -894,11 +900,9 @@ MainWindow::MainWindow(QWidget *parent)
 		updateAuditTimer();
 	});
 
-	// we want to skip over non-visible machines
-	m_machineAuditCursor.setMachineFilter([this](const info::machine &machine)
-	{
-		return m_mainPanel->isMachineVisible(machine);
-	});
+	// prep the audit cursor
+	AuditableListItemModel *newModel = m_mainPanel->currentAuditableListItemModel();
+	m_auditCursor.setListItemModel(newModel);
 
 	// load the info DB
 	loadInfoDb();
@@ -1826,16 +1830,6 @@ software_list_collection &MainWindow::getSoftwareListCollection()
 
 
 //-------------------------------------------------
-//  getMachineAuditCursor
-//-------------------------------------------------
-
-MachineAuditCursor &MainWindow::getMachineAuditCursor()
-{
-	return m_machineAuditCursor;
-}
-
-
-//-------------------------------------------------
 //  preflightCheck - run checks on MAME to catch
 //	obvious problems when they are easier to
 //	diagnose (MAME's error reporting is hard for
@@ -2685,8 +2679,7 @@ void MainWindow::updateAuditTimer()
 	{
 		// no pending audits - we will still need the timer for low priority audits
 		// from the audit cursor
-		AuditCursor *cursor = currentAuditCursor();
-		auditTimerActive = cursor && !cursor->isComplete();
+		auditTimerActive = !m_auditCursor.isComplete();
 	}
 
 	if (auditTimerActive)
@@ -2769,9 +2762,10 @@ bool MainWindow::reportAuditResult(const AuditResult &result)
 {
 	using namespace std::chrono_literals;
 
-	// is this audit result visible?  while its ok to audit invisible items, we don't want
-	// to show anything in the status bar
-	if (!isAuditIdentifierVisible(result.identifier()))
+	// is this audit result present?  while its ok in principle to audit invisible items, we
+	// really don't want to do so because the user is trying to keep such items away
+	const AuditableListItemModel *model = m_mainPanel->currentAuditableListItemModel();
+	if (!model || !model->isAuditIdentifierPresent(result.identifier()))
 		return false;
 
 	// audit identifier string
@@ -2790,37 +2784,6 @@ bool MainWindow::reportAuditResult(const AuditResult &result)
 		message,
 		std::chrono::duration_cast<std::chrono::milliseconds>(messageDuration).count());
 	return true;
-}
-
-
-//-------------------------------------------------
-//  isAuditIdentifierVisible
-//-------------------------------------------------
-
-bool MainWindow::isAuditIdentifierVisible(const AuditIdentifier &identifier) const
-{
-	bool result = false;
-	std::visit([this, &result](auto &&identifier)
-	{
-		using T = std::decay_t<decltype(identifier)>;
-		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
-		{
-			if (m_prefs.getSelectedTab() == Preferences::list_view_type::MACHINE)
-			{
-				std::optional<info::machine> machine = m_info_db.find_machine(identifier.machineName());
-				if (machine && m_mainPanel->isMachineVisible(machine.value()))
-					result = true;
-			}
-		}
-		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
-		{
-			if (m_prefs.getSelectedTab() == Preferences::list_view_type::SOFTWARELIST)
-			{
-				result = true;
-			}
-		}
-	}, identifier);
-	return result;
 }
 
 
@@ -2889,29 +2852,18 @@ QString MainWindow::auditStatusString(AuditStatus status)
 
 void MainWindow::addLowPriorityAudits()
 {
-	AuditCursor *cursor = currentAuditCursor();
-	if (cursor && !cursor->isComplete())
+	if (!m_auditCursor.isComplete())
 	{
 		// get the current position so that we don't wrap around
-		int basePosition = cursor->currentPosition();
+		int basePosition = m_auditCursor.currentPosition();
 
 		// keep on getting identifiers
 		std::optional<AuditIdentifier> identifier;
-		while (m_auditQueue.isCloseToEmpty() && (identifier = cursor->next(basePosition)).has_value())
+		while (m_auditQueue.isCloseToEmpty() && (identifier = m_auditCursor.next(basePosition)).has_value())
 		{
 			m_auditQueue.push(std::move(identifier.value()), false);
 		}
 	}
-}
-
-
-//-------------------------------------------------
-//  currentAuditCursor
-//-------------------------------------------------
-
-AuditCursor *MainWindow::currentAuditCursor()
-{
-	return &m_machineAuditCursor;
 }
 
 

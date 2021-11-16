@@ -168,7 +168,7 @@ private:
 	AuditQueue							m_auditQueue;
 	QTimer *							m_auditTimer;
 	unsigned int						m_maximumConcurrentAuditTasks;
-	MachineAuditCursor					m_machineAuditCursor;
+	AuditCursor							m_auditCursor;
 
 	// other
 	observable::value<bool>				m_menu_bar_shown;
@@ -221,7 +221,6 @@ private:
 	QString attachWidgetId() const;
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
 	virtual software_list_collection &getSoftwareListCollection() override final;
-	virtual MachineAuditCursor &getMachineAuditCursor() override final;
 	QString preflightCheck() const;
 	void associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, const QString &machineName, Preferences::machine_path_type pathType, bool pathIsFile);
 	QString getFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode, bool pathIsFile);
@@ -247,11 +246,9 @@ private:
 	void dispatchAuditTasks();
 	void reportAuditResults(const std::vector<AuditResult> &results);
 	bool reportAuditResult(const AuditResult &result);
-	bool isAuditIdentifierVisible(const AuditIdentifier &identifier) const;
 	const QString *auditIdentifierString(const AuditIdentifier &identifier) const;
 	static QString auditStatusString(AuditStatus status);
 	void addLowPriorityAudits();
-	AuditCursor *currentAuditCursor();
 };
 
 #endif // MAINWINDOW_H
