@@ -131,7 +131,7 @@ public:
 	static PathCategory getPathCategory(global_path_type path_type);
 	static PathCategory getPathCategory(machine_path_type path_type);
 
-	const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
+	const QString &getGlobalPath(global_path_type type) const											{ return m_globalPathsInfo.m_paths[static_cast<size_t>(type)]; }
 	void setGlobalPath(global_path_type type, QString &&path);
 	void setGlobalPath(global_path_type type, const QString &path);
 	
@@ -173,10 +173,10 @@ public:
 	const QString &getSearchBoxText(const char8_t *view_type) const										{ return m_list_view_filter[view_type]; }
 	void setSearchBoxText(const char8_t *view_type, QString &&search_box_text)							{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
-	bool getMenuBarShown() const																		{ return m_menu_bar_shown; }
-	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
+	bool getMenuBarShown() const																		{ return m_globalUiInfo.m_menuBarShown; }
+	void setMenuBarShown(bool menu_bar_shown)															{ m_globalUiInfo.m_menuBarShown = menu_bar_shown; }
 
-	AuditingState getAuditingState() const																{ return m_auditingState; }
+	AuditingState getAuditingState() const																{ return m_globalUiInfo.m_auditingState; }
 	void setAuditingState(AuditingState auditingState);
 
 	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
@@ -219,6 +219,32 @@ signals:
 	void bulkDroppedSoftwareAuditStatuses();
 
 private:
+	// info pertinent to global paths state
+	struct GlobalUiInfo
+	{
+		// ctor
+		GlobalUiInfo();
+		GlobalUiInfo(const GlobalUiInfo &) = delete;
+		GlobalUiInfo(GlobalUiInfo &&) = default;
+
+		// members
+		bool																					m_menuBarShown;
+		AuditingState																			m_auditingState;
+	};
+
+	// info pertinent to global paths state
+	struct GlobalPathsInfo
+	{
+		// ctor
+		GlobalPathsInfo(const std::optional<QDir> &configDirectory);
+		GlobalPathsInfo(const GlobalPathsInfo &) = delete;
+		GlobalPathsInfo(GlobalPathsInfo &&) = default;
+
+		// members
+		std::array<QString, util::enum_count<Preferences::global_path_type>()>					m_paths;
+	};
+
+	// info specific to each machine
 	struct MachineInfo
 	{
 		MachineInfo();
@@ -234,11 +260,13 @@ private:
 		std::map<QString, std::vector<QString>>     m_recentDeviceFiles;
 	};
 
+	// statics
 	static std::array<const char *, util::enum_count<Preferences::global_path_type>()>			s_path_names;
 
 	// members
 	std::optional<QDir>																			m_configDirectory;
-	std::array<QString, util::enum_count<Preferences::global_path_type>()>						m_paths;
+	GlobalUiInfo																				m_globalUiInfo;
+	GlobalPathsInfo																				m_globalPathsInfo;
 	QString                                                                 					m_mame_extra_arguments;
 	std::optional<QSize>																		m_size;
 	WindowState																					m_windowState;
@@ -252,14 +280,14 @@ private:
 	std::map<QString, std::set<QString>>														m_custom_folders;
 	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
-	bool																						m_menu_bar_shown;
-	AuditingState																				m_auditingState;
 
 	// private methods
 	void save(QIODevice &output);
 	QString getPreferencesFileName(bool ensureDirectoryExists) const;
 	const MachineInfo *getMachineInfo(const QString &machine_name) const;
 	void garbageCollectMachineInfo();
+	void setGlobalInfo(GlobalUiInfo &&globalInfo);
+	void setGlobalInfo(GlobalPathsInfo &&globalInfo);
 	void internalSetGlobalPath(global_path_type type, QString &&path);
 };
 

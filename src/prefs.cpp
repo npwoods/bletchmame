@@ -84,9 +84,6 @@ static const util::enum_parser_bidirectional<Preferences::AuditingState> s_audit
 //  IMPLEMENTATION
 //**************************************************************************
 
-static QString getDefaultPluginsDirectory();
-
-
 //-------------------------------------------------
 //  isValidDimension
 //-------------------------------------------------
@@ -180,19 +177,10 @@ FolderPrefs::FolderPrefs()
 Preferences::Preferences(std::optional<QDir> &&configDirectory, QObject *parent)
 	: QObject(parent)
 	, m_configDirectory(std::move(configDirectory))
+	, m_globalPathsInfo(m_configDirectory)
 	, m_windowState(WindowState::Normal)
 	, m_selected_tab(list_view_type::MACHINE)
-	, m_menu_bar_shown(true)
-	, m_auditingState(AuditingState::Default)
 {
-	// default paths
-	setGlobalPath(global_path_type::PLUGINS,		getDefaultPluginsDirectory());
-	if (m_configDirectory)
-	{
-		setGlobalPath(global_path_type::CONFIG,		QDir::toNativeSeparators(m_configDirectory->absolutePath()));
-		setGlobalPath(global_path_type::NVRAM,		QDir::toNativeSeparators(m_configDirectory->absolutePath()));
-		setGlobalPath(global_path_type::PROFILES,	QDir::toNativeSeparators(m_configDirectory->filePath("profiles")));
-	}
 }
 
 
@@ -274,12 +262,34 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 
 //-------------------------------------------------
+//  setGlobalInfo
+//-------------------------------------------------
+
+void Preferences::setGlobalInfo(Preferences::GlobalUiInfo &&globalInfo)
+{
+	setMenuBarShown(globalInfo.m_menuBarShown);
+	setAuditingState(globalInfo.m_auditingState);
+}
+
+
+//-------------------------------------------------
+//  setGlobalInfo
+//-------------------------------------------------
+
+void Preferences::setGlobalInfo(Preferences::GlobalPathsInfo &&globalInfo)
+{
+	for (global_path_type type : util::all_enums<global_path_type>())
+		setGlobalPath(type, std::move(globalInfo.m_paths[static_cast<size_t>(type)]));
+}
+
+
+//-------------------------------------------------
 //  setGlobalPath
 //-------------------------------------------------
 
 void Preferences::setGlobalPath(global_path_type type, QString &&path)
 {
-	if (m_paths[static_cast<size_t>(type)] != path)
+	if (m_globalPathsInfo.m_paths[static_cast<size_t>(type)] != path)
 		internalSetGlobalPath(type, std::move(path));
 }
 
@@ -290,7 +300,7 @@ void Preferences::setGlobalPath(global_path_type type, QString &&path)
 
 void Preferences::setGlobalPath(global_path_type type, const QString &path)
 {
-	if (m_paths[static_cast<size_t>(type)] != path)
+	if (m_globalPathsInfo.m_paths[static_cast<size_t>(type)] != path)
 		internalSetGlobalPath(type, QString(path));
 }
 
@@ -302,7 +312,7 @@ void Preferences::setGlobalPath(global_path_type type, const QString &path)
 void Preferences::internalSetGlobalPath(global_path_type type, QString &&path)
 {
 	// find the destination, and this had better be a real change
-	QString &dest = m_paths[static_cast<size_t>(type)];
+	QString &dest = m_globalPathsInfo.m_paths[static_cast<size_t>(type)];
 	assert(dest != path);
 
 	// copy the data
@@ -512,9 +522,9 @@ void Preferences::setSelectedTab(list_view_type type)
 
 void Preferences::setAuditingState(AuditingState auditingState)
 {
-	if (m_auditingState != auditingState)
+	if (m_globalUiInfo.m_auditingState != auditingState)
 	{
-		m_auditingState = auditingState;
+		m_globalUiInfo.m_auditingState = auditingState;
 		emit auditingStateChanged();
 	}
 }
@@ -679,13 +689,16 @@ bool Preferences::load(QIODevice &input)
 	m_machine_info.clear();
 	m_softwareAuditStatus.clear();
 	m_custom_folders.clear();
-	m_auditingState = AuditingState::Default;
+
+	// set up fresh global state
+	GlobalUiInfo globalUiInfo;
+	GlobalPathsInfo globalPathsInfo(m_configDirectory);
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<bool> menu_bar_shown = attributes.get<bool>("menu_bar_shown");
-		if (menu_bar_shown)
-			setMenuBarShown(*menu_bar_shown);
+		std::optional<bool> menuBarShown = attributes.get<bool>("menu_bar_shown");
+		if (menuBarShown)
+			globalUiInfo.m_menuBarShown = menuBarShown.value();
 
 		std::optional<WindowState> windowState = attributes.get<WindowState>("window_state", s_windowState_parser);
 		if (windowState)
@@ -697,7 +710,7 @@ bool Preferences::load(QIODevice &input)
 
 		std::optional<AuditingState> auditingState = attributes.get<AuditingState>("auditing", s_auditingStateParser);
 		if (auditingState)
-			setAuditingState(*auditingState);
+			globalUiInfo.m_auditingState = auditingState.value();
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -713,7 +726,7 @@ bool Preferences::load(QIODevice &input)
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
 		if (type)
-			setGlobalPath(*type, std::move(content));
+			globalPathsInfo.m_paths[(size_t) type.value()] = std::move(content);
 		type.reset();
 	});
 	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
@@ -848,6 +861,13 @@ bool Preferences::load(QIODevice &input)
 	});
 	bool success = xml.parse(input);
 
+	// if we're successful, update global state
+	if (success)
+	{
+		setGlobalInfo(std::move(globalUiInfo));
+		setGlobalInfo(std::move(globalPathsInfo));
+	}
+
 	return success;
 }
 
@@ -877,18 +897,18 @@ void Preferences::save(QIODevice &output)
 	writer.writeStartDocument();
 	writer.writeComment("Preferences for BletchMAME");
 	writer.writeStartElement("preferences");
-	writer.writeAttribute("menu_bar_shown", QString::number(m_menu_bar_shown ? 1 : 0));
+	writer.writeAttribute("menu_bar_shown", QString::number(getMenuBarShown() ? 1 : 0));
 	writer.writeAttribute("window_state", s_windowState_parser[getWindowState()]);
 	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
 	writer.writeAttribute("auditing", s_auditingStateParser[getAuditingState()]);
 
 	// paths
 	writer.writeComment("Paths");
-	for (size_t i = 0; i < m_paths.size(); i++)
+	for (global_path_type pathType : util::all_enums<global_path_type>())
 	{
 		writer.writeStartElement("path");
-		writer.writeAttribute("type", s_path_names[i]);
-		writer.writeCharacters(getGlobalPath(static_cast<global_path_type>(i)));
+		writer.writeAttribute("type", s_path_names[(size_t)pathType]);
+		writer.writeCharacters(getGlobalPath(pathType));
 		writer.writeEndElement();
 	}
 
@@ -1153,15 +1173,41 @@ QString Preferences::getPreferencesFileName(bool ensureDirectoryExists) const
 }
 
 
+//**************************************************************************
+//  GLOBAL INFO - initializes slices of prefs with pertinent defaults
+//**************************************************************************
+
 //-------------------------------------------------
-//  getDefaultPluginsDirectory
+//  GlobalUiInfo ctor
 //-------------------------------------------------
 
-static QString getDefaultPluginsDirectory()
+Preferences::GlobalUiInfo::GlobalUiInfo()
+	: m_menuBarShown(true)
+	, m_auditingState(AuditingState::Default)
 {
-	return QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
 }
 
+
+//-------------------------------------------------
+//  GlobalPathsInfo ctor
+//-------------------------------------------------
+
+Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configDirectory)
+{
+	// set up default paths - some of these require a config directory
+	m_paths[(size_t)global_path_type::PLUGINS]		= QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
+	if (configDirectory)
+	{
+		m_paths[(size_t)global_path_type::CONFIG]	= QDir::toNativeSeparators(configDirectory->absolutePath());
+		m_paths[(size_t)global_path_type::NVRAM]	= QDir::toNativeSeparators(configDirectory->absolutePath());
+		m_paths[(size_t)global_path_type::PROFILES]	= QDir::toNativeSeparators(configDirectory->filePath("profiles"));
+	}
+}
+
+
+//**************************************************************************
+//  MACHINE INFO
+//**************************************************************************
 
 //-------------------------------------------------
 //  MachineInfo ctor
