@@ -97,6 +97,7 @@ private slots:
 	void on_actionConfiguration_triggered();
 	void on_actionDipSwitches_triggered();
 	void on_actionPaths_triggered();
+	void on_actionResetToDefault_triggered();
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();

@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QWindowStateChangeEvent>
 
@@ -40,6 +41,7 @@
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
+#include "dialogs/resetprefs.h"
 #include "dialogs/switches.h"
 
 
@@ -687,6 +689,7 @@ static const int SOUND_ATTENUATION_ON = 0;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
+	, m_prefs(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)))
 	, m_taskDispatcher(*this, m_prefs)
 	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)
@@ -1478,6 +1481,24 @@ void MainWindow::on_actionPaths_triggered()
 	{
 		dialog.persist();
 		m_prefs.save();
+	}
+}
+
+
+//-------------------------------------------------
+//  on_actionResetToDefault_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionResetToDefault_triggered()
+{
+	Pauser pauser(*this);
+	ResetPreferencesDialog dialog(*this);
+	dialog.exec();
+	if (dialog.result() == QDialog::DialogCode::Accepted)
+	{
+		m_prefs.resetToDefaults(
+			dialog.isResetUiChecked(),
+			dialog.isResetPathsChecked());
 	}
 }
 
