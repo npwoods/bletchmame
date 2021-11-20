@@ -17,6 +17,7 @@
 #include <set>
 
 #include <QDataStream>
+#include <QDir>
 #include <QSize>
 
 #include "utility.h"
@@ -123,7 +124,7 @@ public:
 	};
 
 	// ctor
-	Preferences(QObject *parent = nullptr);
+	Preferences(std::optional<QDir> &&configDirectory = std::nullopt, QObject *parent = nullptr);
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
@@ -196,8 +197,6 @@ public:
 	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
-	static QDir getConfigDirectory(bool ensure_directory_exists = false);
-
 	bool load();
 	bool load(QIODevice &input);
 	void save();
@@ -237,6 +236,8 @@ private:
 
 	static std::array<const char *, util::enum_count<Preferences::global_path_type>()>			s_path_names;
 
+	// members
+	std::optional<QDir>																			m_configDirectory;
 	std::array<QString, util::enum_count<Preferences::global_path_type>()>						m_paths;
 	QString                                                                 					m_mame_extra_arguments;
 	std::optional<QSize>																		m_size;
@@ -254,8 +255,9 @@ private:
 	bool																						m_menu_bar_shown;
 	AuditingState																				m_auditingState;
 
+	// private methods
 	void save(QIODevice &output);
-	QString getFileName(bool ensure_directory_exists);
+	QString getPreferencesFileName(bool ensureDirectoryExists) const;
 	const MachineInfo *getMachineInfo(const QString &machine_name) const;
 	void garbageCollectMachineInfo();
 	void internalSetGlobalPath(global_path_type type, QString &&path);

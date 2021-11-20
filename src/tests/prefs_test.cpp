@@ -20,6 +20,9 @@ class Preferences::Test : public QObject
 private slots:
 	void generalWithRegurgitate()		{ general(true); }
 	void generalWithoutRegurgitate()	{ general(false); }
+	void load();
+	void save();
+	void defaults();
 	void pathNames();
 	void globalGetPathCategory();
 	void machineGetPathCategory();
@@ -133,6 +136,68 @@ QString Preferences::Test::fixPaths(const char16_t *s)
 {
 	QString str = QString::fromUtf16(s);
 	return fixPaths(std::move(str));
+}
+
+
+//-------------------------------------------------
+//  load
+//-------------------------------------------------
+
+void Preferences::Test::load()
+{
+	// create a temporary directory
+	QTemporaryDir tempDir;
+	QVERIFY(tempDir.isValid());
+
+	// try to load preferences; should return false because there is no file
+	Preferences prefs(QDir(tempDir.path()));
+	QVERIFY(!prefs.load());
+}
+
+
+//-------------------------------------------------
+//  save
+//-------------------------------------------------
+
+void Preferences::Test::save()
+{
+	// create a temporary directory
+	QTemporaryDir tempDir;
+	QVERIFY(tempDir.isValid());
+
+	// try to save preferences; this should succeed
+	Preferences prefs(QDir(tempDir.path() + "/subdir"));
+	prefs.save();
+
+	// ensure that BletchMAME.xml got created in 'subdir'
+	QVERIFY(QFileInfo(tempDir.path() + "/subdir/BletchMAME.xml").isFile());
+}
+
+
+//-------------------------------------------------
+//  defaults
+//-------------------------------------------------
+
+void Preferences::Test::defaults()
+{
+	// create a temporary directory
+	QTemporaryDir tempDir;
+	QVERIFY(tempDir.isValid());
+
+	// create Preferences
+	Preferences prefs(QDir(tempDir.path()));
+
+	// validate defaults
+	QVERIFY(prefs.getMenuBarShown()										== true);
+	QVERIFY(prefs.getWindowState()										== WindowState::Normal);
+	QVERIFY(prefs.getSelectedTab()										== list_view_type::MACHINE);
+	QVERIFY(prefs.getAuditingState()									== AuditingState::Default);
+	QVERIFY(prefs.getGlobalPath(global_path_type::EMU_EXECUTABLE)		== "");
+	QVERIFY(prefs.getGlobalPath(global_path_type::ROMS)					== "");
+	QVERIFY(prefs.getGlobalPath(global_path_type::SAMPLES)				== "");
+	QVERIFY(prefs.getGlobalPath(global_path_type::CONFIG)				== QDir::toNativeSeparators(tempDir.path()));
+	QVERIFY(prefs.getGlobalPath(global_path_type::NVRAM)				== QDir::toNativeSeparators(tempDir.path()));
+	QVERIFY(prefs.getGlobalPath(global_path_type::PROFILES)				== QDir::toNativeSeparators(QDir(tempDir.path()).filePath("profiles")));
 }
 
 

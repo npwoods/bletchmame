@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QWindowStateChangeEvent>
 
@@ -687,6 +688,7 @@ static const int SOUND_ATTENUATION_ON = 0;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
+	, m_prefs(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)))
 	, m_taskDispatcher(*this, m_prefs)
 	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)

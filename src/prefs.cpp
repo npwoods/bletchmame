@@ -12,7 +12,6 @@
 
 #include <QDir>
 #include <QCoreApplication>
-#include <QStandardPaths>
 #include <QXmlStreamWriter>
 
 #include "prefs.h"
@@ -178,18 +177,22 @@ FolderPrefs::FolderPrefs()
 //  ctor
 //-------------------------------------------------
 
-Preferences::Preferences(QObject *parent)
+Preferences::Preferences(std::optional<QDir> &&configDirectory, QObject *parent)
 	: QObject(parent)
+	, m_configDirectory(std::move(configDirectory))
+	, m_windowState(WindowState::Normal)
 	, m_selected_tab(list_view_type::MACHINE)
 	, m_menu_bar_shown(true)
 	, m_auditingState(AuditingState::Default)
 {
 	// default paths
-	QDir configDir = getConfigDirectory(true);
-	setGlobalPath(global_path_type::CONFIG,		QDir::toNativeSeparators(configDir.absolutePath()));
-	setGlobalPath(global_path_type::NVRAM,		QDir::toNativeSeparators(configDir.absolutePath()));
-	setGlobalPath(global_path_type::PLUGINS,	getDefaultPluginsDirectory());
-	setGlobalPath(global_path_type::PROFILES,	QDir::toNativeSeparators(configDir.filePath("profiles")));
+	setGlobalPath(global_path_type::PLUGINS,		getDefaultPluginsDirectory());
+	if (m_configDirectory)
+	{
+		setGlobalPath(global_path_type::CONFIG,		QDir::toNativeSeparators(m_configDirectory->absolutePath()));
+		setGlobalPath(global_path_type::NVRAM,		QDir::toNativeSeparators(m_configDirectory->absolutePath()));
+		setGlobalPath(global_path_type::PROFILES,	QDir::toNativeSeparators(m_configDirectory->filePath("profiles")));
+	}
 }
 
 
@@ -644,7 +647,7 @@ bool Preferences::load()
 {
 	using namespace std::placeholders;
 
-	QString fileName = getFileName(false);
+	QString fileName = getPreferencesFileName(false);
 
 	// first check to see if the file exists
 	bool success = false;
@@ -855,7 +858,7 @@ bool Preferences::load(QIODevice &input)
 
 void Preferences::save()
 {
-	QString fileName = getFileName(true);
+	QString fileName = getPreferencesFileName(true);
 	QFile file(fileName);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text))
 		save(file);
@@ -1115,8 +1118,9 @@ QString Preferences::applySubstitutions(const QString &path) const
 
 QString Preferences::getMameXmlDatabasePath(bool ensure_directory_exists) const
 {
-	// get the configuration directory
-	QDir configDir = getConfigDirectory(ensure_directory_exists);
+	// do we have a config directory?
+	if (!m_configDirectory)
+		return "";
 
 	// get the emulator executable (ie.- MAME) path
 	const QString &emuExecutablePath = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
@@ -1127,40 +1131,25 @@ QString Preferences::getMameXmlDatabasePath(bool ensure_directory_exists) const
 	QString emuExecutableBaseName = QFileInfo(emuExecutablePath).baseName();
 
 	// get the full name
-	return configDir.filePath(emuExecutableBaseName + ".infodb");
+	return m_configDirectory->filePath(emuExecutableBaseName + ".infodb");
 }
 
 
 //-------------------------------------------------
-//  getFileName
+//  getPreferencesFileName
 //-------------------------------------------------
 
-QString Preferences::getFileName(bool ensure_directory_exists)
+QString Preferences::getPreferencesFileName(bool ensureDirectoryExists) const
 {
-	QDir directory = getConfigDirectory(ensure_directory_exists);
-	return directory.filePath("BletchMAME.xml");
-}
+	// its illegal to call this if we don't have a config directory specified
+	assert(m_configDirectory);
 
+	// if appropriate, ensure the directory is present
+	if (ensureDirectoryExists && !m_configDirectory->exists())
+		m_configDirectory->mkpath(".");
 
-//-------------------------------------------------
-//  getConfigDirectory - gets the configuration
-//	directory, and optionally ensuring it exists
-//-------------------------------------------------
-
-QDir Preferences::getConfigDirectory(bool ensure_directory_exists)
-{
-	// this is currently a thin wrapper on GetUserDataDir(), but hypothetically
-	// we might want a command line option to override this directory
-	QDir directory(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-
-	// if appropriate, ensure the directory exists
-	if (ensure_directory_exists)
-	{
-		QDir dir(directory);
-		if (!dir.exists())
-			dir.mkpath(".");
-	}
-	return directory;
+	// return the path to BletchMAME.xml
+	return m_configDirectory->filePath("BletchMAME.xml");
 }
 
 
