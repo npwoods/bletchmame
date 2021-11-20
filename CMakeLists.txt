@@ -217,6 +217,9 @@ add_library(BletchMAME_core
 	src/dialogs/paths.ui
 	src/dialogs/pathslistviewmodel.cpp
 	src/dialogs/pathslistviewmodel.h
+	src/dialogs/resetprefs.cpp
+	src/dialogs/resetprefs.h
+	src/dialogs/resetprefs.ui
 	src/dialogs/switches.cpp
 	src/dialogs/switches.h
 	${TS_FILES}

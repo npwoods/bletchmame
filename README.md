@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.10 (TBD)
 	- Added an "Available" folder to the machine tree view (like MAMEUI)
+	- Added the ability to reset settings to default
 	- Current selections and auditing results will be described in the status bar
 	- Various improvements to auditing
 		- Media auditing will now proceed even when visible items have been audited

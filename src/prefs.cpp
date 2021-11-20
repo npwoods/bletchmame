@@ -185,6 +185,19 @@ Preferences::Preferences(std::optional<QDir> &&configDirectory, QObject *parent)
 
 
 //-------------------------------------------------
+//  resetToDefaults
+//-------------------------------------------------
+
+void Preferences::resetToDefaults(bool resetUi, bool resetPaths)
+{
+	if (resetUi)
+		setGlobalInfo(GlobalUiInfo());
+	if (resetPaths)
+		setGlobalInfo(GlobalPathsInfo(m_configDirectory));
+}
+
+
+//-------------------------------------------------
 //  getPathCategory
 //-------------------------------------------------
 

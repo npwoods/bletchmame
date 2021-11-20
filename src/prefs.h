@@ -128,6 +128,8 @@ public:
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
+	void resetToDefaults(bool resetUi, bool resetPaths);
+
 	static PathCategory getPathCategory(global_path_type path_type);
 	static PathCategory getPathCategory(machine_path_type path_type);
 

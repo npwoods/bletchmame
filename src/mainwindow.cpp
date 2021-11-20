@@ -41,6 +41,7 @@
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
+#include "dialogs/resetprefs.h"
 #include "dialogs/switches.h"
 
 
@@ -1480,6 +1481,24 @@ void MainWindow::on_actionPaths_triggered()
 	{
 		dialog.persist();
 		m_prefs.save();
+	}
+}
+
+
+//-------------------------------------------------
+//  on_actionResetToDefault_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionResetToDefault_triggered()
+{
+	Pauser pauser(*this);
+	ResetPreferencesDialog dialog(*this);
+	dialog.exec();
+	if (dialog.result() == QDialog::DialogCode::Accepted)
+	{
+		m_prefs.resetToDefaults(
+			dialog.isResetUiChecked(),
+			dialog.isResetPathsChecked());
 	}
 }
 
