@@ -1209,6 +1209,7 @@ Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configD
 {
 	// set up default paths - some of these require a config directory
 	m_paths[(size_t)global_path_type::PLUGINS]		= QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
+	m_paths[(size_t)global_path_type::HASH]			= QDir::toNativeSeparators("$(MAMEPATH)/hash/");
 	if (configDirectory)
 	{
 		m_paths[(size_t)global_path_type::CONFIG]	= QDir::toNativeSeparators(configDirectory->absolutePath());
