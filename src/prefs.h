@@ -123,6 +123,8 @@ public:
 		Max = Manual
 	};
 
+	typedef std::map<QString, std::set<QString>> CustomFoldersMap;
+
 	// ctor
 	Preferences(std::optional<QDir> &&configDirectory = std::nullopt, QObject *parent = nullptr);
 	Preferences(const Preferences &) = delete;
@@ -162,8 +164,11 @@ public:
 	FolderPrefs getFolderPrefs(const QString &folder) const;
 	void setFolderPrefs(const QString &folder, FolderPrefs &&prefs);
 
-	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_customFolders; }
-	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_customFolders; }
+	const CustomFoldersMap &getCustomFolders() const													{ return m_customFolders; }
+	bool addMachineToCustomFolder(const QString &customFolderName, const QString &machineName);
+	bool removeMachineFromCustomFolder(const QString &customFolderName, const QString &machineName);
+	bool renameCustomFolder(const QString &oldCustomFolderName, QString &&newCustomFolderName);
+	bool deleteCustomFolder(const QString &customFolderName);
 
 	const std::unordered_map<std::u8string, ColumnPrefs> &getColumnPrefs(const char8_t *view_type)			{ return m_column_prefs[view_type]; }
 	void setColumnPrefs(const char8_t *view_type, std::unordered_map<std::u8string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
@@ -210,6 +215,7 @@ signals:
 
 	// folders
 	void folderPrefsChanged();
+	void customFoldersChanged();
 
 	// global paths changed
 	void globalPathEmuExecutableChanged(const QString &newPath);

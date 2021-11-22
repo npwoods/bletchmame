@@ -455,6 +455,96 @@ void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 
 
 //-------------------------------------------------
+//  addMachineToCustomFolder
+//-------------------------------------------------
+
+bool Preferences::addMachineToCustomFolder(const QString &customFolderName, const QString &machineName)
+{
+	// access the set of custom folders - this will create an entry if necessary
+	std::set<QString> &customFolderMachines = m_customFolders[customFolderName];
+
+	// is this machine present?
+	bool result = !customFolderMachines.contains(machineName);
+	if (result)
+	{
+		// if not, add it
+		customFolderMachines.insert(machineName);
+		emit customFoldersChanged();
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  removeMachineFromCustomFolder
+//-------------------------------------------------
+
+bool Preferences::removeMachineFromCustomFolder(const QString &customFolderName, const QString &machineName)
+{
+	// find the folder
+	auto folderIter = m_customFolders.find(customFolderName);
+	if (folderIter == m_customFolders.end())
+		return false;
+
+	// find the machine
+	auto machineIter = folderIter->second.find(machineName);
+	if (machineIter == folderIter->second.end())
+		return false;
+
+	// remove it, fire the event and we're done
+	folderIter->second.erase(machineIter);
+	emit customFoldersChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  renameCustomFolder
+//-------------------------------------------------
+
+bool Preferences::renameCustomFolder(const QString &oldCustomFolderName, QString &&newCustomFolderName)
+{
+	// renaming the folder to itself is silly
+	if (oldCustomFolderName == newCustomFolderName)
+		return false;
+
+	// find this entry
+	auto iter = m_customFolders.find(oldCustomFolderName);
+	if (iter == m_customFolders.end())
+		return false;
+
+	// detatch the list of machines
+	std::set<QString> machines = std::move(iter->second);
+	m_customFolders.erase(iter);
+
+	// and readd it
+	m_customFolders.emplace(std::move(newCustomFolderName), std::move(machines));
+
+	// fire the event and we're done
+	emit customFoldersChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  deleteCustomFolder
+//-------------------------------------------------
+
+bool Preferences::deleteCustomFolder(const QString &customFolderName)
+{
+	// perform the erase
+	bool result = m_customFolders.erase(customFolderName) > 0;
+
+	// fire the event if necessary
+	if (result)
+		emit customFoldersChanged();
+
+	// and we're done
+	return result;
+}
+
+
+//-------------------------------------------------
 //  getListViewSelection
 //-------------------------------------------------
 
