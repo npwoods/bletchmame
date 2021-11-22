@@ -424,8 +424,8 @@ const QString &Preferences::getMachinePath(const QString &machine_name, machine_
 
 FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 {
-	auto iter = m_folder_prefs.find(folder);
-	return iter != m_folder_prefs.end()
+	auto iter = m_folderPrefs.find(folder);
+	return iter != m_folderPrefs.end()
 		? iter->second
 		: FolderPrefs();
 }
@@ -438,9 +438,9 @@ FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 {
 	if (prefs == FolderPrefs())
-		m_folder_prefs.erase(folder);
+		m_folderPrefs.erase(folder);
 	else
-		m_folder_prefs[folder] = std::move(prefs);
+		m_folderPrefs[folder] = std::move(prefs);
 }
 
 
@@ -701,7 +701,7 @@ bool Preferences::load(QIODevice &input)
 	m_windowState = WindowState::Normal;
 	m_machine_info.clear();
 	m_softwareAuditStatus.clear();
-	m_custom_folders.clear();
+	m_customFolders.clear();
 
 	// set up fresh global state
 	GlobalUiInfo globalUiInfo;
@@ -784,7 +784,7 @@ bool Preferences::load(QIODevice &input)
 	{
 		std::optional<QString> name = attributes.get<QString>("name");
 		if (name)
-			current_custom_folder = &m_custom_folders.emplace(name.value(), std::set<QString>()).first->second;
+			current_custom_folder = &m_customFolders.emplace(name.value(), std::set<QString>()).first->second;
 	});
 	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
 	{
@@ -939,9 +939,9 @@ void Preferences::save(QIODevice &output)
 		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
 
 	// folder prefs
-	if (!m_machine_folder_tree_selection.isEmpty() && m_folder_prefs.find(m_machine_folder_tree_selection) == m_folder_prefs.end())
-		m_folder_prefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
-	for (const auto &pair : m_folder_prefs)
+	if (!m_machine_folder_tree_selection.isEmpty() && m_folderPrefs.find(m_machine_folder_tree_selection) == m_folderPrefs.end())
+		m_folderPrefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
+	for (const auto &pair : m_folderPrefs)
 	{
 		writer.writeStartElement("folder");
 		writer.writeAttribute("id", pair.first);
@@ -952,7 +952,7 @@ void Preferences::save(QIODevice &output)
 	}
 
 	// custom folders
-	for (const auto &pair : m_custom_folders)
+	for (const auto &pair : m_customFolders)
 	{
 		writer.writeStartElement("customfolder");
 		writer.writeAttribute("name", pair.first);

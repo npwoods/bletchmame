@@ -162,8 +162,8 @@ public:
 	FolderPrefs getFolderPrefs(const QString &folder) const;
 	void setFolderPrefs(const QString &folder, FolderPrefs &&prefs);
 
-	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_custom_folders; }
-	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_custom_folders; }
+	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_customFolders; }
+	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_customFolders; }
 
 	const std::unordered_map<std::u8string, ColumnPrefs> &getColumnPrefs(const char8_t *view_type)			{ return m_column_prefs[view_type]; }
 	void setColumnPrefs(const char8_t *view_type, std::unordered_map<std::u8string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
@@ -278,8 +278,8 @@ private:
 	list_view_type																				m_selected_tab;
 	QString																						m_machine_folder_tree_selection;
 	QList<int>																					m_machine_splitter_sizes;
-	std::map<QString, FolderPrefs>																m_folder_prefs;
-	std::map<QString, std::set<QString>>														m_custom_folders;
+	std::map<QString, FolderPrefs>																m_folderPrefs;
+	std::map<QString, std::set<QString>>														m_customFolders;
 	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
 
