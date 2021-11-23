@@ -13,6 +13,9 @@
 //  IMPLEMENTATION
 //**************************************************************************
 
+const char *PathsListViewModel::s_entryText = "<               >";
+
+
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
@@ -260,7 +263,7 @@ QVariant PathsListViewModel::data(const QModelIndex &index, int role) const
 		if (entry)
 			result = entry->m_path;
 		else if (m_isMulti && index.row() == m_entries.size())
-			result = "<               >";
+			result = s_entryText;
 		break;
 
 	case Qt::ForegroundRole:

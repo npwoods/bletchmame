@@ -34,11 +34,14 @@ class PathsDialog : public QDialog
 public:
 	class Test;
 
+	// ctor/dtor
 	PathsDialog(QWidget &parent, Preferences &prefs);
 	~PathsDialog();
 
+	// methods
 	void persist();
 
+	// static methods
 	static QString browseForPathDialog(QWidget &parent, Preferences::global_path_type type, const QString &default_path);
 
 private slots:
@@ -52,15 +55,35 @@ private:
 	static const size_t PATH_COUNT = util::enum_count<Preferences::global_path_type>();
 	static const QStringList s_combo_box_strings;
 
-	std::unique_ptr<Ui::PathsDialog>				m_ui;
-	Preferences &									m_prefs;
+	class Model
+	{
+	public:
+		// ctor
+		Model(Preferences &prefs, PathsListViewModel &listViewModel);
 
-	std::array<QString, PATH_COUNT>					m_pathLists;
-	std::optional<Preferences::global_path_type>	m_listViewModelCurrentPath;
+		// methods
+		void setCurrentPathType(Preferences::global_path_type newPathType);
+		void persist();
+		const Preferences &prefs() const;
+
+		// statics
+		static QString joinPaths(const QStringList &pathList);
+
+	private:
+		Preferences &									m_prefs;
+		PathsListViewModel &							m_listViewModel;
+		std::optional<Preferences::global_path_type>	m_currentPathType;
+		std::array<QString, PATH_COUNT>					m_pathLists;
+
+		// private methods
+		void extractPathsFromListView();
+		static QStringList splitPaths(const QString &paths);
+	};
+
+	std::unique_ptr<Ui::PathsDialog>					m_ui;
+	std::optional<Model>								m_model;
 
 	// methods
-	void updateCurrentPathList();
-	void extractPathsFromListView();
 	void updateButtonsEnabled();
 	Preferences::global_path_type getCurrentPath() const;
 	bool browseForPath(int item);
@@ -70,8 +93,6 @@ private:
 
 	// static methods
 	static QStringList buildComboBoxStrings();
-	static QStringList splitPaths(const QString &paths);
-	static QString joinPaths(const QStringList &pathList);
 };
 
 
