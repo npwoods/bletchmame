@@ -68,6 +68,7 @@ private:
 
 		// statics
 		static QString joinPaths(const QStringList &pathList);
+		static QStringList splitPaths(const QString &paths);
 
 	private:
 		Preferences &									m_prefs;
@@ -77,7 +78,6 @@ private:
 
 		// private methods
 		void extractPathsFromListView();
-		static QStringList splitPaths(const QString &paths);
 	};
 
 	std::unique_ptr<Ui::PathsDialog>					m_ui;
