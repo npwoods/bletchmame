@@ -36,6 +36,20 @@ void PathsDialog::Test::model()
 	prefs.setGlobalPath(Preferences::global_path_type::ROMS,			Model::joinPaths(QStringList() << "/mame_dir/roms0" << "/mame_dir/roms1"));
 	prefs.setGlobalPath(Preferences::global_path_type::SAMPLES,			Model::joinPaths(QStringList() << "/mame_dir/samples0" << "/mame_dir/samples1" << "/mame_dir/samples2"));
 
+	// validate the prefs
+	QStringList initialEmuExecutablePath = prefs.getSplitPaths(Preferences::global_path_type::EMU_EXECUTABLE);
+	QVERIFY(initialEmuExecutablePath.size() == 1);
+	QVERIFY(initialEmuExecutablePath[0] == "/mame_dir/mame");
+	QStringList initialRomsPath = prefs.getSplitPaths(Preferences::global_path_type::ROMS);
+	QVERIFY(initialRomsPath.size() == 2);
+	QVERIFY(initialRomsPath[0] == "/mame_dir/roms0");
+	QVERIFY(initialRomsPath[1] == "/mame_dir/roms1");
+	QStringList initialSamplesPath = prefs.getSplitPaths(Preferences::global_path_type::SAMPLES);
+	QVERIFY(initialSamplesPath.size() == 3);
+	QVERIFY(initialSamplesPath[0] == "/mame_dir/samples0");
+	QVERIFY(initialSamplesPath[1] == "/mame_dir/samples1");
+	QVERIFY(initialSamplesPath[2] == "/mame_dir/samples2");
+
 	// create some models
 	PathsListViewModel listViewModel;
 	Model model(prefs, listViewModel);
