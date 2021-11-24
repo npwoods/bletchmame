@@ -30,7 +30,14 @@
       <item>
        <widget class="QCheckBox" name="resetPathsCheckBox">
         <property name="text">
-         <string>Global Paths</string>
+         <string>Paths (MAME, ROMs, Samples, Hash etc)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="resetFoldersCheckBox">
+        <property name="text">
+         <string>Machine Folders</string>
         </property>
        </widget>
       </item>

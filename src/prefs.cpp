@@ -188,12 +188,27 @@ Preferences::Preferences(std::optional<QDir> &&configDirectory, QObject *parent)
 //  resetToDefaults
 //-------------------------------------------------
 
-void Preferences::resetToDefaults(bool resetUi, bool resetPaths)
+void Preferences::resetToDefaults(bool resetUi, bool resetPaths, bool resetFolders)
 {
 	if (resetUi)
 		setGlobalInfo(GlobalUiInfo());
 	if (resetPaths)
 		setGlobalInfo(GlobalPathsInfo(m_configDirectory));
+
+	if (resetFolders)
+	{
+		if (!m_folderPrefs.empty())
+		{
+			m_folderPrefs.clear();
+			emit folderPrefsChanged();
+		}
+
+		if (!m_customFolders.empty())
+		{
+			m_customFolders.clear();
+			emit customFoldersChanged();
+		}
+	}
 }
 
 
