@@ -24,6 +24,7 @@ class PathsListViewModel : public QAbstractListModel
 {
 public:
 	typedef std::function<bool(QString &)> CanonicalizeAndValidateFunc;
+	static const char *s_entryText;
 
 	// ctor
 	PathsListViewModel(CanonicalizeAndValidateFunc canonicalizeAndValidateFunc = { }, QObject *parent = nullptr);

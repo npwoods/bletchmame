@@ -17,6 +17,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 		- Changing ROMs and Samples paths will only force reaudits of items that use the relevant media
 		- Fixed some bugs that could cause audit icons to not be properly painted
 	- Hash paths will now default to 'hash' in the MAME directory
+	- Fixed a bug that could cause switching between paths in the paths dialog to not persist changes
 	- Various improvements to the CI/CD pipeline [Davide Cavalca]
 
 - 2.9 (2021-Oct-23)
