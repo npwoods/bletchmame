@@ -369,31 +369,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 bool MachineFolderTreeModel::renameFolder(const QModelIndex &index, QString &&newName)
 {
 	QString customFolder = customFolderForModelIndex(index);
-	if (customFolder.isEmpty())
-		return false;
-
-	// is this just a no-op?
-	if (customFolder == newName)
-		return true;
-
-	// get the custom folders map
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
-
-	// find this entry
-	auto iter = customFolders.find(customFolder);
-	if (iter == customFolders.end())
-		return false;
-
-	// detach the list of systems
-	std::set<QString> systems = std::move(iter->second);
-	customFolders.erase(iter);
-
-	// and readd it
-	customFolders.emplace(std::move(newName), std::move(systems));
-
-	// refresh and we're done!
-	refresh();
-	return true;
+	return !customFolder.isEmpty() && m_prefs.renameCustomFolder(customFolder, std::move(newName));
 }
 
 
@@ -404,23 +380,7 @@ bool MachineFolderTreeModel::renameFolder(const QModelIndex &index, QString &&ne
 bool MachineFolderTreeModel::deleteFolder(const QModelIndex &index)
 {
 	QString customFolder = customFolderForModelIndex(index);
-	if (customFolder.isEmpty())
-		return false;
-
-	// get the custom folders map
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
-
-	// find this entry
-	auto iter = customFolders.find(customFolder);
-	if (iter == customFolders.end())
-		return false;
-
-	// erase it
-	customFolders.erase(iter);
-
-	// refresh and we're done!
-	refresh();
-	return true;
+	return !customFolder.isEmpty() && m_prefs.deleteCustomFolder(customFolder);
 }
 
 

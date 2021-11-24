@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs.cpp
 
@@ -424,8 +424,8 @@ const QString &Preferences::getMachinePath(const QString &machine_name, machine_
 
 FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 {
-	auto iter = m_folder_prefs.find(folder);
-	return iter != m_folder_prefs.end()
+	auto iter = m_folderPrefs.find(folder);
+	return iter != m_folderPrefs.end()
 		? iter->second
 		: FolderPrefs();
 }
@@ -437,10 +437,110 @@ FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 
 void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 {
-	if (prefs == FolderPrefs())
-		m_folder_prefs.erase(folder);
-	else
-		m_folder_prefs[folder] = std::move(prefs);
+	auto iter = m_folderPrefs.find(folder);
+	bool isSame = (prefs == FolderPrefs())
+		? iter == m_folderPrefs.end()
+		: iter != m_folderPrefs.end() && iter->second == prefs;
+
+	if (!isSame)
+	{
+		if (prefs == FolderPrefs())
+			m_folderPrefs.erase(folder);
+		else
+			m_folderPrefs[folder] = std::move(prefs);
+
+		emit folderPrefsChanged();
+	}
+}
+
+
+//-------------------------------------------------
+//  addMachineToCustomFolder
+//-------------------------------------------------
+
+bool Preferences::addMachineToCustomFolder(const QString &customFolderName, const QString &machineName)
+{
+	// access the set of custom folders - this will create an entry if necessary
+	std::set<QString> &customFolderMachines = m_customFolders[customFolderName];
+
+	// is this machine present?
+	bool result = !customFolderMachines.contains(machineName);
+	if (result)
+	{
+		// if not, add it
+		customFolderMachines.insert(machineName);
+		emit customFoldersChanged();
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  removeMachineFromCustomFolder
+//-------------------------------------------------
+
+bool Preferences::removeMachineFromCustomFolder(const QString &customFolderName, const QString &machineName)
+{
+	// find the folder
+	auto folderIter = m_customFolders.find(customFolderName);
+	if (folderIter == m_customFolders.end())
+		return false;
+
+	// find the machine
+	auto machineIter = folderIter->second.find(machineName);
+	if (machineIter == folderIter->second.end())
+		return false;
+
+	// remove it, fire the event and we're done
+	folderIter->second.erase(machineIter);
+	emit customFoldersChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  renameCustomFolder
+//-------------------------------------------------
+
+bool Preferences::renameCustomFolder(const QString &oldCustomFolderName, QString &&newCustomFolderName)
+{
+	// renaming the folder to itself is silly
+	if (oldCustomFolderName == newCustomFolderName)
+		return false;
+
+	// find this entry
+	auto iter = m_customFolders.find(oldCustomFolderName);
+	if (iter == m_customFolders.end())
+		return false;
+
+	// detatch the list of machines
+	std::set<QString> machines = std::move(iter->second);
+	m_customFolders.erase(iter);
+
+	// and readd it
+	m_customFolders.emplace(std::move(newCustomFolderName), std::move(machines));
+
+	// fire the event and we're done
+	emit customFoldersChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  deleteCustomFolder
+//-------------------------------------------------
+
+bool Preferences::deleteCustomFolder(const QString &customFolderName)
+{
+	// perform the erase
+	bool result = m_customFolders.erase(customFolderName) > 0;
+
+	// fire the event if necessary
+	if (result)
+		emit customFoldersChanged();
+
+	// and we're done
+	return result;
 }
 
 
@@ -701,7 +801,7 @@ bool Preferences::load(QIODevice &input)
 	m_windowState = WindowState::Normal;
 	m_machine_info.clear();
 	m_softwareAuditStatus.clear();
-	m_custom_folders.clear();
+	m_customFolders.clear();
 
 	// set up fresh global state
 	GlobalUiInfo globalUiInfo;
@@ -784,7 +884,7 @@ bool Preferences::load(QIODevice &input)
 	{
 		std::optional<QString> name = attributes.get<QString>("name");
 		if (name)
-			current_custom_folder = &m_custom_folders.emplace(name.value(), std::set<QString>()).first->second;
+			current_custom_folder = &m_customFolders.emplace(name.value(), std::set<QString>()).first->second;
 	});
 	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
 	{
@@ -939,9 +1039,9 @@ void Preferences::save(QIODevice &output)
 		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
 
 	// folder prefs
-	if (!m_machine_folder_tree_selection.isEmpty() && m_folder_prefs.find(m_machine_folder_tree_selection) == m_folder_prefs.end())
-		m_folder_prefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
-	for (const auto &pair : m_folder_prefs)
+	if (!m_machine_folder_tree_selection.isEmpty() && m_folderPrefs.find(m_machine_folder_tree_selection) == m_folderPrefs.end())
+		m_folderPrefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
+	for (const auto &pair : m_folderPrefs)
 	{
 		writer.writeStartElement("folder");
 		writer.writeAttribute("id", pair.first);
@@ -952,7 +1052,7 @@ void Preferences::save(QIODevice &output)
 	}
 
 	// custom folders
-	for (const auto &pair : m_custom_folders)
+	for (const auto &pair : m_customFolders)
 	{
 		writer.writeStartElement("customfolder");
 		writer.writeAttribute("name", pair.first);

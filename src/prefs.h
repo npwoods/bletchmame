@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs.h
 
@@ -123,6 +123,8 @@ public:
 		Max = Manual
 	};
 
+	typedef std::map<QString, std::set<QString>> CustomFoldersMap;
+
 	// ctor
 	Preferences(std::optional<QDir> &&configDirectory = std::nullopt, QObject *parent = nullptr);
 	Preferences(const Preferences &) = delete;
@@ -162,8 +164,11 @@ public:
 	FolderPrefs getFolderPrefs(const QString &folder) const;
 	void setFolderPrefs(const QString &folder, FolderPrefs &&prefs);
 
-	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_custom_folders; }
-	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_custom_folders; }
+	const CustomFoldersMap &getCustomFolders() const													{ return m_customFolders; }
+	bool addMachineToCustomFolder(const QString &customFolderName, const QString &machineName);
+	bool removeMachineFromCustomFolder(const QString &customFolderName, const QString &machineName);
+	bool renameCustomFolder(const QString &oldCustomFolderName, QString &&newCustomFolderName);
+	bool deleteCustomFolder(const QString &customFolderName);
 
 	const std::unordered_map<std::u8string, ColumnPrefs> &getColumnPrefs(const char8_t *view_type)			{ return m_column_prefs[view_type]; }
 	void setColumnPrefs(const char8_t *view_type, std::unordered_map<std::u8string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
@@ -207,6 +212,10 @@ signals:
 	// general status
 	void selectedTabChanged(list_view_type newSelectedTab);
 	void auditingStateChanged();
+
+	// folders
+	void folderPrefsChanged();
+	void customFoldersChanged();
 
 	// global paths changed
 	void globalPathEmuExecutableChanged(const QString &newPath);
@@ -278,8 +287,8 @@ private:
 	list_view_type																				m_selected_tab;
 	QString																						m_machine_folder_tree_selection;
 	QList<int>																					m_machine_splitter_sizes;
-	std::map<QString, FolderPrefs>																m_folder_prefs;
-	std::map<QString, std::set<QString>>														m_custom_folders;
+	std::map<QString, FolderPrefs>																m_folderPrefs;
+	std::map<QString, std::set<QString>>														m_customFolders;
 	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
 

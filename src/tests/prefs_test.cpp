@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs_test.cpp
 
@@ -30,6 +30,8 @@ private slots:
 	void substitutions1();
 	void substitutions2();
 	void substitutions3();
+	void setFolderPrefs();
+	void customFolders();
 
 private:
 	static void loadSamplePrefsXml(QBuffer &buffer);
@@ -254,6 +256,96 @@ void Preferences::Test::substitutions(const char *input, const char *expected)
 void Preferences::Test::substitutions1() { substitutions("C:\\foo", "C:\\foo"); }
 void Preferences::Test::substitutions2() { substitutions("C:\\foo (with parens)", "C:\\foo (with parens)"); }
 void Preferences::Test::substitutions3() { substitutions("C:\\$(VARNAME)\\foo", "C:\\vardata\\foo"); }
+
+
+//-------------------------------------------------
+//  setFolderPrefs
+//-------------------------------------------------
+
+void Preferences::Test::setFolderPrefs()
+{
+	Preferences prefs;
+	int folderPrefsChanged = 0;
+	connect(&prefs, &Preferences::folderPrefsChanged, this, [&]() { folderPrefsChanged++; });
+
+	// initial verifications
+	QVERIFY(prefs.getFolderPrefs("foo").m_shown);
+	QVERIFY(folderPrefsChanged == 0);
+
+	// set shown to true - should not change anything
+	FolderPrefs folderPrefs = FolderPrefs();
+	folderPrefs.m_shown = true;
+	prefs.setFolderPrefs("foo", std::move(folderPrefs));
+	QVERIFY(prefs.getFolderPrefs("foo").m_shown);
+	QVERIFY(folderPrefsChanged == 0);
+
+	// set shown to false - this should be a change
+	folderPrefs = FolderPrefs();
+	folderPrefs.m_shown = false;
+	prefs.setFolderPrefs("foo", std::move(folderPrefs));
+	QVERIFY(!prefs.getFolderPrefs("foo").m_shown);
+	QVERIFY(folderPrefsChanged == 1);
+}
+
+
+//-------------------------------------------------
+//  customFolders
+//-------------------------------------------------
+
+void Preferences::Test::customFolders()
+{
+	Preferences prefs;
+	int customFoldersChanged = 0;
+	connect(&prefs, &Preferences::customFoldersChanged,	this, [&]() { customFoldersChanged++; });
+
+	// initial verifications
+	QVERIFY(prefs.getCustomFolders().empty());
+	QVERIFY(customFoldersChanged == 0);
+
+	// add a custom folder
+	QVERIFY(prefs.addMachineToCustomFolder("MyFolder", "mymachine"));
+	QVERIFY(customFoldersChanged == 1);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.size() == 1);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.contains("mymachine"));
+
+	// try to add it again - nothing should happen
+	QVERIFY(!prefs.addMachineToCustomFolder("MyFolder", "mymachine"));
+	QVERIFY(customFoldersChanged == 1);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.size() == 1);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.contains("mymachine"));
+
+	// add another machine
+	QVERIFY(prefs.addMachineToCustomFolder("MyFolder", "myothermachine"));
+	QVERIFY(customFoldersChanged == 2);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.size() == 2);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.contains("mymachine"));
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.contains("myothermachine"));
+
+	// rename the folder to itself - nothing should change
+	QVERIFY(!prefs.renameCustomFolder("MyFolder", "MyFolder"));
+	QVERIFY(customFoldersChanged == 2);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.size() == 2);
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.contains("mymachine"));
+	QVERIFY(prefs.getCustomFolders().find("MyFolder")->second.contains("myothermachine"));
+
+	// rename the folder to a new name
+	QVERIFY(prefs.renameCustomFolder("MyFolder", "ThatFolder"));
+	QVERIFY(customFoldersChanged == 3);
+	QVERIFY(prefs.getCustomFolders().find("ThatFolder")->second.size() == 2);
+	QVERIFY(prefs.getCustomFolders().find("ThatFolder")->second.contains("mymachine"));
+	QVERIFY(prefs.getCustomFolders().find("ThatFolder")->second.contains("myothermachine"));
+
+	// perform a remove
+	QVERIFY(prefs.removeMachineFromCustomFolder("ThatFolder", "mymachine"));
+	QVERIFY(customFoldersChanged == 4);
+	QVERIFY(prefs.getCustomFolders().find("ThatFolder")->second.size() == 1);
+	QVERIFY(prefs.getCustomFolders().find("ThatFolder")->second.contains("myothermachine"));
+
+	// delete the folder outright
+	QVERIFY(prefs.deleteCustomFolder("ThatFolder"));
+	QVERIFY(prefs.getCustomFolders().empty());
+	QVERIFY(customFoldersChanged == 5);
+}
 
 
 //-------------------------------------------------

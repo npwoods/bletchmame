@@ -163,6 +163,8 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 			m_ui->machinesFolderTreeView->setExpanded(index, true);
 		}
 	});
+	connect(&m_prefs, &Preferences::folderPrefsChanged,		this, [&machineFolderTreeModel]() { machineFolderTreeModel.refresh(); });
+	connect(&m_prefs, &Preferences::customFoldersChanged,	this, [&machineFolderTreeModel]() { machineFolderTreeModel.refresh(); });
 
 	// set up software list view
 	SoftwareListItemModel &softwareListItemModel = *new SoftwareListItemModel(
@@ -375,19 +377,19 @@ void MainPanel::launchingListContextMenu(const QPoint &pos, const software_list:
 
 	// build the custom folder menu
 	QMenu &customFolderMenu = *popupMenu.addMenu("Add to custom folder");
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
+	const std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
 	for (auto &pair : customFolders)
 	{
 		// create the custom folder menu item
 		const QString &customFolderName = pair.first;
-		auto &customFolderSystems = pair.second;
-		QAction &action = *customFolderMenu.addAction(customFolderName, [&customFolderSystems, &machine]()
+		const std::set<QString> &customFolderMachines = pair.second;
+		QAction &action = *customFolderMenu.addAction(customFolderName, [this, &customFolderName, &machine]()
 		{
-			customFolderSystems.emplace(machine.name());
+			m_prefs.addMachineToCustomFolder(customFolderName, machine.name());
 		});
 
 		// disable and check it if its already in the folder
-		bool alreadyInFolder = util::contains(customFolderSystems, machine.name());
+		bool alreadyInFolder = util::contains(customFolderMachines, machine.name());
 		action.setEnabled(!alreadyInFolder);
 	}
 	if (customFolders.size() > 0)
@@ -402,14 +404,8 @@ void MainPanel::launchingListContextMenu(const QPoint &pos, const software_list:
 		dlg.setWindowTitle("Add to new custom folder");
 		if (dlg.exec() == QDialog::Accepted)
 		{
-			// create the new folder
-			std::set<QString> &newFolder = customFolders.emplace(dlg.newCustomFolderName(), std::set<QString>()).first->second;
-
-			// add this machine
-			newFolder.emplace(machine.name());
-
-			// and refresh the folder list
-			machineFolderTreeModel().refresh();
+			// add this machine to the custom folder
+			m_prefs.addMachineToCustomFolder(dlg.newCustomFolderName(), machine.name());
 		}
 	});
 
@@ -417,13 +413,10 @@ void MainPanel::launchingListContextMenu(const QPoint &pos, const software_list:
 	QString currentCustomFolder = currentlySelectedCustomFolder();
 	if (!currentCustomFolder.isEmpty())
 	{
-		popupMenu.addAction(QString("Remove from \"%1\"").arg(currentCustomFolder), [this, &customFolders, &currentCustomFolder, &machine]()
+		popupMenu.addAction(QString("Remove from \"%1\"").arg(currentCustomFolder), [this, &currentCustomFolder, &machine]()
 		{
 			// erase this item
-			customFolders[currentCustomFolder].erase(machine.name());
-
-			// and refresh the folder list
-			machineFolderTreeModel().refresh();
+			m_prefs.removeMachineFromCustomFolder(currentCustomFolder, machine.name());
 		});
 	}
 
@@ -1245,7 +1238,6 @@ void MainPanel::on_machinesFolderTreeView_customContextMenuRequested(const QPoin
 			FolderPrefs folderPrefs = m_prefs.getFolderPrefs(desc.id());
 			folderPrefs.m_shown = !folderPrefs.m_shown;
 			m_prefs.setFolderPrefs(desc.id(), std::move(folderPrefs));
-			machineFolderTreeModel().refresh();
 		});
 		action.setCheckable(true);
 		action.setChecked(m_prefs.getFolderPrefs(desc.id()).m_shown);
