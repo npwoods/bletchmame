@@ -31,10 +31,12 @@ public:
 	// accessors
 	bool isResetUiChecked() const;
 	bool isResetPathsChecked() const;
+	bool isResetFoldersChecked() const;
 
 private:
 	std::unique_ptr<Ui::ResetPreferencesDialog> m_ui;
 
+	auto allCheckBoxes();
 	void updateOkButton();
 };
 

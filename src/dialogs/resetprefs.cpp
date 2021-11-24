@@ -17,6 +17,23 @@
 //**************************************************************************
 
 //-------------------------------------------------
+//  allCheckBoxes
+//-------------------------------------------------
+
+auto ResetPreferencesDialog::allCheckBoxes()
+{
+	std::array<QCheckBox *, 4> results =
+	{
+		m_ui->resetUiCheckBox,
+		m_ui->resetUiCheckBox,
+		m_ui->resetPathsCheckBox,
+		m_ui->resetFoldersCheckBox
+	};
+	return results;
+}
+
+
+//-------------------------------------------------
 //  ctor
 //-------------------------------------------------
 
@@ -28,8 +45,8 @@ ResetPreferencesDialog::ResetPreferencesDialog(QWidget &parent)
 	m_ui->setupUi(this);
 
 	// connect clicked events
-	connect(m_ui->resetUiCheckBox,		&QAbstractButton::toggled, this, [this](bool checked) { updateOkButton(); });
-	connect(m_ui->resetPathsCheckBox,	&QAbstractButton::toggled, this, [this](bool checked) { updateOkButton(); });
+	for (QCheckBox *checkBox : allCheckBoxes())
+		connect(checkBox, &QAbstractButton::toggled, this, [this](bool checked) { updateOkButton(); });
 
 	// update the OK button
 	updateOkButton();
@@ -52,7 +69,15 @@ ResetPreferencesDialog::~ResetPreferencesDialog()
 void ResetPreferencesDialog::updateOkButton()
 {
 	// anything checked?
-	bool anyChecked = isResetUiChecked() || isResetPathsChecked();
+	bool anyChecked = false;
+	for (QCheckBox *checkBox : allCheckBoxes())
+	{
+		if (checkBox->isChecked())
+		{
+			anyChecked = true;
+			break;
+		}
+	}
 
 	// update the ok button accordingly
 	QPushButton &okButton = *m_ui->buttonBox->button(QDialogButtonBox::Ok);
@@ -77,4 +102,14 @@ bool ResetPreferencesDialog::isResetUiChecked() const
 bool ResetPreferencesDialog::isResetPathsChecked() const
 {
 	return m_ui->resetPathsCheckBox->isChecked();
+}
+
+
+//-------------------------------------------------
+//  isResetFoldersChecked
+//-------------------------------------------------
+
+bool ResetPreferencesDialog::isResetFoldersChecked() const
+{
+	return m_ui->resetFoldersCheckBox->isChecked();
 }

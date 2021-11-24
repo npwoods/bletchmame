@@ -1498,7 +1498,8 @@ void MainWindow::on_actionResetToDefault_triggered()
 	{
 		m_prefs.resetToDefaults(
 			dialog.isResetUiChecked(),
-			dialog.isResetPathsChecked());
+			dialog.isResetPathsChecked(),
+			dialog.isResetFoldersChecked());
 	}
 }
 
