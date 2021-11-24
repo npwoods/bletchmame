@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs_test.cpp
 
@@ -30,6 +30,7 @@ private slots:
 	void substitutions1();
 	void substitutions2();
 	void substitutions3();
+	void setFolderPrefs();
 
 private:
 	static void loadSamplePrefsXml(QBuffer &buffer);
@@ -254,6 +255,36 @@ void Preferences::Test::substitutions(const char *input, const char *expected)
 void Preferences::Test::substitutions1() { substitutions("C:\\foo", "C:\\foo"); }
 void Preferences::Test::substitutions2() { substitutions("C:\\foo (with parens)", "C:\\foo (with parens)"); }
 void Preferences::Test::substitutions3() { substitutions("C:\\$(VARNAME)\\foo", "C:\\vardata\\foo"); }
+
+
+//-------------------------------------------------
+//  setFolderPrefs
+//-------------------------------------------------
+
+void Preferences::Test::setFolderPrefs()
+{
+	Preferences prefs;
+	int folderPrefsChanged = 0;
+	connect(&prefs, &Preferences::folderPrefsChanged, this, [&]() { folderPrefsChanged++; });
+
+	// initial verifications
+	QVERIFY(prefs.getFolderPrefs("foo").m_shown);
+	QVERIFY(folderPrefsChanged == 0);
+
+	// set shown to true - should not change anything
+	FolderPrefs folderPrefs = FolderPrefs();
+	folderPrefs.m_shown = true;
+	prefs.setFolderPrefs("foo", std::move(folderPrefs));
+	QVERIFY(prefs.getFolderPrefs("foo").m_shown);
+	QVERIFY(folderPrefsChanged == 0);
+
+	// set shown to false - this should be a change
+	folderPrefs = FolderPrefs();
+	folderPrefs.m_shown = false;
+	prefs.setFolderPrefs("foo", std::move(folderPrefs));
+	QVERIFY(!prefs.getFolderPrefs("foo").m_shown);
+	QVERIFY(folderPrefsChanged == 1);
+}
 
 
 //-------------------------------------------------

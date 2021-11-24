@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs.cpp
 
@@ -437,10 +437,20 @@ FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 
 void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 {
-	if (prefs == FolderPrefs())
-		m_folderPrefs.erase(folder);
-	else
-		m_folderPrefs[folder] = std::move(prefs);
+	auto iter = m_folderPrefs.find(folder);
+	bool isSame = (prefs == FolderPrefs())
+		? iter == m_folderPrefs.end()
+		: iter != m_folderPrefs.end() && iter->second == prefs;
+
+	if (!isSame)
+	{
+		if (prefs == FolderPrefs())
+			m_folderPrefs.erase(folder);
+		else
+			m_folderPrefs[folder] = std::move(prefs);
+
+		emit folderPrefsChanged();
+	}
 }
 
 

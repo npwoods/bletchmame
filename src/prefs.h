@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs.h
 
@@ -207,6 +207,9 @@ signals:
 	// general status
 	void selectedTabChanged(list_view_type newSelectedTab);
 	void auditingStateChanged();
+
+	// folders
+	void folderPrefsChanged();
 
 	// global paths changed
 	void globalPathEmuExecutableChanged(const QString &newPath);

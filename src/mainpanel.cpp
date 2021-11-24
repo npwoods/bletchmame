@@ -163,6 +163,7 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 			m_ui->machinesFolderTreeView->setExpanded(index, true);
 		}
 	});
+	connect(&m_prefs, &Preferences::folderPrefsChanged,		this, [&machineFolderTreeModel]() { machineFolderTreeModel.refresh(); });
 
 	// set up software list view
 	SoftwareListItemModel &softwareListItemModel = *new SoftwareListItemModel(
@@ -1245,7 +1246,6 @@ void MainPanel::on_machinesFolderTreeView_customContextMenuRequested(const QPoin
 			FolderPrefs folderPrefs = m_prefs.getFolderPrefs(desc.id());
 			folderPrefs.m_shown = !folderPrefs.m_shown;
 			m_prefs.setFolderPrefs(desc.id(), std::move(folderPrefs));
-			machineFolderTreeModel().refresh();
 		});
 		action.setCheckable(true);
 		action.setChecked(m_prefs.getFolderPrefs(desc.id()).m_shown);
