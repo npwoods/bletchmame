@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.10 (TBD)
+- 2.10 (2021-Dec-4)
 	- Added an "Available" folder to the machine tree view (like MAMEUI)
 	- Added the ability to reset settings to default
 	- Current selections and auditing results will be described in the status bar
