@@ -63,7 +63,7 @@ jobs:
     - name: Install old CMake (needed for Qt6 build)
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        pacman -U http://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-cmake-3.21.3-1-any.pkg.tar.zst
+        pacman -U --noconfirm http://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-cmake-3.21.3-1-any.pkg.tar.zst
 
     # Retrieve Qt6
     - name: Retrieve Qt6
