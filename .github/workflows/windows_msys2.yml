@@ -60,6 +60,12 @@ jobs:
         mkdir C:\deps
         mklink /J deps C:\deps
 
+    # Install old CMake (needed for Qt6 build)
+    - name: Install old CMake (needed for Qt6 build)
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        pacman -U --noconfirm http://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-cmake-3.21.3-1-any.pkg.tar.zst
+
     # Retrieve Qt6
     - name: Retrieve Qt6
       if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -137,7 +143,7 @@ jobs:
 
     # Configure AWS Credentials
     - name: Configure AWS Credentials
-      if: success() && github.ref == 'refs/heads/master'
+      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -146,6 +152,6 @@ jobs:
       
     # Deploy Artifacts to S3
     - name: Deploy Artifacts to S3
-      if: success() && github.ref == 'refs/heads/master'
+      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
       shell: bash
       run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete

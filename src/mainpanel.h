@@ -28,6 +28,7 @@ class QTableView;
 class QSortFilterProxyModel;
 QT_END_NAMESPACE
 
+class AuditableListItemModel;
 class AuditDialog;
 class MachineFolderTreeModel;
 class MachineListItemModel;
@@ -46,6 +47,7 @@ public:
 	virtual void auditIfAppropriate(const software_list::software &software) = 0;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) = 0;
 	virtual software_list_collection &getSoftwareListCollection() = 0;
+	virtual void updateAuditTimer() = 0;
 };
 
 
@@ -56,14 +58,20 @@ class MainPanel : public QWidget
 	Q_OBJECT
 
 public:
+	static const int STATUS_ENTRIES = 3;
+
 	MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost &host, QWidget *parent = nullptr);
 	~MainPanel();
 
+	// accessors
+	const auto &status() const { return m_status; }
+
 	// methods
 	void updateTabContents();
-	void pathsChanged(const std::vector<Preferences::global_path_type> &changedPaths);
+	AuditableListItemModel *currentAuditableListItemModel();
 	std::optional<info::machine> currentlySelectedMachine() const;
 	const software_list::software *currentlySelectedSoftware() const;
+	std::shared_ptr<profiles::profile> currentlySelectedProfile();
 
 	// auditing
 	void setAuditStatuses(const std::vector<AuditResult> &results);
@@ -75,6 +83,8 @@ public:
 	static QString auditThisActionText(QString &&text);
 
 private slots:
+	void setStatus(const std::array<QString, STATUS_ENTRIES> &status);
+
 	void on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos);
 	void on_machinesTableView_activated(const QModelIndex &index);
 	void on_machinesTableView_customContextMenuRequested(const QPoint &pos);
@@ -85,28 +95,34 @@ private slots:
 	void on_tabWidget_currentChanged(int index);
 	void on_machinesSplitter_splitterMoved(int pos, int index);
 
+signals:
+	void statusChanged(const std::array<QString, STATUS_ENTRIES> &newStatus);
+
 private:
 	class SnapshotViewEventFilter;
 
 	// variables configured at startup
-	std::unique_ptr<Ui::MainPanel>													m_ui;
-	Preferences &																	m_prefs;
-	IMainPanelHost &																m_host;
+	std::unique_ptr<Ui::MainPanel>		m_ui;
+	Preferences &						m_prefs;
+	IMainPanelHost &					m_host;
 
 	// information retrieved by -listxml
-	info::database &																m_infoDb;
+	info::database &					m_infoDb;
 
 	// other
-	QString																			m_currentSoftwareList;
-	IconLoader																		m_iconLoader;
-	QPixmap																			m_currentSnapshot;
-	std::vector<QString>															m_expandedTreeItems;
+	QString								m_currentSoftwareList;
+	IconLoader							m_iconLoader;
+	QPixmap								m_currentSnapshot;
+	std::vector<QString>				m_expandedTreeItems;
+	std::array<QString, STATUS_ENTRIES>	m_status;
 
 	// methods
 	void run(const info::machine &machine, const software_list::software *software = nullptr);
 	void run(std::shared_ptr<profiles::profile> &&profile);
 	void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior);
 	void updateSoftwareList();
+	void updateStatusFromSelection();
+	QString machineStatusString(const info::machine &machine) const;
 	void launchingListContextMenu(const QPoint &pos, const software_list::software *software = nullptr);
 	void createProfile(const info::machine &machine, const software_list::software *software);
 	static bool DirExistsOrMake(const QString &path);

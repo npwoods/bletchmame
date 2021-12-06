@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs.h
 
@@ -17,6 +17,7 @@
 #include <set>
 
 #include <QDataStream>
+#include <QDir>
 #include <QSize>
 
 #include "utility.h"
@@ -51,8 +52,9 @@ public:
 };
 
 
-class Preferences
+class Preferences : public QObject
 {
+	Q_OBJECT
 public:
 	class Test;
 
@@ -121,15 +123,19 @@ public:
 		Max = Manual
 	};
 
-	Preferences();
+	typedef std::map<QString, std::set<QString>> CustomFoldersMap;
+
+	// ctor
+	Preferences(std::optional<QDir> &&configDirectory = std::nullopt, QObject *parent = nullptr);
 	Preferences(const Preferences &) = delete;
 	Preferences(Preferences &&) = delete;
 
+	void resetToDefaults(bool resetUi, bool resetPaths, bool resetFolders);
+
 	static PathCategory getPathCategory(global_path_type path_type);
 	static PathCategory getPathCategory(machine_path_type path_type);
-	static void ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path);
 
-	const QString &getGlobalPath(global_path_type type) const											{ return m_paths[static_cast<size_t>(type)]; }
+	const QString &getGlobalPath(global_path_type type) const											{ return m_globalPathsInfo.m_paths[static_cast<size_t>(type)]; }
 	void setGlobalPath(global_path_type type, QString &&path);
 	void setGlobalPath(global_path_type type, const QString &path);
 	
@@ -146,8 +152,8 @@ public:
 	WindowState getWindowState() const																	{ return m_windowState; }
 	void setWindowState(WindowState &state)																{ m_windowState = state; }
 
-	list_view_type getSelectedTab()																		{ return m_selected_tab; }
-	void setSelectedTab(list_view_type type)															{ m_selected_tab = type; }
+	list_view_type getSelectedTab() const																{ return m_selected_tab; }
+	void setSelectedTab(list_view_type type);
 
 	const QString &getMachineFolderTreeSelection() const												{ return m_machine_folder_tree_selection; }
 	void setMachineFolderTreeSelection(QString &&selection)												{ m_machine_folder_tree_selection = std::move(selection); }
@@ -158,8 +164,11 @@ public:
 	FolderPrefs getFolderPrefs(const QString &folder) const;
 	void setFolderPrefs(const QString &folder, FolderPrefs &&prefs);
 
-	const std::map<QString, std::set<QString>> &getCustomFolders() const								{ return m_custom_folders; }
-	std::map<QString, std::set<QString>> &getCustomFolders()											{ return m_custom_folders; }
+	const CustomFoldersMap &getCustomFolders() const													{ return m_customFolders; }
+	bool addMachineToCustomFolder(const QString &customFolderName, const QString &machineName);
+	bool removeMachineFromCustomFolder(const QString &customFolderName, const QString &machineName);
+	bool renameCustomFolder(const QString &oldCustomFolderName, QString &&newCustomFolderName);
+	bool deleteCustomFolder(const QString &customFolderName);
 
 	const std::unordered_map<std::u8string, ColumnPrefs> &getColumnPrefs(const char8_t *view_type)			{ return m_column_prefs[view_type]; }
 	void setColumnPrefs(const char8_t *view_type, std::unordered_map<std::u8string, ColumnPrefs> &&prefs)	{ m_column_prefs[view_type]  = std::move(prefs); }
@@ -171,11 +180,11 @@ public:
 	const QString &getSearchBoxText(const char8_t *view_type) const										{ return m_list_view_filter[view_type]; }
 	void setSearchBoxText(const char8_t *view_type, QString &&search_box_text)							{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
-	bool getMenuBarShown() const																		{ return m_menu_bar_shown; }
-	void setMenuBarShown(bool menu_bar_shown)															{ m_menu_bar_shown = menu_bar_shown; }
+	bool getMenuBarShown() const																		{ return m_globalUiInfo.m_menuBarShown; }
+	void setMenuBarShown(bool menu_bar_shown)															{ m_globalUiInfo.m_menuBarShown = menu_bar_shown; }
 
-	AuditingState getAuditingState() const																{ return m_auditingState; }
-	void setAuditingState(AuditingState auditingState)													{ m_auditingState = auditingState; }
+	AuditingState getAuditingState() const																{ return m_globalUiInfo.m_auditingState; }
+	void setAuditingState(AuditingState auditingState);
 
 	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
 	void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
@@ -185,23 +194,68 @@ public:
 
 	AuditStatus getMachineAuditStatus(const QString & machine_name) const;
 	void setMachineAuditStatus(const QString &machine_name, AuditStatus status);
-	void dropAllMachineAuditStatuses();
+	void bulkDropMachineAuditStatuses(const std::function<bool(const QString &machineName)> &predicate = {});
 
 	AuditStatus getSoftwareAuditStatus(const QString &softwareList, const QString &software) const;
 	void setSoftwareAuditStatus(const QString &softwareList, const QString &software, AuditStatus status);
-	void dropAllSoftwareAuditStatuses();
+	void bulkDropSoftwareAuditStatuses();
 
 	QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
 	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
 
-	static QString getConfigDirectory(bool ensure_directory_exists = false);
-
 	bool load();
 	bool load(QIODevice &input);
 	void save();
 
+signals:
+	// general status
+	void selectedTabChanged(list_view_type newSelectedTab);
+	void auditingStateChanged();
+
+	// folders
+	void folderPrefsChanged();
+	void customFoldersChanged();
+
+	// global paths changed
+	void globalPathEmuExecutableChanged(const QString &newPath);
+	void globalPathRomsChanged(const QString &newPath);
+	void globalPathSamplesChanged(const QString &newPath);
+	void globalPathIconsChanged(const QString &newPath);
+	void globalPathProfilesChanged(const QString &newPath);
+	void globalPathSnapshotsChanged(const QString &newPath);
+
+	// bulk dropping of audit statuses
+	void bulkDroppedMachineAuditStatuses();
+	void bulkDroppedSoftwareAuditStatuses();
+
 private:
+	// info pertinent to global paths state
+	struct GlobalUiInfo
+	{
+		// ctor
+		GlobalUiInfo();
+		GlobalUiInfo(const GlobalUiInfo &) = delete;
+		GlobalUiInfo(GlobalUiInfo &&) = default;
+
+		// members
+		bool																					m_menuBarShown;
+		AuditingState																			m_auditingState;
+	};
+
+	// info pertinent to global paths state
+	struct GlobalPathsInfo
+	{
+		// ctor
+		GlobalPathsInfo(const std::optional<QDir> &configDirectory);
+		GlobalPathsInfo(const GlobalPathsInfo &) = delete;
+		GlobalPathsInfo(GlobalPathsInfo &&) = default;
+
+		// members
+		std::array<QString, util::enum_count<Preferences::global_path_type>()>					m_paths;
+	};
+
+	// info specific to each machine
 	struct MachineInfo
 	{
 		MachineInfo();
@@ -217,9 +271,13 @@ private:
 		std::map<QString, std::vector<QString>>     m_recentDeviceFiles;
 	};
 
+	// statics
 	static std::array<const char *, util::enum_count<Preferences::global_path_type>()>			s_path_names;
 
-	std::array<QString, util::enum_count<Preferences::global_path_type>()>						m_paths;
+	// members
+	std::optional<QDir>																			m_configDirectory;
+	GlobalUiInfo																				m_globalUiInfo;
+	GlobalPathsInfo																				m_globalPathsInfo;
 	QString                                                                 					m_mame_extra_arguments;
 	std::optional<QSize>																		m_size;
 	WindowState																					m_windowState;
@@ -229,17 +287,19 @@ private:
 	list_view_type																				m_selected_tab;
 	QString																						m_machine_folder_tree_selection;
 	QList<int>																					m_machine_splitter_sizes;
-	std::map<QString, FolderPrefs>																m_folder_prefs;
-	std::map<QString, std::set<QString>>														m_custom_folders;
+	std::map<QString, FolderPrefs>																m_folderPrefs;
+	std::map<QString, std::set<QString>>														m_customFolders;
 	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
-	bool																						m_menu_bar_shown;
-	AuditingState																				m_auditingState;
 
+	// private methods
 	void save(QIODevice &output);
-	QString getFileName(bool ensure_directory_exists);
+	QString getPreferencesFileName(bool ensureDirectoryExists) const;
 	const MachineInfo *getMachineInfo(const QString &machine_name) const;
 	void garbageCollectMachineInfo();
+	void setGlobalInfo(GlobalUiInfo &&globalInfo);
+	void setGlobalInfo(GlobalPathsInfo &&globalInfo);
+	void internalSetGlobalPath(global_path_type type, QString &&path);
 };
 
 #endif // PREFS_H

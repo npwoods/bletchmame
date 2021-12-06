@@ -14,6 +14,7 @@
 #include <QFileDialog>
 #include <memory.h>
 
+#include "auditcursor.h"
 #include "auditqueue.h"
 #include "info.h"
 #include "mainpanel.h"
@@ -96,6 +97,7 @@ private slots:
 	void on_actionConfiguration_triggered();
 	void on_actionDipSwitches_triggered();
 	void on_actionPaths_triggered();
+	void on_actionResetToDefault_triggered();
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
@@ -147,6 +149,7 @@ private:
 	TaskDispatcher						m_taskDispatcher;
 	RunMachineTask::ptr					m_currentRunMachineTask;
 	std::vector<Aspect::ptr>			m_aspects;
+	QLabel *							m_statusLabels[2];
 
 	// information retrieved by -version
 	bool								m_promptIfMameNotFound;
@@ -166,6 +169,7 @@ private:
 	AuditQueue							m_auditQueue;
 	QTimer *							m_auditTimer;
 	unsigned int						m_maximumConcurrentAuditTasks;
+	AuditCursor							m_auditCursor;
 
 	// other
 	observable::value<bool>				m_menu_bar_shown;
@@ -219,7 +223,8 @@ private:
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
 	virtual software_list_collection &getSoftwareListCollection() override final;
 	QString preflightCheck() const;
-	QString GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode);
+	void associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, const QString &machineName, Preferences::machine_path_type pathType, bool pathIsFile);
+	QString getFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode, bool pathIsFile);
 	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
 	QString getTitleBarText();
 	void issue(const std::vector<QString> &args);
@@ -233,14 +238,18 @@ private:
 	void changeThrottleRate(int adjustment);
 	void changeSound(bool sound_enabled);
 	void ensureProperFocus();
-	void changeAuditingState(Preferences::AuditingState auditingState);
 	virtual void auditIfAppropriate(const info::machine &machine) override;
 	virtual void auditIfAppropriate(const software_list::software &software) override;
 	bool canAutomaticallyAudit() const;
-	void resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit);
-	void updateAuditTimer();
+	virtual void updateAuditTimer() override final;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
+	void auditTimerProc();
 	void dispatchAuditTasks();
+	void reportAuditResults(const std::vector<AuditResult> &results);
+	bool reportAuditResult(const AuditResult &result);
+	const QString *auditIdentifierString(const AuditIdentifier &identifier) const;
+	static QString auditStatusString(AuditStatus status);
+	void addLowPriorityAudits();
 };
 
 #endif // MAINWINDOW_H

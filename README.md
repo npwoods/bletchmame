@@ -8,7 +8,16 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.10 (TBD)
+- 2.10 (2021-Dec-4)
+	- Added an "Available" folder to the machine tree view (like MAMEUI)
+	- Added the ability to reset settings to default
+	- Current selections and auditing results will be described in the status bar
+	- Various improvements to auditing
+		- Media auditing will now proceed even when visible items have been audited
+		- Changing ROMs and Samples paths will only force reaudits of items that use the relevant media
+		- Fixed some bugs that could cause audit icons to not be properly painted
+	- Hash paths will now default to 'hash' in the MAME directory
+	- Fixed a bug that could cause switching between paths in the paths dialog to not persist changes
 	- Various improvements to the CI/CD pipeline [Davide Cavalca]
 
 - 2.9 (2021-Oct-23)

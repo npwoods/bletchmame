@@ -71,6 +71,7 @@ private:
 	{
 		Cpu,
 		Folder,
+		FolderAvailable,
 		FolderOpen,
 		HardDisk,
 		Manufacturer,
@@ -85,7 +86,7 @@ private:
 	{
 	public:
 		// ctor
-		FolderEntry(const QString &id, FolderIcon icon, const QString &text, std::function<bool(const info::machine &machine)> &&filter);
+		template<typename TFunc> FolderEntry(const QString &id, FolderIcon icon, const QString &text, TFunc filter);
 		FolderEntry(const QString &id, FolderIcon icon, const QString &text, const std::vector<FolderEntry> &children);
 
 		// accessors
@@ -110,7 +111,7 @@ private:
 
 	info::database &							m_infoDb;
 	Preferences &								m_prefs;
-	std::array<RootFolderDesc, 18>				m_rootFolderList;
+	std::array<RootFolderDesc, 19>				m_rootFolderList;
 	std::vector<FolderEntry>					m_root;
 	std::vector<FolderEntry>					m_bios;
 	std::vector<FolderEntry>					m_cpu;

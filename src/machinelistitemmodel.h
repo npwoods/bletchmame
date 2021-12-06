@@ -9,8 +9,7 @@
 #ifndef MACHINELISTITEMMODEL_H
 #define MACHINELISTITEMMODEL_H
 
-#include <QAbstractItemModel>
-
+#include "auditablelistitemmodel.h"
 #include "info.h"
 
 
@@ -23,7 +22,7 @@ class MachineAuditIdentifier;
 
 // ======================> MachineListItemModel
 
-class MachineListItemModel : public QAbstractItemModel
+class MachineListItemModel : public AuditableListItemModel
 {
 public:
 	enum class Column
@@ -51,16 +50,21 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const override;
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	virtual AuditIdentifier getAuditIdentifier(int row) const override;
+	virtual bool isAuditIdentifierPresent(const AuditIdentifier &identifier) const override;
 
 private:
 	info::database &									m_infoDb;
 	IconLoader *										m_iconLoader;
 	std::function<bool(const info::machine &machine)>	m_machineFilter;
 	std::vector<int>									m_indexes;
+	std::unordered_map<int, int>						m_reverseIndexes;
 	std::function<void(info::machine)>					m_machineIconAccessedCallback;
 
 	void iconsChanged(int startIndex, int endIndex);
 	void populateIndexes();
+	info::machine machineFromRow(int row) const;
+	bool isMachinePresent(const info::machine &machine) const;
 };
 
 #endif // MACHINELISTITEMMODEL_H

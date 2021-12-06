@@ -35,6 +35,7 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	, m_prefs(prefs)
 	, m_rootFolderList({
 		RootFolderDesc("all",			"All Systems"),
+		RootFolderDesc("available",		"Available"),
 		RootFolderDesc("bios",			"BIOS"),
 		RootFolderDesc("clones",		"Clones"),
 		RootFolderDesc("chd",			"CHD"),
@@ -94,14 +95,15 @@ MachineFolderTreeModel::FolderIconResourceNameArray MachineFolderTreeModel::getF
 {
 	FolderIconResourceNameArray result;
 	std::fill(result.begin(), result.end(), nullptr);
-	result[(int)FolderIcon::Cpu]			= ":/resources/cpu.ico";
-	result[(int)FolderIcon::Folder]			= ":/resources/folder.ico";
-	result[(int)FolderIcon::FolderOpen]		= ":/resources/foldopen.ico";
-	result[(int)FolderIcon::HardDisk]		= ":/resources/harddisk.ico";
-	result[(int)FolderIcon::Manufacturer]	= ":/resources/manufact.ico";
-	result[(int)FolderIcon::Sound]			= ":/resources/sound.ico";
-	result[(int)FolderIcon::Source]			= ":/resources/source.ico";
-	result[(int)FolderIcon::Year]			= ":/resources/year.ico";
+	result[(int)FolderIcon::Cpu]				= ":/resources/cpu.ico";
+	result[(int)FolderIcon::Folder]				= ":/resources/folder.ico";
+	result[(int)FolderIcon::FolderAvailable]	= ":/resources/foldavail.ico";
+	result[(int)FolderIcon::FolderOpen]			= ":/resources/foldopen.ico";
+	result[(int)FolderIcon::HardDisk]			= ":/resources/harddisk.ico";
+	result[(int)FolderIcon::Manufacturer]		= ":/resources/manufact.ico";
+	result[(int)FolderIcon::Sound]				= ":/resources/sound.ico";
+	result[(int)FolderIcon::Source]				= ":/resources/source.ico";
+	result[(int)FolderIcon::Year]				= ":/resources/year.ico";
 	return result;
 }
 
@@ -201,7 +203,9 @@ void MachineFolderTreeModel::populateVariableFolders()
 		if (folderPrefs.m_shown)
 		{
 			if (!strcmp(desc.id(), "all"))
-				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), std::function<bool(const info::machine &machine)>());
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return true; });
+			else if (!strcmp(desc.id(), "available"))
+				m_root.emplace_back(desc.id(), FolderIcon::FolderAvailable, desc.displayName(), [this](const info::machine &machine) { return m_prefs.getMachineAuditStatus(machine.name()) == AuditStatus::Found; });
 			else if (!strcmp(desc.id(), "bios"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), m_bios);
 			else if (!strcmp(desc.id(), "chd"))
@@ -365,31 +369,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 bool MachineFolderTreeModel::renameFolder(const QModelIndex &index, QString &&newName)
 {
 	QString customFolder = customFolderForModelIndex(index);
-	if (customFolder.isEmpty())
-		return false;
-
-	// is this just a no-op?
-	if (customFolder == newName)
-		return true;
-
-	// get the custom folders map
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
-
-	// find this entry
-	auto iter = customFolders.find(customFolder);
-	if (iter == customFolders.end())
-		return false;
-
-	// detach the list of systems
-	std::set<QString> systems = std::move(iter->second);
-	customFolders.erase(iter);
-
-	// and readd it
-	customFolders.emplace(std::move(newName), std::move(systems));
-
-	// refresh and we're done!
-	refresh();
-	return true;
+	return !customFolder.isEmpty() && m_prefs.renameCustomFolder(customFolder, std::move(newName));
 }
 
 
@@ -400,23 +380,7 @@ bool MachineFolderTreeModel::renameFolder(const QModelIndex &index, QString &&ne
 bool MachineFolderTreeModel::deleteFolder(const QModelIndex &index)
 {
 	QString customFolder = customFolderForModelIndex(index);
-	if (customFolder.isEmpty())
-		return false;
-
-	// get the custom folders map
-	std::map<QString, std::set<QString>> &customFolders = m_prefs.getCustomFolders();
-
-	// find this entry
-	auto iter = customFolders.find(customFolder);
-	if (iter == customFolders.end())
-		return false;
-
-	// erase it
-	customFolders.erase(iter);
-
-	// refresh and we're done!
-	refresh();
-	return true;
+	return !customFolder.isEmpty() && m_prefs.deleteCustomFolder(customFolder);
 }
 
 
@@ -639,8 +603,9 @@ Qt::ItemFlags MachineFolderTreeModel::flags(const QModelIndex &index) const
 //  FolderEntry ctor
 //-------------------------------------------------
 
-MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, std::function<bool(const info::machine &machine)> &&filter)
-	: FolderEntry(id, icon, text, std::move(filter), nullptr)
+template<typename TFunc>
+MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, TFunc filter)
+	: FolderEntry(id, icon, text, [filter](const info::machine &machine) { return machine.runnable() && filter(machine); }, nullptr)
 {
 }
 
@@ -650,7 +615,7 @@ MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon i
 //-------------------------------------------------
 
 MachineFolderTreeModel::FolderEntry::FolderEntry(const QString &id, FolderIcon icon, const QString &text, const std::vector<FolderEntry> &children)
-	: FolderEntry(id, icon, text, { }, &children)
+	: FolderEntry(id, icon, text, [](const info::machine &machine) { return machine.runnable(); }, &children)
 {
 }
 

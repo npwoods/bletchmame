@@ -12,7 +12,7 @@
 #include <QAbstractItemModel>
 
 #include "softwarelist.h"
-#include "audittask.h"
+#include "auditablelistitemmodel.h"
 
 #define SOFTLIST_VIEW_DESC_NAME u8"softlist"
 
@@ -25,7 +25,7 @@ class IconLoader;
 
 // ======================> SoftwareListItemModel
 
-class SoftwareListItemModel : public QAbstractItemModel
+class SoftwareListItemModel : public AuditableListItemModel
 {
 public:
 	enum class Column
@@ -38,7 +38,7 @@ public:
 		Max = Manufacturer
 	};
 
-	SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent);
+	SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent = nullptr);
 
 	// methods
 	void load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = "");
@@ -56,6 +56,8 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const override;
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	virtual AuditIdentifier getAuditIdentifier(int row) const override;
+	virtual bool isAuditIdentifierPresent(const AuditIdentifier &identifier) const override;
 
 private:
 	// ======================> SoftwareAndPart

@@ -38,19 +38,16 @@ const QStringList PathsDialog::s_combo_box_strings = buildComboBoxStrings();
 
 PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 	: QDialog(&parent)
-	, m_prefs(prefs)
-	, m_listViewModelCurrentPath({ })
 {
 	m_ui = std::make_unique<Ui::PathsDialog>();
 	m_ui->setupUi(this);
 
-	// path data
-	for (size_t i = 0; i < PATH_COUNT; i++)
-		m_pathLists[i] = m_prefs.getGlobalPath(static_cast<Preferences::global_path_type>(i));
-
-	// list view
+	// list view model
 	PathsListViewModel &model = *new PathsListViewModel([this](QString &path) { return canonicalizeAndValidate(path); }, this);
 	m_ui->listView->setModel(&model);
+
+	// dialog model
+	m_model.emplace(prefs, model);
 
 	// combo box
 	QStringListModel &comboBoxModel = *new QStringListModel(s_combo_box_strings, this);
@@ -86,62 +83,9 @@ PathsDialog::~PathsDialog()
 //  persist - persist all of our state to prefs
 //-------------------------------------------------
 
-std::vector<Preferences::global_path_type> PathsDialog::persist()
+void PathsDialog::persist()
 {
-	// first we want to make sure that m_pathLists is up to data
-	extractPathsFromListView();
-
-	// we want to return a vector identifying the paths that got changed
-	std::vector<Preferences::global_path_type> changedPaths;
-	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
-	{
-		QString &path = m_pathLists[static_cast<size_t>(type)];
-
-		// has this path changed?
-		if (path != m_prefs.getGlobalPath(type))
-		{
-			// if so, record that it changed
-			m_prefs.setGlobalPath(type, std::move(path));
-			changedPaths.push_back(type);
-		}
-	}
-	return changedPaths;
-}
-
-
-//-------------------------------------------------
-//  extractPathsFromListView
-//-------------------------------------------------
-
-void PathsDialog::extractPathsFromListView()
-{
-	if (m_listViewModelCurrentPath.has_value())
-	{
-		// reflect changes on the m_current_path_list back into m_pathLists 
-		QStringList paths = listModel().paths();
-		QString pathString = joinPaths(paths);
-		m_pathLists[(int)m_listViewModelCurrentPath.value()] = std::move(pathString);
-	}
-}
-
-
-//-------------------------------------------------
-//  updateCurrentPathList
-//-------------------------------------------------
-
-void PathsDialog::updateCurrentPathList()
-{
-	const Preferences::global_path_type currentPathType = getCurrentPath();
-	Preferences::PathCategory category = Preferences::getPathCategory(currentPathType);
-
-	QStringList paths = splitPaths(m_pathLists[(int)currentPathType]);
-
-	bool isMulti = category == Preferences::PathCategory::MultipleDirectories
-		|| category == Preferences::PathCategory::MultipleDirectoriesOrArchives;
-
-	listModel().setPaths(std::move(paths), isMulti);
-
-	m_listViewModelCurrentPath = currentPathType;
+	m_model->persist();
 }
 
 
@@ -268,7 +212,7 @@ bool PathsDialog::canonicalizeAndValidate(QString &path)
 
 	// if so, apply them
 	QString pathAfterSubstitutions = applySubstitutions
-		? m_prefs.applySubstitutions(path)
+		? m_model->prefs().applySubstitutions(path)
 		: path;
 
 	// check the file
@@ -306,28 +250,6 @@ bool PathsDialog::canonicalizeAndValidate(QString &path)
 	path = QDir::toNativeSeparators(path);
 
 	return isValid;
-}
-
-
-//-------------------------------------------------
-//  splitPaths
-//-------------------------------------------------
-
-QStringList PathsDialog::splitPaths(const QString &paths)
-{
-	return paths.isEmpty()
-		? QStringList()
-		: paths.split(PATH_LIST_SEPARATOR);
-}
-
-
-//-------------------------------------------------
-//  listModel
-//-------------------------------------------------
-
-QString PathsDialog::joinPaths(const QStringList &pathList)
-{
-	return pathList.join(PATH_LIST_SEPARATOR);
 }
 
 
@@ -378,7 +300,7 @@ void PathsDialog::updateButtonsEnabled()
 
 void PathsDialog::on_comboBox_currentIndexChanged(int index)
 {
-	updateCurrentPathList();
+	m_model->setCurrentPathType((Preferences::global_path_type)index);
 }
 
 
@@ -442,4 +364,115 @@ void PathsDialog::on_deleteButton_clicked()
 void PathsDialog::on_listView_activated(const QModelIndex &index)
 {
 	browseForPath(index.row());
+}
+
+
+//**************************************************************************
+//  MODEL IMPLEMENTATION
+//**************************************************************************
+
+//-------------------------------------------------
+//  Model ctor
+//-------------------------------------------------
+
+PathsDialog::Model::Model(Preferences &prefs, PathsListViewModel &listViewModel)
+	: m_prefs(prefs)
+	, m_listViewModel(listViewModel)
+{
+	// path data
+	for (Preferences::global_path_type pathType : util::all_enums<Preferences::global_path_type>())
+		m_pathLists[(size_t) pathType] = m_prefs.getGlobalPath(pathType);
+}
+
+
+//-------------------------------------------------
+//  Model::setCurrentPathType
+//-------------------------------------------------
+
+void PathsDialog::Model::setCurrentPathType(Preferences::global_path_type newPathType)
+{
+	// extract the currently selected paths from the list view
+	extractPathsFromListView();
+
+	// figure out the new path type that was selected by the user
+	Preferences::PathCategory category = Preferences::getPathCategory(newPathType);
+
+	// build the paths list
+	QStringList paths = splitPaths(m_pathLists[(size_t)newPathType]);
+
+	// is this multi select?
+	bool isMulti = category == Preferences::PathCategory::MultipleDirectories
+		|| category == Preferences::PathCategory::MultipleDirectoriesOrArchives;
+
+	// set the model accordingly
+	m_listViewModel.setPaths(std::move(paths), isMulti);
+
+	// we have a new path type
+	m_currentPathType = newPathType;
+}
+
+
+//-------------------------------------------------
+//  Model::persist - persist all of our state to prefs
+//-------------------------------------------------
+
+void PathsDialog::Model::persist()
+{
+	// first we want to make sure that m_pathLists is up to data
+	extractPathsFromListView();
+
+	// persist all paths
+	for (Preferences::global_path_type type : util::all_enums<Preferences::global_path_type>())
+	{
+		QString &path = m_pathLists[static_cast<size_t>(type)];
+		m_prefs.setGlobalPath(type, std::move(path));
+	}
+}
+
+
+//-------------------------------------------------
+//  Model::prefs
+//-------------------------------------------------
+
+const Preferences &PathsDialog::Model::prefs() const
+{
+	return m_prefs;
+}
+
+
+//-------------------------------------------------
+//  Model::extractPathsFromListView
+//-------------------------------------------------
+
+void PathsDialog::Model::extractPathsFromListView()
+{
+	if (m_currentPathType.has_value())
+	{
+		// reflect changes on the m_current_path_list back into m_pathLists 
+		QStringList paths = m_listViewModel.paths();
+		QString pathString = joinPaths(paths);
+		m_pathLists[(size_t)m_currentPathType.value()] = std::move(pathString);
+	}
+}
+
+
+//-------------------------------------------------
+//  splitPaths
+//-------------------------------------------------
+
+QStringList PathsDialog::Model::splitPaths(const QString &paths)
+{
+	return paths.isEmpty()
+		? QStringList()
+		: paths.split(PATH_LIST_SEPARATOR);
+}
+
+
+//-------------------------------------------------
+//  joinPaths
+//-------------------------------------------------
+
+QString PathsDialog::Model::joinPaths(const QStringList &pathList)
+{
+	return pathList.join(PATH_LIST_SEPARATOR);
 }

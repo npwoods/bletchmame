@@ -14,8 +14,10 @@
 #include <QDir>
 #include <QUrl>
 #include <QCloseEvent>
+#include <QLabel>
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QWindowStateChangeEvent>
 
@@ -39,6 +41,7 @@
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
+#include "dialogs/resetprefs.h"
 #include "dialogs/switches.h"
 
 
@@ -121,14 +124,9 @@ public:
 		return m_host.m_state->devslots();
 	}
 
-	virtual const QString &getWorkingDirectory() const
+	virtual void associateFileDialogWithMachinePrefs(QFileDialog &fileDialog)
 	{
-		return m_host.m_prefs.getMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY);
-	}
-
-	virtual void setWorkingDirectory(QString &&dir)
-	{
-		m_host.m_prefs.setMachinePath(getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, std::move(dir));
+		m_host.associateFileDialogWithMachinePrefs(fileDialog, getMachineName(), Preferences::machine_path_type::WORKING_DIRECTORY, false);
 	}
 
 	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
@@ -691,10 +689,12 @@ static const int SOUND_ATTENUATION_ON = 0;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 	, m_mainPanel(nullptr)
+	, m_prefs(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)))
 	, m_taskDispatcher(*this, m_prefs)
 	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
+	, m_auditCursor(m_prefs)
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -715,6 +715,22 @@ MainWindow::MainWindow(QWidget *parent)
 		m_ui->rootWidget);
 	m_ui->stackedLayout->addWidget(m_mainPanel);
 	m_ui->stackedLayout->setCurrentWidget(m_mainPanel);
+
+	// set up status labels
+	for (auto i = 0; i < std::size(m_statusLabels); i++)
+	{
+		m_statusLabels[i] = new QLabel(this);
+		m_statusLabels[i]->setFixedWidth(120);
+		m_ui->statusBar->addPermanentWidget(m_statusLabels[i]);
+	}
+
+	// listen to status updates from MainPanel
+	connect(m_mainPanel, &MainPanel::statusChanged, this, [this](const auto &newStatus)
+	{
+		m_ui->statusBar->showMessage(newStatus[0]);
+		for (auto i = 0; i < std::min(std::size(m_statusLabels), std::size(newStatus) - 1); i++)
+			m_statusLabels[i]->setText(newStatus[i + 1]);
+	});
 
 	// set up the ping timer
 	QTimer &pingTimer = *new QTimer(this);
@@ -755,7 +771,7 @@ MainWindow::MainWindow(QWidget *parent)
 	// set up the audit timer
 	m_auditTimer = new QTimer(this);
 	m_auditTimer->setInterval(500ms);
-	connect(m_auditTimer, &QTimer::timeout, this, &MainWindow::dispatchAuditTasks);
+	connect(m_auditTimer, &QTimer::timeout, this, &MainWindow::auditTimerProc);
 
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect(*m_ui->stackedLayout,					&QStackedLayout::currentWidget,	&QStackedLayout::setCurrentWidget,	{ },								[this]() { return attachToMainWindow() ? nullptr : m_ui->emulationPanel; });
@@ -830,7 +846,66 @@ MainWindow::MainWindow(QWidget *parent)
 	m_info_db.addOnChangedHandler([this]()
 	{
 		m_mainPanel->updateTabContents();
+		m_auditQueue.bumpCookie();
 	});
+
+	// monitor general state
+	connect(&m_prefs, &Preferences::selectedTabChanged, this, [this](Preferences::list_view_type newSelectedTab)
+	{
+		AuditableListItemModel *newModel = m_mainPanel->currentAuditableListItemModel();
+		m_auditCursor.setListItemModel(newModel);
+		updateAuditTimer();
+	});
+	connect(&m_prefs, &Preferences::auditingStateChanged, this, [this]()
+	{
+		// audit statuses may have changed
+		m_mainPanel->machineAuditStatusesChanged();
+		m_mainPanel->softwareAuditStatusesChanged();
+
+		// we may need to kick the timer
+		updateAuditTimer();
+	});
+
+	// monitor prefs changes
+	connect(&m_prefs, &Preferences::globalPathEmuExecutableChanged, this, [this](const QString &newPath)
+	{
+		launchVersionCheck(false);
+	});
+	connect(&m_prefs, &Preferences::globalPathRomsChanged, this, [this](const QString &newPath)
+	{
+		// reset machines and software
+		m_prefs.bulkDropMachineAuditStatuses([this](const QString &machineName)
+		{
+			std::optional<info::machine> machine = m_info_db.find_machine(machineName);
+			return machine && (!machine->roms().empty() || !machine->disks().empty());
+		});
+		m_prefs.bulkDropSoftwareAuditStatuses();
+	});
+	connect(&m_prefs, &Preferences::globalPathSamplesChanged, this, [this](const QString &newPath)
+	{
+		// reset machines
+		m_prefs.bulkDropMachineAuditStatuses([this](const QString &machineName)
+		{
+			std::optional<info::machine> machine = m_info_db.find_machine(machineName);
+			return machine && !machine->samples().empty();
+		});
+	});
+
+	// monitor bulk audit changes
+	connect(&m_prefs, &Preferences::bulkDroppedMachineAuditStatuses, this, [this]()
+	{
+		m_mainPanel->machineAuditStatusesChanged();
+		updateAuditTimer();
+	});
+	connect(&m_prefs, &Preferences::bulkDroppedSoftwareAuditStatuses, this, [this]()
+	{
+		m_mainPanel->softwareAuditStatusesChanged();
+		updateAuditTimer();
+	});
+
+	// prep the audit cursor
+	AuditableListItemModel *newModel = m_mainPanel->currentAuditableListItemModel();
+	m_auditCursor.setListItemModel(newModel);
 
 	// load the info DB
 	loadInfoDb();
@@ -1064,11 +1139,12 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 
 		// If not, show a file dialog and start recording
 		Pauser pauser(*this);
-		QString path = GetFileDialogFilename(
+		QString path = getFileDialogFilename(
 			"Record Movie",
 			Preferences::machine_path_type::WORKING_DIRECTORY,
 			s_wc_record_movie,
-			QFileDialog::AcceptMode::AcceptSave);
+			QFileDialog::AcceptMode::AcceptSave,
+			false);
 		if (!path.isEmpty())
 		{
 			// determine the recording file type
@@ -1149,7 +1225,7 @@ void MainWindow::on_menuAuditing_aboutToShow()
 
 void MainWindow::on_actionAuditingDisabled_triggered()
 {
-	changeAuditingState(Preferences::AuditingState::Disabled);
+	m_prefs.setAuditingState(Preferences::AuditingState::Disabled);
 }
 
 
@@ -1159,7 +1235,7 @@ void MainWindow::on_actionAuditingDisabled_triggered()
 
 void MainWindow::on_actionAuditingAutomatic_triggered()
 {
-	changeAuditingState(Preferences::AuditingState::Automatic);
+	m_prefs.setAuditingState(Preferences::AuditingState::Automatic);
 }
 
 
@@ -1169,7 +1245,7 @@ void MainWindow::on_actionAuditingAutomatic_triggered()
 
 void MainWindow::on_actionAuditingManual_triggered()
 {
-	changeAuditingState(Preferences::AuditingState::Manual);
+	m_prefs.setAuditingState(Preferences::AuditingState::Manual);
 }
 
 
@@ -1209,7 +1285,9 @@ void MainWindow::on_actionAuditThis_triggered()
 
 void MainWindow::on_actionResetAuditingStatuses_triggered()
 {
-	resetAuditing(true, true);
+	// reset machines and software
+	m_prefs.bulkDropMachineAuditStatuses();
+	m_prefs.bulkDropSoftwareAuditStatuses();
 }
 
 
@@ -1396,30 +1474,33 @@ void MainWindow::on_actionDipSwitches_triggered()
 
 void MainWindow::on_actionPaths_triggered()
 {
-	std::vector<Preferences::global_path_type> changed_paths;
-
-	// show the dialog
+	Pauser pauser(*this);
+	PathsDialog dialog(*this, m_prefs);
+	dialog.exec();
+	if (dialog.result() == QDialog::DialogCode::Accepted)
 	{
-		Pauser pauser(*this);
-		PathsDialog dialog(*this, m_prefs);
-		dialog.exec();
-		if (dialog.result() == QDialog::DialogCode::Accepted)
-		{
-			changed_paths = dialog.persist();
-			m_prefs.save();
-		}
+		dialog.persist();
+		m_prefs.save();
 	}
+}
 
-	// did the user change the executable path?
-	if (util::contains(changed_paths, Preferences::global_path_type::EMU_EXECUTABLE))
-		launchVersionCheck(false);
 
-	// did the user cause audit statuses to be reset
-	bool resetMachineAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS) || util::contains(changed_paths, Preferences::global_path_type::SAMPLES);
-	bool resetSoftwareAudit = util::contains(changed_paths, Preferences::global_path_type::ROMS);
-	resetAuditing(resetMachineAudit, resetSoftwareAudit);
+//-------------------------------------------------
+//  on_actionResetToDefault_triggered
+//-------------------------------------------------
 
-	m_mainPanel->pathsChanged(changed_paths);
+void MainWindow::on_actionResetToDefault_triggered()
+{
+	Pauser pauser(*this);
+	ResetPreferencesDialog dialog(*this);
+	dialog.exec();
+	if (dialog.result() == QDialog::DialogCode::Accepted)
+	{
+		m_prefs.resetToDefaults(
+			dialog.isResetUiChecked(),
+			dialog.isResetPathsChecked(),
+			dialog.isResetFoldersChecked());
+	}
 }
 
 
@@ -2250,10 +2331,55 @@ bool MainWindow::onChatter(const ChatterEvent &event)
 
 
 //-------------------------------------------------
-//  GetFileDialogFilename
+//  associateFileDialogWithMachinePrefs
 //-------------------------------------------------
 
-QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode)
+void MainWindow::associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, const QString &machineName, Preferences::machine_path_type pathType, bool pathIsFile)
+{
+	const QString &prefsPath = m_prefs.getMachinePath(machineName, pathType);
+	if (!prefsPath.isEmpty())
+	{
+		// set the directory
+		QString path = QDir::fromNativeSeparators(prefsPath);
+		fileDialog.setDirectory(QFileInfo(path).dir());
+
+		// try to set the file, if appropriate
+		if (pathIsFile)
+			fileDialog.selectFile(path);
+	}
+
+	// monitor dialog acceptance
+	connect(&fileDialog, &QFileDialog::accepted, &fileDialog, [this, &fileDialog, machineName, pathType, pathIsFile]()
+	{
+		// get the result out of the dialog
+		QStringList selectedFiles = fileDialog.selectedFiles();
+		const QString &result = selectedFiles.first();
+
+		// figure out the path we need to persist
+		QString newPrefsPath;
+		if (pathIsFile)
+		{
+			newPrefsPath = QDir::toNativeSeparators(result);
+		}
+		else
+		{
+			QString absolutePath = QFileInfo(result).dir().absolutePath();
+			if (!absolutePath.endsWith("/"))
+				absolutePath += "/";
+			newPrefsPath = QDir::toNativeSeparators(absolutePath);
+		}
+
+		// and finally persist it
+		m_prefs.setMachinePath(machineName, pathType, std::move(newPrefsPath));
+	});
+}
+
+
+//-------------------------------------------------
+//  getFileDialogFilename
+//-------------------------------------------------
+
+QString MainWindow::getFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode, bool pathIsFile)
 {
 	// determine the file mode
 	QFileDialog::FileMode fileMode;
@@ -2276,11 +2402,10 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 	QFileInfo defaultPathInfo(QDir::fromNativeSeparators(defaultPath));
 
 	// prepare the dialog
-	QFileDialog dialog(this, caption, defaultPathInfo.dir().absolutePath(), filter);
+	QFileDialog dialog(this, caption, QString(), filter);
 	dialog.setFileMode(fileMode);
 	dialog.setAcceptMode(acceptMode);
-	if (!defaultPathInfo.fileName().isEmpty())
-		dialog.selectFile(defaultPathInfo.fileName());
+	associateFileDialogWithMachinePrefs(dialog, getRunningMachine().name(), pathType, pathIsFile);
 
 	// show the dialog
 	dialog.exec();
@@ -2297,25 +2422,12 @@ QString MainWindow::GetFileDialogFilename(const QString &caption, Preferences::m
 QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode)
 {
 	Pauser pauser(*this);
-	QString path = GetFileDialogFilename(caption, pathType, wildcard_string, acceptMode);
+	QString path = getFileDialogFilename(caption, pathType, wildcard_string, acceptMode, path_is_file);
 	if (path.isEmpty())
 		return { };
 
 	// append the resulting path to the command list
 	commands.push_back(path);
-
-	// put back the default
-	const QString &running_machine_name(getRunningMachine().name());
-	if (path_is_file)
-	{
-		m_prefs.setMachinePath(running_machine_name, pathType, QDir::toNativeSeparators(path));
-	}
-	else
-	{
-		QString new_dir;
-		wxFileName::SplitPath(path, &new_dir, nullptr, nullptr);
-		m_prefs.setMachinePath(running_machine_name, pathType, std::move(new_dir));
-	}
 
 	// finally issue the actual commands
 	issue(commands);
@@ -2516,28 +2628,6 @@ void MainWindow::changeSound(bool sound_enabled)
 
 
 //-------------------------------------------------
-//  changeAuditingState
-//-------------------------------------------------
-
-void MainWindow::changeAuditingState(Preferences::AuditingState auditingState)
-{
-	// only do things if this is not a no-op
-	if (m_prefs.getAuditingState() != auditingState)
-	{
-		// set the new auditing state
-		m_prefs.setAuditingState(auditingState);
-
-		// audit statuses may have changed
-		m_mainPanel->machineAuditStatusesChanged();
-		m_mainPanel->softwareAuditStatusesChanged();
-
-		// we may need to kick the timer
-		updateAuditTimer();
-	}
-}
-
-
-//-------------------------------------------------
 //  auditIfAppropriate
 //-------------------------------------------------
 
@@ -2549,7 +2639,7 @@ void MainWindow::auditIfAppropriate(const info::machine &machine)
 	{
 		// then add it to the queue
 		MachineAuditIdentifier identifier(machine.name());
-		m_auditQueue.push(std::move(identifier));
+		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
 }
@@ -2567,7 +2657,7 @@ void MainWindow::auditIfAppropriate(const software_list::software &software)
 	{
 		// then add it to the queue
 		SoftwareAuditIdentifier identifier(software.parent().name(), software.name());
-		m_auditQueue.push(std::move(identifier));
+		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
 }
@@ -2586,40 +2676,35 @@ bool MainWindow::canAutomaticallyAudit() const
 
 
 //-------------------------------------------------
-//  resetAuditing
-//-------------------------------------------------
-
-void MainWindow::resetAuditing(bool resetMachineAudit, bool resetSoftwareAudit)
-{
-	if (resetMachineAudit)
-	{
-		m_prefs.dropAllMachineAuditStatuses();
-		m_mainPanel->machineAuditStatusesChanged();
-	}
-	if (resetSoftwareAudit)
-	{
-		m_prefs.dropAllSoftwareAuditStatuses();
-		m_mainPanel->softwareAuditStatusesChanged();
-	}
-
-	if (resetMachineAudit || resetSoftwareAudit)
-		updateAuditTimer();
-}
-
-
-//-------------------------------------------------
 //  updateAuditTimer
 //-------------------------------------------------
 
 void MainWindow::updateAuditTimer()
 {
-	// we only actively audit when all of these conditions apply
-	bool auditingActive = m_prefs.getAuditingState() == Preferences::AuditingState::Automatic		// we're automatically auditing and...
-		&& !m_currentRunMachineTask																	// no active emulation is running and...
-		&& m_auditQueue.hasUndispatched()															// there are undispatched audits in the queue and...
-		&& m_taskDispatcher.countActiveTasksByType<AuditTask>() < m_maximumConcurrentAuditTasks;	// we're below the amount of concurrent audit tasks
+	// the timer has the role of dispatching audit tasks and also keeping the queue populated with
+	// low priority tasks, therefore this logic is somewhat knotty
+	//
+	// perhaps this could be driven by Qt signals?
 
-	if (auditingActive)
+	bool auditTimerActive;
+	if (m_prefs.getAuditingState() != Preferences::AuditingState::Automatic || m_currentRunMachineTask)
+	{
+		// either we're running an emulation or auditing is off
+		auditTimerActive = false;
+	}
+	else if (m_auditQueue.hasUndispatched())
+	{
+		// yes there are undispatched tasks - we need the timer
+		auditTimerActive = true;
+	}
+	else
+	{
+		// no pending audits - we will still need the timer for low priority audits
+		// from the audit cursor
+		auditTimerActive = !m_auditCursor.isComplete();
+	}
+
+	if (auditTimerActive)
 		m_auditTimer->start();
 	else
 		m_auditTimer->stop();
@@ -2637,6 +2722,17 @@ void MainWindow::auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<Au
 
 	// and dispatch the task
 	m_taskDispatcher.launch(std::move(auditTask));
+}
+
+
+//-------------------------------------------------
+//  auditTimerProc
+//-------------------------------------------------
+
+void MainWindow::auditTimerProc()
+{
+	addLowPriorityAudits();
+	dispatchAuditTasks();
 }
 
 
@@ -2662,6 +2758,138 @@ void MainWindow::dispatchAuditTasks()
 
 
 //-------------------------------------------------
+//  reportAuditResults
+//-------------------------------------------------
+
+void MainWindow::reportAuditResults(const std::vector<AuditResult> &results)
+{
+	// we only want to report one of them (its silly to pop up multiple messages), but
+	// hypothetically reportAuditResult() can fail
+	for (const AuditResult &result : results)
+	{
+		if (reportAuditResult(result))
+		{
+			// we've reported something - break out
+			break;
+		}
+	}
+}
+
+
+//-------------------------------------------------
+//  reportAuditResult
+//-------------------------------------------------
+
+bool MainWindow::reportAuditResult(const AuditResult &result)
+{
+	using namespace std::chrono_literals;
+
+	// is this audit result present?  while its ok in principle to audit invisible items, we
+	// really don't want to do so because the user is trying to keep such items away
+	const AuditableListItemModel *model = m_mainPanel->currentAuditableListItemModel();
+	if (!model || !model->isAuditIdentifierPresent(result.identifier()))
+		return false;
+
+	// audit identifier string
+	const QString *identifierString = auditIdentifierString(result.identifier());
+	if (!identifierString)
+		return false;
+
+	// build the message
+	QString message = QString("Audited \"%1\": %2").arg(
+		*identifierString,
+		auditStatusString(result.status()));
+
+	// and show it
+	auto messageDuration = 5s;
+	m_ui->statusBar->showMessage(
+		message,
+		std::chrono::duration_cast<std::chrono::milliseconds>(messageDuration).count());
+	return true;
+}
+
+
+//-------------------------------------------------
+//  auditIdentifierString
+//-------------------------------------------------
+
+const QString *MainWindow::auditIdentifierString(const AuditIdentifier &identifier) const
+{
+	const QString *result = nullptr;
+
+	std::visit([this, &result](auto &&identifier)
+	{
+		using T = std::decay_t<decltype(identifier)>;
+		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		{
+			std::optional<info::machine> machine = m_info_db.find_machine(identifier.machineName());
+			if (machine)
+				result = &machine->description();
+		}
+		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		{
+			const software_list::software *software = m_softwareListCollection.find_software_by_list_and_name(
+				identifier.softwareList(),
+				identifier.software());
+			if (software)
+				result = &software->description();
+		}
+	}, identifier);
+
+	return result;
+}
+
+
+//-------------------------------------------------
+//  auditStatusString
+//-------------------------------------------------
+
+QString MainWindow::auditStatusString(AuditStatus status)
+{
+	QString result;
+	switch (status)
+	{
+	case AuditStatus::Unknown:
+		result = "Unknown";
+		break;
+	case AuditStatus::Found:
+		result = "All Media Found";
+		break;
+	case AuditStatus::MissingOptional:
+		result = "Optional Media Missing";
+		break;
+	case AuditStatus::Missing:
+		result = "Media Missing";
+		break;
+	default:
+		throw false;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  addLowPriorityAudits
+//-------------------------------------------------
+
+void MainWindow::addLowPriorityAudits()
+{
+	if (!m_auditCursor.isComplete())
+	{
+		// get the current position so that we don't wrap around
+		int basePosition = m_auditCursor.currentPosition();
+
+		// keep on getting identifiers
+		std::optional<AuditIdentifier> identifier;
+		while (m_auditQueue.isCloseToEmpty() && (identifier = m_auditCursor.next(basePosition)).has_value())
+		{
+			m_auditQueue.push(std::move(identifier.value()), false);
+		}
+	}
+}
+
+
+//-------------------------------------------------
 //  onAuditResult
 //-------------------------------------------------
 
@@ -2672,6 +2900,9 @@ bool MainWindow::onAuditResult(const AuditResultEvent &event)
 	{
 		// they do in fact match; update the statuses
 		m_mainPanel->setAuditStatuses(event.results());
+
+		// and report the results in the status bar
+		reportAuditResults(event.results());
 	}
 	return true;
 }

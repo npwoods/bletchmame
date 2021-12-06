@@ -16,7 +16,7 @@
 //-------------------------------------------------
 
 SoftwareListItemModel::SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent)
-    : QAbstractItemModel(parent)
+    : AuditableListItemModel(parent)
 	, m_iconLoader(iconLoader)
 	, m_softwareIconAccessedCallback(std::move(softwareIconAccessedCallback))
 {
@@ -116,7 +116,8 @@ void SoftwareListItemModel::auditStatusChanged(const SoftwareAuditIdentifier &id
 void SoftwareListItemModel::allAuditStatusesChanged()
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	iconsChanged(0, util::safe_static_cast<int>(m_parts.size()) - 1);
+	if (!m_parts.empty())
+		iconsChanged(0, util::safe_static_cast<int>(m_parts.size()) - 1);
 }
 
 
@@ -126,10 +127,16 @@ void SoftwareListItemModel::allAuditStatusesChanged()
 
 void SoftwareListItemModel::iconsChanged(int startIndex, int endIndex)
 {
+	// sanity checks
+	assert(startIndex >= 0 && startIndex < m_parts.size());
+	assert(endIndex >= 0 && endIndex < m_parts.size());
+	assert(startIndex <= endIndex);
+
+	// emit a dataChanged event for decorations int he proper range
 	QModelIndex topLeft = createIndex(startIndex, (int)Column::Name);
 	QModelIndex bottomRight = createIndex(endIndex, (int)Column::Name);
 	QVector<int> roles = { Qt::DecorationRole };
-	dataChanged(topLeft, bottomRight, roles);
+	emit dataChanged(topLeft, bottomRight, roles);
 }
 
 
@@ -258,6 +265,32 @@ QVariant SoftwareListItemModel::headerData(int section, Qt::Orientation orientat
         }
     }
     return result;
+}
+
+
+//-------------------------------------------------
+//  getAuditIdentifier
+//-------------------------------------------------
+
+AuditIdentifier SoftwareListItemModel::getAuditIdentifier(int row) const
+{
+	const software_list::software &software = m_parts[row].software();
+	return SoftwareAuditIdentifier(software.parent().name(), software.name());
+}
+
+
+//-------------------------------------------------
+//  isAuditIdentifierPresent
+//-------------------------------------------------
+
+bool SoftwareListItemModel::isAuditIdentifierPresent(const AuditIdentifier &identifier) const
+{
+	const SoftwareAuditIdentifier *softwareAuditIdentifier = std::get_if<SoftwareAuditIdentifier>(&identifier);
+	if (!softwareAuditIdentifier)
+		return false;
+
+	auto iter = m_softwareIndexMap.find(*softwareAuditIdentifier);
+	return iter != m_softwareIndexMap.end();
 }
 
 

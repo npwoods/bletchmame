@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     prefs.cpp
 
@@ -12,7 +12,6 @@
 
 #include <QDir>
 #include <QCoreApplication>
-#include <QStandardPaths>
 #include <QXmlStreamWriter>
 
 #include "prefs.h"
@@ -84,9 +83,6 @@ static const util::enum_parser_bidirectional<Preferences::AuditingState> s_audit
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
-
-static QString getDefaultPluginsDirectory();
-
 
 //-------------------------------------------------
 //  isValidDimension
@@ -178,16 +174,41 @@ FolderPrefs::FolderPrefs()
 //  ctor
 //-------------------------------------------------
 
-Preferences::Preferences()
-	: m_selected_tab(list_view_type::MACHINE)
-	, m_menu_bar_shown(true)
-	, m_auditingState(AuditingState::Default)
+Preferences::Preferences(std::optional<QDir> &&configDirectory, QObject *parent)
+	: QObject(parent)
+	, m_configDirectory(std::move(configDirectory))
+	, m_globalPathsInfo(m_configDirectory)
+	, m_windowState(WindowState::Normal)
+	, m_selected_tab(list_view_type::MACHINE)
 {
-	// default paths
-	setGlobalPath(global_path_type::CONFIG, getConfigDirectory(true));
-	setGlobalPath(global_path_type::NVRAM, getConfigDirectory(true));
-	setGlobalPath(global_path_type::PLUGINS, getDefaultPluginsDirectory());
-	setGlobalPath(global_path_type::PROFILES, getConfigDirectory(true) + QDir::separator() + QString("profiles"));
+}
+
+
+//-------------------------------------------------
+//  resetToDefaults
+//-------------------------------------------------
+
+void Preferences::resetToDefaults(bool resetUi, bool resetPaths, bool resetFolders)
+{
+	if (resetUi)
+		setGlobalInfo(GlobalUiInfo());
+	if (resetPaths)
+		setGlobalInfo(GlobalPathsInfo(m_configDirectory));
+
+	if (resetFolders)
+	{
+		if (!m_folderPrefs.empty())
+		{
+			m_folderPrefs.clear();
+			emit folderPrefsChanged();
+		}
+
+		if (!m_customFolders.empty())
+		{
+			m_customFolders.clear();
+			emit customFoldersChanged();
+		}
+	}
 }
 
 
@@ -256,21 +277,6 @@ Preferences::PathCategory Preferences::getPathCategory(machine_path_type path_ty
 
 
 //-------------------------------------------------
-//  ensureDirectoryPathsHaveFinalPathSeparator
-//-------------------------------------------------
-
-void Preferences::ensureDirectoryPathsHaveFinalPathSeparator(PathCategory category, QString &path)
-{
-	bool isDirectory = category == PathCategory::SingleDirectory
-		|| category == PathCategory::MultipleDirectories;
-	if (isDirectory && !path.isEmpty() && !wxFileName::IsPathSeparator(path[path.size() - 1]))
-	{
-		path += QDir::separator();
-	}
-}
-
-
-//-------------------------------------------------
 //  getMachineInfo
 //-------------------------------------------------
 
@@ -284,19 +290,87 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 
 //-------------------------------------------------
+//  setGlobalInfo
+//-------------------------------------------------
+
+void Preferences::setGlobalInfo(Preferences::GlobalUiInfo &&globalInfo)
+{
+	setMenuBarShown(globalInfo.m_menuBarShown);
+	setAuditingState(globalInfo.m_auditingState);
+}
+
+
+//-------------------------------------------------
+//  setGlobalInfo
+//-------------------------------------------------
+
+void Preferences::setGlobalInfo(Preferences::GlobalPathsInfo &&globalInfo)
+{
+	for (global_path_type type : util::all_enums<global_path_type>())
+		setGlobalPath(type, std::move(globalInfo.m_paths[static_cast<size_t>(type)]));
+}
+
+
+//-------------------------------------------------
 //  setGlobalPath
 //-------------------------------------------------
 
 void Preferences::setGlobalPath(global_path_type type, QString &&path)
 {
-	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(type), path);
-	m_paths[static_cast<size_t>(type)] = std::move(path);
+	if (m_globalPathsInfo.m_paths[static_cast<size_t>(type)] != path)
+		internalSetGlobalPath(type, std::move(path));
 }
 
 
+//-------------------------------------------------
+//  setGlobalPath
+//-------------------------------------------------
+
 void Preferences::setGlobalPath(global_path_type type, const QString &path)
 {
-	setGlobalPath(type, QString(path));
+	if (m_globalPathsInfo.m_paths[static_cast<size_t>(type)] != path)
+		internalSetGlobalPath(type, QString(path));
+}
+
+
+//-------------------------------------------------
+//  internalSetGlobalPath
+//-------------------------------------------------
+
+void Preferences::internalSetGlobalPath(global_path_type type, QString &&path)
+{
+	// find the destination, and this had better be a real change
+	QString &dest = m_globalPathsInfo.m_paths[static_cast<size_t>(type)];
+	assert(dest != path);
+
+	// copy the data
+	dest = std::move(path);
+
+	// and raise the event
+	switch (type)
+	{
+	case global_path_type::EMU_EXECUTABLE:
+		emit globalPathEmuExecutableChanged(dest);
+		break;
+	case global_path_type::ROMS:
+		emit globalPathRomsChanged(dest);
+		break;
+	case global_path_type::SAMPLES:
+		emit globalPathSamplesChanged(dest);
+		break;
+	case global_path_type::ICONS:
+		emit globalPathIconsChanged(dest);
+		break;
+	case global_path_type::PROFILES:
+		emit globalPathProfilesChanged(dest);
+		break;
+	case global_path_type::SNAPSHOTS:
+		emit globalPathSnapshotsChanged(dest);
+		break;
+	default:
+		// do nothing
+		break;
+	}
 }
 
 
@@ -365,8 +439,8 @@ const QString &Preferences::getMachinePath(const QString &machine_name, machine_
 
 FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 {
-	auto iter = m_folder_prefs.find(folder);
-	return iter != m_folder_prefs.end()
+	auto iter = m_folderPrefs.find(folder);
+	return iter != m_folderPrefs.end()
 		? iter->second
 		: FolderPrefs();
 }
@@ -378,10 +452,110 @@ FolderPrefs Preferences::getFolderPrefs(const QString &folder) const
 
 void Preferences::setFolderPrefs(const QString &folder, FolderPrefs &&prefs)
 {
-	if (prefs == FolderPrefs())
-		m_folder_prefs.erase(folder);
-	else
-		m_folder_prefs[folder] = std::move(prefs);
+	auto iter = m_folderPrefs.find(folder);
+	bool isSame = (prefs == FolderPrefs())
+		? iter == m_folderPrefs.end()
+		: iter != m_folderPrefs.end() && iter->second == prefs;
+
+	if (!isSame)
+	{
+		if (prefs == FolderPrefs())
+			m_folderPrefs.erase(folder);
+		else
+			m_folderPrefs[folder] = std::move(prefs);
+
+		emit folderPrefsChanged();
+	}
+}
+
+
+//-------------------------------------------------
+//  addMachineToCustomFolder
+//-------------------------------------------------
+
+bool Preferences::addMachineToCustomFolder(const QString &customFolderName, const QString &machineName)
+{
+	// access the set of custom folders - this will create an entry if necessary
+	std::set<QString> &customFolderMachines = m_customFolders[customFolderName];
+
+	// is this machine present?
+	bool result = !customFolderMachines.contains(machineName);
+	if (result)
+	{
+		// if not, add it
+		customFolderMachines.insert(machineName);
+		emit customFoldersChanged();
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  removeMachineFromCustomFolder
+//-------------------------------------------------
+
+bool Preferences::removeMachineFromCustomFolder(const QString &customFolderName, const QString &machineName)
+{
+	// find the folder
+	auto folderIter = m_customFolders.find(customFolderName);
+	if (folderIter == m_customFolders.end())
+		return false;
+
+	// find the machine
+	auto machineIter = folderIter->second.find(machineName);
+	if (machineIter == folderIter->second.end())
+		return false;
+
+	// remove it, fire the event and we're done
+	folderIter->second.erase(machineIter);
+	emit customFoldersChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  renameCustomFolder
+//-------------------------------------------------
+
+bool Preferences::renameCustomFolder(const QString &oldCustomFolderName, QString &&newCustomFolderName)
+{
+	// renaming the folder to itself is silly
+	if (oldCustomFolderName == newCustomFolderName)
+		return false;
+
+	// find this entry
+	auto iter = m_customFolders.find(oldCustomFolderName);
+	if (iter == m_customFolders.end())
+		return false;
+
+	// detatch the list of machines
+	std::set<QString> machines = std::move(iter->second);
+	m_customFolders.erase(iter);
+
+	// and readd it
+	m_customFolders.emplace(std::move(newCustomFolderName), std::move(machines));
+
+	// fire the event and we're done
+	emit customFoldersChanged();
+	return true;
+}
+
+
+//-------------------------------------------------
+//  deleteCustomFolder
+//-------------------------------------------------
+
+bool Preferences::deleteCustomFolder(const QString &customFolderName)
+{
+	// perform the erase
+	bool result = m_customFolders.erase(customFolderName) > 0;
+
+	// fire the event if necessary
+	if (result)
+		emit customFoldersChanged();
+
+	// and we're done
+	return result;
 }
 
 
@@ -416,9 +590,6 @@ void Preferences::setListViewSelection(const char8_t *view_type, const QString &
 
 void Preferences::setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path)
 {
-	// ensure that if we have a path, it has a path separator at the end
-	ensureDirectoryPathsHaveFinalPathSeparator(getPathCategory(path_type), path);
-
 	switch (path_type)
 	{
 	case machine_path_type::WORKING_DIRECTORY:
@@ -459,6 +630,35 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 
 
 //-------------------------------------------------
+//  setSelectedTab
+//-------------------------------------------------
+
+void Preferences::setSelectedTab(list_view_type type)
+{
+	if (m_selected_tab != type)
+	{
+		m_selected_tab = type;
+		emit selectedTabChanged(m_selected_tab);
+	}
+}
+
+
+
+//-------------------------------------------------
+//  setAuditingState
+//-------------------------------------------------
+
+void Preferences::setAuditingState(AuditingState auditingState)
+{
+	if (m_globalUiInfo.m_auditingState != auditingState)
+	{
+		m_globalUiInfo.m_auditingState = auditingState;
+		emit auditingStateChanged();
+	}
+}
+
+
+//-------------------------------------------------
 //  getMachineAuditStatus
 //-------------------------------------------------
 
@@ -487,17 +687,32 @@ void Preferences::setMachineAuditStatus(const QString &machine_name, AuditStatus
 
 
 //-------------------------------------------------
-//  dropAllMachineAuditStatuses
+//  bulkDropMachineAuditStatuses
 //-------------------------------------------------
 
-void Preferences::dropAllMachineAuditStatuses()
+void Preferences::bulkDropMachineAuditStatuses(const std::function<bool(const QString &machineName)> &predicate)
 {
+	int count = 0;
+
 	// drop all statuses
 	for (auto &[machineName, info] : m_machine_info)
-		info.m_auditStatus = AuditStatus::Unknown;
+	{
+		if ((!predicate || predicate(machineName)) && info.m_auditStatus != AuditStatus::Unknown)
+		{
+			info.m_auditStatus = AuditStatus::Unknown;
+			count++;
+		}
+	}
 
-	// after this update, its highly likely we have data worthy of garbage collection
-	garbageCollectMachineInfo();
+	// did we drop anything?
+	if (count > 0)
+	{
+		// if so its highly likely we have data worthy of garbage collection
+		garbageCollectMachineInfo();
+
+		// and emit the event
+		emit bulkDroppedMachineAuditStatuses();
+	}
 }
 
 
@@ -530,12 +745,20 @@ void Preferences::setSoftwareAuditStatus(const QString &softwareList, const QStr
 
 
 //-------------------------------------------------
-//  dropAllSoftwareAuditStatuses
+//  bulkDropSoftwareAuditStatuses
 //-------------------------------------------------
 
-void Preferences::dropAllSoftwareAuditStatuses()
+void Preferences::bulkDropSoftwareAuditStatuses()
 {
-	m_softwareAuditStatus.clear();
+	// do we have any audit statuses?
+	if (!m_softwareAuditStatus.empty())
+	{
+		// if so drop them
+		m_softwareAuditStatus.clear();
+
+		// and emit the event
+		emit bulkDroppedSoftwareAuditStatuses();
+	}
 }
 
 
@@ -562,7 +785,7 @@ bool Preferences::load()
 {
 	using namespace std::placeholders;
 
-	QString fileName = getFileName(false);
+	QString fileName = getPreferencesFileName(false);
 
 	// first check to see if the file exists
 	bool success = false;
@@ -593,14 +816,17 @@ bool Preferences::load(QIODevice &input)
 	m_windowState = WindowState::Normal;
 	m_machine_info.clear();
 	m_softwareAuditStatus.clear();
-	m_custom_folders.clear();
-	m_auditingState = AuditingState::Default;
+	m_customFolders.clear();
+
+	// set up fresh global state
+	GlobalUiInfo globalUiInfo;
+	GlobalPathsInfo globalPathsInfo(m_configDirectory);
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<bool> menu_bar_shown = attributes.get<bool>("menu_bar_shown");
-		if (menu_bar_shown)
-			setMenuBarShown(*menu_bar_shown);
+		std::optional<bool> menuBarShown = attributes.get<bool>("menu_bar_shown");
+		if (menuBarShown)
+			globalUiInfo.m_menuBarShown = menuBarShown.value();
 
 		std::optional<WindowState> windowState = attributes.get<WindowState>("window_state", s_windowState_parser);
 		if (windowState)
@@ -612,7 +838,7 @@ bool Preferences::load(QIODevice &input)
 
 		std::optional<AuditingState> auditingState = attributes.get<AuditingState>("auditing", s_auditingStateParser);
 		if (auditingState)
-			setAuditingState(*auditingState);
+			globalUiInfo.m_auditingState = auditingState.value();
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -628,7 +854,7 @@ bool Preferences::load(QIODevice &input)
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
 		if (type)
-			setGlobalPath(*type, std::move(content));
+			globalPathsInfo.m_paths[(size_t) type.value()] = std::move(content);
 		type.reset();
 	});
 	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
@@ -673,7 +899,7 @@ bool Preferences::load(QIODevice &input)
 	{
 		std::optional<QString> name = attributes.get<QString>("name");
 		if (name)
-			current_custom_folder = &m_custom_folders.emplace(name.value(), std::set<QString>()).first->second;
+			current_custom_folder = &m_customFolders.emplace(name.value(), std::set<QString>()).first->second;
 	});
 	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
 	{
@@ -763,6 +989,13 @@ bool Preferences::load(QIODevice &input)
 	});
 	bool success = xml.parse(input);
 
+	// if we're successful, update global state
+	if (success)
+	{
+		setGlobalInfo(std::move(globalUiInfo));
+		setGlobalInfo(std::move(globalPathsInfo));
+	}
+
 	return success;
 }
 
@@ -773,7 +1006,7 @@ bool Preferences::load(QIODevice &input)
 
 void Preferences::save()
 {
-	QString fileName = getFileName(true);
+	QString fileName = getPreferencesFileName(true);
 	QFile file(fileName);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text))
 		save(file);
@@ -792,18 +1025,18 @@ void Preferences::save(QIODevice &output)
 	writer.writeStartDocument();
 	writer.writeComment("Preferences for BletchMAME");
 	writer.writeStartElement("preferences");
-	writer.writeAttribute("menu_bar_shown", QString::number(m_menu_bar_shown ? 1 : 0));
+	writer.writeAttribute("menu_bar_shown", QString::number(getMenuBarShown() ? 1 : 0));
 	writer.writeAttribute("window_state", s_windowState_parser[getWindowState()]);
 	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
 	writer.writeAttribute("auditing", s_auditingStateParser[getAuditingState()]);
 
 	// paths
 	writer.writeComment("Paths");
-	for (size_t i = 0; i < m_paths.size(); i++)
+	for (global_path_type pathType : util::all_enums<global_path_type>())
 	{
 		writer.writeStartElement("path");
-		writer.writeAttribute("type", s_path_names[i]);
-		writer.writeCharacters(getGlobalPath(static_cast<global_path_type>(i)));
+		writer.writeAttribute("type", s_path_names[(size_t)pathType]);
+		writer.writeCharacters(getGlobalPath(pathType));
 		writer.writeEndElement();
 	}
 
@@ -821,9 +1054,9 @@ void Preferences::save(QIODevice &output)
 		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
 
 	// folder prefs
-	if (!m_machine_folder_tree_selection.isEmpty() && m_folder_prefs.find(m_machine_folder_tree_selection) == m_folder_prefs.end())
-		m_folder_prefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
-	for (const auto &pair : m_folder_prefs)
+	if (!m_machine_folder_tree_selection.isEmpty() && m_folderPrefs.find(m_machine_folder_tree_selection) == m_folderPrefs.end())
+		m_folderPrefs.emplace(m_machine_folder_tree_selection, FolderPrefs());
+	for (const auto &pair : m_folderPrefs)
 	{
 		writer.writeStartElement("folder");
 		writer.writeAttribute("id", pair.first);
@@ -834,7 +1067,7 @@ void Preferences::save(QIODevice &output)
 	}
 
 	// custom folders
-	for (const auto &pair : m_custom_folders)
+	for (const auto &pair : m_customFolders)
 	{
 		writer.writeStartElement("customfolder");
 		writer.writeAttribute("name", pair.first);
@@ -1015,7 +1248,8 @@ QString Preferences::applySubstitutions(const QString &path) const
 		if (var_name == "MAMEPATH")
 		{
 			const QString &path = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-			wxFileName::SplitPath(path, &result, nullptr, nullptr);
+			QFileInfo fileInfo(QDir::fromNativeSeparators(path));
+			result = fileInfo.dir().absolutePath();
 		}
 		else if (var_name == "BLETCHMAMEPATH")
 		{
@@ -1032,67 +1266,77 @@ QString Preferences::applySubstitutions(const QString &path) const
 
 QString Preferences::getMameXmlDatabasePath(bool ensure_directory_exists) const
 {
-	// get the configuration directory
-	QString config_dir = getConfigDirectory(ensure_directory_exists);
-	if (config_dir.isEmpty())
+	// do we have a config directory?
+	if (!m_configDirectory)
 		return "";
 
-	// get the MAME path
-	const QString &mame_path = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
-	if (mame_path.isEmpty())
+	// get the emulator executable (ie.- MAME) path
+	const QString &emuExecutablePath = getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	if (emuExecutablePath.isEmpty())
 		return "";
 
-	// parse out the MAME filename
-	QString mame_filename;
-	wxFileName::SplitPath(mame_path, nullptr, &mame_filename, nullptr);
+	// parse out the MAME base name (no file extension)
+	QString emuExecutableBaseName = QFileInfo(emuExecutablePath).baseName();
 
 	// get the full name
-	return QDir(config_dir).filePath(mame_filename + ".infodb");
+	return m_configDirectory->filePath(emuExecutableBaseName + ".infodb");
 }
 
 
 //-------------------------------------------------
-//  getFileName
+//  getPreferencesFileName
 //-------------------------------------------------
 
-QString Preferences::getFileName(bool ensure_directory_exists)
+QString Preferences::getPreferencesFileName(bool ensureDirectoryExists) const
 {
-	QString directory = getConfigDirectory(ensure_directory_exists);
-	return QDir(directory).filePath("BletchMAME.xml");
+	// its illegal to call this if we don't have a config directory specified
+	assert(m_configDirectory);
+
+	// if appropriate, ensure the directory is present
+	if (ensureDirectoryExists && !m_configDirectory->exists())
+		m_configDirectory->mkpath(".");
+
+	// return the path to BletchMAME.xml
+	return m_configDirectory->filePath("BletchMAME.xml");
+}
+
+
+//**************************************************************************
+//  GLOBAL INFO - initializes slices of prefs with pertinent defaults
+//**************************************************************************
+
+//-------------------------------------------------
+//  GlobalUiInfo ctor
+//-------------------------------------------------
+
+Preferences::GlobalUiInfo::GlobalUiInfo()
+	: m_menuBarShown(true)
+	, m_auditingState(AuditingState::Default)
+{
 }
 
 
 //-------------------------------------------------
-//  getConfigDirectory - gets the configuration
-//	directory, and optionally ensuring it exists
+//  GlobalPathsInfo ctor
 //-------------------------------------------------
 
-QString Preferences::getConfigDirectory(bool ensure_directory_exists)
+Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configDirectory)
 {
-	// this is currently a thin wrapper on GetUserDataDir(), but hypothetically
-	// we might want a command line option to override this directory
-	QString directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-
-	// if appropriate, ensure the directory exists
-	if (ensure_directory_exists)
+	// set up default paths - some of these require a config directory
+	m_paths[(size_t)global_path_type::PLUGINS]		= QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
+	m_paths[(size_t)global_path_type::HASH]			= QDir::toNativeSeparators("$(MAMEPATH)/hash/");
+	if (configDirectory)
 	{
-		QDir dir(directory);
-		if (!dir.exists())
-			dir.mkpath(".");
+		m_paths[(size_t)global_path_type::CONFIG]	= QDir::toNativeSeparators(configDirectory->absolutePath());
+		m_paths[(size_t)global_path_type::NVRAM]	= QDir::toNativeSeparators(configDirectory->absolutePath());
+		m_paths[(size_t)global_path_type::PROFILES]	= QDir::toNativeSeparators(configDirectory->filePath("profiles"));
 	}
-	return QDir::toNativeSeparators(directory);
 }
 
 
-//-------------------------------------------------
-//  getDefaultPluginsDirectory
-//-------------------------------------------------
-
-static QString getDefaultPluginsDirectory()
-{
-	return QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
-}
-
+//**************************************************************************
+//  MACHINE INFO
+//**************************************************************************
 
 //-------------------------------------------------
 //  MachineInfo ctor

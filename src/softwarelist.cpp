@@ -192,3 +192,27 @@ const software_list::software *software_list_collection::find_software_by_name(c
 	}
 	return nullptr;
 }
+
+
+
+//-------------------------------------------------
+//  software_list_collection::find_software_by_name
+//-------------------------------------------------
+
+const software_list::software *software_list_collection::find_software_by_list_and_name(const QString &softwareList, const QString &software) const
+{
+	// find the software list
+	const software_list::ptr *swlist = util::find_if_ptr(software_lists().begin(), software_lists().end(), [&softwareList](const software_list::ptr &swlistptr)
+	{
+		return swlistptr->name() == softwareList;
+	});
+	if (!swlist)
+		return nullptr;
+
+	// find the software
+	const software_list::software *sw = util::find_if_ptr((*swlist)->get_software(), [&software](const software_list::software &sw)
+	{
+		return sw.name() == software;
+	});
+	return sw;
+}

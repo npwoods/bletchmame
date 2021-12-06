@@ -19,7 +19,7 @@ DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
 # toolset is v142 (MSVC2019), but can also be ClangCL
 TOOLSET=v142
 
-# config is Release by default, or 
+# config is "Debug" by default, but can also be "Release"
 CONFIG=Debug
 
 # QT version is 6.1.2 by default

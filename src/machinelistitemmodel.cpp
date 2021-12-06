@@ -22,7 +22,7 @@
 //-------------------------------------------------
 
 MachineListItemModel::MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader *iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback)
-	: QAbstractItemModel(parent)
+	: AuditableListItemModel(parent)
 	, m_infoDb(infoDb)
 	, m_iconLoader(iconLoader)
 	, m_machineIconAccessedCallback(machineIconAccessedCallback)
@@ -35,12 +35,22 @@ MachineListItemModel::MachineListItemModel(QObject *parent, info::database &info
 
 
 //-------------------------------------------------
+//  machineFromRow
+//-------------------------------------------------
+
+info::machine MachineListItemModel::machineFromRow(int row) const
+{
+	return m_infoDb.machines()[m_indexes[row]];
+}
+
+
+//-------------------------------------------------
 //  machineFromIndex
 //-------------------------------------------------
 
 info::machine MachineListItemModel::machineFromIndex(const QModelIndex &index) const
 {
-	return m_infoDb.machines()[m_indexes[index.row()]];
+	return machineFromRow(index.row());
 }
 
 
@@ -56,6 +66,16 @@ void MachineListItemModel::setMachineFilter(std::function<bool(const info::machi
 
 
 //-------------------------------------------------
+//  isMachinePresent
+//-------------------------------------------------
+
+bool MachineListItemModel::isMachinePresent(const info::machine &machine) const
+{
+	return !m_machineFilter || m_machineFilter(machine);
+}
+
+
+//-------------------------------------------------
 //  auditStatusChanged
 //-------------------------------------------------
 
@@ -64,7 +84,11 @@ void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &iden
 	ProfilerScope prof(CURRENT_FUNCTION);
 	std::optional<int> machineIndex = m_infoDb.find_machine_index(identifier.machineName());
 	if (machineIndex)
-		iconsChanged(*machineIndex, *machineIndex);
+	{
+		auto iter = m_reverseIndexes.find(machineIndex.value());
+		if (iter != m_reverseIndexes.end())
+			iconsChanged(iter->second, iter->second);
+	}
 }
 
 
@@ -76,7 +100,8 @@ void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &iden
 void MachineListItemModel::allAuditStatusesChanged()
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
+	if (!m_indexes.empty())
+		iconsChanged(0, util::safe_static_cast<int>(m_indexes.size()) - 1);
 }
 
 
@@ -86,10 +111,16 @@ void MachineListItemModel::allAuditStatusesChanged()
 
 void MachineListItemModel::iconsChanged(int startIndex, int endIndex)
 {
+	// sanity checks
+	assert(startIndex >= 0 && startIndex < m_indexes.size());
+	assert(endIndex >= 0 && endIndex < m_indexes.size());
+	assert(startIndex <= endIndex);
+
+	// emit a dataChanged event for decorations int he proper range
 	QModelIndex topLeft = createIndex(startIndex, (int)Column::Machine);
 	QModelIndex bottomRight = createIndex(endIndex, (int)Column::Machine);
 	QVector<int> roles = { Qt::DecorationRole };
-	dataChanged(topLeft, bottomRight, roles);
+	emit dataChanged(topLeft, bottomRight, roles);
 }
 
 
@@ -101,20 +132,22 @@ void MachineListItemModel::populateIndexes()
 {
 	beginResetModel();
 
+	// prep the indexes
 	m_indexes.clear();
 	m_indexes.reserve(m_infoDb.machines().size());
+	m_reverseIndexes.clear();
+	m_reverseIndexes.reserve(m_indexes.size());
+
+	// add all indexes
 	for (int i = 0; i < m_infoDb.machines().size(); i++)
 	{
 		info::machine machine = m_infoDb.machines()[i];
 
-		// we only use runnable machines
-		if (machine.runnable())
+		// we need to apply a filter (if we have one)
+		if (isMachinePresent(machine))
 		{
-			// and we need to apply a filter (if we have one)
-			if (!m_machineFilter || m_machineFilter(machine))
-			{
-				m_indexes.push_back(i);
-			}
+			m_reverseIndexes.insert({ i, util::safe_static_cast<int>(m_indexes.size()) });
+			m_indexes.push_back(i);
 		}
 	}
 	m_indexes.shrink_to_fit();
@@ -249,4 +282,34 @@ QVariant MachineListItemModel::headerData(int section, Qt::Orientation orientati
 		}
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  getAuditIdentifier
+//-------------------------------------------------
+
+AuditIdentifier MachineListItemModel::getAuditIdentifier(int row) const
+{
+	return MachineAuditIdentifier(machineFromRow(row).name());
+}
+
+
+//-------------------------------------------------
+//  isAuditIdentifierPresent
+//-------------------------------------------------
+
+bool MachineListItemModel::isAuditIdentifierPresent(const AuditIdentifier &identifier) const
+{
+	// first check to see if this is a MachineAuditIdentifier
+	const MachineAuditIdentifier *machineAuditIdentifier = std::get_if<MachineAuditIdentifier>(&identifier);
+	if (!machineAuditIdentifier)
+		return false;
+
+	// now try to find the machine
+	std::optional<info::machine> machine = m_infoDb.find_machine(machineAuditIdentifier->machineName());
+	if (!machine)
+		return false;
+
+	return isMachinePresent(machine.value());
 }
