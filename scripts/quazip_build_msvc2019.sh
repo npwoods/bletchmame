@@ -11,24 +11,34 @@ if [ -z "$BASH_SOURCE" ]; then
   echo "Null BASH_SOURCE"
   exit
 fi
+
+CONFIG=Debug
+
+# QT version is 6.1.2 by default
+QT_VERSION=6.1.2
+
+# parse arguments
+while getopts "c:q:t:" OPTION; do
+   case $OPTION in
+      c)
+         CONFIG=$OPTARG
+		 ;;
+      q)
+         QT_VERSION=6.1.2
+		 ;;
+      t)
+         TOOLSET=$OPTARG
+		 ;;
+   esac
+done
+
 if [ -z "${QT6_INSTALL_DIR:-}" ]; then
-  QT6_INSTALL_DIR=/c/Qt/6.1.2/msvc2019_64
+  QT6_INSTALL_DIR=/c/Qt/${QT_VERSION}/msvc2019_64
 fi
 if [ ! -d "$QT6_INSTALL_DIR" ]; then
   echo "Bad QT6_INSTALL_DIR"
   exit
 fi
-
-CONFIG=Debug
-
-# parse arguments
-while getopts "c:" OPTION; do
-   case $OPTION in
-      c)
-         CONFIG=$OPTARG
-         ;;
-   esac
-done
 
 # Identify directories
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip

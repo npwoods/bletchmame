@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.11 (TBD)
+	- CI builds against Qt6.2 [Davide Cavalca]
+
 - 2.10 (2021-Dec-4)
 	- Added an "Available" folder to the machine tree view (like MAMEUI)
 	- Added the ability to reset settings to default

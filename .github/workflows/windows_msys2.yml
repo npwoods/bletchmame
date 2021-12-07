@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
+        qt: [6.1.2, 6.2.0]
     runs-on: windows-latest
     defaults:
       run:
@@ -49,7 +50,7 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/msys2
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msys2.yml', 'scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }}-${{ matrix.qt }}-${{ hashFiles('.github/workflows/windows_msys2.yml', 'scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
 
     # Set Up Junction To C Drive
     - name: Set Up Junction To C Drive
@@ -69,7 +70,7 @@ jobs:
     - name: Retrieve Qt6
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/qt6_retrieve.sh
+        sh scripts/qt6_retrieve.sh -q ${{ matrix.qt }}
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
@@ -142,7 +143,7 @@ jobs:
 
     # Configure AWS Credentials
     - name: Configure AWS Credentials
-      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
+      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release' && matrix.qt == '6.1.2'
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -151,6 +152,6 @@ jobs:
       
     # Deploy Artifacts to S3
     - name: Deploy Artifacts to S3
-      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
+      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release' && matrix.qt == '6.1.2'
       shell: bash
       run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete

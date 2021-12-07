@@ -12,11 +12,22 @@ if [ -z "$BASH_SOURCE" ]; then
   exit
 fi
 
+# QT version is 6.1.2 by default
+QT_VERSION=6.1.2
+
+# parse arguments
+while getopts "q:" OPTION; do
+   case $OPTION in
+      q)
+         QT_VERSION=6.1.2
+   esac
+done
+
 # Initial retrieval of Qt
 QT_DIR=$(dirname $BASH_SOURCE)/../deps/qt6
 rm -rf $QT_DIR
 mkdir -p $QT_DIR
-git clone -b 6.1.2 --depth 1 https://code.qt.io/qt/qt5.git $QT_DIR
+git clone -b $QT_VERSION --depth 1 https://code.qt.io/qt/qt5.git $QT_DIR
 
 # Prep the repository
 pushd $QT_DIR
