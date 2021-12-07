@@ -50,7 +50,7 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/msys2
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }-${{ matrix.qt }-${{ hashFiles('.github/workflows/windows_msys2.yml', 'scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }}-${{ matrix.qt }}-${{ hashFiles('.github/workflows/windows_msys2.yml', 'scripts/qt6_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh')}}
 
     # Set Up Junction To C Drive
     - name: Set Up Junction To C Drive
