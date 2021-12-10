@@ -180,6 +180,8 @@ add_library(BletchMAME_core
 	src/task.h	
 	src/taskdispatcher.cpp
 	src/taskdispatcher.h
+	src/throughputtracker.cpp
+	src/throughputtracker.h
 	src/utility.cpp
 	src/utility.h
 	src/versiontask.cpp

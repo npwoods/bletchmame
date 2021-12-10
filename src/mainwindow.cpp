@@ -695,6 +695,9 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::max(std::thread::hardware_concurrency(), (unsigned int)2))
 	, m_auditCursor(m_prefs)
+#if USE_PROFILER
+	, m_auditThroughputTracker(QCoreApplication::applicationDirPath() + "/auditthroughput.txt")
+#endif // USE_PROFILER
 	, m_pinging(false)
 	, m_current_pauser(nullptr)
 {
@@ -2903,6 +2906,11 @@ bool MainWindow::onAuditResult(const AuditResultEvent &event)
 
 		// and report the results in the status bar
 		reportAuditResults(event.results());
+
+		// and measure throughput (if enabled)
+#if USE_PROFILER
+		m_auditThroughputTracker.mark(event.results().size());
+#endif // USE_PROFILER
 	}
 	return true;
 }

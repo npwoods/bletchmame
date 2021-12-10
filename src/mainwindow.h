@@ -25,6 +25,7 @@
 #include "status.h"
 #include "tableviewmanager.h"
 #include "taskdispatcher.h"
+#include "throughputtracker.h"
 #include "dialogs/console.h"
 
 
@@ -170,6 +171,9 @@ private:
 	QTimer *							m_auditTimer;
 	unsigned int						m_maximumConcurrentAuditTasks;
 	AuditCursor							m_auditCursor;
+#if USE_PROFILER
+	ThroughputTracker					m_auditThroughputTracker;
+#endif // USE_PROFILER
 
 	// other
 	observable::value<bool>				m_menu_bar_shown;
