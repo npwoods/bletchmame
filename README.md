@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.11 (TBD)
+	- Enabled Link Time Optimization for Release builds
 	- CI builds against Qt6.2 [Davide Cavalca]
 
 - 2.10 (2021-Dec-4)

@@ -70,6 +70,22 @@ endif()
 # Define installation directories
 include(GNUInstallDirs)
 
+# Link Time Optimization
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto_supported OUTPUT error)
+if (lto_supported)
+    message(STATUS "Link Time Optimization enabled")
+    set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(STATUS "Link Time Optimization not supported: <${error}>")
+	set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
+else()
+    message(STATUS "Link Time Optimization disabled in debug builds")
+	set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
+
 # Configure warnings for different compilers
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
 add_compile_options(/W3 /WX -D_CRT_SECURE_NO_WARNINGS -Wno-sometimes-uninitialized)
