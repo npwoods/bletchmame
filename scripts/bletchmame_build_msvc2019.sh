@@ -26,10 +26,14 @@ CONFIG=Debug
 QT_VERSION=6.1.2
 
 # parse arguments
-while getopts "c:q:t:" OPTION; do
+USE_PROFILER=off
+while getopts "c:pq:t:" OPTION; do
    case $OPTION in
       c)
          CONFIG=$OPTARG
+		 ;;
+      p)
+         USE_PROFILER=1
 		 ;;
       q)
          QT_VERSION=6.1.2
@@ -59,6 +63,7 @@ rm -rf ${BLETCHMAME_BUILD_DIR}
 cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-G"Visual Studio 16 2019"											\
 	-T"$TOOLSET"														\
+	-DUSE_PROFILER=${USE_PROFILER}										\
 	-DQt6_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6							\
 	-DQt6Core_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6Core					\
 	-DQt6CoreTools_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6CoreTools			\
