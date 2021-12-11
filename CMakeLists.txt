@@ -49,7 +49,7 @@ find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
-include_directories(SYSTEM ${QuaZip-Qt6_DIR}/../../../include/QuaZip-Qt6-1.1/quazip)
+include_directories(SYSTEM ${QuaZip-Qt6_DIR}/../../../include/QuaZip-Qt6-${QuaZip-Qt6_VERSION}/quazip)
 link_directories(${QuaZip-Qt6_DIR}/../../../lib)
 if(NOT DEFINED QUAZIP_LIBRARIES)
 set(QUAZIP_LIBRARIES quazip1-qt6)
