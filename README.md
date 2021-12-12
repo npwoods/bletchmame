@@ -10,7 +10,10 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.11 (TBD)
 	- Enabled Link Time Optimization for Release builds
-	- CI builds against Qt6.2 [Davide Cavalca]
+	- Fixed a bug that could potentially cause audits to hang
+	- Various build improvements [Davide Cavalca]
+		- CI builds against Qt6.2
+		- No longer hardcoding a particular version of QuaZip
 
 - 2.10 (2021-Dec-4)
 	- Added an "Available" folder to the machine tree view (like MAMEUI)

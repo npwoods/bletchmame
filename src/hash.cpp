@@ -48,7 +48,7 @@ Hash Hash::calculate(QIODevice &stream)
 		// read into a buffer
 		char buffer[15000];
 		int len = (int)stream.read(buffer, std::size(buffer));
-		if (len < 0)
+		if (len <= 0)
 			break;
 
 		// CRC32 processing
