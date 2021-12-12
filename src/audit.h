@@ -27,6 +27,8 @@ class AssetFinder;
 class Audit
 {
 public:
+	class Test;
+
 	// ======================> Audit::Verdict
 
 	class Verdict
