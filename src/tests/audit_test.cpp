@@ -40,7 +40,7 @@ void Audit::Test::addMediaForMachine()
 	audit.addMediaForMachine(prefs, machine);
 
 	// validate the results
-	QVERIFY(audit.entries().size() == 12);
+	QVERIFY(audit.entries().size() == 14);
 	QVERIFY(audit.entries()[ 0].type() == Audit::Entry::Type::Rom);
 	QVERIFY(audit.entries()[ 0].name() == "aarom10");
 	QVERIFY(audit.entries()[ 1].type() == Audit::Entry::Type::Rom);
@@ -65,6 +65,10 @@ void Audit::Test::addMediaForMachine()
 	QVERIFY(audit.entries()[10].name() == "aarom08");
 	QVERIFY(audit.entries()[11].type() == Audit::Entry::Type::Rom);
 	QVERIFY(audit.entries()[11].name() == "aarom09");
+	QVERIFY(audit.entries()[12].type() == Audit::Entry::Type::Disk);
+	QVERIFY(audit.entries()[12].name() == "fakedisk.chd");
+	QVERIFY(audit.entries()[13].type() == Audit::Entry::Type::Sample);
+	QVERIFY(audit.entries()[13].name() == "fakesample.wav");
 }
 
 

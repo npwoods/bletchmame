@@ -178,6 +178,8 @@
 		<rom name="aarom07" size="4096" crc="f9812be4" sha1="5f116345f09cd79790612672aa48ede63fc91f56" region="maincpu" offset="16000"/>
 		<rom name="aarom08" size="4096" crc="cd7f3a87" sha1="59577059308931139ecc036d06953660a148d91c" region="maincpu" offset="17000"/>
 		<rom name="aarom09" size="4096" crc="e6ce77b4" sha1="bd4354100067654d0ad2e590591582dbdfb845b6" region="maincpu" offset="18000"/>
+		<disk name="fakedisk" sha1="0123456789abcdef0123456789abcdef01234567" region="ata:0:hdd:image" index="0" writable="yes"/>	<!-- Manually added-->
+		<sample name="fakesample"/>		<!-- Manually added-->
 		<device_ref name="mc6809e"/>
 		<device_ref name="m6808"/>
 		<device_ref name="nvram"/>

@@ -10,7 +10,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.11 (TBD)
 	- Enabled Link Time Optimization for Release builds
-	- Fixed a bug that could potentially cause audits to hang
+	- Various Auditing improvements
+		- Now properly identifying proper file extensions for disks and samples (CHD and WAV)
+		- Fixed a bug that could cause hangs on exit
 	- Various build improvements [Davide Cavalca]
 		- CI builds against Qt6.2
 		- No longer hardcoding a particular version of QuaZip
