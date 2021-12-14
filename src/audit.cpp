@@ -8,6 +8,7 @@
 
 #include "audit.h"
 #include "assetfinder.h"
+#include "chd.h"
 
 
 //**************************************************************************
@@ -46,6 +47,16 @@ Audit::Audit()
 
 
 //-------------------------------------------------
+//  calculateHashDirectly
+//-------------------------------------------------
+
+static std::optional<Hash> calculateHashDirectly(QIODevice &stream)
+{
+	return Hash::calculate(stream);
+}
+
+
+//-------------------------------------------------
 //  addMediaForMachine
 //-------------------------------------------------
 
@@ -61,15 +72,15 @@ void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &ma
 
 	// audit ROMs
 	for (info::rom rom : machine.roms())
-		m_entries.emplace_back(Entry::Type::Rom, rom.name(), romsPathsPos, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
+		m_entries.emplace_back(Entry::Type::Rom, rom.name(), romsPathsPos, calculateHashDirectly, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
 
 	// audit disks
 	for (info::disk disk : machine.disks())
-		m_entries.emplace_back(Entry::Type::Disk, disk.name() + ".chd", romsPathsPos, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
+		m_entries.emplace_back(Entry::Type::Disk, disk.name() + ".chd", romsPathsPos, getHashForChd, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
 
 	// audit samples
 	for (info::sample sample : machine.samples())
-		m_entries.emplace_back(Entry::Type::Sample, sample.name() + ".wav", samplesPathsPos, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
+		m_entries.emplace_back(Entry::Type::Sample, sample.name() + ".wav", samplesPathsPos, calculateHashDirectly, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
 }
 
 
@@ -125,7 +136,7 @@ void Audit::addMediaForSoftware(const Preferences &prefs, const software_list::s
 		{
 			for (const software_list::rom &rom : dataarea.roms())
 			{
-				m_entries.emplace_back(Entry::Type::Rom, rom.name(), pathsPos, info::rom::dump_status_t::GOOD, rom.size(), Hash(rom.crc32(), rom.sha1()), false);
+				m_entries.emplace_back(Entry::Type::Rom, rom.name(), pathsPos, calculateHashDirectly, info::rom::dump_status_t::GOOD, rom.size(), Hash(rom.crc32(), rom.sha1()), false);
 			}
 		}
 	}
@@ -196,10 +207,11 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 	// get critical information
 	std::uint64_t actualSize;
 	Hash actualHash;
+	std::optional<Hash> calculateHashResult;
 
 	// and time to get a verdict
 	Verdict::Type verdictType;
-	if (!stream)
+	if (!stream || !(calculateHashResult = entry.calculateHashFunc()(*stream)).has_value())
 	{
 		// this entry was not found at all
 		verdictType = Verdict::Type::NotFound;
@@ -209,7 +221,7 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 	{
 		// we have something; process it
 		actualSize = stream->size();
-		actualHash = Hash::calculate(*stream);
+		actualHash = calculateHashResult.value();
 
 		if (entry.expectedSize() && actualSize != entry.expectedSize())
 		{
@@ -295,10 +307,11 @@ Audit::Verdict::Verdict(Type type, std::uint64_t actualSize, Hash actualHash)
 //  Entry ctor
 //-------------------------------------------------
 
-Audit::Entry::Entry(Type type, const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
+Audit::Entry::Entry(Type type, const QString &name, int pathsPosition, CalcHashFunc calcHashFunc, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
 	: m_type(type)
 	, m_name(name)
 	, m_pathsPosition(pathsPosition)
+	, m_calcHashFunc(calcHashFunc)
 	, m_dumpStatus(dumpStatus)
 	, m_expectedSize(expectedSize)
 	, m_expectedHash(expectedHash)

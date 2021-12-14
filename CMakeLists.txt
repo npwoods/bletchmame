@@ -123,6 +123,8 @@ add_library(BletchMAME_core
 	src/audittask.h
 	src/buildversion.cpp
 	src/buildversion.h
+	src/chd.cpp
+	src/chd.h
 	src/hash.cpp
 	src/hash.h
 	src/iconloader.cpp
@@ -268,6 +270,7 @@ add_executable(BletchMAME_tests
 	src/tests/auditcursor_test.cpp
 	src/tests/auditqueue_test.cpp
 	src/tests/audittask_test.cpp
+	src/tests/chd_test.cpp
 	src/tests/hash_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/info_test.cpp

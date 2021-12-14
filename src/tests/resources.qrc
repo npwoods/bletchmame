@@ -7,6 +7,7 @@
         <file>resources/listxml_coco.xml</file>
         <file>resources/listxml_coco.bin</file>
         <file>resources/prefs.xml</file>
+        <file>resources/samplechd.chd</file>
         <file>resources/softlist.xml</file>
         <file>resources/sample_archive.zip</file>
         <file>resources/status_mame0226_coco2b_1.xml</file>

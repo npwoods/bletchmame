@@ -12,6 +12,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Enabled Link Time Optimization for Release builds
 	- Various Auditing improvements
 		- Now properly identifying proper file extensions for disks and samples (CHD and WAV)
+		- Now properly extracting SHA-1 hashes from CHD files
 		- Fixed a bug that could cause hangs on exit
 	- Various build improvements [Davide Cavalca]
 		- CI builds against Qt6.2
