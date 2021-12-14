@@ -85,7 +85,7 @@ std::optional<Hash> getHashForChd(QIODevice &stream)
 
 	// pluck the pertinent data out if we can
 	std::array<uint8_t, 20> sha1;
-	if (sha1Offset + sizeof(sha1) > total)
+	if (sha1Offset + sizeof(sha1) > (size_t)total)
 		return { };
 	memcpy(&sha1, &u.buffer[sha1Offset], sizeof(sha1));
 
