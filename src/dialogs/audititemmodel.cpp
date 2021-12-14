@@ -80,7 +80,7 @@ std::u8string_view AuditItemModel::iconFromAuditEntryType(Audit::Entry::Type ent
 
 AuditStatus AuditItemModel::auditStatusFromVerdict(const std::optional<Audit::Verdict> &verdict, bool optional)
 {
-	AuditStatus result;
+	std::optional<AuditStatus> result;
 	if (verdict.has_value())
 	{
 		switch (verdict->type())
@@ -96,18 +96,16 @@ AuditStatus AuditItemModel::auditStatusFromVerdict(const std::optional<Audit::Ve
 
 		case Audit::Verdict::Type::IncorrectSize:
 		case Audit::Verdict::Type::Mismatch:
+		case Audit::Verdict::Type::CouldntProcessAsset:
 			result = AuditStatus::Missing;
 			break;
-
-		default:
-			throw false;
 		}
 	}
 	else
 	{
 		result = AuditStatus::Unknown;
 	}
-	return result;
+	return result.value();
 }
 
 
@@ -208,6 +206,10 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 
 					case Audit::Verdict::Type::Mismatch:
 						result = "Mismatch";
+						break;
+
+					case Audit::Verdict::Type::CouldntProcessAsset:
+						result = "Could Not Process Asset";
 						break;
 					}
 				}
