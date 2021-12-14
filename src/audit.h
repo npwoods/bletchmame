@@ -77,8 +77,10 @@ public:
 			Sample
 		};
 
+		typedef std::optional<Hash>(*CalcHashFunc)(QIODevice &);
+
 		// ctor
-		Entry(Type type, const QString &name, int pathsPosition, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional);
+		Entry(Type type, const QString &name, int pathsPosition, CalcHashFunc calcHashFunc, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional);
 		Entry(const Entry &) = default;
 		Entry(Entry &&) = default;
 
@@ -86,6 +88,7 @@ public:
 		Type type() const									{ return m_type; }
 		const QString &name() const							{ return m_name; }
 		int pathsPosition() const							{ return m_pathsPosition; }
+		CalcHashFunc calculateHashFunc() const				{ return m_calcHashFunc; }
 		info::rom::dump_status_t dumpStatus() const			{ return m_dumpStatus; }
 		std::optional<std::uint32_t> expectedSize() const	{ return m_expectedSize; }
 		const Hash &expectedHash() const					{ return m_expectedHash; }
@@ -95,6 +98,7 @@ public:
 		Type							m_type;
 		QString							m_name;
 		int								m_pathsPosition;
+		CalcHashFunc					m_calcHashFunc;
 		info::rom::dump_status_t		m_dumpStatus;
 		std::optional<std::uint32_t>	m_expectedSize;
 		Hash							m_expectedHash;
