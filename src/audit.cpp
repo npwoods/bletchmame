@@ -211,10 +211,16 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 
 	// and time to get a verdict
 	Verdict::Type verdictType;
-	if (!stream || !(calculateHashResult = entry.calculateHashFunc()(*stream)).has_value())
+	if (!stream)
 	{
 		// this entry was not found at all
 		verdictType = Verdict::Type::NotFound;
+		actualSize = 0;
+	}
+	else if (!(calculateHashResult = entry.calculateHashFunc()(*stream)).has_value())
+	{
+		// we couldn't process the asset (corrupt CHD?)
+		verdictType = Verdict::Type::CouldntProcessAsset;
 		actualSize = 0;
 	}
 	else
@@ -270,7 +276,7 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 
 bool Audit::isVerdictSuccessful(Audit::Verdict::Type verdictType)
 {
-	bool result;
+	std::optional<bool> result;
 	switch (verdictType)
 	{
 	case Audit::Verdict::Type::Ok:
@@ -281,13 +287,11 @@ bool Audit::isVerdictSuccessful(Audit::Verdict::Type verdictType)
 	case Audit::Verdict::Type::NotFound:
 	case Audit::Verdict::Type::IncorrectSize:
 	case Audit::Verdict::Type::Mismatch:
+	case Audit::Verdict::Type::CouldntProcessAsset:
 		result = false;
 		break;
-
-	default:
-		throw false;
 	}
-	return result;
+	return result.value();
 }
 
 

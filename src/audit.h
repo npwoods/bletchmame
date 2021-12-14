@@ -43,7 +43,8 @@ public:
 			// error conditions
 			NotFound,
 			IncorrectSize,
-			Mismatch
+			Mismatch,
+			CouldntProcessAsset
 		};
 
 		// ctor
