@@ -37,7 +37,7 @@ void AuditQueue::Test::test1()
 
 	// set up the audit queue
 	QVERIFY(infoDb.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
-	AuditQueue auditQueue(prefs, infoDb, softwareListCollection);
+	AuditQueue auditQueue(prefs, infoDb, softwareListCollection, 3);
 
 	// push some stuff
 	auditQueue.push(MachineAuditIdentifier("coco"), true);
@@ -100,7 +100,7 @@ void AuditQueue::Test::test2()
 
 	// set up the audit queue
 	QVERIFY(infoDb.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
-	AuditQueue auditQueue(prefs, infoDb, softwareListCollection);
+	AuditQueue auditQueue(prefs, infoDb, softwareListCollection, 3);
 
 	// push some stuff
 	auditQueue.push(MachineAuditIdentifier("coco"), false);

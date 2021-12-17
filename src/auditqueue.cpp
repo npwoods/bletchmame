@@ -17,10 +17,11 @@
 //  ctor
 //-------------------------------------------------
 
-AuditQueue::AuditQueue(const Preferences &prefs, const info::database &infoDb, const software_list_collection &softwareListCollection)
+AuditQueue::AuditQueue(const Preferences &prefs, const info::database &infoDb, const software_list_collection &softwareListCollection, int maxAuditsPerTask)
 	: m_prefs(prefs)
 	, m_infoDb(infoDb)
 	, m_softwareListCollection(softwareListCollection)
+	, m_maxAuditsPerTask(maxAuditsPerTask)
 	, m_currentCookie(100)
 {
 }
@@ -76,12 +77,12 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 
 	// prepare a vector of entries
 	std::vector<AuditIdentifier> entries;
-	entries.reserve(MAX_AUDITS_PER_TASK);
+	entries.reserve(m_maxAuditsPerTask);
 	std::uint64_t totalMediaSize = 0;
 
 	// loop until that vector is populated
 	while (!m_undispatchedAudits.empty()				// are there undispatched audits for us?
-		&& entries.size() < MAX_AUDITS_PER_TASK			// did we hit the limit of individual audits?
+		&& entries.size() < m_maxAuditsPerTask			// did we hit the limit of individual audits?
 		&& totalMediaSize < MAX_MEDIA_SIZE_PER_TASK)	// and finally did we hit the maximum media size?
 	{
 		// find an undispatched entry
