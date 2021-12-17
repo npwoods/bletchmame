@@ -32,7 +32,6 @@ QEvent::Type ListXmlResultEvent::s_eventId = (QEvent::Type) QEvent::registerEven
 
 ListXmlTask::ListXmlTask(QString &&outputFilename)
 	: m_outputFilename(std::move(outputFilename))
-	, m_aborted(false)
 {
 }
 
@@ -44,16 +43,6 @@ ListXmlTask::ListXmlTask(QString &&outputFilename)
 QStringList ListXmlTask::getArguments(const Preferences &) const
 {
 	return { "-listxml" };
-}
-
-
-//-------------------------------------------------
-//  abort
-//-------------------------------------------------
-
-void ListXmlTask::abort()
-{
-	m_aborted = true;
 }
 
 
@@ -107,7 +96,7 @@ void ListXmlTask::internalProcess(QIODevice &process, const info::database_build
 
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected
-	if (m_aborted)
+	if (hasAborted())
 		throw list_xml_exception(ListXmlResultEvent::Status::ABORTED);
 
 	// now check for a parse error (which should be very unlikely)

@@ -47,6 +47,12 @@ protected:
 
 	// perform actual processing (should only be invoked from TaskClient within the thread proc)
 	virtual void process(QObject &eventHandler) = 0;
+
+	// are we aborting?
+	bool hasAborted() const;
+
+private:
+	volatile bool m_hasAborted;
 };
 
 

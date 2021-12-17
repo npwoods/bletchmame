@@ -97,7 +97,6 @@ public:
 protected:
 	virtual QStringList getArguments(const Preferences &) const override final;
 	virtual void process(QProcess &process, QObject &handler) override final;
-	virtual void abort() override;
 
 private:
 	// ======================> list_xml_exception
@@ -111,7 +110,6 @@ private:
 	};
 
 	QString			m_outputFilename;
-	volatile bool	m_aborted;
 
 	void internalProcess(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback = { });
 };

@@ -20,6 +20,7 @@
 //-------------------------------------------------
 
 Task::Task()
+	: m_hasAborted(false)
 {
 }
 
@@ -49,5 +50,16 @@ void Task::start(Preferences &prefs)
 
 void Task::abort()
 {
-	// by default, do nothing
+	// mark as having been aborted
+	m_hasAborted = true;
+}
+
+
+//-------------------------------------------------
+//  abort
+//-------------------------------------------------
+
+bool Task::hasAborted() const
+{
+	return m_hasAborted;
 }

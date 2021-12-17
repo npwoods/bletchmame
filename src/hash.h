@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <QByteArray>
 
 
@@ -25,6 +26,8 @@ class QIODevice;
 class Hash
 {
 public:
+	typedef std::function<bool(std::uint64_t bytesProcessed)> CalculateCallback;
+
 	class Test;
 
 	Hash(std::optional<std::uint32_t> crc32 = { }, const std::optional<std::array<uint8_t, 20>> &sha1 = { })
@@ -51,7 +54,7 @@ public:
 	Hash mask(bool useCrc32, bool useSha1) const;
 
 	// statics
-	static Hash calculate(QIODevice &stream);
+	static std::optional<Hash> calculate(QIODevice &stream, const CalculateCallback &callback);
 
 	// accessors
 	const std::optional<std::uint32_t> &crc32() const			{ return m_crc32; }

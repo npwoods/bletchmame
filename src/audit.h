@@ -78,10 +78,17 @@ public:
 			Sample
 		};
 
-		typedef std::optional<Hash>(*CalcHashFunc)(QIODevice &);
+		enum class CalculateHashStatus
+		{
+			Success,
+			Cancelled,
+			CantProcess
+		};
+
+		typedef CalculateHashStatus(*CalculateHashFunc)(QIODevice &stream, const Hash::CalculateCallback &callback, Hash &result);
 
 		// ctor
-		Entry(Type type, const QString &name, int pathsPosition, CalcHashFunc calcHashFunc, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional);
+		Entry(Type type, const QString &name, int pathsPosition, CalculateHashFunc calculateHashFunc, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional);
 		Entry(const Entry &) = default;
 		Entry(Entry &&) = default;
 
@@ -89,7 +96,7 @@ public:
 		Type type() const									{ return m_type; }
 		const QString &name() const							{ return m_name; }
 		int pathsPosition() const							{ return m_pathsPosition; }
-		CalcHashFunc calculateHashFunc() const				{ return m_calcHashFunc; }
+		CalculateHashFunc calculateHashFunc() const			{ return m_calculateHashFunc; }
 		info::rom::dump_status_t dumpStatus() const			{ return m_dumpStatus; }
 		std::optional<std::uint32_t> expectedSize() const	{ return m_expectedSize; }
 		const Hash &expectedHash() const					{ return m_expectedHash; }
@@ -99,14 +106,20 @@ public:
 		Type							m_type;
 		QString							m_name;
 		int								m_pathsPosition;
-		CalcHashFunc					m_calcHashFunc;
+		CalculateHashFunc				m_calculateHashFunc;
 		info::rom::dump_status_t		m_dumpStatus;
 		std::optional<std::uint32_t>	m_expectedSize;
 		Hash							m_expectedHash;
 		bool							m_optional;
 	};
 
-	typedef std::function<void(int entryIndex, const Verdict &verdict)> Callback;
+	// callback reported after each media is audited, should return true if aborted
+	class ICallback
+	{
+	public:
+		virtual bool reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total) = 0;
+		virtual void reportVerdict(int entryIndex, const Verdict &verdict) = 0;
+	};
 
 	// ctor
 	Audit();
@@ -117,7 +130,7 @@ public:
 	// methods
 	void addMediaForMachine(const Preferences &prefs, const info::machine &machine);
 	void addMediaForSoftware(const Preferences &prefs, const software_list::software &software);
-	AuditStatus run(const Callback &callback = { }) const;
+	std::optional<AuditStatus> run(ICallback &callback) const;
 
 	// statics
 	static bool isVerdictSuccessful(Audit::Verdict::Type verdictType);
@@ -133,6 +146,8 @@ private:
 	QStringList buildMachinePaths(const Preferences &prefs, Preferences::global_path_type pathType, std::optional<info::machine> machine);
 	int appendPaths(QStringList &&paths);
 	void auditSingleMedia(Session &session, int entryIndex, std::vector<std::unique_ptr<AssetFinder>> &assetFinders) const;
+	static Verdict::Type evaluateHashes(const std::optional<std::uint32_t> &expectedSize, const Hash &expectedHash,
+		std::uint64_t actualSize, const Hash &actualHash, info::rom::dump_status_t dumpStatus);
 };
 
 

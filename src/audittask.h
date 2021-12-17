@@ -170,6 +170,8 @@ protected:
 	virtual void process(QObject &eventHandler) final override;
 
 private:
+	class Callback;
+
 	struct Entry
 	{
 		Entry(AuditIdentifier &&identifier);

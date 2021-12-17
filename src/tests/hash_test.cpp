@@ -40,6 +40,16 @@ private:
 //**************************************************************************
 
 //-------------------------------------------------
+//  dummyCallback
+//-------------------------------------------------
+
+bool dummyCallback(size_t bytesProcessed)
+{
+	return false;
+}
+
+
+//-------------------------------------------------
 //  calculate
 //-------------------------------------------------
 
@@ -50,7 +60,7 @@ void Hash::Test::calculate()
 	QVERIFY(file.open(QIODevice::ReadOnly));
 
 	// process hashes
-	Hash hash = Hash::calculate(file);
+	Hash hash = Hash::calculate(file, dummyCallback).value();
 
 	// and verify
 	QVERIFY(hash.crc32() == 0x0FAF9FDB);
@@ -73,7 +83,7 @@ void Hash::Test::calculateForEmptyFile()
 	QVERIFY(emptyBuffer.open(QIODevice::ReadOnly));
 
 	// process hashes
-	Hash::calculate(emptyBuffer);
+	Hash::calculate(emptyBuffer, dummyCallback);
 }
 
 
@@ -92,7 +102,7 @@ void Hash::Test::handleBadRead()
 	QVERIFY(emptyBuffer.open(QIODevice::WriteOnly));
 
 	// process hashes
-	Hash::calculate(emptyBuffer);
+	Hash::calculate(emptyBuffer, dummyCallback);
 }
 
 
