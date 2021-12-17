@@ -25,11 +25,11 @@ public:
 	class Test;
 
 	// ctor
-	AuditQueue(const Preferences &prefs, const info::database &infoDb, const software_list_collection &softwareListCollection);
+	AuditQueue(const Preferences &prefs, const info::database &infoDb, const software_list_collection &softwareListCollection, int maxAuditsPerTask);
 
 	// accessors
 	bool hasUndispatched() const { return m_undispatchedAudits.size() > 0; }
-	bool isCloseToEmpty() const { return m_undispatchedAudits.size() < MAX_AUDITS_PER_TASK; }
+	bool isCloseToEmpty() const { return m_undispatchedAudits.size() < m_maxAuditsPerTask; }
 	int currentCookie() const { return m_currentCookie; }
 
 	// methods
@@ -38,13 +38,12 @@ public:
 	void bumpCookie();
 
 private:
-	const int MAX_AUDITS_PER_TASK = 20;
-
 	typedef std::unordered_map<AuditIdentifier, AuditTask::ptr> AuditTaskMap;
 
 	const Preferences &					m_prefs;
 	const info::database &				m_infoDb;
 	const software_list_collection &	m_softwareListCollection;
+	int									m_maxAuditsPerTask;
 	AuditTaskMap						m_auditTaskMap;
 	std::deque<AuditIdentifier>			m_undispatchedAudits;
 	int									m_currentCookie;
