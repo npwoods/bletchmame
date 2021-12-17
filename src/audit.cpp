@@ -19,17 +19,20 @@ class Audit::Session
 {
 public:
 	// ctor
-	Session(const Callback &callback);
+	Session(ICallback &callback);
 
 	// accessors
 	AuditStatus status() const { return m_status; }
+	bool hasAborted() const { return m_hasAborted; }
 
 	// methods
-	void message(AuditStatus newStatus, int entryIndex, const Verdict &verdict);
+	bool reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total);
+	void verdictReached(AuditStatus newStatus, int entryIndex, const Verdict &verdict);
 
 private:
-	const Callback &	m_callback;
-	AuditStatus				m_status;
+	ICallback &		m_callback;
+	AuditStatus		m_status;
+	bool			m_hasAborted;
 };
 
 
@@ -47,12 +50,40 @@ Audit::Audit()
 
 
 //-------------------------------------------------
-//  calculateHashDirectly
+//  calculateHashForFile
 //-------------------------------------------------
 
-static std::optional<Hash> calculateHashDirectly(QIODevice &stream)
+static Audit::Entry::CalculateHashStatus calculateHashForFile(QIODevice &stream, const Hash::CalculateCallback &callback, Hash &result)
 {
-	return Hash::calculate(stream, [](std::uint64_t) { return false; });
+	// calculate the hash
+	std::optional<Hash> hash = Hash::calculate(stream, callback);
+
+	// return the result
+	result = hash.has_value() ? hash.value() : Hash();
+
+	// and return the proper status
+	return hash.has_value()
+		? Audit::Entry::CalculateHashStatus::Success
+		: Audit::Entry::CalculateHashStatus::Cancelled;
+}
+
+
+//-------------------------------------------------
+//  calculateHashForChd
+//-------------------------------------------------
+
+static Audit::Entry::CalculateHashStatus calculateHashForChd(QIODevice &stream, const Hash::CalculateCallback &callback, Hash &result)
+{
+	// calculate the hash
+	std::optional<Hash> hash = getHashForChd(stream);
+
+	// return the result
+	result = hash.has_value() ? hash.value() : Hash();
+
+	// and return the proper status
+	return hash.has_value()
+		? Audit::Entry::CalculateHashStatus::Success
+		: Audit::Entry::CalculateHashStatus::CantProcess;
 }
 
 
@@ -72,15 +103,15 @@ void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &ma
 
 	// audit ROMs
 	for (info::rom rom : machine.roms())
-		m_entries.emplace_back(Entry::Type::Rom, rom.name(), romsPathsPos, calculateHashDirectly, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
+		m_entries.emplace_back(Entry::Type::Rom, rom.name(), romsPathsPos, calculateHashForFile, rom.status(), rom.size(), Hash(rom.crc32(), rom.sha1()), rom.optional());
 
 	// audit disks
 	for (info::disk disk : machine.disks())
-		m_entries.emplace_back(Entry::Type::Disk, disk.name() + ".chd", romsPathsPos, getHashForChd, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
+		m_entries.emplace_back(Entry::Type::Disk, disk.name() + ".chd", romsPathsPos, calculateHashForChd, disk.status(), std::optional<std::uint32_t>(), Hash(disk.sha1()), disk.optional());
 
 	// audit samples
 	for (info::sample sample : machine.samples())
-		m_entries.emplace_back(Entry::Type::Sample, sample.name() + ".wav", samplesPathsPos, calculateHashDirectly, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
+		m_entries.emplace_back(Entry::Type::Sample, sample.name() + ".wav", samplesPathsPos, calculateHashForFile, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
 }
 
 
@@ -136,7 +167,7 @@ void Audit::addMediaForSoftware(const Preferences &prefs, const software_list::s
 		{
 			for (const software_list::rom &rom : dataarea.roms())
 			{
-				m_entries.emplace_back(Entry::Type::Rom, rom.name(), pathsPos, calculateHashDirectly, info::rom::dump_status_t::GOOD, rom.size(), Hash(rom.crc32(), rom.sha1()), false);
+				m_entries.emplace_back(Entry::Type::Rom, rom.name(), pathsPos, calculateHashForFile, info::rom::dump_status_t::GOOD, rom.size(), Hash(rom.crc32(), rom.sha1()), false);
 			}
 		}
 	}
@@ -162,16 +193,21 @@ int Audit::appendPaths(QStringList &&paths)
 //  run
 //-------------------------------------------------
 
-AuditStatus Audit::run(const Callback &callback) const
+std::optional<AuditStatus> Audit::run(ICallback &callback) const
 {
 	Session session(callback);
 	std::vector<std::unique_ptr<AssetFinder>> assetFinders;
 
 	// loop through all entries
-	for (int i = 0; i < m_entries.size(); i++)
+	int i = 0;
+	for (i = 0; !session.hasAborted() && i < m_entries.size(); i++)
 		auditSingleMedia(session, i, assetFinders);
 
-	return session.status();
+	// report the results accordingly - note that hypothetically we could have been
+	// aborted after we completed, in which case we want to report complete results
+	return i == m_entries.size()
+		? session.status()
+		: std::optional<AuditStatus>();
 }
 
 
@@ -205,60 +241,53 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 		entry.expectedHash().crc32());
 
 	// get critical information
-	std::uint64_t actualSize;
+	std::optional<std::uint64_t> actualSize;
 	Hash actualHash;
-	std::optional<Hash> calculateHashResult;
 
 	// and time to get a verdict
-	Verdict::Type verdictType;
+	std::optional<Verdict::Type> verdictType;
 	if (!stream)
 	{
 		// this entry was not found at all
 		verdictType = Verdict::Type::NotFound;
 		actualSize = 0;
 	}
-	else if (!(calculateHashResult = entry.calculateHashFunc()(*stream)).has_value())
-	{
-		// we couldn't process the asset (corrupt CHD?)
-		verdictType = Verdict::Type::CouldntProcessAsset;
-		actualSize = 0;
-	}
 	else
 	{
-		// we have something; process it
-		actualSize = stream->size();
-		actualHash = calculateHashResult.value();
+		// we're going to calculate the hash - prep a callback
+		std::uint64_t streamSize = stream->size();
+		auto calculateHashCallback = [&session, entryIndex, streamSize](std::uint64_t bytesProcessed)
+		{
+			return session.reportProgress(entryIndex, bytesProcessed, streamSize);
+		};
 
-		if (entry.expectedSize() && actualSize != entry.expectedSize())
+		// calculate the hash
+		switch (entry.calculateHashFunc()(*stream, calculateHashCallback, actualHash))
 		{
-			// this entry has the wrong tisze
-			verdictType = Verdict::Type::IncorrectSize;
-		}
-		else if (entry.dumpStatus() == info::rom::dump_status_t::NODUMP)
-		{
-			// this entry has no good dump
-			verdictType = Verdict::Type::OkNoGoodDump;
-		}
-		else
-		{
-			// get a hash for comparison purposes
-			Hash comparisonHash = actualHash.mask(
-				entry.expectedHash().crc32().has_value(),
-				entry.expectedHash().sha1().has_value());
+		case Entry::CalculateHashStatus::Success:
+			// we've successfully processed the hash - now evaluate them
+			actualSize = streamSize;
+			verdictType = evaluateHashes(entry.expectedSize(), entry.expectedHash(), actualSize.value(), actualHash, entry.dumpStatus());
+			break;
 
-			// do they match?
-			verdictType = entry.expectedHash() == comparisonHash
-				? Verdict::Type::Ok
-				: Verdict::Type::Mismatch;
+		case Entry::CalculateHashStatus::Cancelled:
+			// user cancelled; bail
+			return;
+
+		case Entry::CalculateHashStatus::CantProcess:
+			// we couldn't process the asset (corrupt CHD?)
+			actualSize = 0;
+			verdictType = Verdict::Type::CouldntProcessAsset;
+			break;
 		}
 	}
 
 	// build the actual verdict
-	Verdict verdict(verdictType, actualSize, actualHash);
+	Verdict verdict(verdictType.value(), actualSize.value(), actualHash);
 
 	// determine the audit status
 	AuditStatus status;
-	if (isVerdictSuccessful(verdictType))
+	if (isVerdictSuccessful(verdictType.value()))
 		status = AuditStatus::Found;
 	else if (entry.optional())
 		status = AuditStatus::MissingOptional;
@@ -266,7 +295,41 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 		status = AuditStatus::Missing;
 
 	// and report this stuff
-	session.message(status, entryIndex, verdict);
+	session.verdictReached(status, entryIndex, verdict);
+}
+
+
+//-------------------------------------------------
+//  evaluateHashes
+//-------------------------------------------------
+
+Audit::Verdict::Type Audit::evaluateHashes(const std::optional<std::uint32_t> &expectedSize, const Hash &expectedHash,
+	std::uint64_t actualSize, const Hash &actualHash, info::rom::dump_status_t dumpStatus)
+{
+	Verdict::Type result;
+	if (expectedSize && actualSize != expectedSize)
+	{
+		// this entry has the wrong size
+		result = Verdict::Type::IncorrectSize;
+	}
+	else if (dumpStatus == info::rom::dump_status_t::NODUMP)
+	{
+		// this entry has no good dump
+		result = Verdict::Type::OkNoGoodDump;
+	}
+	else
+	{
+		// get a hash for comparison purposes
+		Hash comparisonHash = actualHash.mask(
+			expectedHash.crc32().has_value(),
+			expectedHash.sha1().has_value());
+
+		// do they match?
+		result = expectedHash == comparisonHash
+			? Verdict::Type::Ok
+			: Verdict::Type::Mismatch;
+	}
+	return result;
 }
 
 
@@ -311,11 +374,11 @@ Audit::Verdict::Verdict(Type type, std::uint64_t actualSize, Hash actualHash)
 //  Entry ctor
 //-------------------------------------------------
 
-Audit::Entry::Entry(Type type, const QString &name, int pathsPosition, CalcHashFunc calcHashFunc, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
+Audit::Entry::Entry(Type type, const QString &name, int pathsPosition, CalculateHashFunc calculateHashFunc, info::rom::dump_status_t dumpStatus, std::optional<std::uint32_t> expectedSize, const Hash &expectedHash, bool optional)
 	: m_type(type)
 	, m_name(name)
 	, m_pathsPosition(pathsPosition)
-	, m_calcHashFunc(calcHashFunc)
+	, m_calculateHashFunc(calculateHashFunc)
 	, m_dumpStatus(dumpStatus)
 	, m_expectedSize(expectedSize)
 	, m_expectedHash(expectedHash)
@@ -328,21 +391,42 @@ Audit::Entry::Entry(Type type, const QString &name, int pathsPosition, CalcHashF
 //  Session ctor
 //-------------------------------------------------
 
-Audit::Session::Session(const Callback &callback)
+Audit::Session::Session(ICallback &callback)
 	: m_callback(callback)
 	, m_status(AuditStatus::Found)
+	, m_hasAborted(false)
 {
 }
 
 
 //-------------------------------------------------
-//  Session::message
+//  Session::reportProgress
 //-------------------------------------------------
 
-void Audit::Session::message(AuditStatus newStatus, int entryIndex, const Verdict &verdict)
+bool Audit::Session::reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total)
 {
+	// call the actual callback
+	bool hasAborted = m_callback.reportProgress(entryIndex, bytesProcessed, total);
+
+	// if the callback indicated that we aborted, record it
+	if (hasAborted)
+		m_hasAborted = true;
+
+	// and we're done!
+	return hasAborted;
+}
+
+
+//-------------------------------------------------
+//  Session::verdictReached
+//-------------------------------------------------
+
+void Audit::Session::verdictReached(AuditStatus newStatus, int entryIndex, const Verdict &verdict)
+{
+	// aggregate the status
 	if (newStatus > m_status)
 		m_status = newStatus;
-	if (m_callback)
-		m_callback(entryIndex, verdict);
+
+	// invoke the callback
+	m_callback.reportVerdict(entryIndex, verdict);
 }

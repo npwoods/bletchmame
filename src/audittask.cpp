@@ -14,6 +14,24 @@
 QEvent::Type AuditResultEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
 QEvent::Type AuditSingleMediaEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
 
+//**************************************************************************
+//  TYPE DECLARATIONS
+//**************************************************************************
+
+class AuditTask::Callback : public Audit::ICallback
+{
+public:
+	Callback(AuditTask &host, QObject &eventHandler);
+
+	// virtuals
+	virtual bool reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total) override final;
+	virtual void reportVerdict(int entryIndex, const Audit::Verdict &verdict) override final;
+
+private:
+	AuditTask &	m_host;
+	QObject &	m_eventHandler;
+};
+
 
 //**************************************************************************
 //  MAIN IMPLEMENTATION
@@ -80,24 +98,20 @@ void AuditTask::process(QObject &eventHandler)
 	std::vector<AuditResult> results;
 
 	// prepare a callback
-	Audit::Callback callback;
-	if (m_reportSingleMedia)
-	{
-		callback = [&eventHandler](int entryIndex, const Audit::Verdict &verdict)
-		{
-			auto callbackEvt = std::make_unique<AuditSingleMediaEvent>(entryIndex, verdict);
-			QCoreApplication::postEvent(&eventHandler, callbackEvt.release());
-		};
-	}
+	Callback callback(*this, eventHandler);
 
 	// run all the audits
 	for (const Entry &entry : m_entries)
 	{
 		// run the audit
-		AuditStatus status = entry.m_audit.run(callback);
+		std::optional<AuditStatus> status = entry.m_audit.run(callback);
+
+		// if we didn't get complete results, we've been aborted and bail
+		if (!status)
+			break;
 
 		// and record the results
-		results.emplace_back(AuditIdentifier(entry.m_identifier), status);
+		results.emplace_back(AuditIdentifier(entry.m_identifier), status.value());
 	}
 
 	// and respond with the event
@@ -113,6 +127,43 @@ void AuditTask::process(QObject &eventHandler)
 AuditTask::Entry::Entry(AuditIdentifier &&identifier)
 	: m_identifier(std::move(identifier))
 {
+}
+
+
+
+//-------------------------------------------------
+//  Callback ctor
+//-------------------------------------------------
+
+AuditTask::Callback::Callback(AuditTask &host, QObject &eventHandler)
+	: m_host(host)
+	, m_eventHandler(eventHandler)
+{
+}
+
+
+//-------------------------------------------------
+//  Callback::reportProgress
+//-------------------------------------------------
+
+bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total)
+{
+	return m_host.hasAborted();
+}
+
+
+//-------------------------------------------------
+//  Callback::reportVerdict
+//-------------------------------------------------
+
+void AuditTask::Callback::reportVerdict(int entryIndex, const Audit::Verdict &verdict)
+{
+	// report single media, if we were asked to do so
+	if (m_host.m_reportSingleMedia)
+	{
+		auto callbackEvt = std::make_unique<AuditSingleMediaEvent>(entryIndex, verdict);
+		QCoreApplication::postEvent(&m_eventHandler, callbackEvt.release());
+	}
 }
 
 
