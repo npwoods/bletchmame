@@ -38,7 +38,7 @@ public:
 	void bumpCookie();
 
 private:
-	const int MAX_AUDITS_PER_TASK = 3;
+	const int MAX_AUDITS_PER_TASK = 20;
 
 	typedef std::unordered_map<AuditIdentifier, AuditTask::ptr> AuditTaskMap;
 

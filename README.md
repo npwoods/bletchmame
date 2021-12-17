@@ -11,7 +11,10 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.11 (TBD)
 	- Enabled Link Time Optimization for Release builds
 	- Various Auditing improvements
-		- Optimized dispatch of auditing tasks (capping maximum size at 50 MB)
+		- Optimized dispatch of auditing tasks
+			- Increased the amount of simultaneous auditing tasks
+			- Changed maximum of audits per audit task to 20 (was 3)
+			- Any audit task will max out at 50 MB
 		- Now properly identifying proper file extensions for disks and samples (CHD and WAV)
 		- Now properly extracting SHA-1 hashes from CHD files
 		- Fixed a bug that could cause hangs on exit
