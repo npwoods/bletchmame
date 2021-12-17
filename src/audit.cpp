@@ -52,7 +52,7 @@ Audit::Audit()
 
 static std::optional<Hash> calculateHashDirectly(QIODevice &stream)
 {
-	return Hash::calculate(stream);
+	return Hash::calculate(stream, [](std::uint64_t) { return false; });
 }
 
 

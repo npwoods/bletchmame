@@ -36,9 +36,15 @@ Hash::Hash(std::optional<std::uint32_t> crc32, const QByteArray &sha1)
 //  calculate - calculates CRC32 and SHA-1
 //-------------------------------------------------
 
-Hash Hash::calculate(QIODevice &stream)
+std::optional<Hash> Hash::calculate(QIODevice &stream, const CalculateCallback &callback)
 {
+	// sanity check
+	if (!callback)
+		throw false;
+
+	// setup
 	std::uint32_t crc32 = ~0;
+	std::uint64_t bytesProcessed = 0;
 
 	// Qt has SHA-1 functionality
 	QCryptographicHash cryptographicHash(QCryptographicHash::Algorithm::Sha1);
@@ -50,6 +56,7 @@ Hash Hash::calculate(QIODevice &stream)
 		int len = (int)stream.read(buffer, std::size(buffer));
 		if (len <= 0)
 			break;
+		bytesProcessed += len;
 
 		// CRC32 processing
 		for (int i = 0; i < len; i++)
@@ -57,6 +64,10 @@ Hash Hash::calculate(QIODevice &stream)
 
 		// SHA-1 processing
 		cryptographicHash.addData(buffer, len);
+
+		// invoke callback if appropriate
+		if (callback(bytesProcessed))
+			return { };
 	}
 
 	// we're done; return the right results
