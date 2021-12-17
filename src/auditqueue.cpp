@@ -70,16 +70,31 @@ void AuditQueue::push(AuditIdentifier &&identifier, bool isPrioritized)
 
 AuditTask::ptr AuditQueue::tryCreateAuditTask()
 {
-	// come up with a list of entries
+	// we want a rough maximum media size for any given task (though
+	// we will tolerate a single media above that size)
+	const std::uint64_t MAX_MEDIA_SIZE_PER_TASK = 50000000;
+
+	// prepare a vector of entries
 	std::vector<AuditIdentifier> entries;
 	entries.reserve(MAX_AUDITS_PER_TASK);
-	while (entries.size() < MAX_AUDITS_PER_TASK && !m_undispatchedAudits.empty())
+	std::uint64_t totalMediaSize = 0;
+
+	// loop until that vector is populated
+	while (!m_undispatchedAudits.empty()				// are there undispatched audits for us?
+		&& entries.size() < MAX_AUDITS_PER_TASK			// did we hit the limit of individual audits?
+		&& totalMediaSize < MAX_MEDIA_SIZE_PER_TASK)	// and finally did we hit the maximum media size?
 	{
 		// find an undispatched entry
 		AuditIdentifier &entry = m_undispatchedAudits.front();
 
+		// estimate its size and bail if it would be too big
+		std::uint64_t mediaSize = getExpectedMediaSize(entry);
+		if (!entries.empty() && totalMediaSize + mediaSize >= MAX_MEDIA_SIZE_PER_TASK)
+			break;
+
 		// add it to our list
 		entries.push_back(std::move(entry));
+		totalMediaSize += mediaSize;
 
 		// and pop it off the queue
 		m_undispatchedAudits.pop_front();
@@ -96,10 +111,58 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 
 
 //-------------------------------------------------
+//  getExpectedMediaSize
+//-------------------------------------------------
+
+std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdentifier) const
+{
+	std::uint64_t result = 0;
+	std::visit([this, &result](auto &&x)
+	{
+		using T = std::decay_t<decltype(x)>;
+		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		{
+			// machine audit
+			std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
+			if (machine.has_value())
+			{
+				for (info::rom rom : machine->roms())
+					result += rom.size();
+			}
+		}
+		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		{
+			// software audit
+			const software_list::software *software = findSoftware(x.softwareList(), x.software());
+			if (software)
+			{
+				for (const software_list::part &part : software->parts())
+				{
+					for (const software_list::dataarea &area : part.dataareas())
+					{
+						for (const software_list::rom &rom : area.roms())
+						{
+							if (rom.size().has_value())
+								result += rom.size().value();
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			throw false;
+		}
+	}, auditIdentifier);
+	return result;
+}
+
+
+//-------------------------------------------------
 //  createAuditTask
 //-------------------------------------------------
 
-AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers)
+AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers) const
 {
 	// create an audit task with a single audit
 	AuditTask::ptr auditTask = std::make_shared<AuditTask>(false, currentCookie());
