@@ -50,7 +50,8 @@ private:
 	int									m_currentCookie;
 
 	// private methods
-	AuditTask::ptr createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers);
+	std::uint64_t getExpectedMediaSize(const AuditIdentifier &auditIdentifier) const;
+	AuditTask::ptr createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers) const;
 	const software_list::software *findSoftware(const QString &softwareList, const QString &software) const;
 };
 
