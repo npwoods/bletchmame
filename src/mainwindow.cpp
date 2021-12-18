@@ -703,6 +703,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
 	using namespace std::chrono_literals;
 
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainWindow>();
 	m_ui->setupUi(this);
