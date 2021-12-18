@@ -81,6 +81,6 @@ void VersionTask::process(QProcess &process, QObject &eventHandler)
 
 Task::ptr createVersionTask()
 {
-	return std::make_unique<VersionTask>();
+	return std::make_shared<VersionTask>();
 }
 
