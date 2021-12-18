@@ -28,6 +28,7 @@ Job MameTask::s_job;
 //-------------------------------------------------
 
 MameTask::MameTask()
+	: m_readySemaphoreReleased(false)
 {
 }
 
@@ -71,12 +72,15 @@ void MameTask::start(Preferences &prefs)
 	const QString &extraArguments = prefs.getMameExtraArguments();
 	appendExtraArguments(arguments, extraArguments);
 
-	// set the callback
-	auto finishedCallback = [this](int exitCode, QProcess::ExitStatus exitStatus)
+	// set up signals
+	connect(&m_process, &QProcess::finished, &m_process, [this](int exitCode, QProcess::ExitStatus exitStatus)
 	{
 		onChildProcessCompleted(static_cast<MameTask::EmuError>(exitCode));
-	};
-	connect(&m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), finishedCallback);
+	});
+	connect(&m_process, &QProcess::readyReadStandardOutput, &m_process, [this]()
+	{
+		releaseReadySemaphore();
+	});
 	m_process.setReadChannel(QProcess::StandardOutput);
 
 	// log the command line (if appropriate)
@@ -90,10 +94,6 @@ void MameTask::start(Preferences &prefs)
 	qint64 processId = m_process.processId();
 	if (processId)
 		s_job.addProcess(processId);
-
-	// wait for the process to get going
-	m_process.waitForStarted();
-	m_process.waitForReadyRead();
 }
 
 
@@ -138,8 +138,22 @@ void MameTask::appendExtraArguments(QStringList &argv, const QString &extraArgum
 
 void MameTask::process(QObject &eventHandler)
 {
+	// wait for us to be ready
+	m_readySemaphore.acquire(1);
+
 	// use our own process call
 	process(m_process, eventHandler);
+}
+
+
+//-------------------------------------------------
+//  abort
+//-------------------------------------------------
+
+void MameTask::abort()
+{
+	Task::abort();
+	releaseReadySemaphore();
 }
 
 
@@ -149,4 +163,18 @@ void MameTask::process(QObject &eventHandler)
 
 void MameTask::onChildProcessCompleted(EmuError status)
 {
+}
+
+
+//-------------------------------------------------
+//  releaseReadySemaphore
+//-------------------------------------------------
+
+void MameTask::releaseReadySemaphore()
+{
+	if (!m_readySemaphoreReleased)
+	{
+		m_readySemaphore.release(1);
+		m_readySemaphoreReleased = true;
+	}
 }

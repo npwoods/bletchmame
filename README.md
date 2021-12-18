@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.11 (TBD)
 	- Enabled Link Time Optimization for Release builds
+	- Fixed an issue that could cause the UI to hang whenever MAME was invoked
 	- Various Auditing improvements
 		- Optimized dispatch of auditing tasks
 			- Increased the amount of simultaneous auditing tasks
