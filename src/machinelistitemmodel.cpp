@@ -130,6 +130,7 @@ void MachineListItemModel::iconsChanged(int startIndex, int endIndex)
 
 void MachineListItemModel::populateIndexes()
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
 	beginResetModel();
 
 	// prep the indexes
