@@ -22,6 +22,12 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
+QT_BEGIN_NAMESPACE
+class QTextStream;
+QT_END_NAMESPACE
+
+// ======================> MameTask
+
 class MameTask : public Task
 {
 public:
@@ -80,6 +86,7 @@ private:
 	bool			m_readySemaphoreReleased;
 
 	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
+	static void formatCommandLine(QTextStream &stream, const QString &program, const QStringList &arguments);
 	void releaseReadySemaphore();
 };
 
