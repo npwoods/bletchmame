@@ -6,6 +6,8 @@
 
 ***************************************************************************/
 
+#include <QCoreApplication>
+
 #include "mametask.h"
 #include "prefs.h"
 
@@ -85,7 +87,14 @@ void MameTask::start(Preferences &prefs)
 
 	// log the command line (if appropriate)
 	if (LOG_LAUNCH_COMMAND)
-		qDebug() << "MameTask::prepare(): program=" << program << " arguments=" << arguments;
+	{
+		QFile file(QCoreApplication::applicationDirPath() + "/mame_command_line.txt");
+		if (file.open(QIODevice::WriteOnly))
+		{
+			QTextStream textStream(&file);
+			formatCommandLine(textStream, program, arguments);
+		}
+	}
 
 	// launch the process
 	m_process.start(program, arguments);
@@ -128,6 +137,32 @@ void MameTask::appendExtraArguments(QStringList &argv, const QString &extraArgum
 		{
 			wordStartPos = i;
 		}
+	}
+}
+
+
+//-------------------------------------------------
+//  formatCommandLine
+//-------------------------------------------------
+
+void MameTask::formatCommandLine(QTextStream &stream, const QString &program, const QStringList &arguments)
+{
+	bool isFirst = true;
+	QStringList allParams;
+	allParams << program << arguments;
+	for (const QString &str : allParams)
+	{
+		if (isFirst)
+			isFirst = false;
+		else
+			stream << ' ';
+
+		bool needsQuotes = str.isEmpty() || str.indexOf(' ') >= 0;
+		if (needsQuotes)
+			stream << '\"';
+		stream << str;
+		if (needsQuotes)
+			stream << '\"';
 	}
 }
 
