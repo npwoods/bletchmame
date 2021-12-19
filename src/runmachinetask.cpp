@@ -158,6 +158,7 @@ void RunMachineTask::abort()
 
 void RunMachineTask::onChildProcessCompleted(EmuError status)
 {
+	MameTask::onChildProcessCompleted(status);
 	internalPost(Message::type::TERMINATED, "", status);
 }
 

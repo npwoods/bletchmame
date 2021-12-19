@@ -198,6 +198,7 @@ void MameTask::abort()
 
 void MameTask::onChildProcessCompleted(EmuError status)
 {
+	releaseReadySemaphore();
 }
 
 
@@ -207,6 +208,8 @@ void MameTask::onChildProcessCompleted(EmuError status)
 
 void MameTask::releaseReadySemaphore()
 {
+	// there are a number of activities that can trigger the need to release this semaphore (MAME completing, being aborted, or
+	// error conditions); we want to make sure that all of these activities result the semaphore being released, and only once
 	if (!m_readySemaphoreReleased)
 	{
 		m_readySemaphore.release(1);
