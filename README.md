@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.11 (TBD)
 	- Enabled Link Time Optimization for Release builds
+	- Made BletchMAME aware of the CHD Diff path (-diff_directory)
 	- Fixed an issue that could cause the UI to hang whenever MAME was invoked
 	- Fixed an issue that could cause the MAME window to not be properly attached to BletchMAME's window when starting an emulation session
 	- Fixed a bug that caused LUA errors when using fixed slot devices in MAME versions 0.227 and after

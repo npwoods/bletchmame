@@ -101,6 +101,7 @@ QStringList PathsDialog::buildComboBoxStrings()
 	paths[(size_t)Preferences::global_path_type::SAMPLES] = "Samples";
 	paths[(size_t)Preferences::global_path_type::CONFIG] = "Config Files";
 	paths[(size_t)Preferences::global_path_type::NVRAM] = "NVRAM Files";
+	paths[(size_t)Preferences::global_path_type::DIFF] = "CHD Diff Files";
 	paths[(size_t)Preferences::global_path_type::HASH] = "Hash Files";
 	paths[(size_t)Preferences::global_path_type::ARTWORK] = "Artwork Files";
 	paths[(size_t)Preferences::global_path_type::ICONS] = "Icons";
