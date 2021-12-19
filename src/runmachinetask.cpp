@@ -140,7 +140,7 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 void RunMachineTask::abort()
 {
 	// do the inherited stuff
-	Task::abort();
+	MameTask::abort();
 
 	// be nice, try to exit
 	issue({ "exit" });

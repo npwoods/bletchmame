@@ -12,6 +12,7 @@
 #define MAMETASK_H
 
 #include <QProcess>
+#include <QSemaphore>
 
 #include "task.h"
 #include "job.h"
@@ -54,6 +55,8 @@ public:
 	// perform actual processing (should only be invoked from TaskClient within the thread proc)
 	virtual void process(QObject &eventHandler) override final;
 
+	virtual void abort() override;
+
 protected:
 	// ctor
 	MameTask();
@@ -73,8 +76,11 @@ protected:
 private:
 	static Job		s_job;
 	QProcess		m_process;
+	QSemaphore		m_readySemaphore;
+	bool			m_readySemaphoreReleased;
 
 	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
+	void releaseReadySemaphore();
 };
 
 #endif // MAMETASK_H
