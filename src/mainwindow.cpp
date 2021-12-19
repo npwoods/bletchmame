@@ -1630,8 +1630,16 @@ void MainWindow::launchVersionCheck(bool promptIfMameNotFound)
 
 bool MainWindow::loadInfoDb()
 {
+	// load the info DB
 	QString dbPath = m_prefs.getMameXmlDatabasePath();
-	return m_info_db.load(dbPath, m_mameVersion);
+	bool success = m_info_db.load(dbPath, m_mameVersion);
+
+	// special case for when we're starting up - if we successfully load Info DB but we have
+	// not determined the MAME version yet, lets assume that Info DB is correct
+	if (success && m_mameVersion.isEmpty())
+		m_mameVersion = m_info_db.version();
+
+	return success;
 }
 
 
@@ -1754,6 +1762,9 @@ QString MainWindow::attachWidgetId() const
 
 void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
+	// sanity check - this should never happen
+	assert(!m_mameVersion.isEmpty());
+
 	// set the session behavior
 	m_sessionBehavior = std::move(sessionBehavior);
 
