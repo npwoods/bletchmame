@@ -139,6 +139,16 @@ function get_device_tag_init(device)
 end
 local get_device_tag = get_device_tag_init
 
+function get_slot_default_option_init(slot)
+	if slot.default_option and type(slot.default_option) == "function" then
+		get_slot_default_option = function(slot) return slot:default_option() end
+	else
+		get_slot_default_option = function(slot) return slot.default_option end
+	end
+	return get_slot_default_option(slot)
+end
+local get_slot_default_option = get_slot_default_option_init
+
 -- get the running_machine - this is different in MAME 0.227 and beyond
 local machine, machine_debugger, machine_input, machine_ioport, machine_natkeyboard
 local machine_options, machine_sound, machine_uiinput, machine_video, ui, plugins
@@ -458,7 +468,7 @@ function emit_status(light, out)
 				-- perform logic equivalent to menu_slot_devices::get_current_option()
 				local current_option_name
 				if (slot.fixed) then
-					current_option_name = slot:default_option()
+					current_option_name = get_slot_default_option(slot)
 				else
 					local current_option = get_slot_option(name)
 					if current_option then
