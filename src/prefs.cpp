@@ -30,6 +30,7 @@ std::array<const char *, util::enum_count<Preferences::global_path_type>()>	Pref
 	"samples",
 	"config",
 	"nvram",
+	"diff",
 	"hash",
 	"artwork",
 	"icons",
@@ -227,6 +228,7 @@ Preferences::PathCategory Preferences::getPathCategory(global_path_type path_typ
 
 	case Preferences::global_path_type::CONFIG:
 	case Preferences::global_path_type::NVRAM:
+	case Preferences::global_path_type::DIFF:
 		result = PathCategory::SingleDirectory;
 		break;
 
@@ -1329,6 +1331,7 @@ Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configD
 	{
 		m_paths[(size_t)global_path_type::CONFIG]	= QDir::toNativeSeparators(configDirectory->absolutePath());
 		m_paths[(size_t)global_path_type::NVRAM]	= QDir::toNativeSeparators(configDirectory->absolutePath());
+		m_paths[(size_t)global_path_type::DIFF]		= QDir::toNativeSeparators(configDirectory->absolutePath());
 		m_paths[(size_t)global_path_type::PROFILES]	= QDir::toNativeSeparators(configDirectory->filePath("profiles"));
 	}
 }

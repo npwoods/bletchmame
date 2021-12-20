@@ -119,6 +119,7 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 	results << "-samplepath"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES);
 	results << "-cfg_directory"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG);
 	results << "-nvram_directory"	<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM);
+	results << "-diff_directory"	<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::DIFF);
 	results << "-hashpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::HASH);
 	results << "-artpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK);
 	results << "-pluginspath"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS);

@@ -66,6 +66,7 @@ public:
 		SAMPLES,
 		CONFIG,
 		NVRAM,
+		DIFF,
 		HASH,
 		ARTWORK,
 		ICONS,
