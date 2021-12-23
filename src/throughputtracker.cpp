@@ -19,7 +19,6 @@
 using namespace std::chrono_literals;
 
 static const std::chrono::seconds TIME_WINDOW = 10s;
-static const std::chrono::seconds DUMP_PERIOD = 1s;
 
 
 
@@ -34,6 +33,7 @@ static const std::chrono::seconds DUMP_PERIOD = 1s;
 ThroughputTracker::ThroughputTracker(const QString &fileName)
 	: m_fileName(fileName)
 	, m_totalUnits(0)
+	, m_throttler(1s)
 {
 }
 
@@ -45,7 +45,7 @@ ThroughputTracker::ThroughputTracker(const QString &fileName)
 void ThroughputTracker::mark(double units)
 {
 	// get the current time
-	interval_t interval(clock());
+	Throttler::interval_t interval = Throttler::now();
 
 	// pop items that are out of the window
 	while (!m_queue.empty() && (interval - m_queue.front().m_interval) > TIME_WINDOW)
@@ -64,11 +64,8 @@ void ThroughputTracker::mark(double units)
 	m_totalUnits += units;
 
 	// dump if appropriate
-	if (!m_lastDump || (interval - *m_lastDump) > DUMP_PERIOD)
-	{
+	if (m_throttler.check(interval))
 		dump();
-		m_lastDump = interval;
-	}
 }
 
 

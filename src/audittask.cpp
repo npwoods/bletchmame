@@ -12,7 +12,7 @@
 #include "prefs.h"
 
 QEvent::Type AuditResultEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
-QEvent::Type AuditSingleMediaEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
+QEvent::Type AuditProgressEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
 
 //**************************************************************************
 //  TYPE DECLARATIONS
@@ -30,6 +30,8 @@ public:
 private:
 	AuditTask &	m_host;
 	QObject &	m_eventHandler;
+
+	void postProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total, std::optional<Audit::Verdict> &&verdict = { });
 };
 
 
@@ -41,10 +43,14 @@ private:
 //  ctor
 //-------------------------------------------------
 
-AuditTask::AuditTask(bool reportSingleMedia, int cookie)
-	: m_reportSingleMedia(reportSingleMedia)
-	, m_cookie(cookie)
+AuditTask::AuditTask(bool reportProgress, int cookie)
+	: m_cookie(cookie)
 {
+	using namespace std::chrono_literals;
+
+	// if we're reporting progress, only then set up the throttler
+	if (reportProgress)
+		m_reportThrottler.emplace(500ms);
 }
 
 
@@ -148,6 +154,10 @@ AuditTask::Callback::Callback(AuditTask &host, QObject &eventHandler)
 
 bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total)
 {
+	// report progress, if we were asked to do so
+	if (m_host.m_reportThrottler.has_value() && m_host.m_reportThrottler->check())
+		postProgressEvent(entryIndex, bytesProcessed, total);
+
 	return m_host.hasAborted();
 }
 
@@ -158,12 +168,20 @@ bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProc
 
 void AuditTask::Callback::reportVerdict(int entryIndex, const Audit::Verdict &verdict)
 {
-	// report single media, if we were asked to do so
-	if (m_host.m_reportSingleMedia)
-	{
-		auto callbackEvt = std::make_unique<AuditSingleMediaEvent>(entryIndex, verdict);
-		QCoreApplication::postEvent(&m_eventHandler, callbackEvt.release());
-	}
+	// report progress, if we were asked to do so
+	if (m_host.m_reportProgress)
+		postProgressEvent(entryIndex, ~0, ~0, Audit::Verdict(verdict));
+}
+
+
+//-------------------------------------------------
+//  Callback::postProgressEvent
+//-------------------------------------------------
+
+void AuditTask::Callback::postProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, std::optional<Audit::Verdict> &&verdict)
+{
+	auto callbackEvt = std::make_unique<AuditProgressEvent>(entryIndex, bytesProcessed, totalBytes, std::move(verdict));
+	QCoreApplication::postEvent(&m_eventHandler, callbackEvt.release());
 }
 
 
@@ -236,12 +254,14 @@ AuditResultEvent::AuditResultEvent(std::vector<AuditResult> &&results, int cooki
 
 
 //-------------------------------------------------
-//  AuditSingleMediaEvent ctor
+//  AuditProgressEvent ctor
 //-------------------------------------------------
 
-AuditSingleMediaEvent::AuditSingleMediaEvent(int entryIndex, Audit::Verdict verdict)
+AuditProgressEvent::AuditProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, std::optional<Audit::Verdict> &&verdict)
 	: QEvent(eventId())
 	, m_entryIndex(entryIndex)
+	, m_bytesProcessed(bytesProcessed)
+	, m_totalBytes(totalBytes)
 	, m_verdict(verdict)
 {
 }

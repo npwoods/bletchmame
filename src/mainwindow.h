@@ -194,7 +194,7 @@ private:
 	bool onRunMachineCompleted(const RunMachineCompletedEvent &event);
 	bool onStatusUpdate(StatusUpdateEvent &event);
 	bool onAuditResult(const AuditResultEvent &event);
-	bool onAuditSingleMedia(const AuditSingleMediaEvent &event);
+	bool onAuditProgress(const AuditProgressEvent &event);
 	bool onChatter(const ChatterEvent &event);
 
 	// other events
