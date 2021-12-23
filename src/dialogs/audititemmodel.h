@@ -42,7 +42,7 @@ public:
 	void singleMediaAudited(int entryIndex, const Audit::Verdict &verdict);
 
 	// virtuals
-	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override final;
+	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override final;
 	virtual QModelIndex parent(const QModelIndex &child) const override final;
 	virtual int rowCount(const QModelIndex &parent) const override final;
 	virtual int columnCount(const QModelIndex &parent) const override final;

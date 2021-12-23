@@ -21,6 +21,7 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class AuditDialog; }
+class QProgressBar;
 QT_END_NAMESPACE
 
 class IconLoader;
@@ -37,10 +38,28 @@ public:
 	~AuditDialog();
 
 	// methods
-	void singleMediaAudited(int entryIndex, const Audit::Verdict &verdict);
+	void auditProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, const std::optional<Audit::Verdict> &verdict);
 
 private:
-	std::unique_ptr<Ui::AuditDialog> m_ui;
+	class ActiveProgressBar
+	{
+	public:
+		ActiveProgressBar(int entryIndex);
+
+		// methods
+		QWidget &widget();
+		int entryIndex() const;
+		void update(std::uint64_t bytesProcessed, std::uint64_t totalBytes);
+
+	private:
+		QProgressBar &	m_progressBar;
+		int				m_entryIndex;
+	};
+
+	std::unique_ptr<Ui::AuditDialog>	m_ui;
+	std::optional<ActiveProgressBar>	m_activeProgressBar;
+
+	QModelIndex modelIndexForProgressBar(int entryIndex);
 };
 
 

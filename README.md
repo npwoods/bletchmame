@@ -15,6 +15,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Fixed an issue that could cause the MAME window to not be properly attached to BletchMAME's window when starting an emulation session
 	- Fixed a bug that caused LUA errors when using fixed slot devices in MAME versions 0.227 and after
 	- Various Auditing improvements
+		- The auditing dialog will now show a progress bar
 		- Optimized dispatch of auditing tasks
 			- Increased the amount of simultaneous auditing tasks
 			- Changed maximum of audits per audit task to 20 (was 3)

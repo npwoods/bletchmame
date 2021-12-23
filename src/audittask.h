@@ -10,11 +10,13 @@
 #define AUDITTASK_H
 
 #include <QEvent>
+#include <optional>
 #include <variant>
 
 #include "audit.h"
 #include "info.h"
 #include "task.h"
+#include "throttler.h"
 
 
 //**************************************************************************
@@ -128,22 +130,26 @@ private:
 };
 
 
-// ======================> AuditSingleMediaEvent
+// ======================> AuditProgressEvent
 
-class AuditSingleMediaEvent : public QEvent
+class AuditProgressEvent : public QEvent
 {
 public:
-	AuditSingleMediaEvent(int entryIndex, Audit::Verdict verdict);
+	AuditProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, std::optional<Audit::Verdict> &&verdict);
 	static QEvent::Type eventId() { return s_eventId; }
 
 	// accessors
 	int entryIndex() const { return m_entryIndex; }
-	const Audit::Verdict &verdict() const { return m_verdict; }
+	std::uint64_t bytesProcessed() const { return m_bytesProcessed; }
+	std::uint64_t totalBytes() const { return m_totalBytes; }
+	const std::optional<Audit::Verdict> &verdict() const { return m_verdict; }
 
 private:
-	static QEvent::Type	s_eventId;
-	int					m_entryIndex;
-	Audit::Verdict		m_verdict;
+	static QEvent::Type				s_eventId;
+	int								m_entryIndex;
+	std::uint64_t					m_bytesProcessed;
+	std::uint64_t					m_totalBytes;
+	std::optional<Audit::Verdict>	m_verdict;
 };
 
 
@@ -155,7 +161,7 @@ public:
 	typedef std::shared_ptr<AuditTask> ptr;
 
 	// ctor
-	AuditTask(bool reportSingleMedia, int cookie);
+	AuditTask(bool reportProgress, int cookie);
 
 	// methods
 	const Audit &addMachineAudit(const Preferences &prefs, const info::machine &machine);
@@ -180,9 +186,10 @@ private:
 		Audit			m_audit;
 	};
 
-	std::vector<Entry>	m_entries;
-	bool				m_reportSingleMedia;
-	int					m_cookie;
+	std::vector<Entry>			m_entries;
+	std::optional<Throttler>	m_reportThrottler;
+	bool						m_reportProgress;
+	int							m_cookie;
 };
 
 #endif // AUDITTASK_H

@@ -1575,9 +1575,9 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onAuditResult(static_cast<AuditResultEvent &>(*event));
 	}
-	else if (event->type() == AuditSingleMediaEvent::eventId())
+	else if (event->type() == AuditProgressEvent::eventId())
 	{
-		result = onAuditSingleMedia(static_cast<AuditSingleMediaEvent &>(*event));
+		result = onAuditProgress(static_cast<AuditProgressEvent &>(*event));
 	}
 	else if (event->type() == ChatterEvent::eventId())
 	{
@@ -2930,12 +2930,12 @@ bool MainWindow::onAuditResult(const AuditResultEvent &event)
 
 
 //-------------------------------------------------
-//  onAuditSingleMedia
+//  onAuditProgress
 //-------------------------------------------------
 
-bool MainWindow::onAuditSingleMedia(const AuditSingleMediaEvent &event)
+bool MainWindow::onAuditProgress(const AuditProgressEvent &event)
 {
 	if (m_currentAuditDialog)
-		m_currentAuditDialog->singleMediaAudited(event.entryIndex(), event.verdict());
+		m_currentAuditDialog->auditProgress(event.entryIndex(), event.bytesProcessed(), event.totalBytes(), event.verdict());
 	return true;
 }
