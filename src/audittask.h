@@ -188,7 +188,6 @@ private:
 
 	std::vector<Entry>			m_entries;
 	std::optional<Throttler>	m_reportThrottler;
-	bool						m_reportProgress;
 	int							m_cookie;
 };
 
