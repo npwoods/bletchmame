@@ -169,7 +169,7 @@ bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProc
 void AuditTask::Callback::reportVerdict(int entryIndex, const Audit::Verdict &verdict)
 {
 	// report progress, if we were asked to do so
-	if (m_host.m_reportProgress)
+	if (m_host.m_reportThrottler.has_value())
 		postProgressEvent(entryIndex, ~0, ~0, Audit::Verdict(verdict));
 }
 
