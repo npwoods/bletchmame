@@ -158,6 +158,8 @@ private:
 class AuditTask : public Task
 {
 public:
+	class Test;
+
 	typedef std::shared_ptr<AuditTask> ptr;
 
 	// ctor
