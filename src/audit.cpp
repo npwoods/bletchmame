@@ -111,7 +111,7 @@ void Audit::addMediaForMachine(const Preferences &prefs, const info::machine &ma
 
 	// audit samples
 	for (info::sample sample : machine.samples())
-		m_entries.emplace_back(Entry::Type::Sample, sample.name() + ".wav", samplesPathsPos, calculateHashForFile, info::rom::dump_status_t::NODUMP, std::optional<std::uint32_t>(), Hash(), true);
+		m_entries.emplace_back(Entry::Type::Sample, sample.name() + ".wav", samplesPathsPos, calculateHashForFile, info::rom::dump_status_t::GOOD, std::optional<std::uint32_t>(), Hash(), true);
 }
 
 
