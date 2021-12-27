@@ -59,7 +59,7 @@ public:
 	virtual void start(Preferences &prefs) override final;
 
 	// perform actual processing (should only be invoked from TaskClient within the thread proc)
-	virtual void process(QObject &eventHandler) override final;
+	virtual void process(const PostEventFunc &postEventFunc) override final;
 
 	virtual void abort() override;
 
@@ -74,7 +74,7 @@ protected:
 	virtual QStringList getArguments(const Preferences &prefs) const = 0;
 
 	// called on a child thread tasked with ownership of a MAME child process
-	virtual void process(QProcess &process, QObject &eventHandler) = 0;
+	virtual void process(QProcess &process, const PostEventFunc &postEventFunc) = 0;
 
 	// called on the main thread when the child process has been completed
 	virtual void onChildProcessCompleted(EmuError status);

@@ -96,7 +96,7 @@ public:
 
 protected:
 	virtual QStringList getArguments(const Preferences &) const override final;
-	virtual void process(QProcess &process, QObject &handler) override final;
+	virtual void process(QProcess &process, const PostEventFunc &postEventFunc) override final;
 
 private:
 	// ======================> list_xml_exception

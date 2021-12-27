@@ -42,11 +42,13 @@ public:
 	virtual void abort();
 
 protected:
+	typedef std::function<void(std::unique_ptr<QEvent> &&event)> PostEventFunc;
+
 	// start this task (should only be invoked from TaskClient from the main thread)
 	virtual void start(Preferences &prefs);
 
 	// perform actual processing (should only be invoked from TaskClient within the thread proc)
-	virtual void process(QObject &eventHandler) = 0;
+	virtual void process(const PostEventFunc &postEventFunc) = 0;
 
 	// are we aborting?
 	bool hasAborted() const;

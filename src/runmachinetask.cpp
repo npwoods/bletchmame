@@ -238,23 +238,23 @@ QString RunMachineTask::buildCommand(const std::vector<QString> &args)
 //  process
 //-------------------------------------------------
 
-void RunMachineTask::process(QProcess &process, QObject &handler)
+void RunMachineTask::process(QProcess &process, const PostEventFunc &postEventFunc)
 {
 	bool success;
 	QString errorMessage;
 
 	// set up the controller
-	MameWorkerController controller(process, [this, &handler](MameWorkerController::ChatterType type, const QString &text)
+	MameWorkerController controller(process, [this, &postEventFunc](MameWorkerController::ChatterType type, const QString &text)
 	{
 		if (m_chatterEnabled)
 		{
 			auto evt = std::make_unique<ChatterEvent>(type, text);
-			QCoreApplication::postEvent(&handler, evt.release());
+			postEventFunc(std::move(evt));
 		}
 	});
 
 	// receive the inaugural response from MAME; we want to call it quits if this doesn't work
-	MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller, handler);
+	MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller, postEventFunc);
 	if (response.m_type != MameWorkerController::Response::Type::Ok)
 	{
 		// alas, we have an error starting MAME
@@ -285,7 +285,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 				controller.issueCommand(message.m_command);
 
 				// and receive a response from MAME
-				response = receiveResponseAndHandleUpdates(controller, handler);
+				response = receiveResponseAndHandleUpdates(controller, postEventFunc);
 				break;
 
 			case Message::type::TERMINATED:
@@ -309,7 +309,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 		}
 	}
 	auto evt = std::make_unique<RunMachineCompletedEvent>(success, std::move(errorMessage));
-	QCoreApplication::postEvent(&handler, evt.release());
+	postEventFunc(std::move(evt));
 }
 
 
@@ -317,7 +317,7 @@ void RunMachineTask::process(QProcess &process, QObject &handler)
 //  receiveResponseAndHandleUpdates
 //-------------------------------------------------
 
-MameWorkerController::Response RunMachineTask::receiveResponseAndHandleUpdates(MameWorkerController &controller, QObject &handler)
+MameWorkerController::Response RunMachineTask::receiveResponseAndHandleUpdates(MameWorkerController &controller, const PostEventFunc &postEventFunc)
 {
 	// get the response
 	MameWorkerController::Response response = controller.receiveResponse();
@@ -326,7 +326,7 @@ MameWorkerController::Response RunMachineTask::receiveResponseAndHandleUpdates(M
 	if (response.m_update)
 	{
 		auto evt = std::make_unique<StatusUpdateEvent>(std::move(*response.m_update));
-		QCoreApplication::postEvent(&handler, evt.release());
+		postEventFunc(std::move(evt));
 	}
 
 	// return it either way

@@ -95,7 +95,11 @@ void TaskDispatcher::launch(Task::ptr &&task)
 void TaskDispatcher::taskThreadProc(Task &task)
 {
 	// do the heavy lifting
-	task.process(m_eventHandler);
+	auto postEventFunc = [this](std::unique_ptr<QEvent> &&event)
+	{
+		QCoreApplication::postEvent(&m_eventHandler, event.release());
+	};
+	task.process(postEventFunc);
 
 	// create another event to signal for this task to be finalized
 	std::unique_ptr<QEvent> finalizeEvent = std::make_unique<FinalizeTaskEvent>(task);
