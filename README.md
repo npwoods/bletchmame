@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.11 (TBD)
+- 2.11 (2021-Dec-27)
 	- Enabled Link Time Optimization for Release builds
 	- Made BletchMAME aware of the CHD Diff path (-diff_directory)
 	- Fixed an issue that could cause the UI to hang whenever MAME was invoked
