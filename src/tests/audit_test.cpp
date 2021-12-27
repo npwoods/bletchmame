@@ -9,18 +9,118 @@
 #include "audit.h"
 #include "test.h"
 
+// ======================> AuditTask::Test
+
 class Audit::Test : public QObject
 {
 	Q_OBJECT
 
 private slots:
+	void general_1()				{ general(false, false, false, false, AuditStatus::Missing); }
+	void general_2()				{ general(false, false, false, true,  AuditStatus::Missing); }
+	void general_3()				{ general(false, false, true,  false, AuditStatus::Missing); }
+	void general_4()				{ general(false, true,  false, false, AuditStatus::Missing); }
+	void general_5()				{ general(true,  false, false, false, AuditStatus::Missing); }
+	void general_6()				{ general(true,  true,  true,  true,  AuditStatus::Found); }
 	void addMediaForMachine();
+
+private:
+	void general(bool hasRom, bool hasNoDumpRom, bool hasSample, bool hasDisk, AuditStatus expectedResult);
 };
+
+
+// ======================> MockAuditCallback
+
+namespace
+{
+	class MockAuditCallback : public Audit::ICallback
+	{
+	public:
+		MockAuditCallback(std::vector<Audit::Verdict> &verdicts)
+			: m_verdicts(verdicts)
+		{
+		}
+
+		virtual bool reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total) override
+		{
+			// ignore
+			return false;
+		}
+
+		virtual void reportVerdict(int entryIndex, const Audit::Verdict &verdict) override
+		{
+			m_verdicts.push_back(verdict);
+		}
+
+	private:
+		std::vector<Audit::Verdict> &m_verdicts;
+	};
+}
 
 
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
+
+//-------------------------------------------------
+//  general
+//-------------------------------------------------
+
+void Audit::Test::general(bool hasRom, bool hasNoDumpRom, bool hasSample, bool hasDisk, AuditStatus expectedResult)
+{
+	// create a temporary directory
+	QTemporaryDir tempDir;
+	QVERIFY(tempDir.isValid());
+	QString tempDirPath = tempDir.path();
+
+	// create a directory structure under that directory
+	QString romDir = QDir(tempDirPath).filePath("./rom");
+	QString sampleDir = QDir(tempDirPath).filePath("./sample");
+	QDir().mkdir(romDir);
+	QDir().mkdir(romDir + "/fake");
+	QDir().mkdir(sampleDir);
+	QDir().mkdir(sampleDir + "/fake");
+
+	// and set up media
+	if (hasRom)
+		QFile::copy(":/resources/garbage.bin", romDir + "/fake/garbage.bin");
+	if (hasNoDumpRom)
+		QFile::copy(":/resources/garbage.bin", romDir + "/fake/nodump.bin");
+	if (hasSample)
+		QFile::copy(":/resources/garbage.bin", sampleDir + "/fake/fakesample.wav");
+	if (hasDisk)
+		QFile::copy(":/resources/samplechd.chd", romDir + "/fake/samplechd.chd");
+
+	// set up preferences pointing at the fake directory
+	Preferences prefs;
+	prefs.setGlobalPath(Preferences::global_path_type::ROMS, romDir);
+	prefs.setGlobalPath(Preferences::global_path_type::SAMPLES, sampleDir);
+
+	// set up an info DB
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_fake.xml", false)));
+	std::optional<info::machine> machine = db.find_machine("fake");
+	QVERIFY(machine.has_value());
+
+	// prepare an audit
+	Audit audit;
+	audit.addMediaForMachine(prefs, machine.value());
+
+	// and run the audit!
+	std::vector<Audit::Verdict> verdicts;
+	MockAuditCallback callback(verdicts);
+	std::optional<AuditStatus> result = audit.run(callback);
+
+	// validate the verdicts
+	QVERIFY(verdicts.size() == 4);
+	QVERIFY(verdicts[0].type() == (hasRom		? Audit::Verdict::Type::Ok :			Audit::Verdict::Type::NotFound));
+	QVERIFY(verdicts[1].type() == (hasNoDumpRom	? Audit::Verdict::Type::OkNoGoodDump :	Audit::Verdict::Type::NotFound));
+	QVERIFY(verdicts[2].type() == (hasDisk		? Audit::Verdict::Type::Ok :			Audit::Verdict::Type::NotFound));
+	QVERIFY(verdicts[3].type() == (hasSample	? Audit::Verdict::Type::Ok :			Audit::Verdict::Type::NotFound));
+
+	// validate the final status
+	QVERIFY(result == expectedResult);
+}
 
 
 //-------------------------------------------------

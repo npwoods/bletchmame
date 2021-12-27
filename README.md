@@ -23,6 +23,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 		- Now properly identifying proper file extensions for disks and samples (CHD and WAV)
 		- Now properly extracting SHA-1 hashes from CHD files
 		- Fixed a bug that could cause hangs on exit
+		- Fixed a bug that caused all samples to be incorrectly reported as having no good dumps
 	- Various build improvements [Davide Cavalca]
 		- CI builds against Qt6.2
 		- No longer hardcoding a particular version of QuaZip
