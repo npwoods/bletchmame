@@ -19,8 +19,9 @@ namespace
 
     private slots:
         void general();
-		void compareBinaries_coco()		{ compareBinaries(":/resources/listxml_coco.xml"); }
 		void compareBinaries_alienar()	{ compareBinaries(":/resources/listxml_alienar.xml"); }
+		void compareBinaries_coco()		{ compareBinaries(":/resources/listxml_coco.xml"); }
+		void compareBinaries_fake()		{ compareBinaries(":/resources/listxml_fake.xml"); }
 
 	private:
 		void compareBinaries(const QString &fileName);

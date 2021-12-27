@@ -6,6 +6,8 @@
         <file>resources/listxml_alienar.bin</file>
         <file>resources/listxml_coco.xml</file>
         <file>resources/listxml_coco.bin</file>
+        <file>resources/listxml_fake.xml</file>
+        <file>resources/listxml_fake.bin</file>
         <file>resources/prefs.xml</file>
         <file>resources/samplechd.chd</file>
         <file>resources/softlist.xml</file>
