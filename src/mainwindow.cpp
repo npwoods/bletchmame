@@ -1518,7 +1518,7 @@ void MainWindow::on_actionResetToDefault_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-	AboutDialog dlg(this, m_info_db.version());
+	AboutDialog dlg(this, m_mameVersion);
 	dlg.exec();
 }
 
@@ -2472,16 +2472,21 @@ QString MainWindow::getTitleBarText()
 	QString result;
 	if (m_state.has_value())
 	{
+		// get the machine description
+		const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
+
+		// assemble a running description (e.g. - 'Pac-Man (MAME 0.234)')
+		QString runningDesc = m_mameVersion.has_value()
+			? QString("%1 (%2)").arg(machineDesc, m_mameVersion->toPrettyString())
+			: machineDesc;
+
 		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
 		QString titleTextFormat = m_state->paused().get() && !m_current_pauser
 			? "%1: %2 PAUSED"
 			: "%1: %2";
 
-		// get the machine description
-		const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
-
 		// and apply the format
-		result = titleTextFormat.arg(nameWithVersion, machineDesc);
+		result = titleTextFormat.arg(nameWithVersion, runningDesc);
 	}
 	else
 	{
