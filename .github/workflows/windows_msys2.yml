@@ -124,7 +124,7 @@ jobs:
 
     # Build MSI - Candle
     - name: Build MSI - Candle
-      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`perl scripts/process_version.pl` -out bletchmame.wixobj
+      run: /c/program\ files\ \(x86\)/WiX\ Toolset\ v3.11/bin/candle -v bletchmame.wxs -dVERSION=`git describe --tags | perl scripts/process_version.pl` -out bletchmame.wixobj
         
     # Build MSI - Light
     - name: Build MSI - Light
@@ -135,7 +135,7 @@ jobs:
       shell: bash
       run: |
         mkdir rel
-        perl scripts/process_version.pl > rel/version_latest.txt
+        git describe --tags | perl scripts/process_version.pl > rel/version_latest.txt
         mv BletchMAME.msi rel/BletchMAME_latest.msi
         7z a rel/BletchMAME_latest.zip ./build/msys2/bin/BletchMAME.exe
         7z a rel/BletchMAME_latest.zip readme.html
