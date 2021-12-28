@@ -57,7 +57,7 @@ QString AboutDialog::getPrettyMameVersion(const QString &mameVersion)
 	if (!mameVersion.isEmpty())
 	{
 		auto version = MameVersion(mameVersion);
-		if (!version.dirty())
+		if (!version.isDirty())
 		{
 			// simple MAME version (e.g. - "0.213 (mame0213)"); this should be the case when the user
 			// is using an off the shelf version of MAME and we want to present a simple version string

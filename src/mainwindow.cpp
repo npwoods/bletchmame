@@ -1121,8 +1121,8 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 	// Are we the required version? 
 	if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_TOGGLE_MOVIE))
 	{
-		QString message = QString("Recording movies requires MAME %1 or newer to function")
-			.arg(MameVersion::Capabilities::HAS_TOGGLE_MOVIE.toString());
+		QString message = QString("Recording movies requires %1 or newer to function")
+			.arg(MameVersion::Capabilities::HAS_TOGGLE_MOVIE.toPrettyString());
 		messageBox(message);
 		return;
 	}
@@ -2077,7 +2077,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 //  isMameVersionAtLeast
 //-------------------------------------------------
 
-bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
+bool MainWindow::isMameVersionAtLeast(const SimpleMameVersion &version) const
 {
 	return MameVersion(m_mameVersion).isAtLeast(version);
 }
@@ -2107,9 +2107,8 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	QString message;
 	if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
-		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
-			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.major()),
-			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.minor()));
+		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires %1 or newer to function correctly").arg(
+			MameVersion::Capabilities::MINIMUM_SUPPORTED.toPrettyString());
 	}
 	else if (!MameVersion::Capabilities::HAS_ATTACH_WINDOW.has_value())
 	{
@@ -2117,9 +2116,8 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	}
 	else if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
 	{
-		message = QString("MAME on this platform requires version of %1.%2 for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
-			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().major()),
-			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().minor()));
+		message = QString("%1 is needed on this platform for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
+			MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().toPrettyString());
 	}
 
 	// ...and display the warning if appropriate

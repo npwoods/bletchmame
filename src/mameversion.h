@@ -19,6 +19,41 @@
 //  TYPE DEFINITIONS
 //**************************************************************************
 
+// ======================> SimpleMameVersion
+
+class MameVersion;
+
+class SimpleMameVersion
+{
+public:
+	// ctor
+	constexpr SimpleMameVersion(int major, int minor)
+		: m_major(major)
+		, m_minor(minor)
+	{
+	}
+	SimpleMameVersion(const SimpleMameVersion &) = default;
+	SimpleMameVersion(SimpleMameVersion &&) = default;
+
+	// accessors
+	int major() const { return m_major; }
+	int minor() const { return m_minor; }
+
+	// operators
+	SimpleMameVersion &operator=(const SimpleMameVersion &) = default;
+	SimpleMameVersion &operator=(SimpleMameVersion &&) = default;
+	bool operator==(const SimpleMameVersion &) const = default;
+
+	// methods
+	operator MameVersion() const;
+	QString toString() const;
+	QString toPrettyString() const;
+
+private:
+	int						m_major;
+	int						m_minor;
+};
+
 // ======================> MameVersion
 
 class MameVersion
@@ -26,59 +61,48 @@ class MameVersion
 public:
 	class Test;
 
-	// ctor
+	// ctors
+	MameVersion(int major, int minor);
 	MameVersion(const QString &version);
-	constexpr MameVersion(int major, int minor, bool dirty)
-		: m_major(major)
-		, m_minor(minor)
-		, m_dirty(dirty)
-	{
-	}
+	MameVersion(const MameVersion &) = default;
+	MameVersion(MameVersion &&) = default;
 
 	// accessors
-	int major() const	{ return m_major; }
-	int minor() const	{ return m_minor; }
-	bool dirty() const	{ return m_dirty; }
+	int major() const		{ return m_major; }
+	int minor() const		{ return m_minor; }
+	bool isDirty() const	{ return (bool)m_rawVersionString; }
+
+	// operators
+	MameVersion &operator=(const MameVersion &) = default;
+	MameVersion &operator=(MameVersion &&) = default;
+	bool operator==(const MameVersion &) const = default;
 
 	// methods
-	bool isAtLeast(const MameVersion &that) const;
-	MameVersion nextCleanVersion() const;
+	bool isAtLeast(const SimpleMameVersion &that) const;
+	SimpleMameVersion nextCleanVersion() const;
 	QString toString() const;
+	QString toPrettyString() const;
 
 	// MAME versions
-	struct Capabilities;
+	struct Capabilities
+	{
+		// -attach_window support
+		static const std::optional<SimpleMameVersion> HAS_ATTACH_WINDOW;
+		static const std::optional<SimpleMameVersion> HAS_ATTACH_CHILD_WINDOW;
+
+		// minimum MAME version
+		static const SimpleMameVersion MINIMUM_SUPPORTED;
+
+		// recording movies by specifying absolute paths was introduced in MAME 0.221
+		static const SimpleMameVersion HAS_TOGGLE_MOVIE;
+	};
 
 private:
-	int	m_major;
-	int m_minor;
-	bool m_dirty;
+	int						m_major;
+	int						m_minor;
+	std::optional<QString>	m_rawVersionString;	// only set for dirty versions
 
-	static void parse(const QString &versionString, int &major, int &minor, bool &dirty);
-};
-
-
-
-// ======================> MameVersion::Capabilities
-
-struct MameVersion::Capabilities
-{
-	// -attach_window support
-#if defined(Q_OS_WIN32)
-	static constexpr std::optional<MameVersion> HAS_ATTACH_WINDOW = MameVersion(0, 213, false);
-	static constexpr std::optional<MameVersion> HAS_ATTACH_CHILD_WINDOW = MameVersion(0, 218, false);
-#elif defined(Q_OS_UNIX)
-	static constexpr std::optional<MameVersion> HAS_ATTACH_WINDOW = MameVersion(0, 232, false);
-	static constexpr std::optional<MameVersion> HAS_ATTACH_CHILD_WINDOW = MameVersion(0, 232, false);
-#else
-	static constexpr std::optional<MameVersion> HAS_ATTACH_WINDOW = std::nullopt;
-	static constexpr std::optional<MameVersion> HAS_ATTACH_CHILD_WINDOW = std::nullopt;
-#endif
-
-	// minimum MAME version
-	static constexpr MameVersion MINIMUM_SUPPORTED = MameVersion(0, 213, false);
-
-	// recording movies by specifying absolute paths was introduced in MAME 0.221
-	static constexpr MameVersion HAS_TOGGLE_MOVIE = MameVersion(0, 221, false);
+	SimpleMameVersion toSimpleMameVersion() const;
 };
 
 
