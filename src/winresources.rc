@@ -1,0 +1,25 @@
+#include <windows.h>
+#include "version.h"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     WINRCVER_FILEVERSION
+PRODUCTVERSION  WINRCVER_PRODUCTVERSION
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",        WINRCVER_COMPANYNAME_STR
+            VALUE "FileDescription",    WINRCVER_FILEDESCRIPTION_STR
+            VALUE "FileVersion",        WINRCVER_FILEVERSION_STR
+            VALUE "InternalName",       WINRCVER_INTERNALNAME_STR
+            VALUE "ProductName",        WINRCVER_PRODUCTNAME_STR
+            VALUE "ProductVersion",     WINRCVER_PRODUCTVERSION_STR
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END

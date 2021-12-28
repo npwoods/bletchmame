@@ -61,22 +61,16 @@ jobs:
         cmake --build deps/build/ubuntu/quazip --parallel
         cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
 
-    # Generate buildversion.txt
-    - name: Generate buildversion.txt
+    # Generate version.gen.h
+    - name: Generate version.gen.h
       run: |
-        git describe --tags | python version.py | tee buildversion.txt
-
-    # Generate src/buildversion.gen.cpp
-    - name: Generate src/buildversion.gen.cpp
-      run: |
-        sh >src/buildversion.gen.cpp  -c 'echo const char buildVersion[] = \"$(shell cat buildversion.txt 2>NUL)\"\;'
-        sh >>src/buildversion.gen.cpp -c 'echo const char buildRevision[] = \"$(shell git rev-parse HEAD 2>NUL)\"\;'
-        sh >>src/buildversion.gen.cpp -c 'echo const char buildDateTime[] = \"`date -Ins`\"\;'
+        mkdir -p ./include
+        git describe --tags | perl scripts/process_version.pl --versionhdr > ./include/version.gen.h
 
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_BUILDVERSION_GEN_CPP=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQuaZip-Qt6_DIR=deps/ubuntu/lib/cmake/QuaZip-Qt6-1.1
         make -j 8
         strip ./BletchMAME
 

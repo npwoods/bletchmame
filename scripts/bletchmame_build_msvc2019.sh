@@ -58,11 +58,12 @@ else
   QUAZIP_LIBNAME=quazip1-qt6.lib
 fi
 
-# Set up build directory
+# set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}
 cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-G"Visual Studio 16 2019"											\
 	-T"$TOOLSET"														\
+	-DHAS_VERSION_GEN_H=1												\
 	-DUSE_PROFILER=${USE_PROFILER}										\
 	-DQt6_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6							\
 	-DQt6Core_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6Core					\
@@ -75,5 +76,11 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-DQUAZIP_LIBRARIES=$DEPS_INSTALL_DIR/lib/${QUAZIP_LIBNAME}			\
 	-DCMAKE_LIBRARY_PATH=$DEPS_INSTALL_DIR/lib							\
 	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include
+
+# generate version.gen.h
+mkdir -p ${BLETCHMAME_BUILD_DIR}/include
+git describe --tags | perl scripts/process_version.pl --versionhdr > ${BLETCHMAME_BUILD_DIR}/include/version.gen.h
+
+# and build!
 cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config ${CONFIG}
 cmake --install ${BLETCHMAME_INSTALL_DIR} --prefix ${BLETCHMAME_INSTALL_DIR} --config ${CONFIG}
