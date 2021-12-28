@@ -6,6 +6,8 @@
 
 ***************************************************************************/
 
+#include <QDate>
+#include <QFileInfo>
 #include <QTextStream>
 
 #include "about.h"
@@ -74,6 +76,24 @@ QString AboutDialog::getPrettyMameVersion(const QString &mameVersion)
 
 
 //-------------------------------------------------
+//  getExeCreateDate
+//-------------------------------------------------
+
+QDate AboutDialog::getExeCreateDate()
+{
+	QString applicationFilePath = QCoreApplication::applicationFilePath();
+	if (applicationFilePath.isEmpty())
+		return QDate();
+
+	QFileInfo fi(applicationFilePath);
+	if (!fi.isFile())
+		return QDate();
+
+	return fi.birthTime().date();
+}
+
+
+//-------------------------------------------------
 //  getAboutText
 //-------------------------------------------------
 
@@ -83,10 +103,21 @@ QString AboutDialog::getAboutText(const QString &prettyMameVersion)
 	{
 		QTextStream stream(&result);
 
-		stream << QCoreApplication::applicationName() << " " << QCoreApplication::applicationVersion() << "\n";
-		stream << "\n";
+		// core application info
+		stream << QCoreApplication::applicationName() << " " << QCoreApplication::applicationVersion();
+		QDate exeCreateDate = getExeCreateDate();
+		if (exeCreateDate.isValid())
+		{
+			QString exeCreateDateString = QLocale::system().toString(exeCreateDate, QLocale::FormatType::ShortFormat);
+			stream << QString(" (%1)").arg(exeCreateDateString);
+		}
+		stream << "\n\n";
+
+		// MAME version
 		if (!prettyMameVersion.isEmpty())
 			stream << prettyMameVersion << "\n";
+
+		// Qt version
 		stream << "Qt " << QT_VERSION_STR;
 	}
 	return result;

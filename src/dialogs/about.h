@@ -24,16 +24,17 @@ class AboutDialog : public QDialog
     Q_OBJECT
 
 public:
-    class Test;
+	class Test;
 
-    explicit AboutDialog(QWidget *parent, const QString &mameVersion);
-    ~AboutDialog();
+	explicit AboutDialog(QWidget *parent, const QString &mameVersion);
+	~AboutDialog();
 
 private:
-    std::unique_ptr<Ui::AboutDialog>    m_ui;
+	std::unique_ptr<Ui::AboutDialog>    m_ui;
 
-    static QString getPrettyMameVersion(const QString &mameVersion);
-    QString getAboutText(const QString &prettyMameVersion);
+	static QString getPrettyMameVersion(const QString &mameVersion);
+	static QDate getExeCreateDate();
+	QString getAboutText(const QString &prettyMameVersion);
 };
 
 #endif // DIALOGS_ABOUT_H
