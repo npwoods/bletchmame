@@ -171,13 +171,13 @@ void MameTask::formatCommandLine(QTextStream &stream, const QString &program, co
 //  process
 //-------------------------------------------------
 
-void MameTask::process(QObject &eventHandler)
+void MameTask::process(const PostEventFunc &postEventFunc)
 {
 	// wait for us to be ready
 	m_readySemaphore.acquire(1);
 
 	// use our own process call
-	process(m_process, eventHandler);
+	process(m_process, postEventFunc);
 }
 
 

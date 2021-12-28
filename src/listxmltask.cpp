@@ -50,13 +50,13 @@ QStringList ListXmlTask::getArguments(const Preferences &) const
 //  process
 //-------------------------------------------------
 
-void ListXmlTask::process(QProcess &process, QObject &handler)
+void ListXmlTask::process(QProcess &process, const PostEventFunc &postEventFunc)
 {
 	// callback
-	auto progressCallback = [&handler](int count, std::u8string_view machineName, std::u8string_view machineDescription)
+	auto progressCallback = [&postEventFunc](int count, std::u8string_view machineName, std::u8string_view machineDescription)
 	{
 		auto evt = std::make_unique<ListXmlProgressEvent>(count, util::toQString(machineName), util::toQString(machineDescription));
-		QCoreApplication::postEvent(&handler, evt.release());
+		postEventFunc(std::move(evt));
 	};
 
 	ListXmlResultEvent::Status status;
@@ -78,7 +78,7 @@ void ListXmlTask::process(QProcess &process, QObject &handler)
 
 	// regardless of what happened, notify the main thread
 	auto evt = std::make_unique<ListXmlResultEvent>(status, std::move(errorMessage));
-	QCoreApplication::postEvent(&handler, evt.release());
+	postEventFunc(std::move(evt));
 }
 
 

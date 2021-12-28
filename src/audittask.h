@@ -158,6 +158,8 @@ private:
 class AuditTask : public Task
 {
 public:
+	class Test;
+
 	typedef std::shared_ptr<AuditTask> ptr;
 
 	// ctor
@@ -173,7 +175,7 @@ public:
 
 protected:
 	// virtuals
-	virtual void process(QObject &eventHandler) final override;
+	virtual void process(const PostEventFunc &postEventFunc) final override;
 
 private:
 	class Callback;

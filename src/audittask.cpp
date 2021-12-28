@@ -21,15 +21,15 @@ QEvent::Type AuditProgressEvent::s_eventId = (QEvent::Type)QEvent::registerEvent
 class AuditTask::Callback : public Audit::ICallback
 {
 public:
-	Callback(AuditTask &host, QObject &eventHandler);
+	Callback(AuditTask &host, const PostEventFunc &postEventFunc);
 
 	// virtuals
 	virtual bool reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total) override final;
 	virtual void reportVerdict(int entryIndex, const Audit::Verdict &verdict) override final;
 
 private:
-	AuditTask &	m_host;
-	QObject &	m_eventHandler;
+	AuditTask &				m_host;
+	const PostEventFunc &	m_postEventFunc;
 
 	void postProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total, std::optional<Audit::Verdict> &&verdict = { });
 };
@@ -99,12 +99,12 @@ std::vector<AuditIdentifier> AuditTask::getIdentifiers() const
 //  process
 //-------------------------------------------------
 
-void AuditTask::process(QObject &eventHandler)
+void AuditTask::process(const PostEventFunc &postEventFunc)
 {
 	std::vector<AuditResult> results;
 
 	// prepare a callback
-	Callback callback(*this, eventHandler);
+	Callback callback(*this, postEventFunc);
 
 	// run all the audits
 	for (const Entry &entry : m_entries)
@@ -122,7 +122,7 @@ void AuditTask::process(QObject &eventHandler)
 
 	// and respond with the event
 	auto evt = std::make_unique<AuditResultEvent>(std::move(results), m_cookie);
-	QCoreApplication::postEvent(&eventHandler, evt.release());
+	postEventFunc(std::move(evt));
 }
 
 
@@ -141,9 +141,9 @@ AuditTask::Entry::Entry(AuditIdentifier &&identifier)
 //  Callback ctor
 //-------------------------------------------------
 
-AuditTask::Callback::Callback(AuditTask &host, QObject &eventHandler)
+AuditTask::Callback::Callback(AuditTask &host, const PostEventFunc &postEventFunc)
 	: m_host(host)
-	, m_eventHandler(eventHandler)
+	, m_postEventFunc(postEventFunc)
 {
 }
 
@@ -181,7 +181,7 @@ void AuditTask::Callback::reportVerdict(int entryIndex, const Audit::Verdict &ve
 void AuditTask::Callback::postProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, std::optional<Audit::Verdict> &&verdict)
 {
 	auto callbackEvt = std::make_unique<AuditProgressEvent>(entryIndex, bytesProcessed, totalBytes, std::move(verdict));
-	QCoreApplication::postEvent(&m_eventHandler, callbackEvt.release());
+	m_postEventFunc(std::move(callbackEvt));
 }
 
 

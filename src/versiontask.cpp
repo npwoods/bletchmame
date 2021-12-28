@@ -26,7 +26,7 @@ namespace
 	{
 	protected:
 		virtual QStringList getArguments(const Preferences &) const override final;
-		virtual void process(QProcess &process, QObject &eventHandler) override final;
+		virtual void process(QProcess &process, const PostEventFunc &postEventFunc) override final;
 	};
 }
 
@@ -62,7 +62,7 @@ QStringList VersionTask::getArguments(const Preferences &) const
 //  process
 //-------------------------------------------------
 
-void VersionTask::process(QProcess &process, QObject &eventHandler)
+void VersionTask::process(QProcess &process, const PostEventFunc &postEventFunc)
 {
 	// get the version
 	auto version = QString::fromLocal8Bit(process.readLine());
@@ -71,7 +71,7 @@ void VersionTask::process(QProcess &process, QObject &eventHandler)
 	auto evt = std::make_unique<VersionResultEvent>(std::move(version));
 
 	// and post it
-	QCoreApplication::postEvent(&eventHandler, evt.release());
+	postEventFunc(std::move(evt));
 }
 
 
