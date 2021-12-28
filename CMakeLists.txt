@@ -58,13 +58,12 @@ endif()
 # Yes, we're unit testing
 enable_testing(true)
 
-# Is version.gen.cpp available?
-if (HAS_BUILDVERSION_GEN_CPP)
-MESSAGE(STATUS "buildversion.gen.cpp AVAILABLE")
-add_definitions(-DHAS_BUILDVERSION_GEN_CPP=1)
+# Is version.gen.h available?
+if (HAS_VERSION_GEN_H)
+MESSAGE(STATUS "version.gen.h AVAILABLE")
+add_definitions(-DHAS_VERSION_GEN_H=1)
 else()
-MESSAGE(STATUS "buildversion.gen.cpp UNAVAILABLE")
-add_definitions(-DHAS_BUILDVERSION_GEN_CPP=0)
+MESSAGE(STATUS "version.gen.h UNAVAILABLE")
 endif()
 
 # Define installation directories
@@ -121,8 +120,6 @@ add_library(BletchMAME_core
 	src/auditqueue.h
 	src/audittask.cpp
 	src/audittask.h
-	src/buildversion.cpp
-	src/buildversion.h
 	src/chd.cpp
 	src/chd.h
 	src/hash.cpp
@@ -188,6 +185,7 @@ add_library(BletchMAME_core
 	src/throughputtracker.h
 	src/utility.cpp
 	src/utility.h
+	src/version.h
 	src/versiontask.cpp
 	src/versiontask.h
 	src/xmlparser.cpp
@@ -246,7 +244,7 @@ add_library(BletchMAME_core
 	src/dialogs/switches.h
 	${TS_FILES}
 )
-target_include_directories(BletchMAME_core PRIVATE src lib)
+target_include_directories(BletchMAME_core PRIVATE src lib ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${ZLIB_LIBRARIES})
 
 
@@ -254,8 +252,8 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Q
 # BletchMAME executable                                                     #
 #############################################################################
 
-add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc)
-target_include_directories(BletchMAME PRIVATE src lib)
+add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc src/winresources.rc)
+target_include_directories(BletchMAME PRIVATE src lib ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

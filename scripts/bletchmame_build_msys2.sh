@@ -16,15 +16,6 @@ BLETCHMAME_BUILD_DIR=build/msys2
 BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
 DEPS_INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msys2
 
-# Generate buildversion.txt
-git describe --tags | python version.py | cat >buildversion.txt
-echo "Build Version: $(cat buildversion.txt)"
-
-# Generate src/buildversion.gen.cpp
-echo >$BLETCHMAME_DIR/src/buildversion.gen.cpp  "const char buildVersion[] = \"`cat buildversion.txt 2>NUL`\";"
-echo >>$BLETCHMAME_DIR/src/buildversion.gen.cpp "const char buildRevision[] = \"`git rev-parse HEAD 2>NUL`\";"
-echo >>$BLETCHMAME_DIR/src/buildversion.gen.cpp "const char buildDateTime[] = \"`date -Ins`\";"
-
 # parse arguments
 USE_PROFILER=off
 BUILD_TYPE=Release
@@ -39,11 +30,12 @@ while getopts "pb:" OPTION; do
    esac
 done
 
-# Set up build directory
+# set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}
 echo "Build Type: $BUILD_TYPE"
 cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
-	-DUSE_SHARED_LIBS=off -DHAS_BUILDVERSION_GEN_CPP=1 							\
+	-DUSE_SHARED_LIBS=off														\
+	-DHAS_VERSION_GEN_H=1														\
 	-DUSE_PROFILER=${USE_PROFILER}												\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}											\
 	-DQt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6									\
@@ -58,6 +50,10 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
 	-DQt6WidgetsTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6WidgetsTools			\
 	-DQuaZip-Qt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/QuaZip-Qt6-1.1
 
-# And build!
+# generate version.gen.h
+mkdir -p ${BLETCHMAME_BUILD_DIR}/include
+git describe --tags | perl scripts/process_version.pl --versionhdr > ${BLETCHMAME_BUILD_DIR}/include/version.gen.h
+
+# and build!
 cmake --build ${BLETCHMAME_BUILD_DIR} --parallel
 cmake --install ${BLETCHMAME_BUILD_DIR} --strip --prefix ${BLETCHMAME_INSTALL_DIR}

@@ -17,6 +17,8 @@ namespace Ui { class AboutDialog; }
 class QTextStream;
 QT_END_NAMESPACE
 
+// ======================> AboutDialog
+
 class AboutDialog : public QDialog
 {
     Q_OBJECT
@@ -31,7 +33,7 @@ private:
     std::unique_ptr<Ui::AboutDialog>    m_ui;
 
     static QString getPrettyMameVersion(const QString &mameVersion);
-    void getExtraText(QTextStream &stream, const QString &prettyMameVersion);
+    QString getAboutText(const QString &prettyMameVersion);
 };
 
 #endif // DIALOGS_ABOUT_H
