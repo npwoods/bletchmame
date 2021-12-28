@@ -709,6 +709,9 @@ MainWindow::MainWindow(QWidget *parent)
 	m_ui = std::make_unique<Ui::MainWindow>();
 	m_ui->setupUi(this);
 
+	// set the title
+	setWindowTitle(getTitleBarText());
+
 	// initial preferences read
 	m_prefs.load();
 
@@ -2458,18 +2461,34 @@ QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QSt
 
 QString MainWindow::getTitleBarText()
 {
-	// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
-	QString titleTextFormat = m_state->paused().get() && !m_current_pauser
-		? "%1: %2 PAUSED"
-		: "%1: %2";
+	// assemble the "root" title
+	QString applicationName = QCoreApplication::applicationName();
+	QString applicationVersion = QCoreApplication::applicationVersion();
+	QString nameWithVersion = !applicationVersion.isEmpty()
+		? QString("%1 %2").arg(applicationName, applicationVersion)
+		: applicationName;
 
-	// get the machine description
-	const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
+	// are we running?
+	QString result;
+	if (m_state.has_value())
+	{
+		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
+		QString titleTextFormat = m_state->paused().get() && !m_current_pauser
+			? "%1: %2 PAUSED"
+			: "%1: %2";
 
-	// and apply the format
-	return titleTextFormat.arg(
-		QCoreApplication::applicationName(),
-		machineDesc);
+		// get the machine description
+		const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
+
+		// and apply the format
+		result = titleTextFormat.arg(nameWithVersion, machineDesc);
+	}
+	else
+	{
+		// not running - just use the name/version
+		result = nameWithVersion;
+	}
+	return result;
 }
 
 

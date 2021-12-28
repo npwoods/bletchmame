@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.12 (TBD)
+	- Displaying BletchMAME version on the title bar
 	- Cosmetic changes to the "About..." dialog to make it appear cleaner
 
 - 2.11 (2021-Dec-27)
