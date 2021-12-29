@@ -12,6 +12,8 @@
 #include <QDialog>
 #include <memory>
 
+#include "mameversion.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class AboutDialog; }
 class QTextStream;
@@ -26,15 +28,14 @@ class AboutDialog : public QDialog
 public:
 	class Test;
 
-	explicit AboutDialog(QWidget *parent, const QString &mameVersion);
+	explicit AboutDialog(QWidget *parent, const std::optional<MameVersion> &mameVersion);
 	~AboutDialog();
 
 private:
 	std::unique_ptr<Ui::AboutDialog>    m_ui;
 
-	static QString getPrettyMameVersion(const QString &mameVersion);
 	static QDate getExeCreateDate();
-	QString getAboutText(const QString &prettyMameVersion);
+	QString getAboutText(const std::optional<MameVersion> &mameVersion);
 };
 
 #endif // DIALOGS_ABOUT_H

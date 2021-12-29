@@ -1632,12 +1632,12 @@ bool MainWindow::loadInfoDb()
 {
 	// load the info DB
 	QString dbPath = m_prefs.getMameXmlDatabasePath();
-	bool success = m_info_db.load(dbPath, m_mameVersion);
+	bool success = m_info_db.load(dbPath, m_mameVersion.has_value() ? m_mameVersion->toString() : "");
 
 	// special case for when we're starting up - if we successfully load Info DB but we have
 	// not determined the MAME version yet, lets assume that Info DB is correct
-	if (success && m_mameVersion.isEmpty())
-		m_mameVersion = m_info_db.version();
+	if (success && !m_mameVersion.has_value())
+		m_mameVersion = MameVersion(m_info_db.version());
 
 	return success;
 }
@@ -1763,7 +1763,7 @@ QString MainWindow::attachWidgetId() const
 void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
 	// sanity check - this should never happen
-	assert(!m_mameVersion.isEmpty());
+	assert(m_mameVersion.has_value());
 
 	// set the session behavior
 	m_sessionBehavior = std::move(sessionBehavior);
@@ -2079,7 +2079,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 
 bool MainWindow::isMameVersionAtLeast(const SimpleMameVersion &version) const
 {
-	return MameVersion(m_mameVersion).isAtLeast(version);
+	return m_mameVersion.has_value() && m_mameVersion->isAtLeast(version);
 }
 
 
@@ -2101,11 +2101,14 @@ bool MainWindow::onFinalizeTask(const FinalizeTaskEvent &event)
 bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 {
 	// get the MAME version out of the event
-	m_mameVersion = std::move(event.m_version);
+	if (!event.m_version.isEmpty())
+		m_mameVersion = MameVersion(event.m_version);
+	else
+		m_mameVersion.reset();
 
 	// if the current MAME version is problematic, generate a warning
 	QString message;
-	if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
+	if (m_mameVersion.has_value() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
 		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires %1 or newer to function correctly").arg(
 			MameVersion::Capabilities::MINIMUM_SUPPORTED.toPrettyString());
@@ -2114,7 +2117,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 	{
 		message = "MAME on this platform does not support -attach_window, and the MAME window will not properly be embedded within BletchMAME";
 	}
-	else if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
+	else if (m_mameVersion.has_value() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
 	{
 		message = QString("%1 is needed on this platform for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
 			MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().toPrettyString());
@@ -2125,7 +2128,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 		messageBox(message);
 
 	// the version check completed and we've dispensed with warnings; does this new version inform anything?
-	if (m_mameVersion.isEmpty())
+	if (!m_mameVersion.has_value())
 	{
 		// no MAME found - reset the database
 		m_info_db.reset();
@@ -2134,7 +2137,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 		if (m_promptIfMameNotFound)
 			promptForMameExecutable();
 	}
-	else if (m_mameVersion != m_info_db.version())		
+	else if (m_mameVersion->toString() != m_info_db.version())		
 	{
 		// we have MAME but need to load the database
 		if (!loadInfoDb())

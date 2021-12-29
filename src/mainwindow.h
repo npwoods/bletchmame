@@ -154,7 +154,7 @@ private:
 
 	// information retrieved by -version
 	bool								m_promptIfMameNotFound;
-	QString								m_mameVersion;
+	std::optional<MameVersion>			m_mameVersion;
 
 	// information retrieved by -listxml
 	info::database						m_info_db;
