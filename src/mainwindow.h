@@ -18,6 +18,7 @@
 #include "auditqueue.h"
 #include "info.h"
 #include "mainpanel.h"
+#include "mameversion.h"
 #include "liveinstancetracker.h"
 #include "prefs.h"
 #include "sessionbehavior.h"
@@ -43,7 +44,6 @@ class QWindowStateChangeEvent;
 QT_END_NAMESPACE
 
 class MainPanel;
-class MameVersion;
 class VersionResultEvent;
 class ListXmlProgressEvent;
 class ListXmlResultEvent;
@@ -154,7 +154,7 @@ private:
 
 	// information retrieved by -version
 	bool								m_promptIfMameNotFound;
-	QString								m_mameVersion;
+	std::optional<MameVersion>			m_mameVersion;
 
 	// information retrieved by -listxml
 	info::database						m_info_db;
@@ -216,7 +216,7 @@ private:
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	void showInputsDialog(status::input::input_class input_class);
 	void showSwitchesDialog(status::input::input_class input_class);
-	bool isMameVersionAtLeast(const MameVersion &version) const;
+	bool isMameVersionAtLeast(const SimpleMameVersion &version) const;
 	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
 	virtual void setChatterListener(std::function<void(const ChatterEvent &chatter)> &&func) override final;
 	void WatchForImageMount(const QString &tag);

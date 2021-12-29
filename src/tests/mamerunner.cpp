@@ -99,15 +99,18 @@ static MameWorkerController::Response issueCommandAndReceiveResponse(MameWorkerC
 //  getScriptRequiredMameVersion
 //-------------------------------------------------
 
-static std::optional<MameVersion> getScriptRequiredMameVersion(const QString &scriptFileName)
+static std::optional<SimpleMameVersion> getScriptRequiredMameVersion(const QString &scriptFileName)
 {
-    std::optional<MameVersion> result;
+    std::optional<SimpleMameVersion> result;
     XmlParser xml;
     xml.onElementBegin({ "script" }, [&result](const XmlParser::Attributes &attributes)
     {
         std::optional<QString> requiredVersionString = attributes.get<QString>("requiredVersion");
-        if (requiredVersionString)
-            result = MameVersion(*requiredVersionString);
+		if (requiredVersionString)
+		{
+			MameVersion requiredVersion(*requiredVersionString);
+			result = SimpleMameVersion(requiredVersion.major(), requiredVersion.minor());
+		}
     });
 
     if (!xml.parse(scriptFileName))
@@ -164,13 +167,13 @@ static void internalRunAndExcerciseMame(const QString &scriptFileName, const QSt
     std::cout << QString("Running script: %1").arg(scriptFileName).toStdString() << std::endl;
 
     // version check
-    std::optional<MameVersion> requiredMameVersion = getScriptRequiredMameVersion(scriptFileName);
+    std::optional<SimpleMameVersion> requiredMameVersion = getScriptRequiredMameVersion(scriptFileName);
     if (requiredMameVersion)
     {
         MameVersion mameVersion = getMameVersion(program);
         if (!mameVersion.isAtLeast(*requiredMameVersion))
         {
-            std::cout << QString("Script requires MAME %1 (this is MAME %2)").arg(requiredMameVersion->toString(), mameVersion.toString()).toStdString() << std::endl;
+            std::cout << QString("Script requires %1 (this is %2)").arg(requiredMameVersion->toPrettyString(), mameVersion.toPrettyString()).toStdString() << std::endl;
             return;
         }
     }

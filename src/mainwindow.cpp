@@ -709,6 +709,9 @@ MainWindow::MainWindow(QWidget *parent)
 	m_ui = std::make_unique<Ui::MainWindow>();
 	m_ui->setupUi(this);
 
+	// set the title
+	setWindowTitle(getTitleBarText());
+
 	// initial preferences read
 	m_prefs.load();
 
@@ -1121,8 +1124,8 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 	// Are we the required version? 
 	if (!isMameVersionAtLeast(MameVersion::Capabilities::HAS_TOGGLE_MOVIE))
 	{
-		QString message = QString("Recording movies requires MAME %1 or newer to function")
-			.arg(MameVersion::Capabilities::HAS_TOGGLE_MOVIE.toString());
+		QString message = QString("Recording movies requires %1 or newer to function")
+			.arg(MameVersion::Capabilities::HAS_TOGGLE_MOVIE.toPrettyString());
 		messageBox(message);
 		return;
 	}
@@ -1515,7 +1518,7 @@ void MainWindow::on_actionResetToDefault_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-	AboutDialog dlg(this, m_info_db.version());
+	AboutDialog dlg(this, m_mameVersion);
 	dlg.exec();
 }
 
@@ -1632,12 +1635,12 @@ bool MainWindow::loadInfoDb()
 {
 	// load the info DB
 	QString dbPath = m_prefs.getMameXmlDatabasePath();
-	bool success = m_info_db.load(dbPath, m_mameVersion);
+	bool success = m_info_db.load(dbPath, m_mameVersion.has_value() ? m_mameVersion->toString() : "");
 
 	// special case for when we're starting up - if we successfully load Info DB but we have
 	// not determined the MAME version yet, lets assume that Info DB is correct
-	if (success && m_mameVersion.isEmpty())
-		m_mameVersion = m_info_db.version();
+	if (success && !m_mameVersion.has_value())
+		m_mameVersion = MameVersion(m_info_db.version());
 
 	return success;
 }
@@ -1763,7 +1766,7 @@ QString MainWindow::attachWidgetId() const
 void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
 	// sanity check - this should never happen
-	assert(!m_mameVersion.isEmpty());
+	assert(m_mameVersion.has_value());
 
 	// set the session behavior
 	m_sessionBehavior = std::move(sessionBehavior);
@@ -2077,9 +2080,9 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 //  isMameVersionAtLeast
 //-------------------------------------------------
 
-bool MainWindow::isMameVersionAtLeast(const MameVersion &version) const
+bool MainWindow::isMameVersionAtLeast(const SimpleMameVersion &version) const
 {
-	return MameVersion(m_mameVersion).isAtLeast(version);
+	return m_mameVersion.has_value() && m_mameVersion->isAtLeast(version);
 }
 
 
@@ -2101,25 +2104,26 @@ bool MainWindow::onFinalizeTask(const FinalizeTaskEvent &event)
 bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 {
 	// get the MAME version out of the event
-	m_mameVersion = std::move(event.m_version);
+	if (!event.m_version.isEmpty())
+		m_mameVersion = MameVersion(event.m_version);
+	else
+		m_mameVersion.reset();
 
 	// if the current MAME version is problematic, generate a warning
 	QString message;
-	if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
+	if (m_mameVersion.has_value() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
-		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires MAME %1.%2 or newer to function correctly").arg(
-			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.major()),
-			QString::number(MameVersion::Capabilities::MINIMUM_SUPPORTED.minor()));
+		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires %1 or newer to function correctly").arg(
+			MameVersion::Capabilities::MINIMUM_SUPPORTED.toPrettyString());
 	}
 	else if (!MameVersion::Capabilities::HAS_ATTACH_WINDOW.has_value())
 	{
 		message = "MAME on this platform does not support -attach_window, and the MAME window will not properly be embedded within BletchMAME";
 	}
-	else if (!m_mameVersion.isEmpty() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
+	else if (m_mameVersion.has_value() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
 	{
-		message = QString("MAME on this platform requires version of %1.%2 for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
-			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().major()),
-			QString::number(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().minor()));
+		message = QString("%1 is needed on this platform for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
+			MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().toPrettyString());
 	}
 
 	// ...and display the warning if appropriate
@@ -2127,7 +2131,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 		messageBox(message);
 
 	// the version check completed and we've dispensed with warnings; does this new version inform anything?
-	if (m_mameVersion.isEmpty())
+	if (!m_mameVersion.has_value())
 	{
 		// no MAME found - reset the database
 		m_info_db.reset();
@@ -2136,7 +2140,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 		if (m_promptIfMameNotFound)
 			promptForMameExecutable();
 	}
-	else if (m_mameVersion != m_info_db.version())		
+	else if (m_mameVersion->toString() != m_info_db.version())		
 	{
 		// we have MAME but need to load the database
 		if (!loadInfoDb())
@@ -2457,18 +2461,39 @@ QString MainWindow::fileDialogCommand(std::vector<QString> &&commands, const QSt
 
 QString MainWindow::getTitleBarText()
 {
-	// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
-	QString titleTextFormat = m_state->paused().get() && !m_current_pauser
-		? "%1: %2 PAUSED"
-		: "%1: %2";
+	// assemble the "root" title
+	QString applicationName = QCoreApplication::applicationName();
+	QString applicationVersion = QCoreApplication::applicationVersion();
+	QString nameWithVersion = !applicationVersion.isEmpty()
+		? QString("%1 %2").arg(applicationName, applicationVersion)
+		: applicationName;
 
-	// get the machine description
-	const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
+	// are we running?
+	QString result;
+	if (m_state.has_value())
+	{
+		// get the machine description
+		const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
 
-	// and apply the format
-	return titleTextFormat.arg(
-		QCoreApplication::applicationName(),
-		machineDesc);
+		// assemble a running description (e.g. - 'Pac-Man (MAME 0.234)')
+		QString runningDesc = m_mameVersion.has_value()
+			? QString("%1 (%2)").arg(machineDesc, m_mameVersion->toPrettyString())
+			: machineDesc;
+
+		// we want to append "PAUSED" if and only if the user paused, not as a consequence of a menu
+		QString titleTextFormat = m_state->paused().get() && !m_current_pauser
+			? "%1: %2 PAUSED"
+			: "%1: %2";
+
+		// and apply the format
+		result = titleTextFormat.arg(nameWithVersion, runningDesc);
+	}
+	else
+	{
+		// not running - just use the name/version
+		result = nameWithVersion;
+	}
+	return result;
 }
 
 

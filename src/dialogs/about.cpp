@@ -23,17 +23,14 @@
 //  ctor
 //-------------------------------------------------
 
-AboutDialog::AboutDialog(QWidget *parent, const QString &mameVersion)
+AboutDialog::AboutDialog(QWidget *parent, const std::optional<MameVersion> &mameVersion)
     : QDialog(parent)
 {
 	m_ui = std::make_unique<Ui::AboutDialog>();
 	m_ui->setupUi(this);
 
-	// get the "pretty" MAME version
-	QString prettyMameVersion = getPrettyMameVersion(mameVersion);
-
 	// set the "about..." text
-	QString aboutText = getAboutText(prettyMameVersion);
+	QString aboutText = getAboutText(mameVersion);
 	m_ui->aboutTextLabel->setText(aboutText);
 }
 
@@ -44,34 +41,6 @@ AboutDialog::AboutDialog(QWidget *parent, const QString &mameVersion)
 
 AboutDialog::~AboutDialog()
 {
-}
-
-
-//-------------------------------------------------
-//  getPrettyMameVersion
-//-------------------------------------------------
-
-QString AboutDialog::getPrettyMameVersion(const QString &mameVersion)
-{
-	QString result;
-	if (!mameVersion.isEmpty())
-	{
-		auto version = MameVersion(mameVersion);
-		if (!version.dirty())
-		{
-			// simple MAME version (e.g. - "0.213 (mame0213)"); this should be the case when the user
-			// is using an off the shelf version of MAME and we want to present a simple version string
-			result = QString("MAME %1.%2").arg(
-				QString::number(version.major()),
-				QString::number(version.minor()));
-		}
-		else
-		{
-			// non-simple MAME version; probably an interim build
-			result = QString("MAME ") + mameVersion;
-		}
-	}
-	return result;
 }
 
 
@@ -97,7 +66,7 @@ QDate AboutDialog::getExeCreateDate()
 //  getAboutText
 //-------------------------------------------------
 
-QString AboutDialog::getAboutText(const QString &prettyMameVersion)
+QString AboutDialog::getAboutText(const std::optional<MameVersion> &mameVersion)
 {
 	QString result;
 	{
@@ -114,8 +83,8 @@ QString AboutDialog::getAboutText(const QString &prettyMameVersion)
 		stream << "\n\n";
 
 		// MAME version
-		if (!prettyMameVersion.isEmpty())
-			stream << prettyMameVersion << "\n";
+		if (mameVersion.has_value())
+			stream << mameVersion->toPrettyString() << "\n";
 
 		// Qt version
 		stream << "Qt " << QT_VERSION_STR;
