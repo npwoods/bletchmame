@@ -79,6 +79,15 @@ namespace std
 			return !strcmp(s1, s2);
 		}
 	};
+
+	template<> class hash<std::reference_wrapper<const QString>>
+	{
+	public:
+		std::size_t operator()(const std::reference_wrapper<const QString> &s) const
+		{
+			return std::hash<QString>()(s);
+		}
+	};
 }
 
 

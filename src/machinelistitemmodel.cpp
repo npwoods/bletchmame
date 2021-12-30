@@ -82,15 +82,10 @@ bool MachineListItemModel::isMachinePresent(const info::machine &machine) const
 void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &identifier)
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	std::optional<int> machineIndex = m_infoDb.find_machine_index(identifier.machineName());
-	if (machineIndex)
-	{
-		auto iter = m_reverseIndexes.find(machineIndex.value());
-		if (iter != m_reverseIndexes.end())
-			iconsChanged(iter->second, iter->second);
-	}
+	auto iter = m_reverseIndexes.find(identifier.machineName());
+	if (iter != m_reverseIndexes.end())
+		iconsChanged(iter->second, iter->second);
 }
-
 
 
 //-------------------------------------------------
@@ -147,7 +142,7 @@ void MachineListItemModel::populateIndexes()
 		// we need to apply a filter (if we have one)
 		if (isMachinePresent(machine))
 		{
-			m_reverseIndexes.insert({ i, util::safe_static_cast<int>(m_indexes.size()) });
+			m_reverseIndexes.insert({ std::reference_wrapper<const QString>(machine.name()), util::safe_static_cast<int>(m_indexes.size()) });
 			m_indexes.push_back(i);
 		}
 	}
