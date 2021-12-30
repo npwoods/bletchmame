@@ -19,6 +19,8 @@ namespace
 
 	private slots:
 		void general();
+		void auditStatusChanged();
+		void allAuditStatusesChanged();
 	};
 }
 
@@ -64,6 +66,87 @@ void Test::general()
 	QVERIFY(model.rowCount(QModelIndex()) == 13);
 }
 
+
+//-------------------------------------------------
+//  auditStatusChanged
+//-------------------------------------------------
+
+void Test::auditStatusChanged()
+{
+	// create a MachineListItemModel
+	info::database db;
+	MachineListItemModel model(nullptr, db, nullptr, { });
+	QByteArray byteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
+	QBuffer buffer(&byteArray);
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
+	QVERIFY(db.load(buffer));
+
+	// listen to dataChanged signal
+	std::optional<QModelIndex> topLeft;
+	std::optional<QModelIndex> bottomRight;
+	connect(&model, &QAbstractItemModel::dataChanged, &model, [&](const QModelIndex &topLeftParam, const QModelIndex &bottomRightParam, const QVector<int> &roles)
+	{
+		if (roles.size() != 1 || roles[0] != Qt::DecorationRole)
+			throw false;
+		topLeft = topLeftParam;
+		bottomRight = bottomRightParam;
+	});
+
+	// invoke with a bogus item; nothing should happen
+	model.auditStatusChanged(MachineAuditIdentifier("BOGUS_MACHINE"));
+	QVERIFY(!topLeft.has_value());
+	QVERIFY(!bottomRight.has_value());
+
+	// now try a real machine
+	model.auditStatusChanged(MachineAuditIdentifier("coco"));
+	QVERIFY(topLeft == model.index(9, 0));
+	QVERIFY(bottomRight == model.index(9, 0));
+
+	// now try another real machine
+	model.auditStatusChanged(MachineAuditIdentifier("coco2b"));
+	QVERIFY(topLeft == model.index(12, 0));
+	QVERIFY(bottomRight == model.index(12, 0));
+}
+
+
+//-------------------------------------------------
+//  allAuditStatusesChanged
+//-------------------------------------------------
+
+void Test::allAuditStatusesChanged()
+{
+	// create a MachineListItemModel
+	info::database db;
+	MachineListItemModel model(nullptr, db, nullptr, { });
+	QByteArray byteArray = buildInfoDatabase(":/resources/listxml_coco.xml");
+	QBuffer buffer(&byteArray);
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
+	QVERIFY(db.load(buffer));
+
+	// listen to dataChanged signal
+	std::optional<QModelIndex> topLeft;
+	std::optional<QModelIndex> bottomRight;
+	std::optional<QVector<int>> roles;
+	connect(&model, &QAbstractItemModel::dataChanged, &model, [&](const QModelIndex &topLeftParam, const QModelIndex &bottomRightParam, const QVector<int> &rolesParam)
+	{
+		topLeft = topLeftParam;
+		bottomRight = bottomRightParam;
+		roles = rolesParam;
+	});
+
+	// invoke allAuditStatusesChanged(); everything should change
+	model.allAuditStatusesChanged();
+	QVERIFY(topLeft.has_value());
+	QVERIFY(topLeft.value().row() == 0);
+	QVERIFY(bottomRight.has_value());
+	QVERIFY(bottomRight.value().row() == db.machines().size() - 1);
+	QVERIFY(roles.has_value());
+	QVERIFY(roles.value().size() == 1);
+	QVERIFY(roles.value()[0] == Qt::DecorationRole);
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<Test> fixture;
 #include "machinelistitemmodel_test.moc"
