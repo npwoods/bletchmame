@@ -689,7 +689,6 @@ namespace info
 		bool load(QIODevice &input, const QString &expected_version = "");
 		bool load(const QByteArray &byteArray, const QString &expected_version = "");
 		void reset();
-		std::optional<int> find_machine_index(const QString &machine_name) const;
 		std::optional<machine> find_machine(const QString &machine_name) const;
 		const QString &version() const			{ return *m_version; }
 		void addOnChangedHandler(std::function<void()> &&onChanged);
@@ -778,6 +777,7 @@ namespace info
 
 		// private functions
 		void onChanged();
+		std::optional<int> find_machine_index(const QString &machine_name) const;
 		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char8_t ch);
 		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::u8string_view s);
 		static std::optional<std::array<char8_t, 6>> tryDecodeAsSmallString(std::uint32_t value);

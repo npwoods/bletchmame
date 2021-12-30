@@ -11,6 +11,7 @@
 
 #include "auditablelistitemmodel.h"
 #include "info.h"
+#include "utility.h"
 
 
 //**************************************************************************
@@ -44,7 +45,7 @@ public:
 	void allAuditStatusesChanged();
 
 	// virtuals
-	virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
+	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
 	virtual QModelIndex parent(const QModelIndex &child) const override;
 	virtual int rowCount(const QModelIndex &parent) const override;
 	virtual int columnCount(const QModelIndex &parent) const override;
@@ -54,11 +55,13 @@ public:
 	virtual bool isAuditIdentifierPresent(const AuditIdentifier &identifier) const override;
 
 private:
+	typedef std::unordered_map<std::reference_wrapper<const QString>, int> ReverseIndexMap;
+
 	info::database &									m_infoDb;
 	IconLoader *										m_iconLoader;
 	std::function<bool(const info::machine &machine)>	m_machineFilter;
 	std::vector<int>									m_indexes;
-	std::unordered_map<int, int>						m_reverseIndexes;
+	ReverseIndexMap										m_reverseIndexes;
 	std::function<void(info::machine)>					m_machineIconAccessedCallback;
 
 	void iconsChanged(int startIndex, int endIndex);
