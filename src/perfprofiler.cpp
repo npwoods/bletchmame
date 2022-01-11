@@ -13,7 +13,9 @@
 
 #include "perfprofiler.h"
 
-RealPerformanceProfiler RealPerformanceProfiler::g_instance;
+using namespace std::chrono_literals;
+
+QThreadStorage<std::optional<std::reference_wrapper<RealPerformanceProfiler>>> RealPerformanceProfiler::s_instance;
 
 
 //**************************************************************************
@@ -24,9 +26,18 @@ RealPerformanceProfiler RealPerformanceProfiler::g_instance;
 //  ctor
 //-------------------------------------------------
 
-RealPerformanceProfiler::RealPerformanceProfiler()
-	: m_profilingThread(std::this_thread::get_id())
+RealPerformanceProfiler::RealPerformanceProfiler(const char *fileName)
+	: m_fileName(fileName)
+	, m_throttler(500ms)
 {
+	// we can't run this multiple times per thread
+	if (current())
+		throw false;
+
+	// specify the instance
+	s_instance.setLocalData(std::reference_wrapper<RealPerformanceProfiler>(*this));
+
+	// prserve entries
 	const int RESERVE_LABEL_COUNT = 256;
 	m_labelMap.reserve(RESERVE_LABEL_COUNT);
 	m_entries.reserve(RESERVE_LABEL_COUNT);
@@ -35,6 +46,104 @@ RealPerformanceProfiler::RealPerformanceProfiler()
 	m_currentLabelIndex = getLabelIndex("<<none>>");
 	m_currentStartTime = std::clock();
 	m_stack.push(m_currentLabelIndex);
+}
+
+
+//-------------------------------------------------
+//  dtor
+//-------------------------------------------------
+
+RealPerformanceProfiler::~RealPerformanceProfiler()
+{
+	if (!m_fullFileName.isEmpty())
+	{
+		QFile file(m_fullFileName);
+		file.open(QIODevice::WriteOnly);
+	}
+	s_instance.setLocalData(std::nullopt);
+}
+
+
+//-------------------------------------------------
+//  current
+//-------------------------------------------------
+
+RealPerformanceProfiler *RealPerformanceProfiler::current()
+{
+	return s_instance.hasLocalData() && s_instance.localData().has_value()
+		? &((RealPerformanceProfiler &) s_instance.localData().value())
+		: nullptr;
+}
+
+
+//-------------------------------------------------
+//  startScope
+//-------------------------------------------------
+
+void RealPerformanceProfiler::startScope(ProfilerLabel label)
+{
+	// translate the label to an index and push it on the stack
+	std::size_t labelIndex = getLabelIndex(label);
+	m_stack.push(labelIndex);
+
+	// record accumulated time
+	recordAccumulatedTime(labelIndex);
+
+	// bump the count
+	m_entries[labelIndex].m_count++;
+
+	// and ping
+	ping();
+}
+
+
+//-------------------------------------------------
+//  endScope
+//-------------------------------------------------
+
+void RealPerformanceProfiler::endScope()
+{
+	// pop a label off the stack
+	m_stack.pop();
+	std::size_t labelIndex = m_stack.top();
+
+	// record accumulated time
+	recordAccumulatedTime(labelIndex);
+
+	// and ping
+	ping();
+}
+
+
+//-------------------------------------------------
+//  getLabelIndex
+//-------------------------------------------------
+
+std::size_t RealPerformanceProfiler::getLabelIndex(ProfilerLabel label)
+{
+	auto iter = m_labelMap.find(label);
+	return iter == m_labelMap.end()
+		? introduceNewLabel(label)
+		: iter->second;
+}
+
+
+//-------------------------------------------------
+//  recordAccumulatedTime
+//-------------------------------------------------
+
+void RealPerformanceProfiler::recordAccumulatedTime(std::size_t labelIndex)
+{
+	// get the current clock
+	std::clock_t currentClock = std::clock();
+
+	// record accumulated time for the label we're currently tracking
+	std::clock_t accumulatedTime = currentClock - m_currentStartTime;
+	m_entries[m_currentLabelIndex].m_accumulatedTime += accumulatedTime;
+
+	// and start tracking this one
+	m_currentLabelIndex = labelIndex;
+	m_currentStartTime = currentClock;
 }
 
 
@@ -54,15 +163,29 @@ std::size_t RealPerformanceProfiler::introduceNewLabel(const ProfilerLabel &labe
 
 
 //-------------------------------------------------
-//  dump
+//  ping
 //-------------------------------------------------
 
-void RealPerformanceProfiler::dump()
+void RealPerformanceProfiler::ping()
 {
-	QString profileDataFileName = QCoreApplication::applicationDirPath() + "/profiledata.txt";
-	QFile file(profileDataFileName);
-	if (file.open(QIODeviceBase::WriteOnly))
-		dump(file);
+	if (m_throttler.check())
+	{
+		// if we have not evaluated the full file name, do so now
+		if (m_fullFileName.isEmpty())
+		{
+			QString appDirPath = QCoreApplication::applicationDirPath();
+			if (!appDirPath.isEmpty())
+				m_fullFileName = QString("%1/%2").arg(appDirPath, m_fileName);
+		}
+
+		// and dump
+		if (!m_fullFileName.isEmpty())
+		{
+			QFile file(m_fullFileName);
+			if (file.open(QIODeviceBase::WriteOnly))
+				dump(file);
+		}
+	}
 }
 
 

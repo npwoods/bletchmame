@@ -14,12 +14,16 @@
 
 #include <cstring>
 #include <functional>
-#include <stack>
-#include <vector>
 #include <iterator>
+#include <memory>
+#include <stack>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
+#include <QThreadStorage>
+
+#include "throttler.h"
 #include "utility.h"
 
 
@@ -110,39 +114,19 @@ class RealPerformanceProfiler
 public:
 	const int MAX_LABEL_SIZE = 64;
 
-	static RealPerformanceProfiler &instance()	{ return g_instance; }
-	bool isReal() const							{ return true; }
-	void dump();
+	// ctor/dtor
+	RealPerformanceProfiler(const char *fileName);
+	RealPerformanceProfiler(const RealPerformanceProfiler &) = delete;
+	RealPerformanceProfiler(RealPerformanceProfiler &&) = delete;
+	~RealPerformanceProfiler();
 
-	void startScope(ProfilerLabel label)
-	{
-		if (isProfilingThisThread())
-		{
-			// translate the label to an index and push it on the stack
-			std::size_t labelIndex = getLabelIndex(label);
-			m_stack.push(labelIndex);
+	// statics
+	static RealPerformanceProfiler *current();
 
-			// record accumulated time
-			recordAccumulatedTime(labelIndex);
-
-			// bump the count
-			m_entries[labelIndex].m_count++;
-		}
-	}
-
-	void endScope()
-	{
-		if (isProfilingThisThread())
-		{
-			// pop a label off the stack
-			m_stack.pop();
-			std::size_t labelIndex = m_stack.top();
-
-			// record accumulated time
-			recordAccumulatedTime(labelIndex);
-		}
-	}
-
+	// methods
+	void ping();
+	void startScope(ProfilerLabel label);
+	void endScope();
 
 private:
 	struct Entry
@@ -154,47 +138,20 @@ private:
 		int				m_count;
 	};
 
+	const char *									m_fileName;
+	QString											m_fullFileName;
+	Throttler										m_throttler;
 	std::size_t										m_currentLabelIndex;
 	std::clock_t									m_currentStartTime;
 	std::unordered_map<ProfilerLabel, std::size_t>	m_labelMap;
 	std::stack<std::size_t>							m_stack;
 	std::vector<Entry>								m_entries;
-	std::thread::id									m_profilingThread;
+	
+	static QThreadStorage<std::optional<std::reference_wrapper<RealPerformanceProfiler>>>	s_instance;
 
-	static RealPerformanceProfiler					g_instance;
-
-	// ctor
-	RealPerformanceProfiler();
-	RealPerformanceProfiler(const RealPerformanceProfiler &) = delete;
-	RealPerformanceProfiler(RealPerformanceProfiler &&) = delete;
-
-	std::size_t getLabelIndex(ProfilerLabel label)
-	{
-		auto iter = m_labelMap.find(label);
-		return iter == m_labelMap.end()
-			? introduceNewLabel(label)
-			: iter->second;
-	}
-
-	void recordAccumulatedTime(std::size_t labelIndex)
-	{
-		// get the current clock
-		std::clock_t currentClock = std::clock();
-
-		// record accumulated time for the label we're currently tracking
-		std::clock_t accumulatedTime = currentClock - m_currentStartTime;
-		m_entries[m_currentLabelIndex].m_accumulatedTime += accumulatedTime;
-
-		// and start tracking this one
-		m_currentLabelIndex = labelIndex;
-		m_currentStartTime = currentClock;
-	}
-
-	bool isProfilingThisThread() const
-	{
-		return std::this_thread::get_id() == m_profilingThread;
-	}
-
+	// private methods
+	std::size_t getLabelIndex(ProfilerLabel label);
+	void recordAccumulatedTime(std::size_t labelIndex);
 	std::size_t introduceNewLabel(const ProfilerLabel &label);
 	void dump(QIODevice &file);
 	void dump(QTextStream &file);
@@ -206,16 +163,16 @@ private:
 class FakePerformanceProfiler
 {
 public:
-	static FakePerformanceProfiler instance()	{ return FakePerformanceProfiler(); }
-	bool isReal() const							{ return false; }
-	void startScope(ProfilerLabel)				{ /* do nothing */ }
-	void endScope()								{ /* do nothing */ }
-	void dump()									{ /* do nothing */ }
-
-private:
-	FakePerformanceProfiler() = default;
+	FakePerformanceProfiler(const char *fileName)
+	{
+	}
 	FakePerformanceProfiler(const FakePerformanceProfiler &) = delete;
 	FakePerformanceProfiler(FakePerformanceProfiler &&) = delete;
+
+	static FakePerformanceProfiler *current()	{ return nullptr; }
+	void startScope(ProfilerLabel)				{ /* do nothing */ }
+	void endScope()								{ /* do nothing */ }
+	void ping()									{ /* do nothing */ }
 };
 
 
@@ -235,12 +192,14 @@ class ProfilerScope
 public:
 	ProfilerScope(ProfilerLabel label)
 	{
-		PerformanceProfiler::instance().startScope(label);
+		if (PerformanceProfiler::current())
+			PerformanceProfiler::current()->startScope(label);
 	}
 
 	~ProfilerScope()
 	{
-		PerformanceProfiler::instance().endScope();
+		if (PerformanceProfiler::current())
+			PerformanceProfiler::current()->endScope();
 	}
 };
 
