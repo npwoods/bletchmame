@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include "info_builder.h"
+#include "perfprofiler.h"
 
 
 //**************************************************************************
@@ -258,10 +259,12 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	std::u8string current_device_extensions;
 	xml.onElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		header.m_build_strindex = m_strings.get(attributes, "build");
 	});
 	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::machine &machine = m_machines.emplace_back();
 		binaryWipe(machine);
 		machine.m_runnable				= encodeBool(attributes.get<bool>("runnable").value_or(true));
@@ -309,19 +312,23 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementEnd({ "mame", "machine", "description" }, [this, &reportProgressIfAppropriate](std::u8string &&content)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		util::last(m_machines).m_description_strindex = m_strings.get(content);
 		reportProgressIfAppropriate(util::last(m_machines));
 	});
 	xml.onElementEnd({ "mame", "machine", "year" }, [this](std::u8string &&content)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		util::last(m_machines).m_year_strindex = m_strings.get(content);
 	});
 	xml.onElementEnd({ "mame", "machine", "manufacturer" }, [this](std::u8string &&content)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		util::last(m_machines).m_manufacturer_strindex = m_strings.get(content);
 	});
 	xml.onElementBegin({ "mame", "machine", "biosset" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::biosset &biosset = m_biossets.emplace_back();
 		binaryWipe(biosset);
 		biosset.m_name_strindex				= m_strings.get(attributes, "name");
@@ -331,6 +338,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "rom" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::rom &rom = m_roms.emplace_back();
 		binaryWipe(rom);
 		rom.m_name_strindex					= m_strings.get(attributes, "name");
@@ -348,6 +356,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "disk" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		std::string data;
 
 		info::binaries::disk &disk = m_disks.emplace_back();
@@ -364,6 +373,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "feature" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::feature &feature = m_features.emplace_back();
 		binaryWipe(feature);
 		feature.m_type		= encodeEnum(attributes.get<info::feature::type_t>		("type", s_feature_type_parser));
@@ -373,6 +383,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "chip" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::chip &chip = m_chips.emplace_back();
 		binaryWipe(chip);
 		chip.m_type				= encodeEnum(attributes.get<info::chip::type_t>("type", s_chip_type_parser));
@@ -384,6 +395,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "display" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::display &display = m_displays.emplace_back();
 		binaryWipe(display);
 		display.m_tag_strindex	= m_strings.get(attributes, "tag");
@@ -404,6 +416,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "sample" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::sample &sample = m_samples.emplace_back();
 		binaryWipe(sample);
 		sample.m_name_strindex	= m_strings.get(attributes, "name");
@@ -412,6 +425,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ { "mame", "machine", "configuration" },
 						 { "mame", "machine", "dipswitch" } }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::configuration &configuration = m_configurations.emplace_back();
 		binaryWipe(configuration);
 		configuration.m_name_strindex					= m_strings.get(attributes, "name");
@@ -425,6 +439,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ { "mame", "machine", "configuration", "confsetting" },
 						 { "mame", "machine", "dipswitch", "dipvalue" } }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::configuration_setting &configuration_setting = m_configuration_settings.emplace_back();
 		binaryWipe(configuration_setting);
 		configuration_setting.m_name_strindex		= m_strings.get(attributes, "name");
@@ -436,6 +451,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	xml.onElementBegin({ { "mame", "machine", "configuration", "confsetting", "condition" },
 						 { "mame", "machine", "dipswitch", "dipvalue", "condition" } }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		std::string data;
 		info::binaries::configuration_condition &configuration_condition = m_configuration_conditions.emplace_back();
 		binaryWipe(configuration_condition);
@@ -446,6 +462,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::device &device = m_devices.emplace_back();
 		binaryWipe(device);
 		device.m_type_strindex			= m_strings.get(attributes, "type");
@@ -461,10 +478,12 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "device", "instance" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		util::last(m_devices).m_instance_name_strindex = m_strings.get(attributes, "name");
 	});
 	xml.onElementBegin({ "mame", "machine", "device", "extension" }, [&current_device_extensions](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		std::optional<std::u8string_view> name = attributes.get<std::u8string_view>("name");
 		if (name)
 		{
@@ -474,11 +493,13 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](QString &&)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		if (!current_device_extensions.empty())
 			util::last(m_devices).m_extensions_strindex = m_strings.get(current_device_extensions);
 	});
 	xml.onElementBegin({ "mame", "machine", "driver" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::machine &machine = util::last(m_machines);
 		machine.m_quality_status		= encodeEnum(attributes.get<info::machine::driver_quality_t>("status",		s_driver_quality_parser),	machine.m_quality_status);
 		machine.m_quality_emulation		= encodeEnum(attributes.get<info::machine::driver_quality_t>("emulation",	s_driver_quality_parser),	machine.m_quality_emulation);
@@ -489,6 +510,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "slot" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::slot &slot = m_slots.emplace_back();
 		binaryWipe(slot);
 		slot.m_name_strindex					= m_strings.get(attributes, "name");
@@ -498,6 +520,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "slot", "slotoption" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::slot_option &slot_option = m_slot_options.emplace_back();
 		binaryWipe(slot_option);
 		slot_option.m_name_strindex				= m_strings.get(attributes, "name");
@@ -507,6 +530,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::software_list &software_list = m_software_lists.emplace_back();
 		binaryWipe(software_list);
 		software_list.m_name_strindex			= m_strings.get(attributes, "name");
@@ -516,6 +540,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementBegin({ "mame", "machine", "ramoption" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::ram_option &ram_option = m_ram_options.emplace_back();
 		binaryWipe(ram_option);
 		ram_option.m_name_strindex				= m_strings.get(attributes, "name");
@@ -525,12 +550,14 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	});
 	xml.onElementEnd({ "mame", "machine", "ramoption" }, [this](QString &&content)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		bool ok;
 		unsigned long val = content.toULong(&ok);
 		util::last(m_ram_options).m_value = ok ? val : 0;
 	});
 	xml.onElementBegin({ "mame", "machine", "sound" }, [this](const XmlParser::Attributes &attributes)
 	{
+		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::machine &machine = util::last(m_machines);
 		machine.m_sound_channels		= attributes.get<std::uint8_t>("channels").value_or(~0);
 	});
