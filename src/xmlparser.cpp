@@ -14,6 +14,7 @@
 #include <QBuffer>
 
 #include "xmlparser.h"
+#include "perfprofiler.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4996)
@@ -195,6 +196,8 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 
 bool XmlParser::internalParse(QIODevice &input)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	bool done = false;
 
 	if (LOG_XML)
@@ -389,6 +392,8 @@ XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &e
 
 void XmlParser::startElement(const char *element, const char **attributes)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// only try to find this node in our tables if we are not skipping
 	Node *child = nullptr;
 	if (m_skippingDepth == 0)
@@ -460,6 +465,8 @@ void XmlParser::startElement(const char *element, const char **attributes)
 
 void XmlParser::endElement(const char *)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	if (m_skippingDepth)
 	{
 		// coming out of an unknown element type

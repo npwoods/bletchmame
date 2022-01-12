@@ -746,12 +746,12 @@ MainWindow::MainWindow(QWidget *parent)
 	setupActionAspect([&pingTimer]() { pingTimer.start(500); }, [&pingTimer]() { pingTimer.stop(); });
 
 	// set up profiler timer
-	if (PerformanceProfiler::instance().isReal())
+	if (PerformanceProfiler::current())
 	{
 		QTimer &perfProfilerTimer = *new QTimer(this);
 		connect(&perfProfilerTimer, &QTimer::timeout, this, []()
 		{
-			PerformanceProfiler::instance().dump();
+			PerformanceProfiler::current()->ping();
 		});
 		perfProfilerTimer.start(1500);
 	}

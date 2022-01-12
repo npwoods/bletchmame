@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include "mainwindow.h"
+#include "perfprofiler.h"
 #include "version.h"
 
 #include <QApplication>
@@ -18,6 +19,10 @@
 
 int main(int argc, char *argv[])
 {
+	// profile this
+	PerformanceProfiler perfProfiler("main.profiledata.txt");
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// set the version string, if we have one
 	if (strlen(BLETCHMAME_VERSION_STRING) > 0)
 		QCoreApplication::setApplicationVersion(BLETCHMAME_VERSION_STRING);

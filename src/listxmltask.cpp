@@ -12,6 +12,7 @@
 #include <QDir>
 
 #include "listxmltask.h"
+#include "perfprofiler.h"
 #include "xmlparser.h"
 #include "utility.h"
 #include "info.h"
@@ -52,6 +53,10 @@ QStringList ListXmlTask::getArguments(const Preferences &) const
 
 void ListXmlTask::process(QProcess &process, const PostEventFunc &postEventFunc)
 {
+	// profile this
+	PerformanceProfiler perfProfiler("listxml.profiledata.txt");
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// callback
 	auto progressCallback = [&postEventFunc](int count, std::u8string_view machineName, std::u8string_view machineDescription)
 	{
