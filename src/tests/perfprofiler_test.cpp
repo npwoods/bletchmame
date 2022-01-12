@@ -14,10 +14,15 @@ class ProfilerLabel::Test : public QObject
 	Q_OBJECT
 
 private slots:
-	void ctor();
+	void ctor_1()				{ ctor("foo", "foo"); }
+	void fromPrettyFunction_1() { fromPrettyFunction("alpha::bravo(Charlie&, const Delta&)::<lambda(std::u8string&&)>", "alpha::bravo(Charlie&, const Delta&)::<lambda(std::u8string&&)>"); }
 	void equals();
 	void hash();
 	void toQString();
+
+private:
+	void ctor(const char *input, const char *expected);
+	void fromPrettyFunction(const char *input, const char *expected);
 };
 
 
@@ -29,16 +34,24 @@ private slots:
 //  ProfilerLabel::Test::ctor
 //-------------------------------------------------
 
-void ProfilerLabel::Test::ctor()
+void ProfilerLabel::Test::ctor(const char *input, const char *expected)
 {
-	ProfilerLabel label("foo");
-
-	QVERIFY(label.m_text[0] == 'f');
-	QVERIFY(label.m_text[1] == 'o');
-	QVERIFY(label.m_text[2] == 'o');
-
-	for (auto i = 3; i < label.m_text.size(); i++)
+	ProfilerLabel label(input);
+	QVERIFY(!strncmp(&label.m_text[0], expected, std::size(label.m_text)));
+	for (auto i = strlen(expected); i < label.m_text.size(); i++)
 		QVERIFY(label.m_text[i] == '\0');
+}
+
+
+//-------------------------------------------------
+//  ProfilerLabel::Test::fromPrettyFunction
+//-------------------------------------------------
+
+void ProfilerLabel::Test::fromPrettyFunction(const char *input, const char *expected)
+{
+	ProfilerLabel label = ProfilerLabel::fromPrettyFunction(input);
+	std::u8string_view actual = label.toStringView();
+	QVERIFY(actual == std::u8string_view((const char8_t *)expected));
 }
 
 

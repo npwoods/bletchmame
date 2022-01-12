@@ -75,6 +75,7 @@ public:
 	// operators
 	bool operator==(const ProfilerLabel &that) const = default;
 
+	std::u8string_view toStringView() const;
 	QString toQString() const;
 
 	static constexpr ProfilerLabel fromPrettyFunction(const char *text)
@@ -90,7 +91,7 @@ public:
 	}
 
 private:
-	std::array<char, 64> m_text;
+	std::array<char, 128> m_text;
 };
 
 
