@@ -238,21 +238,21 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	header.m_magic = info::binaries::MAGIC_HDR;
 	header.m_sizes_hash = info::database::calculate_sizes_hash();
 
-	// reserve space based on what we know about MAME 0.229
-	m_biossets.reserve(36000);					// 33456 bios sets
-	m_roms.reserve(350000);						// 324459 roms
-	m_disks.reserve(1400);						// 1132 disks
-	m_machines.reserve(48000);					// 44609 machines
-	m_devices.reserve(11000);					// 10272 devices
-	m_features.reserve(22000);					// 20022 features
-	m_chips.reserve(180000);					// 170244 chips
-	m_displays.reserve(0);						// TODO displays
-	m_samples.reserve(20000);					// 18538 samples
-	m_configurations.reserve(600000);			// 548738 configurations
-	m_configuration_conditions.reserve(7500);	// 6769 conditions
-	m_configuration_settings.reserve(1700000);	// 1623524 settings
-	m_software_lists.reserve(6200);				// 5684 software lists
-	m_ram_options.reserve(6500);				// 5718 ram options
+	// reserve space based on what we know about MAME 0.239
+	m_biossets.reserve(36000);					// 34067 bios sets
+	m_roms.reserve(350000);						// 329670 roms
+	m_disks.reserve(1400);						// 1193 disks
+	m_machines.reserve(48000);					// 44092 machines
+	m_devices.reserve(12000);					// 10738 devices
+	m_features.reserve(22000);					// 20412 features
+	m_chips.reserve(190000);					// 174679 chips
+	m_displays.reserve(22000);					// 20194 displays
+	m_samples.reserve(21000);					// 19402 samples
+	m_configurations.reserve(600000);			// 553822 configurations
+	m_configuration_conditions.reserve(7500);	// 6853 conditions
+	m_configuration_settings.reserve(1700000);	// 1639291 settings
+	m_software_lists.reserve(6800);				// 6337 software lists
+	m_ram_options.reserve(6800);				// 6383 ram options
 
 	// parse the -listxml output
 	XmlParser xml;
