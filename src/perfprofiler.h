@@ -142,6 +142,7 @@ private:
 	const char *									m_fileName;
 	QString											m_fullFileName;
 	Throttler										m_throttler;
+	std::clock_t									m_globalStartTime;
 	std::size_t										m_currentLabelIndex;
 	std::clock_t									m_currentStartTime;
 	std::unordered_map<ProfilerLabel, std::size_t>	m_labelMap;

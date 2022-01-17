@@ -29,6 +29,7 @@ QThreadStorage<std::optional<std::reference_wrapper<RealPerformanceProfiler>>> R
 RealPerformanceProfiler::RealPerformanceProfiler(const char *fileName)
 	: m_fileName(fileName)
 	, m_throttler(500ms)
+	, m_globalStartTime(std::clock())
 {
 	// we can't run this multiple times per thread
 	if (current())
@@ -44,7 +45,7 @@ RealPerformanceProfiler::RealPerformanceProfiler(const char *fileName)
 
 	// initial setup
 	m_currentLabelIndex = getLabelIndex("<<none>>");
-	m_currentStartTime = std::clock();
+	m_currentStartTime = m_globalStartTime;
 	m_stack.push(m_currentLabelIndex);
 }
 
@@ -58,7 +59,12 @@ RealPerformanceProfiler::~RealPerformanceProfiler()
 	if (!m_fullFileName.isEmpty())
 	{
 		QFile file(m_fullFileName);
-		file.open(QIODevice::WriteOnly);
+		if (file.open(QIODevice::WriteOnly))
+		{
+			std::clock_t elapsedTime = std::clock() - m_globalStartTime;
+			QString elapsedTimeString = QString::number((double)elapsedTime / CLOCKS_PER_SEC);
+			QTextStream(&file) << QString("COMPLETE: Elapsed Time %1 seconds").arg(elapsedTimeString);
+		}
 	}
 	s_instance.setLocalData(std::nullopt);
 }
