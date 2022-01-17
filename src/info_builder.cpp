@@ -11,6 +11,7 @@
 
 #include "info_builder.h"
 #include "perfprofiler.h"
+#include "throttler.h"
 
 
 //**************************************************************************
@@ -209,27 +210,24 @@ static void binaryWipe(T &x)
 
 bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const ProcessXmlCallback &progressCallback)
 {
+	using namespace std::chrono_literals;
+
 	// sanity check; ensure we're fresh
 	assert(m_machines.empty());
 	assert(m_devices.empty());
 
 	// progress reporting
-	auto lastProgress = std::chrono::system_clock::now();
-	auto reportProgressIfAppropriate = [this, &lastProgress, &progressCallback](const info::binaries::machine &machine)
+	Throttler throttler(100ms);
+	auto reportProgressIfAppropriate = [this, &throttler, &progressCallback](const info::binaries::machine &machine)
 	{
-		using namespace std::chrono_literals;
-
 		// is it time to report progress?
-		auto now = std::chrono::system_clock::now();
-		if (now > lastProgress + 100ms)
+		if (throttler.check() && progressCallback)
 		{
 			// it is, report it
-			lastProgress = now;
 			info::database_builder::string_table::SsoBuffer nameSso, descSso;
 			const char8_t *name = m_strings.lookup(machine.m_name_strindex, nameSso);
 			const char8_t *desc = m_strings.lookup(machine.m_description_strindex, descSso);
-			if (progressCallback)
-				progressCallback(util::safe_static_cast<int>(m_machines.size()), name, desc);
+			progressCallback(util::safe_static_cast<int>(m_machines.size()), name, desc);
 		}
 	};
 
@@ -257,12 +255,13 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 	// parse the -listxml output
 	XmlParser xml;
 	std::u8string current_device_extensions;
+	std::uint32_t empty_strindex = m_strings.get(u8"");
 	xml.onElementBegin({ "mame" }, [this, &header](const XmlParser::Attributes &attributes)
 	{
 		ProfilerScope prof(CURRENT_FUNCTION);
 		header.m_build_strindex = m_strings.get(attributes, "build");
 	});
-	xml.onElementBegin({ "mame", "machine" }, [this](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine" }, [this, empty_strindex](const XmlParser::Attributes &attributes)
 	{
 		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::machine &machine = m_machines.emplace_back();
@@ -299,9 +298,9 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		machine.m_devices_count			= 0;
 		machine.m_slots_index			= to_uint32(m_slots.size());
 		machine.m_slots_count			= 0;
-		machine.m_description_strindex	= 0;
-		machine.m_year_strindex			= 0;
-		machine.m_manufacturer_strindex = 0;
+		machine.m_description_strindex	= empty_strindex;
+		machine.m_year_strindex			= empty_strindex;
+		machine.m_manufacturer_strindex = empty_strindex;
 		machine.m_quality_status		= 0;
 		machine.m_quality_emulation		= 0;
 		machine.m_quality_cocktail		= 0;
@@ -460,7 +459,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		configuration_condition.m_mask					= attributes.get<std::uint32_t>("mask").value_or(0);
 		configuration_condition.m_value					= attributes.get<std::uint32_t>("value").value_or(0);
 	});
-	xml.onElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "mame", "machine", "device" }, [this, &current_device_extensions, empty_strindex](const XmlParser::Attributes &attributes)
 	{
 		ProfilerScope prof(CURRENT_FUNCTION);
 		info::binaries::device &device = m_devices.emplace_back();
@@ -469,8 +468,8 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		device.m_tag_strindex			= m_strings.get(attributes, "tag");
 		device.m_interface_strindex		= m_strings.get(attributes, "interface");
 		device.m_mandatory				= encodeBool(attributes.get<bool>("mandatory").value_or(false));
-		device.m_instance_name_strindex	= 0;
-		device.m_extensions_strindex	= 0;
+		device.m_instance_name_strindex	= empty_strindex;
+		device.m_extensions_strindex	= empty_strindex;
 
 		current_device_extensions.clear();
 
