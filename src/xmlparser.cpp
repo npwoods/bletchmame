@@ -12,6 +12,7 @@
 #include <string>
 
 #include <QBuffer>
+#include <QCoreApplication>
 
 #include "xmlparser.h"
 #include "perfprofiler.h"
@@ -25,7 +26,8 @@
 //  CONSTANTS
 //**************************************************************************
 
-#define LOG_XML		0
+#define LOG_XML_PARSING	0
+#define LOG_XML_DATA	0
 
 
 //**************************************************************************
@@ -200,8 +202,21 @@ bool XmlParser::internalParse(QIODevice &input)
 
 	bool done = false;
 
-	if (LOG_XML)
+	if (LOG_XML_PARSING)
 		qDebug("XmlParser::internalParse(): beginning parse");
+
+	// if appropriate, log the XML data
+	std::optional<QFile> xmlDataLog;
+	if (LOG_XML_DATA)
+	{
+		QString appDirPath = QCoreApplication::applicationDirPath();
+		if (!appDirPath.isEmpty())
+		{
+			xmlDataLog.emplace(QString("%1/parsedxml.xml").arg(appDirPath));
+			if (!xmlDataLog->open(QIODeviceBase::WriteOnly))
+				xmlDataLog.reset();
+		}
+	}
 
 	while (!done)
 	{
@@ -209,7 +224,7 @@ bool XmlParser::internalParse(QIODevice &input)
 		input.waitForReadyRead(-1);
 
 		// parse one buffer
-		if (!parseSingleBuffer(input, done))
+		if (!parseSingleBuffer(input, xmlDataLog, done))
 		{
 			// an error happened; append the error and bail out
 			appendCurrentXmlError();
@@ -218,7 +233,7 @@ bool XmlParser::internalParse(QIODevice &input)
 	}
 
 	bool success = m_errors.size() == 0;
-	if (LOG_XML)
+	if (LOG_XML_PARSING)
 		qDebug("XmlParser::internalParse(): ending parse (success=%s)", success ? "true" : "false");
 	return success;
 }
@@ -228,7 +243,7 @@ bool XmlParser::internalParse(QIODevice &input)
 //  parseSingleBuffer
 //-------------------------------------------------
 
-bool XmlParser::parseSingleBuffer(QIODevice &input, bool &done)
+bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDataLog, bool &done)
 {
 	const int bufferSize = 131072;
 
@@ -239,7 +254,7 @@ bool XmlParser::parseSingleBuffer(QIODevice &input, bool &done)
 
 	// read data
 	int lastRead = input.read((char *) buffer, bufferSize);
-	if (LOG_XML)
+	if (LOG_XML_PARSING)
 		qDebug("XmlParser::parseSingleBuffer(): input.read() returned %d", lastRead);
 
 	// figure out if we're done (note that with read(), while the documentation states that
@@ -247,6 +262,10 @@ bool XmlParser::parseSingleBuffer(QIODevice &input, bool &done)
 	// as reading past the end of input, QProcess seems to (at least sometimes) return '-1'
 	// without returning '0'
 	done = lastRead <= 0;
+
+	// log the XML data if appropriate
+	if (xmlDataLog.has_value() && lastRead > 0)
+		xmlDataLog.value().write((const char *) buffer, lastRead);
 
 	// and feed this into expat
 	return XML_ParseBuffer(m_parser, done ? 0 : lastRead, done) != XML_STATUS_ERROR;
