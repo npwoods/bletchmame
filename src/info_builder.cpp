@@ -11,6 +11,7 @@
 
 #include "info_builder.h"
 #include "perfprofiler.h"
+#include "throttler.h"
 
 
 //**************************************************************************
@@ -209,27 +210,24 @@ static void binaryWipe(T &x)
 
 bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const ProcessXmlCallback &progressCallback)
 {
+	using namespace std::chrono_literals;
+
 	// sanity check; ensure we're fresh
 	assert(m_machines.empty());
 	assert(m_devices.empty());
 
 	// progress reporting
-	auto lastProgress = std::chrono::system_clock::now();
-	auto reportProgressIfAppropriate = [this, &lastProgress, &progressCallback](const info::binaries::machine &machine)
+	Throttler throttler(100ms);
+	auto reportProgressIfAppropriate = [this, &throttler, &progressCallback](const info::binaries::machine &machine)
 	{
-		using namespace std::chrono_literals;
-
 		// is it time to report progress?
-		auto now = std::chrono::system_clock::now();
-		if (now > lastProgress + 100ms)
+		if (throttler.check() && progressCallback)
 		{
 			// it is, report it
-			lastProgress = now;
 			info::database_builder::string_table::SsoBuffer nameSso, descSso;
 			const char8_t *name = m_strings.lookup(machine.m_name_strindex, nameSso);
 			const char8_t *desc = m_strings.lookup(machine.m_description_strindex, descSso);
-			if (progressCallback)
-				progressCallback(util::safe_static_cast<int>(m_machines.size()), name, desc);
+			progressCallback(util::safe_static_cast<int>(m_machines.size()), name, desc);
 		}
 	};
 
