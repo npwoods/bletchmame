@@ -147,7 +147,7 @@ void RunMachineTask::abort()
 	issue({ "exit" });
 
 	// but kill anyways
-	emuPocess().kill();
+	killActiveEmuProcess();
 
 	internalPost(Message::type::TERMINATED, "", EmuError::Killed);
 }

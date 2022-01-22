@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.12 (TBD)
+	- Fixed a problem (thread safety when reading from MAME) that could cause random crashes
 	- Placing the BletchMAME version and (when running) the MAME version on the title bar
 	- Cosmetic changes to the "About..." dialog to make it appear cleaner
 

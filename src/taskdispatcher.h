@@ -94,8 +94,10 @@ public:
 private:
 	struct ActiveTask
 	{
-		Task::ptr	m_task;
-		std::thread	m_thread;
+		Task::ptr					m_task;
+		std::unique_ptr<QThread>	m_thread;
+
+		void join();
 	};
 
 	QObject &					m_eventHandler;

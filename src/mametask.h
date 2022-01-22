@@ -11,8 +11,7 @@
 #ifndef MAMETASK_H
 #define MAMETASK_H
 
-#include <QProcess>
-#include <QSemaphore>
+#include <QMutex>
 
 #include "task.h"
 #include "job.h"
@@ -23,6 +22,7 @@
 //**************************************************************************
 
 QT_BEGIN_NAMESPACE
+class QProcess;
 class QTextStream;
 QT_END_NAMESPACE
 
@@ -52,23 +52,18 @@ public:
 		Killed,					// the process was killed
 	};
 
-	// dtor
-	~MameTask();
-
 	// start this task (should only be invoked from TaskClient from the main thread)
 	virtual void start(Preferences &prefs) override final;
 
 	// perform actual processing (should only be invoked from TaskClient within the thread proc)
 	virtual void process(const PostEventFunc &postEventFunc) override final;
 
-	virtual void abort() override;
-
 protected:
 	// ctor
 	MameTask();
 
-	// accessors
-	QProcess &emuPocess() { return m_process; }
+	// if there is an active 
+	void killActiveEmuProcess();
 
 	// retrieves the arguments to be used at the command line
 	virtual QStringList getArguments(const Preferences &prefs) const = 0;
@@ -80,14 +75,16 @@ protected:
 	virtual void onChildProcessCompleted(EmuError status);
 
 private:
+	class ProcessLocker;
+
 	static Job		s_job;
-	QProcess		m_process;
-	QSemaphore		m_readySemaphore;
-	bool			m_readySemaphoreReleased;
+	QString			m_program;
+	QStringList		m_arguments;
+	QProcess *		m_activeProcess;
+	QMutex			m_activeProcessMutex;
 
 	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
 	static void formatCommandLine(QTextStream &stream, const QString &program, const QStringList &arguments);
-	void releaseReadySemaphore();
 };
 
 #endif // MAMETASK_H

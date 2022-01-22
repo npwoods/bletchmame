@@ -19,6 +19,34 @@
 
 
 //**************************************************************************
+//  TYPES
+//**************************************************************************
+
+namespace
+{
+	template<typename TFunc>
+	class DelegateThread : public QThread
+	{
+	public:
+		DelegateThread(TFunc &&func, QObject *parent = nullptr)
+			: QThread(parent)
+			, m_func(std::move(func))
+		{
+		}
+
+	protected:
+		virtual void run() override
+		{
+			m_func();
+		}
+
+	private:
+		TFunc m_func;
+	};
+}
+
+
+//**************************************************************************
 //  CORE IMPLEMENTATION
 //**************************************************************************
 
@@ -48,10 +76,7 @@ TaskDispatcher::~TaskDispatcher()
 
 	// now join all threads
 	for (ActiveTask &activeTask : m_activeTasks)
-	{
-		if (activeTask.m_thread.joinable())
-			activeTask.m_thread.join();
-	}
+		activeTask.join();
 }
 
 
@@ -81,10 +106,12 @@ void TaskDispatcher::launch(Task::ptr &&task)
 	activeTask.m_task->start(m_prefs);
 
 	// and perform processing on the thread proc
-	activeTask.m_thread = std::thread([this, task{ std::move(task) }]
+	auto func = [this, task{ std::move(task) }]
 	{
 		taskThreadProc(*task);
-	});
+	};
+	activeTask.m_thread = std::make_unique<DelegateThread<decltype(func)>>(std::move(func));
+	activeTask.m_thread->start();
 }
 
 
@@ -124,15 +151,28 @@ void TaskDispatcher::finalize(const Task &task)
 	});
 
 	// we expect this to be present
-	if (iter == m_activeTasks.end())
-		throw false;
+	if (iter != m_activeTasks.end())
+	{
+		// join the thread and remove it
+		iter->join();
+		m_activeTasks.erase(iter);
+	}
+}
 
-	// join the thread if necessary
-	if (iter->m_thread.joinable())
-		iter->m_thread.join();
 
-	// and remove it
-	m_activeTasks.erase(iter);
+//-------------------------------------------------
+//  ActiveTask::join
+//-------------------------------------------------
+
+void TaskDispatcher::ActiveTask::join()
+{
+	using namespace std::chrono_literals;
+
+	if (!m_thread->wait(QDeadlineTimer(5s)))
+	{
+		// something is very wrong if we got here
+		m_thread->terminate();
+	}
 }
 
 
