@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 #include <QCoreApplication>
+#include <QMutexLocker>
 
 #include "mametask.h"
 #include "prefs.h"
@@ -20,6 +21,31 @@
 
 
 //**************************************************************************
+//  TYPES
+//**************************************************************************
+
+class MameTask::ProcessLocker
+{
+public:
+	ProcessLocker(MameTask &task, QProcess &process)
+		: m_task(task)
+	{
+		QMutexLocker locker(&m_task.m_activeProcessMutex);
+		m_task.m_activeProcess = &process;
+	}
+
+	~ProcessLocker()
+	{
+		QMutexLocker locker(&m_task.m_activeProcessMutex);
+		m_task.m_activeProcess = nullptr;
+	}
+
+private:
+	MameTask &	m_task;
+};
+
+
+//**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
 
@@ -30,25 +56,8 @@ Job MameTask::s_job;
 //-------------------------------------------------
 
 MameTask::MameTask()
-	: m_readySemaphoreReleased(false)
+	: m_activeProcess(nullptr)
 {
-}
-
-
-//-------------------------------------------------
-//  dtor
-//-------------------------------------------------
-
-MameTask::~MameTask()
-{
-	// unlike wxWidgets, Qt whines with warnings if you destroy a QProcess before waiting
-	// for it to exit, so we need to go through these steps here
-	const int delayMilliseconds = 1000;
-	if (!m_process.waitForFinished(delayMilliseconds))
-	{
-		m_process.kill();
-		m_process.waitForFinished(delayMilliseconds);
-	}
 }
 
 
@@ -61,29 +70,18 @@ void MameTask::start(Preferences &prefs)
 	Task::start(prefs);
 
 	// identify the program
-	const QString &program = prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	m_program = prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
 	// bail now if this can't meaningfully work
-	if (program.isEmpty())
+	if (m_program.isEmpty())
 		return;
 
 	// get the arguments
-	QStringList arguments = getArguments(prefs);
+	m_arguments = getArguments(prefs);
 
 	// slap on any extra arguments
 	const QString &extraArguments = prefs.getMameExtraArguments();
-	appendExtraArguments(arguments, extraArguments);
-
-	// set up signals
-	connect(&m_process, &QProcess::finished, &m_process, [this](int exitCode, QProcess::ExitStatus exitStatus)
-	{
-		onChildProcessCompleted(static_cast<MameTask::EmuError>(exitCode));
-	});
-	connect(&m_process, &QProcess::readyReadStandardOutput, &m_process, [this]()
-	{
-		releaseReadySemaphore();
-	});
-	m_process.setReadChannel(QProcess::StandardOutput);
+	appendExtraArguments(m_arguments, extraArguments);
 
 	// log the command line (if appropriate)
 	if (LOG_LAUNCH_COMMAND)
@@ -92,17 +90,9 @@ void MameTask::start(Preferences &prefs)
 		if (file.open(QIODevice::WriteOnly))
 		{
 			QTextStream textStream(&file);
-			formatCommandLine(textStream, program, arguments);
+			formatCommandLine(textStream, m_program, m_arguments);
 		}
 	}
-
-	// launch the process
-	m_process.start(program, arguments);
-
-	// add the process to the job
-	qint64 processId = m_process.processId();
-	if (processId)
-		s_job.addProcess(processId);
 }
 
 
@@ -173,22 +163,47 @@ void MameTask::formatCommandLine(QTextStream &stream, const QString &program, co
 
 void MameTask::process(const PostEventFunc &postEventFunc)
 {
-	// wait for us to be ready
-	m_readySemaphore.acquire(1);
+	// start the process
+	QProcess emuProcess;
+	emuProcess.setReadChannel(QProcess::StandardOutput);
+	emuProcess.start(m_program, m_arguments);
+
+	// add the process to the job
+	qint64 processId = emuProcess.processId();
+	if (processId)
+		s_job.addProcess(processId);
+
+	// set up the process locker
+	ProcessLocker processLocker(*this, emuProcess);
+
+	// wait for readyReadStandardOutput
+	bool waitingComplete = false;
+	connect(&emuProcess, &QProcess::finished, &emuProcess, [this, &waitingComplete](int exitCode, QProcess::ExitStatus exitStatus)
+	{
+		waitingComplete = true;
+		onChildProcessCompleted((EmuError)exitCode);
+	});
+	connect(&emuProcess, &QProcess::readyReadStandardOutput, &emuProcess, [&waitingComplete]()
+	{
+		waitingComplete = true;
+	});
+	while (!waitingComplete)
+		QCoreApplication::processEvents();
 
 	// use our own process call
-	process(m_process, postEventFunc);
+	process(emuProcess, postEventFunc);
 }
 
 
 //-------------------------------------------------
-//  abort
+//  killActiveEmuProcess
 //-------------------------------------------------
 
-void MameTask::abort()
+void MameTask::killActiveEmuProcess()
 {
-	Task::abort();
-	releaseReadySemaphore();
+	QMutexLocker locker(&m_activeProcessMutex);
+	if (m_activeProcess)
+		m_activeProcess->kill();
 }
 
 
@@ -198,21 +213,4 @@ void MameTask::abort()
 
 void MameTask::onChildProcessCompleted(EmuError status)
 {
-	releaseReadySemaphore();
-}
-
-
-//-------------------------------------------------
-//  releaseReadySemaphore
-//-------------------------------------------------
-
-void MameTask::releaseReadySemaphore()
-{
-	// there are a number of activities that can trigger the need to release this semaphore (MAME completing, being aborted, or
-	// error conditions); we want to make sure that all of these activities result the semaphore being released, and only once
-	if (!m_readySemaphoreReleased)
-	{
-		m_readySemaphore.release(1);
-		m_readySemaphoreReleased = true;
-	}
 }
