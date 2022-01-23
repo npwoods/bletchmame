@@ -105,6 +105,10 @@ void AuditTask::run()
 	// prepare a callback
 	Callback callback(*this);
 
+	// if we're a background audit, lower the priority (lets be nice!)
+	if (!m_reportThrottler.has_value())
+		setPriority(QThread::LowestPriority);
+
 	// run all the audits
 	for (const Entry &entry : m_entries)
 	{
