@@ -82,7 +82,8 @@ void AuditTask::Test::general(bool hasMedia, AuditStatus expectedResult)
 		if (!auditProgressEvent || auditProgressEvent->verdict().has_value())
 			events.push_back(std::move(event));
 	};
-	task.process(callback);
+	task.prepare(prefs, callback);
+	task.run();
 
 	// validate the audit progress events
 	QVERIFY(events.size() == 5);

@@ -48,20 +48,20 @@ QStringList ListXmlTask::getArguments(const Preferences &) const
 
 
 //-------------------------------------------------
-//  process
+//  run
 //-------------------------------------------------
 
-void ListXmlTask::process(QProcess &process, const PostEventFunc &postEventFunc)
+void ListXmlTask::run(QProcess &process)
 {
 	// profile this
 	PerformanceProfiler perfProfiler("listxml.profiledata.txt");
 	ProfilerScope prof(CURRENT_FUNCTION);
 
 	// callback
-	auto progressCallback = [&postEventFunc](int count, std::u8string_view machineName, std::u8string_view machineDescription)
+	auto progressCallback = [this](int count, std::u8string_view machineName, std::u8string_view machineDescription)
 	{
 		auto evt = std::make_unique<ListXmlProgressEvent>(count, util::toQString(machineName), util::toQString(machineDescription));
-		postEventFunc(std::move(evt));
+		postEventToHost(std::move(evt));
 	};
 
 	ListXmlResultEvent::Status status;
@@ -69,7 +69,7 @@ void ListXmlTask::process(QProcess &process, const PostEventFunc &postEventFunc)
 	try
 	{
 		// process
-		internalProcess(process, progressCallback);
+		internalRun(process, progressCallback);
 
 		// we've succeeded!
 		status = ListXmlResultEvent::Status::SUCCESS;
@@ -83,15 +83,15 @@ void ListXmlTask::process(QProcess &process, const PostEventFunc &postEventFunc)
 
 	// regardless of what happened, notify the main thread
 	auto evt = std::make_unique<ListXmlResultEvent>(status, std::move(errorMessage));
-	postEventFunc(std::move(evt));
+	postEventToHost(std::move(evt));
 }
 
 
 //-------------------------------------------------
-//  InternalProcess
+//  internalRun
 //-------------------------------------------------
 
-void ListXmlTask::internalProcess(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback)
+void ListXmlTask::internalRun(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback)
 {
 	info::database_builder builder;
 
@@ -101,7 +101,7 @@ void ListXmlTask::internalProcess(QIODevice &process, const info::database_build
 
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected
-	if (hasAborted())
+	if (isInterruptionRequested())
 		throw list_xml_exception(ListXmlResultEvent::Status::ABORTED);
 
 	// now check for a parse error (which should be very unlikely)

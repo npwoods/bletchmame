@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-#include <QObject>
+#include <QThread>
 
 
 //**************************************************************************
@@ -26,35 +26,30 @@ class TaskDispatcher;
 
 // ======================> Task
 
-class Task : public QObject
+class Task : public QThread
 {
 	friend class TaskDispatcher;
 public:
 	typedef std::shared_ptr<Task> ptr;
 
 	// ctor/dtor
-	Task();
+	Task() = default;
 	Task(const Task &) = delete;
 	Task(Task &&) = delete;
-	virtual ~Task();
-
-	// called on the main thread to trigger a shutdown (e.g. - BletchMAME is closing)
-	virtual void abort();
+	virtual ~Task() = default;
 
 protected:
-	typedef std::function<void(std::unique_ptr<QEvent> &&event)> PostEventFunc;
+	typedef std::function<void(std::unique_ptr<QEvent> &&)> EventHandlerFunc;
 
-	// start this task (should only be invoked from TaskClient from the main thread)
-	virtual void start(Preferences &prefs);
+	// prepares this task (should only be invoked from TaskDispatcher from the main thread)
+	virtual void prepare(Preferences &prefs, EventHandlerFunc &&eventHandler);
 
-	// perform actual processing (should only be invoked from TaskClient within the thread proc)
-	virtual void process(const PostEventFunc &postEventFunc) = 0;
-
-	// are we aborting?
-	bool hasAborted() const;
+	// posts an event to the host (the main thread) and the task (the client thread)
+	void postEventToHost(std::unique_ptr<QEvent> &&event);
+	void postEventToTask(std::unique_ptr<QEvent> &&event);
 
 private:
-	volatile bool m_hasAborted;
+	EventHandlerFunc	m_eventHandler;
 };
 
 

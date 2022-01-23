@@ -45,12 +45,40 @@
 
 
 //**************************************************************************
+//  TYPES
+//**************************************************************************
+
+namespace
+{
+	// ======================> IssueCommandEvent
+
+	class IssueCommandEvent : public QEvent
+	{
+	public:
+		IssueCommandEvent(QString &&command)
+			: QEvent(s_eventId)
+			, m_command(std::move(command))
+		{
+		}
+
+		static QEvent::Type eventId() { return s_eventId; }
+		QString &command() { return m_command; }
+
+	private:
+		static QEvent::Type		s_eventId;
+		QString					m_command;
+	};
+}
+
+
+//**************************************************************************
 //  VARIABLES
 //**************************************************************************
 
 QEvent::Type RunMachineCompletedEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 QEvent::Type StatusUpdateEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
 QEvent::Type ChatterEvent::s_eventId = (QEvent::Type) QEvent::registerEventType();
+QEvent::Type IssueCommandEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
 
 
 //**************************************************************************
@@ -135,43 +163,13 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 
 
 //-------------------------------------------------
-//  abort
-//-------------------------------------------------
-
-void RunMachineTask::abort()
-{
-	// do the inherited stuff
-	MameTask::abort();
-
-	// be nice, try to exit
-	issue({ "exit" });
-
-	// but kill anyways
-	killActiveEmuProcess();
-
-	internalPost(Message::type::TERMINATED, "", EmuError::Killed);
-}
-
-
-//-------------------------------------------------
-//  onChildProcessCompleted
-//-------------------------------------------------
-
-void RunMachineTask::onChildProcessCompleted(EmuError status)
-{
-	MameTask::onChildProcessCompleted(status);
-	internalPost(Message::type::TERMINATED, "", status);
-}
-
-
-//-------------------------------------------------
 //  issue
 //-------------------------------------------------
 
 void RunMachineTask::issue(const std::vector<QString> &args)
 {
 	QString command = buildCommand(args);
-	internalPost(Message::type::COMMAND, std::move(command));
+	internalIssueCommand(std::move(command));
 }
 
 
@@ -182,24 +180,25 @@ void RunMachineTask::issue(const std::vector<QString> &args)
 void RunMachineTask::issueFullCommandLine(QString &&fullCommand)
 {
 	fullCommand += "\r\n";
-	internalPost(Message::type::COMMAND, std::move(fullCommand));
+	internalIssueCommand(std::move(fullCommand));
 }
 
 
 //-------------------------------------------------
-//  internalPost
+//  internalIssueCommand
 //-------------------------------------------------
 
-void RunMachineTask::internalPost(Message::type type, QString &&command, EmuError status)
+void RunMachineTask::internalIssueCommand(QString &&command)
 {
-	if (LOG_POST)
-		qDebug("RunMachineTask::internalPost(): command='%s'", command.trimmed().toStdString().c_str());
+	// empty commands are illegal
+	assert(!command.isEmpty());
 
-	Message message;
-	message.m_type = type;
-	message.m_command = std::move(command);
-	message.m_status = status;
-	m_messageQueue.post(std::move(message));
+	if (LOG_POST)
+		qDebug("RunMachineTask::internalIssueCommand(): command='%s'", command.trimmed().toStdString().c_str());
+
+	// post this event to the task
+	auto evt = std::make_unique<IssueCommandEvent>(std::move(command));
+	postEventToTask(std::move(evt));
 }
 
 
@@ -235,26 +234,46 @@ QString RunMachineTask::buildCommand(const std::vector<QString> &args)
 //**************************************************************************
 
 //-------------------------------------------------
-//  process
+//  event
 //-------------------------------------------------
 
-void RunMachineTask::process(QProcess &process, const PostEventFunc &postEventFunc)
+bool RunMachineTask::event(QEvent *event)
+{
+	std::optional<bool> result = { };
+	if (event->type() == IssueCommandEvent::eventId())
+	{
+		IssueCommandEvent &issueCommandEvent = *static_cast<IssueCommandEvent *>(event);
+		m_commandQueue.push(std::move(issueCommandEvent.command()));
+		result = true;
+	}
+
+	return result.has_value()
+		? result.value()
+		: MameTask::event(event);
+}
+
+
+//-------------------------------------------------
+//  run
+//-------------------------------------------------
+
+void RunMachineTask::run(QProcess &process)
 {
 	bool success;
 	QString errorMessage;
 
 	// set up the controller
-	MameWorkerController controller(process, [this, &postEventFunc](MameWorkerController::ChatterType type, const QString &text)
+	MameWorkerController controller(process, [this](MameWorkerController::ChatterType type, const QString &text)
 	{
 		if (m_chatterEnabled)
 		{
 			auto evt = std::make_unique<ChatterEvent>(type, text);
-			postEventFunc(std::move(evt));
+			postEventToHost(std::move(evt));
 		}
 	});
 
 	// receive the inaugural response from MAME; we want to call it quits if this doesn't work
-	MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller, postEventFunc);
+	MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller);
 	if (response.m_type != MameWorkerController::Response::Type::Ok)
 	{
 		// alas, we have an error starting MAME
@@ -269,47 +288,62 @@ void RunMachineTask::process(QProcess &process, const PostEventFunc &postEventFu
 	else
 	{
 		// loop until the process terminates
-		bool done = false;
-		EmuError status = EmuError::None;
-		while (!done)
+		QString command;
+		while (!(command = getNextCommand()).isEmpty())
 		{
-			// await a message from the queue
+			// we've received a command
 			if (LOG_RECEIVE)
-				qDebug("RunMachineTask::process(): invoking MessageQueue::receive()");
-			Message message = m_messageQueue.receive();
+				qDebug() << "RunMachineTask::run(): received command: " << command;
 
-			switch (message.m_type)
-			{
-			case Message::type::COMMAND:
-				// emit this command to MAME
-				controller.issueCommand(message.m_command);
+			// emit this command to MAME
+			controller.issueCommand(command);
 
-				// and receive a response from MAME
-				response = receiveResponseAndHandleUpdates(controller, postEventFunc);
-				break;
+			// and receive a response from MAME
+			response = receiveResponseAndHandleUpdates(controller);
+		}
 
-			case Message::type::TERMINATED:
-				done = true;
-				status = message.m_status;
-				break;
-
-			default:
-				throw false;
-			}
+		// if we didn't get a MAME status code, sounds like we need to bump off MAME
+		if (!emuExitCode().has_value())
+		{
+			killActiveEmuProcess();
+			while (!emuExitCode().has_value())
+				QCoreApplication::processEvents();
 		}
 
 		// was there an error?
-		if (status != EmuError::None)
+		EmuExitCode exitCode = emuExitCode().value();
+		if (exitCode != EmuExitCode::Success)
 		{
 			// if so, capture what was emitted by MAME's standard output stream
 			QByteArray errorMessageBytes = process.readAllStandardError();
 			errorMessage = errorMessageBytes.length() > 0
 				? QString::fromUtf8(errorMessageBytes)
-				: QString("Error %1 running MAME").arg(QString::number((int)status));
+				: QString("Error %1 running MAME").arg(QString::number((int)exitCode));
 		}
 	}
 	auto evt = std::make_unique<RunMachineCompletedEvent>(success, std::move(errorMessage));
-	postEventFunc(std::move(evt));
+	postEventToHost(std::move(evt));
+}
+
+
+//-------------------------------------------------
+//  getNextCommand
+//-------------------------------------------------
+
+QString RunMachineTask::getNextCommand()
+{
+	// process events until we have something in the queue, or until we need to bail
+	while(m_commandQueue.empty() && !isInterruptionRequested() && !emuExitCode().has_value())
+		QCoreApplication::processEvents();
+
+	// get the command if we have one
+	QString result;
+	if (!m_commandQueue.empty())
+	{
+		result = std::move(m_commandQueue.front());
+		m_commandQueue.pop();
+	}
+	return result;
 }
 
 
@@ -317,7 +351,7 @@ void RunMachineTask::process(QProcess &process, const PostEventFunc &postEventFu
 //  receiveResponseAndHandleUpdates
 //-------------------------------------------------
 
-MameWorkerController::Response RunMachineTask::receiveResponseAndHandleUpdates(MameWorkerController &controller, const PostEventFunc &postEventFunc)
+MameWorkerController::Response RunMachineTask::receiveResponseAndHandleUpdates(MameWorkerController &controller)
 {
 	// get the response
 	MameWorkerController::Response response = controller.receiveResponse();
@@ -326,7 +360,7 @@ MameWorkerController::Response RunMachineTask::receiveResponseAndHandleUpdates(M
 	if (response.m_update)
 	{
 		auto evt = std::make_unique<StatusUpdateEvent>(std::move(*response.m_update));
-		postEventFunc(std::move(evt));
+		postEventToHost(std::move(evt));
 	}
 
 	// return it either way

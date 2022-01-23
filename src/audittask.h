@@ -175,7 +175,7 @@ public:
 
 protected:
 	// virtuals
-	virtual void process(const PostEventFunc &postEventFunc) final override;
+	virtual void run() final override;
 
 private:
 	class Callback;

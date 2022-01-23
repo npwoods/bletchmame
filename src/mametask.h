@@ -33,10 +33,10 @@ class MameTask : public Task
 public:
 	class Test;
 
-	enum class EmuError
+	enum class EmuExitCode
 	{
-		// standard MAME error codes, from MAME main.h
-		None = 0,				// no error
+		// standard MAME status/error codes, from MAME main.h
+		Success = 0,			// no error
 		FailedValidity = 1,		// failed validity checks
 		MissingFiles = 2,		// missing files
 		FatalError = 3,			// some other fatal error
@@ -52,12 +52,6 @@ public:
 		Killed,					// the process was killed
 	};
 
-	// start this task (should only be invoked from TaskClient from the main thread)
-	virtual void start(Preferences &prefs) override final;
-
-	// perform actual processing (should only be invoked from TaskClient within the thread proc)
-	virtual void process(const PostEventFunc &postEventFunc) override final;
-
 protected:
 	// ctor
 	MameTask();
@@ -65,23 +59,30 @@ protected:
 	// if there is an active 
 	void killActiveEmuProcess();
 
+	// prepares this task (should only be invoked from TaskDispatcher from the main thread)
+	virtual void prepare(Preferences &prefs, EventHandlerFunc &&eventHandler) override final;
+
+	// runs the task
+	virtual void run() override final;
+
 	// retrieves the arguments to be used at the command line
 	virtual QStringList getArguments(const Preferences &prefs) const = 0;
 
 	// called on a child thread tasked with ownership of a MAME child process
-	virtual void process(QProcess &process, const PostEventFunc &postEventFunc) = 0;
+	virtual void run(QProcess &process) = 0;
 
-	// called on the main thread when the child process has been completed
-	virtual void onChildProcessCompleted(EmuError status);
+	// accesses the exit code
+	const std::optional<EmuExitCode> &emuExitCode() const { return m_emuExitCode; }
 
 private:
 	class ProcessLocker;
 
-	static Job		s_job;
-	QString			m_program;
-	QStringList		m_arguments;
-	QProcess *		m_activeProcess;
-	QMutex			m_activeProcessMutex;
+	static Job					s_job;
+	QString						m_program;
+	QStringList					m_arguments;
+	QProcess *					m_activeProcess;
+	QMutex						m_activeProcessMutex;
+	std::optional<EmuExitCode>	m_emuExitCode;
 
 	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
 	static void formatCommandLine(QTextStream &stream, const QString &program, const QStringList &arguments);

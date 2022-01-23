@@ -62,12 +62,12 @@ MameTask::MameTask()
 
 
 //-------------------------------------------------
-//  start
+//  prepare
 //-------------------------------------------------
 
-void MameTask::start(Preferences &prefs)
+void MameTask::prepare(Preferences &prefs, EventHandlerFunc &&eventHandler)
 {
-	Task::start(prefs);
+	Task::prepare(prefs, std::move(eventHandler));
 
 	// identify the program
 	m_program = prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
@@ -158,10 +158,10 @@ void MameTask::formatCommandLine(QTextStream &stream, const QString &program, co
 
 
 //-------------------------------------------------
-//  process
+//  run
 //-------------------------------------------------
 
-void MameTask::process(const PostEventFunc &postEventFunc)
+void MameTask::run()
 {
 	// start the process
 	QProcess emuProcess;
@@ -181,7 +181,9 @@ void MameTask::process(const PostEventFunc &postEventFunc)
 	connect(&emuProcess, &QProcess::finished, &emuProcess, [this, &waitingComplete](int exitCode, QProcess::ExitStatus exitStatus)
 	{
 		waitingComplete = true;
-		onChildProcessCompleted((EmuError)exitCode);
+		m_emuExitCode = exitStatus == QProcess::ExitStatus::NormalExit
+			? (EmuExitCode)exitCode
+			: EmuExitCode::Killed;
 	});
 	connect(&emuProcess, &QProcess::readyReadStandardOutput, &emuProcess, [&waitingComplete]()
 	{
@@ -190,8 +192,8 @@ void MameTask::process(const PostEventFunc &postEventFunc)
 	while (!waitingComplete)
 		QCoreApplication::processEvents();
 
-	// use our own process call
-	process(emuProcess, postEventFunc);
+	// use our own run call
+	run(emuProcess);
 }
 
 
@@ -204,13 +206,4 @@ void MameTask::killActiveEmuProcess()
 	QMutexLocker locker(&m_activeProcessMutex);
 	if (m_activeProcess)
 		m_activeProcess->kill();
-}
-
-
-//-------------------------------------------------
-//  onChildProcessCompleted
-//-------------------------------------------------
-
-void MameTask::onChildProcessCompleted(EmuError status)
-{
 }

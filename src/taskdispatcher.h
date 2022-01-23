@@ -68,9 +68,9 @@ public:
 	std::vector<std::shared_ptr<T>> getActiveTasksByType()
 	{
 		std::vector<std::shared_ptr<T>> results;
-		for (const ActiveTask &activeTask : m_activeTasks)
+		for (const Task::ptr &activeTask : m_activeTasks)
 		{
-			std::shared_ptr<T> ptr = dynamic_pointer_cast<T>(activeTask.m_task);
+			std::shared_ptr<T> ptr = dynamic_pointer_cast<T>(activeTask);
 			if (ptr)
 				results.push_back(std::move(ptr));
 		}
@@ -82,9 +82,9 @@ public:
 	std::size_t countActiveTasksByType()
 	{
 		std::size_t result = 0;
-		for (const ActiveTask &activeTask : m_activeTasks)
+		for (const Task::ptr &activeTask : m_activeTasks)
 		{
-			std::shared_ptr<T> ptr = dynamic_pointer_cast<T>(activeTask.m_task);
+			std::shared_ptr<T> ptr = dynamic_pointer_cast<T>(activeTask);
 			if (ptr)
 				result++;
 		}
@@ -92,21 +92,11 @@ public:
 	}
 
 private:
-	struct ActiveTask
-	{
-		Task::ptr					m_task;
-		std::unique_ptr<QThread>	m_thread;
+	QObject &				m_eventHandler;
+	Preferences &			m_prefs;
+	std::vector<Task::ptr>	m_activeTasks;
 
-		void join();
-	};
-
-	QObject &					m_eventHandler;
-	Preferences &				m_prefs;
-	std::vector<ActiveTask>		m_activeTasks;
-
-	// private methods
-	void taskThreadProc(Task &task);
-	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
+	void joinTask(Task &task);
 };
 
 #endif // TASKCLIENT_H

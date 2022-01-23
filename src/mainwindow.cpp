@@ -1694,7 +1694,7 @@ bool MainWindow::refreshMameInfoDatabase()
 		dlg.exec();
 		if (dlg.result() != QDialog::DialogCode::Accepted)
 		{
-			task->abort();
+			task->requestInterruption();
 			return false;
 		}
 	}

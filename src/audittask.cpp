@@ -21,7 +21,7 @@ QEvent::Type AuditProgressEvent::s_eventId = (QEvent::Type)QEvent::registerEvent
 class AuditTask::Callback : public Audit::ICallback
 {
 public:
-	Callback(AuditTask &host, const PostEventFunc &postEventFunc);
+	Callback(AuditTask &host);
 
 	// virtuals
 	virtual bool reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total) override final;
@@ -29,7 +29,6 @@ public:
 
 private:
 	AuditTask &				m_host;
-	const PostEventFunc &	m_postEventFunc;
 
 	void postProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total, std::optional<Audit::Verdict> &&verdict = { });
 };
@@ -96,15 +95,15 @@ std::vector<AuditIdentifier> AuditTask::getIdentifiers() const
 
 
 //-------------------------------------------------
-//  process
+//  run
 //-------------------------------------------------
 
-void AuditTask::process(const PostEventFunc &postEventFunc)
+void AuditTask::run()
 {
 	std::vector<AuditResult> results;
 
 	// prepare a callback
-	Callback callback(*this, postEventFunc);
+	Callback callback(*this);
 
 	// run all the audits
 	for (const Entry &entry : m_entries)
@@ -122,7 +121,7 @@ void AuditTask::process(const PostEventFunc &postEventFunc)
 
 	// and respond with the event
 	auto evt = std::make_unique<AuditResultEvent>(std::move(results), m_cookie);
-	postEventFunc(std::move(evt));
+	postEventToHost(std::move(evt));
 }
 
 
@@ -141,9 +140,8 @@ AuditTask::Entry::Entry(AuditIdentifier &&identifier)
 //  Callback ctor
 //-------------------------------------------------
 
-AuditTask::Callback::Callback(AuditTask &host, const PostEventFunc &postEventFunc)
+AuditTask::Callback::Callback(AuditTask &host)
 	: m_host(host)
-	, m_postEventFunc(postEventFunc)
 {
 }
 
@@ -158,7 +156,7 @@ bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProc
 	if (m_host.m_reportThrottler.has_value() && m_host.m_reportThrottler->check())
 		postProgressEvent(entryIndex, bytesProcessed, total);
 
-	return m_host.hasAborted();
+	return m_host.isInterruptionRequested();
 }
 
 
@@ -181,7 +179,7 @@ void AuditTask::Callback::reportVerdict(int entryIndex, const Audit::Verdict &ve
 void AuditTask::Callback::postProgressEvent(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, std::optional<Audit::Verdict> &&verdict)
 {
 	auto callbackEvt = std::make_unique<AuditProgressEvent>(entryIndex, bytesProcessed, totalBytes, std::move(verdict));
-	m_postEventFunc(std::move(callbackEvt));
+	m_host.postEventToHost(std::move(callbackEvt));
 }
 
 
