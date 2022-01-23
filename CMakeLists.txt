@@ -152,7 +152,6 @@ add_library(BletchMAME_core
 	src/mameversion.h
 	src/mameworkercontroller.cpp
 	src/mameworkercontroller.h
-	src/messagequeue.h
 	src/prefs.cpp
 	src/prefs.h
 	src/profile.cpp

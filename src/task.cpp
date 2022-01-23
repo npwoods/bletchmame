@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+#include <QCoreApplication>
 #include <QEvent>
 
 #include "task.h"
@@ -16,50 +17,31 @@
 //**************************************************************************
 
 //-------------------------------------------------
-//  ctor
+//  prepare
 //-------------------------------------------------
 
-Task::Task()
-	: m_hasAborted(false)
+void Task::prepare(Preferences &prefs, EventHandlerFunc &&eventHandler)
 {
+	m_eventHandler = std::move(eventHandler);
 }
 
 
 //-------------------------------------------------
-//  dtor
+//  postEventToHost
 //-------------------------------------------------
 
-Task::~Task()
+void Task::postEventToHost(std::unique_ptr<QEvent> &&event)
 {
+	if (m_eventHandler)
+		m_eventHandler(std::move(event));
 }
 
 
 //-------------------------------------------------
-//  start
+//  postEventToTask
 //-------------------------------------------------
 
-void Task::start(Preferences &prefs)
+void Task::postEventToTask(std::unique_ptr<QEvent> &&event)
 {
-	// by default, do nothing
-}
-
-
-//-------------------------------------------------
-//  abort
-//-------------------------------------------------
-
-void Task::abort()
-{
-	// mark as having been aborted
-	m_hasAborted = true;
-}
-
-
-//-------------------------------------------------
-//  abort
-//-------------------------------------------------
-
-bool Task::hasAborted() const
-{
-	return m_hasAborted;
+	QCoreApplication::postEvent(this, event.release());
 }

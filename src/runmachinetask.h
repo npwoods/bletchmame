@@ -13,9 +13,9 @@
 
 #include <QEvent>
 #include <optional>
+#include <queue>
 
 #include "mametask.h"
-#include "messagequeue.h"
 #include "info.h"
 #include "mameworkercontroller.h"
 
@@ -93,47 +93,39 @@ public:
 
 	typedef std::shared_ptr<RunMachineTask> ptr;
 
+	// ctor
 	RunMachineTask(info::machine machine, QString &&software, std::map<QString, QString> &&slotOptions, QString &&attachWindowParameter);
 
+	// methods
 	void issue(const std::vector<QString> &args);
 	void issueFullCommandLine(QString &&full_command);
 	const info::machine &getMachine() const { return m_machine; }
 	void setChatterEnabled(bool enabled) { m_chatterEnabled = enabled; }
 	bool startedWithHashPaths() const { return m_startedWithHashPaths; }
 
+	// virtuals
+	virtual bool event(QEvent *event) override;
+
 protected:
 	virtual QStringList getArguments(const Preferences &prefs) const override;
-	virtual void process(QProcess &process, const PostEventFunc &postEventFunc) override;
-	virtual void abort() override;
-	virtual void onChildProcessCompleted(EmuError status) override;
+	virtual void run(QProcess &process) override;
 
 private:
-    struct Message
-    {
-		enum class type
-		{
-			INVALID,
-			COMMAND,
-			TERMINATED
-		};
-
-		type						m_type;
-		QString						m_command;
-		EmuError					m_status;
-    };
-
 	info::machine					m_machine;
 	QString							m_software;
 	std::map<QString, QString>		m_slotOptions;
 	QString							m_attachWindowParameter;
-	MessageQueue<Message>		    m_messageQueue;
+	std::queue<QString>				m_commandQueue;
 	volatile bool					m_chatterEnabled;
 	mutable bool					m_startedWithHashPaths;
 
+	// main thread methods
 	static QString buildCommand(const std::vector<QString> &args);
+	void internalIssueCommand(QString &&command);
 
-	void internalPost(Message::type type, QString &&command, EmuError status = EmuError::Invalid);
-	static MameWorkerController::Response receiveResponseAndHandleUpdates(MameWorkerController &controller, const PostEventFunc &postEventFunc);
+	// task thread methods
+	QString getNextCommand();
+	MameWorkerController::Response receiveResponseAndHandleUpdates(MameWorkerController &controller);
 };
 
 

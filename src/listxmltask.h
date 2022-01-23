@@ -96,7 +96,7 @@ public:
 
 protected:
 	virtual QStringList getArguments(const Preferences &) const override final;
-	virtual void process(QProcess &process, const PostEventFunc &postEventFunc) override final;
+	virtual void run(QProcess &process) override final;
 
 private:
 	// ======================> list_xml_exception
@@ -111,7 +111,7 @@ private:
 
 	QString			m_outputFilename;
 
-	void internalProcess(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback = { });
+	void internalRun(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback = { });
 };
 
 #endif // LISTXMLTASK_H

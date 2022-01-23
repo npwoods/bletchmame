@@ -19,34 +19,6 @@
 
 
 //**************************************************************************
-//  TYPES
-//**************************************************************************
-
-namespace
-{
-	template<typename TFunc>
-	class DelegateThread : public QThread
-	{
-	public:
-		DelegateThread(TFunc &&func, QObject *parent = nullptr)
-			: QThread(parent)
-			, m_func(std::move(func))
-		{
-		}
-
-	protected:
-		virtual void run() override
-		{
-			m_func();
-		}
-
-	private:
-		TFunc m_func;
-	};
-}
-
-
-//**************************************************************************
 //  CORE IMPLEMENTATION
 //**************************************************************************
 
@@ -71,12 +43,12 @@ TaskDispatcher::TaskDispatcher(QObject &eventHandler, Preferences &prefs)
 TaskDispatcher::~TaskDispatcher()
 {
 	// if we have any outstanding tasks, instruct all of them to abort
-	for (const ActiveTask &activeTask : m_activeTasks)
-		activeTask.m_task->abort();
+	for (const Task::ptr &task : m_activeTasks)
+		task->requestInterruption();
 
-	// now join all threads
-	for (ActiveTask &activeTask : m_activeTasks)
-		activeTask.join();
+	// now join all tasks
+	for (const Task::ptr &task : m_activeTasks)
+		joinTask(*task);
 }
 
 
@@ -98,41 +70,31 @@ void TaskDispatcher::launch(Task::ptr &&task)
 {
 	assert(task);
 
-	// set up an active task
-	ActiveTask &activeTask = *m_activeTasks.emplace(m_activeTasks.end());
-	activeTask.m_task = task;
+	// add this to the active tasks
+	m_activeTasks.push_back(std::move(task));
 
-	// start the task
-	activeTask.m_task->start(m_prefs);
+	// identify the active tasks
+	Task &activeTask = *m_activeTasks.back();
 
-	// and perform processing on the thread proc
-	auto func = [this, task{ std::move(task) }]
-	{
-		taskThreadProc(*task);
-	};
-	activeTask.m_thread = std::make_unique<DelegateThread<decltype(func)>>(std::move(func));
-	activeTask.m_thread->start();
-}
-
-
-//-------------------------------------------------
-//  taskThreadProc
-//-------------------------------------------------
-
-void TaskDispatcher::taskThreadProc(Task &task)
-{
-	// do the heavy lifting
+	// prepare it
 	auto postEventFunc = [this](std::unique_ptr<QEvent> &&event)
 	{
 		QCoreApplication::postEvent(&m_eventHandler, event.release());
 	};
-	task.process(postEventFunc);
+	activeTask.prepare(m_prefs, postEventFunc);
 
-	// create another event to signal for this task to be finalized
-	std::unique_ptr<QEvent> finalizeEvent = std::make_unique<FinalizeTaskEvent>(task);
+	// we want to fire an event when the task is finalized
+	connect(&activeTask, &QThread::finished, &activeTask, [this, &activeTask]()
+	{
+		// create another event to signal for this task to be finalized
+		std::unique_ptr<QEvent> finalizeEvent = std::make_unique<FinalizeTaskEvent>(activeTask);
 
-	// and post it
-	QCoreApplication::postEvent(&m_eventHandler, finalizeEvent.release());
+		// and post it
+		QCoreApplication::postEvent(&m_eventHandler, finalizeEvent.release());
+	});
+
+	// and start it up!
+	activeTask.start();
 }
 
 
@@ -145,33 +107,33 @@ void TaskDispatcher::taskThreadProc(Task &task)
 void TaskDispatcher::finalize(const Task &task)
 {
 	// find the task
-	auto iter = std::find_if(m_activeTasks.begin(), m_activeTasks.end(), [&task](const ActiveTask &activeTask)
+	auto iter = std::find_if(m_activeTasks.begin(), m_activeTasks.end(), [&task](const Task::ptr &thisTask)
 	{
-		return &*activeTask.m_task == &task;
+		return &*thisTask == &task;
 	});
 
 	// we expect this to be present
 	if (iter != m_activeTasks.end())
 	{
 		// join the thread and remove it
-		iter->join();
+		joinTask(**iter);
 		m_activeTasks.erase(iter);
 	}
 }
 
 
 //-------------------------------------------------
-//  ActiveTask::join
+//  joinTask
 //-------------------------------------------------
 
-void TaskDispatcher::ActiveTask::join()
+void TaskDispatcher::joinTask(Task &task)
 {
 	using namespace std::chrono_literals;
 
-	if (!m_thread->wait(QDeadlineTimer(5s)))
+	if (!task.wait(QDeadlineTimer(5s)))
 	{
 		// something is very wrong if we got here
-		m_thread->terminate();
+		task.terminate();
 	}
 }
 

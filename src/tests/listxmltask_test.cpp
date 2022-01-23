@@ -17,7 +17,7 @@ class ListXmlTask::Test : public QObject
 	Q_OBJECT
 
 private slots:
-	void internalProcess();
+	void internalRun();
 	void pathWithFile();
 };
 
@@ -27,10 +27,10 @@ private slots:
 //**************************************************************************
 
 //-------------------------------------------------
-//  internalProcess
+//  internalRun
 //-------------------------------------------------
 
-void ListXmlTask::Test::internalProcess()
+void ListXmlTask::Test::internalRun()
 {
 	// we want to create an infodb deep within in a temporary directory
 	QTemporaryDir tempDir;
@@ -44,7 +44,7 @@ void ListXmlTask::Test::internalProcess()
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
 	// process!
-	task.internalProcess(testAsset);
+	task.internalRun(testAsset);
 
 	// verify that the result file is there
 	QFileInfo fi(outputPath);
@@ -77,7 +77,7 @@ void ListXmlTask::Test::pathWithFile()
 	std::unique_ptr<list_xml_exception> caughtException;
 	try
 	{
-		task.internalProcess(testAsset);
+		task.internalRun(testAsset);
 	}
 	catch (list_xml_exception &exception)
 	{
