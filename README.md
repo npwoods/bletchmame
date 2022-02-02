@@ -13,6 +13,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Lowering the priority of background audit tasks
 	- Placing the BletchMAME version and (when running) the MAME version on the title bar
 	- Cosmetic changes to the "About..." dialog to make it appear cleaner
+	- Fixed a bug that caused auditing to not respect "romof" when identifying paths
 
 - 2.11 (2021-Dec-27)
 	- Enabled Link Time Optimization for Release builds

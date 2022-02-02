@@ -126,14 +126,16 @@ QStringList Audit::buildMachinePaths(const Preferences &prefs, Preferences::glob
 
 	// blow these out to machine paths
 	QStringList results;
-	while (machine)
+	for (auto machineIter1 = machine; machineIter1.has_value(); machineIter1 = machineIter1->clone_of())
 	{
-		for (const QString &path : basePaths)
+		for (auto machineIter2 = machine; machineIter2.has_value(); machineIter2 = machineIter2->rom_of())
 		{
-			results.push_back(path + "/" + machine->name());
-			results.push_back(path + "/" + machine->name() + ".zip");
+			for (const QString &path : basePaths)
+			{
+				results.push_back(path + "/" + machineIter2->name());
+				results.push_back(path + "/" + machineIter2->name() + ".zip");
+			}
 		}
-		machine = machine->clone_of();
 	}
 	return results;
 }
