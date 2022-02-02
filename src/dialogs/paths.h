@@ -94,9 +94,8 @@ private:
 	PathsListViewModel &listModel();
 	const PathsListViewModel &listModel() const;
 	bool canonicalizeAndValidate(QString &path);
-
-	// static methods
-	static QStringList buildComboBoxStrings();
+	QString browseForMameIni();
+	bool importMameIni(const QString &fileName);
 };
 
 

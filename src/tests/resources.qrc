@@ -14,5 +14,6 @@
         <file>resources/sample_archive.zip</file>
         <file>resources/status_mame0226_coco2b_1.xml</file>
         <file>resources/status_mame0227_coco2b_1.xml</file>
+        <file>resources/testini.ini</file>
     </qresource>
 </RCC>

@@ -7,6 +7,7 @@
 ***************************************************************************/
 
 // bletchmame headers
+#include "dialogs/importmameini.h"
 #include "dialogs/paths.h"
 #include "ui_paths.h"
 #include "assetfinder.h"

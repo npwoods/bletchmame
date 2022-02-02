@@ -22,6 +22,7 @@
 #include "dialogs/cheats.h"
 #include "dialogs/confdev.h"
 #include "dialogs/console.h"
+#include "dialogs/importmameini.h"
 #include "dialogs/inputs.h"
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
@@ -1516,6 +1517,23 @@ void MainWindow::on_actionResetToDefault_triggered()
 
 
 //-------------------------------------------------
+//  on_actionImportMameIni_triggered
+//-------------------------------------------------
+
+void MainWindow::on_actionImportMameIni_triggered()
+{
+	Pauser pauser(*this);
+
+	// browse for the MAME INI
+	QString fileName = browseForMameIni();
+
+	// if we got something, present the import UI
+	if (!fileName.isEmpty())
+		importMameIni(fileName);
+}
+
+
+//-------------------------------------------------
 //  on_actionAbout_triggered
 //-------------------------------------------------
 
@@ -2520,6 +2538,67 @@ void MainWindow::ensureProperFocus()
 			::SetFocus((HWND)m_ui->rootWidget->winId());
 	}
 #endif
+}
+
+
+//-------------------------------------------------
+//  browseForMameIni
+//-------------------------------------------------
+
+QString MainWindow::browseForMameIni()
+{
+	// get the default directory for finding the MAME.ini
+	QString defaultDirPath;
+	QString fileToSelect;
+	const QString &emuExecutablePath = m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
+	if (!emuExecutablePath.isEmpty())
+	{
+		// we have an executable path; lets default to that directory
+		QDir defaultDir = QFileInfo(emuExecutablePath).absoluteDir();
+		defaultDirPath = defaultDir.absolutePath();
+
+		// is there already a mame.ini there?
+		QString candidateFileToSelect = defaultDir.absoluteFilePath("mame.ini");
+		if (QFileInfo(candidateFileToSelect).isFile())
+			fileToSelect = std::move(candidateFileToSelect);
+	}
+
+	// try to open a file
+	QFileDialog fileDialog(this, "Find MAME.ini", defaultDirPath, "MAME INI files (*.ini)");
+	fileDialog.setFileMode(QFileDialog::ExistingFile);
+	if (!fileToSelect.isEmpty())
+		fileDialog.selectFile(fileToSelect);
+
+	// run the dialog
+	QString result;
+	if (fileDialog.exec())
+	{
+		QStringList selectedFiles = fileDialog.selectedFiles();
+		if (selectedFiles.size() > 0)
+			result = std::move(selectedFiles[0]);
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
+//  importMameIni
+//-------------------------------------------------
+
+bool MainWindow::importMameIni(const QString &fileName)
+{
+	// prepare the import dialog
+	ImportMameIniDialog dialog(m_prefs, this);
+	if (!dialog.loadMameIni(fileName))
+		return false;
+
+	// show the dialog
+	if (dialog.exec() != QDialog::Accepted)
+		return false;
+
+	// apply!
+	dialog.apply();
+	return true;
 }
 
 
