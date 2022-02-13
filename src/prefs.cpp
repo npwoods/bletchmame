@@ -859,7 +859,7 @@ bool Preferences::load(QIODevice &input)
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
 		if (type)
-			globalPathsInfo.m_paths[(size_t) type.value()] = std::move(content);
+			globalPathsInfo.m_paths[(size_t) type.value()] = QDir::fromNativeSeparators(content);
 		type.reset();
 	});
 	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
@@ -958,11 +958,11 @@ bool Preferences::load(QIODevice &input)
 
 		std::optional<QString> workingDirectory = attributes.get<QString>("working_directory");
 		if (workingDirectory)
-			setMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, std::move(*workingDirectory));
+			setMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, QDir::fromNativeSeparators(*workingDirectory));
 
 		std::optional<QString> lastSaveState = attributes.get<QString>("last_save_state");
 		if (lastSaveState)
-			setMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, std::move(*lastSaveState));
+			setMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, QDir::fromNativeSeparators(*lastSaveState));
 
 		AuditStatus status = attributes.get<AuditStatus>("audit_status", s_audit_status_parser).value_or(AuditStatus::Unknown);
 		setMachineAuditStatus(current_machine_name, status);
@@ -980,7 +980,8 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](QString &&content)
 	{
-		getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(content));
+		QString path = QDir::fromNativeSeparators(content);
+		getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(path));
 	});
 	xml.onElementBegin({ "preferences", "software" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -1041,7 +1042,7 @@ void Preferences::save(QIODevice &output)
 	{
 		writer.writeStartElement("path");
 		writer.writeAttribute("type", s_path_names[(size_t)pathType]);
-		writer.writeCharacters(getGlobalPath(pathType));
+		writer.writeCharacters(QDir::toNativeSeparators(getGlobalPath(pathType)));
 		writer.writeEndElement();
 	}
 
@@ -1135,9 +1136,9 @@ void Preferences::save(QIODevice &output)
 			writer.writeAttribute("name", machineName);
 
 			if (!info.m_workingDirectory.isEmpty())
-				writer.writeAttribute("working_directory", info.m_workingDirectory);
+				writer.writeAttribute("working_directory", QDir::toNativeSeparators(info.m_workingDirectory));
 			if (!info.m_lastSaveState.isEmpty())
-				writer.writeAttribute("last_save_state", info.m_lastSaveState);
+				writer.writeAttribute("last_save_state", QDir::toNativeSeparators(info.m_lastSaveState));
 			if (info.m_auditStatus != AuditStatus::Unknown)
 				writer.writeAttribute("audit_status", s_audit_status_parser[info.m_auditStatus]);
 
@@ -1148,7 +1149,7 @@ void Preferences::save(QIODevice &output)
 					writer.writeStartElement("device");
 					writer.writeAttribute("type", device_type);
 					for (const QString &recent : recents)
-						writer.writeTextElement("recentfile", recent);
+						writer.writeTextElement("recentfile", QDir::toNativeSeparators(recent));
 					writer.writeEndElement();
 				}
 			}
@@ -1260,7 +1261,7 @@ QString Preferences::applySubstitutions(const QString &path) const
 		{
 			result = QCoreApplication::applicationDirPath();
 		}
-		return QDir::toNativeSeparators(result);
+		return result;
 	});
 }
 
@@ -1328,14 +1329,14 @@ Preferences::GlobalUiInfo::GlobalUiInfo()
 Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configDirectory)
 {
 	// set up default paths - some of these require a config directory
-	m_paths[(size_t)global_path_type::PLUGINS]		= QDir::toNativeSeparators("$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/");
-	m_paths[(size_t)global_path_type::HASH]			= QDir::toNativeSeparators("$(MAMEPATH)/hash/");
+	m_paths[(size_t)global_path_type::PLUGINS]		= "$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/";
+	m_paths[(size_t)global_path_type::HASH]			= "$(MAMEPATH)/hash/";
 	if (configDirectory)
 	{
-		m_paths[(size_t)global_path_type::CONFIG]	= QDir::toNativeSeparators(configDirectory->absolutePath());
-		m_paths[(size_t)global_path_type::NVRAM]	= QDir::toNativeSeparators(configDirectory->absolutePath());
-		m_paths[(size_t)global_path_type::DIFF]		= QDir::toNativeSeparators(configDirectory->absolutePath());
-		m_paths[(size_t)global_path_type::PROFILES]	= QDir::toNativeSeparators(configDirectory->filePath("profiles"));
+		m_paths[(size_t)global_path_type::CONFIG]	= configDirectory->absolutePath();
+		m_paths[(size_t)global_path_type::NVRAM]	= configDirectory->absolutePath();
+		m_paths[(size_t)global_path_type::DIFF]		= configDirectory->absolutePath();
+		m_paths[(size_t)global_path_type::PROFILES] = configDirectory->filePath("profiles");
 	}
 }
 

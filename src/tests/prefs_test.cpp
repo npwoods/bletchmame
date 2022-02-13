@@ -199,9 +199,9 @@ void Preferences::Test::defaults()
 	QVERIFY(prefs.getGlobalPath(global_path_type::EMU_EXECUTABLE)		== "");
 	QVERIFY(prefs.getGlobalPath(global_path_type::ROMS)					== "");
 	QVERIFY(prefs.getGlobalPath(global_path_type::SAMPLES)				== "");
-	QVERIFY(prefs.getGlobalPath(global_path_type::CONFIG)				== QDir::toNativeSeparators(tempDir.path()));
-	QVERIFY(prefs.getGlobalPath(global_path_type::NVRAM)				== QDir::toNativeSeparators(tempDir.path()));
-	QVERIFY(prefs.getGlobalPath(global_path_type::PROFILES)				== QDir::toNativeSeparators(QDir(tempDir.path()).filePath("profiles")));
+	QVERIFY(prefs.getGlobalPath(global_path_type::CONFIG)				== tempDir.path());
+	QVERIFY(prefs.getGlobalPath(global_path_type::NVRAM)				== tempDir.path());
+	QVERIFY(prefs.getGlobalPath(global_path_type::PROFILES)				== QDir(tempDir.path()).filePath("profiles"));
 }
 
 

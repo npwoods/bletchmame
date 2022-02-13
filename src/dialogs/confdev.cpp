@@ -440,7 +440,7 @@ bool ConfigurableDevicesDialog::createImage(const QString &tag)
 		return false;
 
 	// get the result from the dialog
-	QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
+	QString path = dialog.selectedFiles().first();
 
 	// and load the image
 	m_host.createImage(tag, std::move(path));
@@ -467,7 +467,7 @@ bool ConfigurableDevicesDialog::loadImage(const QString &tag)
 		return false;
 
 	// get the result from the dialog
-	QString path = QDir::toNativeSeparators(dialog.selectedFiles().first());
+	QString path = dialog.selectedFiles().first();
 
 	// and load the image
 	m_host.loadImage(tag, std::move(path));

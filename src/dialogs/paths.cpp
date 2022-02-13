@@ -249,9 +249,6 @@ bool PathsDialog::canonicalizeAndValidate(QString &path)
 			path += '/';
 	}
 
-	// and convert to native separators
-	path = QDir::toNativeSeparators(path);
-
 	return isValid;
 }
 
