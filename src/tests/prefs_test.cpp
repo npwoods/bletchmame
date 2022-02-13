@@ -29,6 +29,7 @@ private slots:
 	void loadFiresEvents();
 	void save();
 	void defaults();
+	void substitutions();
 	void pathNames();
 	void globalGetPathCategory();
 	void machineGetPathCategory();
@@ -202,6 +203,33 @@ void Preferences::Test::defaults()
 	QVERIFY(prefs.getGlobalPath(global_path_type::CONFIG)				== tempDir.path());
 	QVERIFY(prefs.getGlobalPath(global_path_type::NVRAM)				== tempDir.path());
 	QVERIFY(prefs.getGlobalPath(global_path_type::PROFILES)				== QDir(tempDir.path()).filePath("profiles"));
+}
+
+
+//-------------------------------------------------
+//  substitutions
+//-------------------------------------------------
+
+void Preferences::Test::substitutions()
+{
+	// create a temporary directory
+	QTemporaryDir tempDir;
+	QVERIFY(tempDir.isValid());
+
+	// create Preferences with defaults
+	Preferences prefs(QDir(tempDir.path()));
+	prefs.setGlobalPath(global_path_type::EMU_EXECUTABLE, QDir(tempDir.path()).filePath("mame_dir/mame.exe"));
+
+	// validate the "plugins" dir is set up
+	QStringList pluginsPath = prefs.getSplitPaths(global_path_type::PLUGINS);
+	QVERIFY(pluginsPath.size() == 2);
+	QVERIFY(pluginsPath[0] == QDir(QCoreApplication::applicationDirPath()).filePath("plugins/"));
+	QVERIFY(pluginsPath[1] == QDir(tempDir.path()).filePath("mame_dir/plugins/"));
+
+	// validate the "hash" dir is set up
+	QStringList hashPath = prefs.getSplitPaths(global_path_type::HASH);
+	QVERIFY(hashPath.size() == 1);
+	QVERIFY(hashPath[0] == QDir(tempDir.path()).filePath("mame_dir/hash/"));
 }
 
 
