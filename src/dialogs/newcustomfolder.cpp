@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
-#include <QPushButton>
-
+// bletchmame headers
 #include "dialogs/newcustomfolder.h"
 #include "ui_newcustomfolder.h"
+
+// Qt headers
+#include <QPushButton>
 
 
 //**************************************************************************

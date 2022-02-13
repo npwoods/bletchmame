@@ -6,12 +6,16 @@
 
 ***************************************************************************/
 
-#include <set>
-#include <QPixmap>
-
+// bletchmame headers
 #include "machinefoldertreemodel.h"
 #include "prefs.h"
 #include "perfprofiler.h"
+
+// Qt headers
+#include <QPixmap>
+
+// standard headers
+#include <set>
 
 
 //**************************************************************************

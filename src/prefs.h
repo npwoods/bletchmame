@@ -11,16 +11,19 @@
 #ifndef PREFS_H
 #define PREFS_H
 
-#include <array>
-#include <ostream>
-#include <map>
-#include <set>
+// bletchmame headers
+#include "utility.h"
 
+// Qt headers
 #include <QDataStream>
 #include <QDir>
 #include <QSize>
 
-#include "utility.h"
+// standard headers
+#include <array>
+#include <ostream>
+#include <map>
+#include <set>
 
 
 // ======================> AuditStatus

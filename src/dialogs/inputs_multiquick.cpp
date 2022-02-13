@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "dialogs/inputs_multiquick.h"
 #include "ui_inputs_multiquick.h"
 

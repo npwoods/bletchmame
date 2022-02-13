@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
-#include <QLabel>
-
+// bletchmame headers
 #include "dialogs/inputs_multiaxis.h"
 #include "ui_inputs_multiaxis.h"
+
+// Qt headers
+#include <QLabel>
 
 
 //**************************************************************************

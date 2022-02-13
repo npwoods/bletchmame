@@ -11,10 +11,13 @@
 #ifndef PROFILE_H
 #define PROFILE_H
 
-#include <vector>
-
+// bletchmame headers
 #include "info.h"
 #include "softwarelist.h"
+
+// standard headers
+#include <vector>
+
 
 QT_BEGIN_NAMESPACE
 class QTextStream;

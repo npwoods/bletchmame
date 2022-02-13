@@ -11,12 +11,16 @@
 #ifndef SOFTWARELIST_H
 #define SOFTWARELIST_H
 
-#include <QString>
-
-#include <optional>
-
+// bletchmame headers
 #include "utility.h"
 #include "info.h"
+
+// Qt headers
+#include <QString>
+
+// standard headers
+#include <optional>
+
 
 class Preferences;
 

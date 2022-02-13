@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
-#include <QCoreApplication>
-#include <QMutexLocker>
-
+// bletchmame headers
 #include "mametask.h"
 #include "prefs.h"
+
+// Qt headers
+#include <QCoreApplication>
+#include <QMutexLocker>
 
 
 //**************************************************************************

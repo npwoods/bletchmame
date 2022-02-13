@@ -9,12 +9,16 @@
 #ifndef ASSETFINDER_H
 #define ASSETFINDER_H
 
+// bletchmame headers
+#include "prefs.h"
+
+// Qt headers
 #include <QStringList>
 #include <QIODevice>
 
+// standard headers
 #include <vector>
 
-#include "prefs.h"
 
 // ======================> AssetFinder
 

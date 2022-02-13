@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
-#include <QTextStream>
-
+// bletchmame headers
 #include "status.h"
 #include "xmlparser.h"
+
+// Qt headers
+#include <QTextStream>
 
 
 //**************************************************************************

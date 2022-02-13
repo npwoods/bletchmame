@@ -9,8 +9,11 @@
 #ifndef AUDITABLELISTITEMMODEL_H
 #define AUDITABLELISTITEMMODEL_H
 
-#include <QAbstractItemModel>
+// bletchmame headers
 #include "audittask.h"
+
+// Qt headers
+#include <QAbstractItemModel>
 
 
 //**************************************************************************

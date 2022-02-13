@@ -9,6 +9,7 @@
 #ifndef DIALOGS_INPUTS_MULTIQUICK
 #define DIALOGS_INPUTS_MULTIQUICK
 
+// bletchmame headers
 #include "dialogs/inputs.h"
 
 QT_BEGIN_NAMESPACE

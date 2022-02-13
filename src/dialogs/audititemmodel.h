@@ -9,9 +9,11 @@
 #ifndef DIALOGS_AUDITITEMMODEL_H
 #define DIALOGS_AUDITITEMMODEL_H
 
-#include <QAbstractItemModel>
-
+// bletchmame headers
 #include "../audit.h"
+
+// Qt headers
+#include <QAbstractItemModel>
 
 
 //**************************************************************************

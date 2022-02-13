@@ -6,8 +6,10 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "mainpanel.h"
 #include "test.h"
+
 
 namespace
 {

@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "dialogs/switches.h"
+
+// Qt headers
 #include <QLabel>
 #include <QComboBox>
 #include <QStringListModel>
-
-#include "dialogs/switches.h"
 
 
 //**************************************************************************

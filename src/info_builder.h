@@ -11,10 +11,11 @@
 #ifndef INFO_BUILDER_H
 #define INFO_BUILDER_H
 
-class QDataStream;
-
+// bletchmame headers
 #include "info.h"
 #include "xmlparser.h"
+
+class QDataStream;
 
 namespace info
 {

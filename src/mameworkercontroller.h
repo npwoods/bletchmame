@@ -9,10 +9,15 @@
 #ifndef MAMEWORKERCONTROLLER_H
 #define MAMEWORKERCONTROLLER_H
 
+// bletchmame headers
+#include "status.h"
+
+// Qt headers
 #include <QString>
+
+// standard headers
 #include <optional>
 
-#include "status.h"
 
 QT_BEGIN_NAMESPACE
 class QProcess;

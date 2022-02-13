@@ -6,13 +6,15 @@
 
 ***************************************************************************/
 
-#include <QDate>
-#include <QFileInfo>
-#include <QTextStream>
-
+// bletchmame headers
 #include "about.h"
 #include "ui_about.h"
 #include "mameversion.h"
+
+// Qt headers
+#include <QDate>
+#include <QFileInfo>
+#include <QTextStream>
 
 
 //**************************************************************************

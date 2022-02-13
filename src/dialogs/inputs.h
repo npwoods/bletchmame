@@ -11,11 +11,15 @@
 #ifndef DIALOGS_INPUTS_H
 #define DIALOGS_INPUTS_H
 
-#include <vector>
-#include <observable/observable.hpp>
-
+// bletchmame headers
 #include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
+
+// dependency headers
+#include <observable/observable.hpp>
+
+// standard headers
+#include <vector>
 
 QT_BEGIN_NAMESPACE
 class QLabel;

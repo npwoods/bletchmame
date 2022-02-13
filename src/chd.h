@@ -10,6 +10,7 @@
 #ifndef CHD_H
 #define CHD_H
 
+// bletchmame headers
 #include "hash.h"
 
 

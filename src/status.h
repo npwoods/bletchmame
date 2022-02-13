@@ -21,11 +21,17 @@
 #undef max
 #endif
 
-#include "observable/observable.hpp"
-#include <QString>
-#include <optional>
-
+// bletchmame headers
 #include "utility.h"
+
+// dependency headers
+#include "observable/observable.hpp"
+
+// Qt headers
+#include <QString>
+
+// standard headers
+#include <optional>
 
 
 //**************************************************************************

@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
-#include <QTextCursor>
-#include <QTextCharFormat>
-
+// bletchmame headers
 #include "dialogs/console.h"
 #include "ui_console.h"
+
+// Qt headers
+#include <QTextCursor>
+#include <QTextCharFormat>
 
 
 //**************************************************************************

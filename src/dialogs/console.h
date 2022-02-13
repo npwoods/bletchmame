@@ -11,8 +11,12 @@
 #ifndef DIALOGS_CONSOLE_H
 #define DIALOGS_CONSOLE_H
 
-#include <QDialog>
+// bletchmame headers
 #include "runmachinetask.h"
+
+// Qt headers
+#include <QDialog>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class ConsoleDialog; }

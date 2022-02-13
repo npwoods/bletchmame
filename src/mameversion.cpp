@@ -11,6 +11,7 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "mameversion.h"
 
 #ifdef _MSC_VER

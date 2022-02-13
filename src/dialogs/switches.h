@@ -11,11 +11,14 @@
 #ifndef DIALOGS_SWITCHES_H
 #define DIALOGS_SWITCHES_H
 
-#include <vector>
-
+// bletchmame headers
 #include "dialogs/inputs_base.h"
 #include "runmachinetask.h"
 #include "info.h"
+
+// standard headers
+#include <vector>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class InputsDialog; }

@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "task.h"
+
+// Qt headers
 #include <QCoreApplication>
 #include <QEvent>
-
-#include "task.h"
 
 
 //**************************************************************************

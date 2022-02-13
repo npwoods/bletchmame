@@ -6,12 +6,17 @@
 
 ***************************************************************************/
 
-#include <QBuffer>
-#include <QTextStream>
-#include <sstream>
-
+// bletchmame headers
 #include "prefs.h"
 #include "test.h"
+
+// Qt headers
+#include <QBuffer>
+#include <QTextStream>
+
+// standard headers
+#include <sstream>
+
 
 class Preferences::Test : public QObject
 {

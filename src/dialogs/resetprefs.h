@@ -11,7 +11,9 @@
 #ifndef DIALOGS_RESETPREFS_H
 #define DIALOGS_RESETPREFS_H
 
+// Qt headers
 #include <QDialog>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class ResetPreferencesDialog; }

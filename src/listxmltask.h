@@ -11,10 +11,12 @@
 #ifndef LISTXMLTASK_H
 #define LISTXMLTASK_H
 
-#include <QEvent>
-
+// bletchmame headers
 #include "mametask.h"
 #include "info_builder.h"
+
+// Qt headers
+#include <QEvent>
 
 
 //**************************************************************************

@@ -6,10 +6,13 @@
 
 ***************************************************************************/
 
-#include <QCoreApplication>
-
+// bletchmame headers
 #include "audittask.h"
 #include "prefs.h"
+
+// Qt headers
+#include <QCoreApplication>
+
 
 QEvent::Type AuditResultEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();
 QEvent::Type AuditProgressEvent::s_eventId = (QEvent::Type)QEvent::registerEventType();

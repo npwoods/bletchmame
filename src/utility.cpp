@@ -6,11 +6,15 @@
 
 ***************************************************************************/
 
-#include <sstream>
+// bletchmame headers
+#include "utility.h"
+
+// Qt headers
 #include <QDir>
 #include <QGridLayout>
 
-#include "utility.h"
+// standard headers
+#include <sstream>
 
 
 //**************************************************************************

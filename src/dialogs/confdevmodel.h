@@ -9,12 +9,16 @@
 #ifndef DIALOGS_CONFDEVMODEL_H
 #define DIALOGS_CONFDEVMODEL_H
 
-#include <QAbstractItemModel>
-#include <map>
-
+// bletchmame headers
 #include "info.h"
 #include "softwarelist.h"
 #include "status.h"
+
+// Qt headers
+#include <QAbstractItemModel>
+
+// standard headers
+#include <map>
 
 #define TEXT_NONE				"<<none>>"
 

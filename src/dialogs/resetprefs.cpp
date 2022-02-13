@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
-#include <QPushButton>
-
+// bletchmame headers
 #include "resetprefs.h"
 #include "ui_resetprefs.h"
+
+// Qt headers
+#include <QPushButton>
 
 
 //**************************************************************************

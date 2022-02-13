@@ -11,8 +11,12 @@
 #ifndef DIALOGS_INPUTS_BASE_H
 #define DIALOGS_INPUTS_BASE_H
 
-#include <QDialog>
+// bletchmame headers
 #include "status.h"
+
+// Qt headers
+#include <QDialog>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class InputsDialogBase; }

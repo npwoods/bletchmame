@@ -9,8 +9,12 @@
 #ifndef DIALOGS_NEWCUSTOMFOLDER_H
 #define DIALOGS_NEWCUSTOMFOLDER_H
 
+// Qt headers
 #include <QDialog>
+
+// standard headers
 #include <set>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class NewCustomFolderDialog; }

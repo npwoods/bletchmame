@@ -6,12 +6,14 @@
 
 ***************************************************************************/
 
-#include <QMenu>
-
+// bletchmame headers
 #include "dialogs/inputs.h"
 #include "dialogs/inputs_seqpoll.h"
 #include "ui_inputs_seqpoll.h"
 #include "status.h"
+
+// Qt headers
+#include <QMenu>
 
 
 //**************************************************************************

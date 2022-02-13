@@ -6,16 +6,19 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "taskdispatcher.h"
+#include "prefs.h"
+#include "utility.h"
+
+// Qt headers
 #include <QCoreApplication>
 #include <QDebug>
 #include <QThread>
 
+// standard headers
 #include <iostream>
 #include <thread>
-
-#include "taskdispatcher.h"
-#include "prefs.h"
-#include "utility.h"
 
 
 //**************************************************************************

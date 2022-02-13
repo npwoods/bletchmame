@@ -9,10 +9,13 @@
 #ifndef SOFTWARELISTITEMMODEL_H
 #define SOFTWARELISTITEMMODEL_H
 
-#include <QAbstractItemModel>
-
+// bletchmame headers
 #include "softwarelist.h"
 #include "auditablelistitemmodel.h"
+
+// Qt headers
+#include <QAbstractItemModel>
+
 
 #define SOFTLIST_VIEW_DESC_NAME u8"softlist"
 

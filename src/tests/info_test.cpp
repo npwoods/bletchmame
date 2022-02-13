@@ -6,10 +6,13 @@
 
 ***************************************************************************/
 
-#include <QBuffer>
-
+// bletchmame headers
 #include "info.h"
 #include "test.h"
+
+// Qt headers
+#include <QBuffer>
+
 
 namespace
 {

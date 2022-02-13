@@ -9,9 +9,12 @@
 #ifndef SPLITTERVIEWTOGGLER_H
 #define SPLITTERVIEWTOGGLER_H
 
-#include <optional>
+// Qt headers
 #include <QAbstractButton>
 #include <QSplitter>
+
+// standard headers
+#include <optional>
 
 
 // ======================> MachineFolderTreeModel

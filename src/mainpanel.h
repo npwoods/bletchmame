@@ -9,14 +9,16 @@
 #ifndef MAINPANEL_H
 #define MAINPANEL_H
 
-#include <QTreeView>
-#include <QTableView>
-
+// bletchmame headers
 #include "iconloader.h"
 #include "profile.h"
 #include "prefs.h"
 #include "softwarelist.h"
 #include "audittask.h"
+
+// Qt headers
+#include <QTreeView>
+#include <QTableView>
 
 
 QT_BEGIN_NAMESPACE

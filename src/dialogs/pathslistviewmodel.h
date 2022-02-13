@@ -11,9 +11,11 @@
 #ifndef DIALOGS_PATHSLISTVIEWMODEL_H
 #define DIALOGS_PATHSLISTVIEWMODEL_H
 
-#include <QAbstractListModel>
-
+// bletchmame headers
 #include "utility.h"
+
+// Qt headers
+#include <QAbstractListModel>
 
 
 //**************************************************************************

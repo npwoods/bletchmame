@@ -6,8 +6,10 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "dialogs/inputs.h"
 #include "../test.h"
+
 
 class InputsDialog::Test : public QObject
 {

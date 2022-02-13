@@ -6,16 +6,20 @@
 
 ***************************************************************************/
 
-#include <iostream>
-#include <stdexcept>
-#include <QDir>
-#include <QProcess>
-#include <QThread>
-
+// bletchmame headers
 #include "test.h"
 #include "mameversion.h"
 #include "mameworkercontroller.h"
 #include "xmlparser.h"
+
+// Qt headers
+#include <QDir>
+#include <QProcess>
+#include <QThread>
+
+// standard headers
+#include <iostream>
+#include <stdexcept>
 
 
 //**************************************************************************

@@ -9,10 +9,15 @@
 #ifndef DIALOGS_ABOUT_H
 #define DIALOGS_ABOUT_H
 
+// bletchmame headers
+#include "mameversion.h"
+
+// Qt headers
 #include <QDialog>
+
+// standard headers
 #include <memory>
 
-#include "mameversion.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class AboutDialog; }

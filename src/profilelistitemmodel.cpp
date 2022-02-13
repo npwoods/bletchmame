@@ -6,12 +6,14 @@
 
 ***************************************************************************/
 
-#include <QDir>
-#include <QFileSystemWatcher>
-
+// bletchmame headers
 #include "profilelistitemmodel.h"
 #include "iconloader.h"
 #include "prefs.h"
+
+// Qt headers
+#include <QDir>
+#include <QFileSystemWatcher>
 
 
 //-------------------------------------------------

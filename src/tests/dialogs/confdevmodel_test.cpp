@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "dialogs/confdevmodel.h"
 #include "../test.h"
 

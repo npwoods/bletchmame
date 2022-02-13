@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "confdevmodel.h"
+
+// Qt headers
 #include <QDebug>
 #include <QDir>
-
-#include "confdevmodel.h"
 
 
 //**************************************************************************

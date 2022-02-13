@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
-#include <quazip.h>
-#include <quazipfile.h>
-
+// bletchmame headers
 #include "assetfinder.h"
 #include "perfprofiler.h"
+
+// dependency headers
+#include <quazip.h>
+#include <quazipfile.h>
 
 
 //**************************************************************************

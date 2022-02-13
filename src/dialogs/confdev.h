@@ -11,14 +11,20 @@
 #ifndef DIALOGS_CONFDEV_H
 #define DIALOGS_CONFDEV_H
 
-#include <vector>
-#include <memory>
+// bletchmame headers
+#include "confdevmodel.h"
+#include "softwarelist.h"
+
+// dependency headers
 #include <observable/observable.hpp>
+
+// Qt headers
 #include <QDialog>
 #include <QStyle>
 
-#include "confdevmodel.h"
-#include "softwarelist.h"
+// standard headers
+#include <vector>
+#include <memory>
 
 // pesky Win32 declaration
 #ifdef LoadImage

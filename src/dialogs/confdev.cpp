@@ -6,6 +6,12 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "ui_confdev.h"
+#include "dialogs/choosesw.h"
+#include "dialogs/confdev.h"
+
+// Qt headers
 #include <QAbstractItemDelegate>
 #include <QAction>
 #include <QBitmap>
@@ -20,10 +26,6 @@
 #include <QPushButton>
 #include <QStringListModel>
 #include <QStyledItemDelegate>
-
-#include "ui_confdev.h"
-#include "dialogs/choosesw.h"
-#include "dialogs/confdev.h"
 
 
 //**************************************************************************

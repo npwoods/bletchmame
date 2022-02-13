@@ -6,10 +6,13 @@
 
 ***************************************************************************/
 
-#include <QBuffer>
-
+// bletchmame headers
 #include "profile.h"
 #include "test.h"
+
+// Qt headers
+#include <QBuffer>
+
 
 class profiles::profile::Test : public QObject
 {

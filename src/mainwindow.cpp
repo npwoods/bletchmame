@@ -6,23 +6,7 @@
 
 ***************************************************************************/
 
-#include <QThread>
-#include <QMessageBox>
-#include <QTimer>
-#include <QStringListModel>
-#include <QDesktopServices>
-#include <QDir>
-#include <QUrl>
-#include <QCloseEvent>
-#include <QLabel>
-#include <QFileDialog>
-#include <QSortFilterProxyModel>
-#include <QStandardPaths>
-#include <QTextStream>
-#include <QWindowStateChangeEvent>
-
-#include <chrono>
-
+// bletchmame headers
 #include "mainwindow.h"
 #include "mainpanel.h"
 #include "mameversion.h"
@@ -43,6 +27,25 @@
 #include "dialogs/paths.h"
 #include "dialogs/resetprefs.h"
 #include "dialogs/switches.h"
+
+// Qt headers
+#include <QThread>
+#include <QMessageBox>
+#include <QTimer>
+#include <QStringListModel>
+#include <QDesktopServices>
+#include <QDir>
+#include <QUrl>
+#include <QCloseEvent>
+#include <QLabel>
+#include <QFileDialog>
+#include <QSortFilterProxyModel>
+#include <QStandardPaths>
+#include <QTextStream>
+#include <QWindowStateChangeEvent>
+
+// standard headers
+#include <chrono>
 
 
 //**************************************************************************

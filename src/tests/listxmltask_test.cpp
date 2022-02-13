@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
-#include <QTemporaryDir>
-
+// bletchmame headers
 #include "listxmltask.h"
 #include "test.h"
+
+// Qt headers
+#include <QTemporaryDir>
 
 
 class ListXmlTask::Test : public QObject

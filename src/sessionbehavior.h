@@ -9,6 +9,7 @@
 #ifndef SESSIONEBEHAVIOR_H
 #define SESSIONEBEHAVIOR_H
 
+// bletchmame headers
 #include "status.h"
 #include "profile.h"
 

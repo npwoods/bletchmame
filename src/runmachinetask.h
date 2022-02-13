@@ -11,13 +11,17 @@
 #ifndef RUNMACHINETASK_H
 #define RUNMACHINETASK_H
 
-#include <QEvent>
-#include <optional>
-#include <queue>
-
+// bletchmame headers
 #include "mametask.h"
 #include "info.h"
 #include "mameworkercontroller.h"
+
+// Qt headers
+#include <QEvent>
+
+// standard headers
+#include <optional>
+#include <queue>
 
 
 //**************************************************************************

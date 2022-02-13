@@ -9,10 +9,12 @@
 #ifndef AUDITCURSOR_H
 #define AUDITCURSOR_H
 
-#include <optional>
-
+// bletchmame headers
 #include "auditablelistitemmodel.h"
 #include "info.h"
+
+// standard headers
+#include <optional>
 
 class Preferences;
 

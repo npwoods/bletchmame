@@ -11,11 +11,16 @@
 #ifndef DIALOGS_CHOOSESW_H
 #define DIALOGS_CHOOSESW_H
 
-#include <memory>
-#include <QDialog>
-
+// bletchmame headers
 #include "softwarelist.h"
 #include "tableviewmanager.h"
+
+// Qt headers
+#include <QDialog>
+
+// standard headers
+#include <memory>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class ChooseSoftlistPartDialog; }

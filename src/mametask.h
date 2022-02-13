@@ -11,10 +11,12 @@
 #ifndef MAMETASK_H
 #define MAMETASK_H
 
-#include <QMutex>
-
+// bletchmame headers
 #include "task.h"
 #include "job.h"
+
+// Qt headers
+#include <QMutex>
 
 
 //**************************************************************************

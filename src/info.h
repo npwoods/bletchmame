@@ -11,13 +11,15 @@
 #ifndef INFO_H
 #define INFO_H
 
+// bletchmame headers
+#include "bindata.h"
+#include "utility.h"
+
+// standard headers
 #include <array>
 #include <vector>
 #include <unordered_map>
 #include <iterator>
-
-#include "bindata.h"
-#include "utility.h"
 
 
 //**************************************************************************

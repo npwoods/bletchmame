@@ -7,11 +7,16 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "perfprofiler.h"
+
+// Qt headers
 #include <QCoreApplication>
 #include <QFile>
+
+// standard headers
 #include <numeric>
 
-#include "perfprofiler.h"
 
 using namespace std::chrono_literals;
 

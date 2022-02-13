@@ -9,10 +9,13 @@
 #ifndef HASH_H
 #define HASH_H
 
+// Qt headers
+#include <QByteArray>
+
+// standard headers
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <QByteArray>
 
 
 //**************************************************************************

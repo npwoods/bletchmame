@@ -6,14 +6,7 @@
 
 ***************************************************************************/
 
-#include <QDir>
-#include <QMenu>
-#include <QMessageBox>
-#include <QProcess>
-#include <QSortFilterProxyModel>
-
-#include <unordered_set>
-
+// bletchmame headers
 #include "assetfinder.h"
 #include "auditcursor.h"
 #include "audittask.h"
@@ -31,6 +24,16 @@
 #include "dialogs/audit.h"
 #include "dialogs/choosesw.h"
 #include "dialogs/newcustomfolder.h"
+
+// Qt headers
+#include <QDir>
+#include <QMenu>
+#include <QMessageBox>
+#include <QProcess>
+#include <QSortFilterProxyModel>
+
+// standard headers
+#include <unordered_set>
 
 
 //**************************************************************************

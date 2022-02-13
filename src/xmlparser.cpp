@@ -6,16 +6,22 @@
 
 ***************************************************************************/
 
-#include <charconv>
-#include <expat.h>
-#include <inttypes.h>
-#include <string>
+// bletchmame headers
+#include "xmlparser.h"
+#include "perfprofiler.h"
 
+// dependency headers
+#include <expat.h>
+
+// Qt headers
 #include <QBuffer>
 #include <QCoreApplication>
 
-#include "xmlparser.h"
-#include "perfprofiler.h"
+// standard headers
+#include <charconv>
+#include <inttypes.h>
+#include <string>
+
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4996)

@@ -9,10 +9,13 @@
 #ifndef PROFILELISTITEMMODEL_H
 #define PROFILELISTITEMMODEL_H
 
-#include <QAbstractItemModel>
-
+// bletchmame headers
 #include "info.h"
 #include "profile.h"
+
+// Qt headers
+#include <QAbstractItemModel>
+
 
 QT_BEGIN_NAMESPACE
 class QFileSystemWatcher;
