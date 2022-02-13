@@ -58,21 +58,21 @@ void PathsDialog::Test::model()
 	// try EMU_EXECUTABLE
 	model.setCurrentPathType(Preferences::global_path_type::EMU_EXECUTABLE);
 	QVERIFY(listViewModel.rowCount(QModelIndex()) == 1);
-	QVERIFY(listViewModel.data(listViewModel.index(0, 0), Qt::DisplayRole) == "/mame_dir/mame");
+	QVERIFY(listViewModel.data(listViewModel.index(0, 0), Qt::DisplayRole) == QDir::toNativeSeparators("/mame_dir/mame"));
 
 	// try ROMS
 	model.setCurrentPathType(Preferences::global_path_type::ROMS);
 	QVERIFY(listViewModel.rowCount(QModelIndex()) == 3);
-	QVERIFY(listViewModel.data(listViewModel.index(0, 0), Qt::DisplayRole) == "/mame_dir/roms0");
-	QVERIFY(listViewModel.data(listViewModel.index(1, 0), Qt::DisplayRole) == "/mame_dir/roms1");
+	QVERIFY(listViewModel.data(listViewModel.index(0, 0), Qt::DisplayRole) == QDir::toNativeSeparators("/mame_dir/roms0"));
+	QVERIFY(listViewModel.data(listViewModel.index(1, 0), Qt::DisplayRole) == QDir::toNativeSeparators("/mame_dir/roms1"));
 	QVERIFY(listViewModel.data(listViewModel.index(2, 0), Qt::DisplayRole) == PathsListViewModel::s_entryText);
 
 	// try SAMPLES
 	model.setCurrentPathType(Preferences::global_path_type::SAMPLES);
 	QVERIFY(listViewModel.rowCount(QModelIndex()) == 4);
-	QVERIFY(listViewModel.data(listViewModel.index(0, 0), Qt::DisplayRole) == "/mame_dir/samples0");
-	QVERIFY(listViewModel.data(listViewModel.index(1, 0), Qt::DisplayRole) == "/mame_dir/samples1");
-	QVERIFY(listViewModel.data(listViewModel.index(2, 0), Qt::DisplayRole) == "/mame_dir/samples2");
+	QVERIFY(listViewModel.data(listViewModel.index(0, 0), Qt::DisplayRole) == QDir::toNativeSeparators("/mame_dir/samples0"));
+	QVERIFY(listViewModel.data(listViewModel.index(1, 0), Qt::DisplayRole) == QDir::toNativeSeparators("/mame_dir/samples1"));
+	QVERIFY(listViewModel.data(listViewModel.index(2, 0), Qt::DisplayRole) == QDir::toNativeSeparators("/mame_dir/samples2"));
 	QVERIFY(listViewModel.data(listViewModel.index(3, 0), Qt::DisplayRole) == PathsListViewModel::s_entryText);
 
 	// change some data

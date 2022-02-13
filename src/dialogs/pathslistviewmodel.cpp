@@ -9,6 +9,9 @@
 // bletchmame headers
 #include "pathslistviewmodel.h"
 
+// Qt headers
+#include <QDir>
+
 
 //**************************************************************************
 //  IMPLEMENTATION
@@ -262,7 +265,7 @@ QVariant PathsListViewModel::data(const QModelIndex &index, int role) const
 	{
 	case Qt::DisplayRole:
 		if (entry)
-			result = entry->m_path;
+			result = QDir::toNativeSeparators(entry->m_path);
 		else if (m_isMulti && index.row() == m_entries.size())
 			result = s_entryText;
 		break;
@@ -300,7 +303,7 @@ bool PathsListViewModel::setData(const QModelIndex &index, const QVariant &value
 		if (pathString.isEmpty())
 			deletePath(index.row());
 		else
-			setPath(index.row(), std::move(pathString));
+			setPath(index.row(), QDir::fromNativeSeparators(pathString));
 
 		// success!
 		success = true;

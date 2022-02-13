@@ -177,13 +177,13 @@ public:
 	virtual void createImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
-		m_host.issue({ "create", tag, std::move(path) });
+		m_host.issue({ "create", tag, QDir::toNativeSeparators(path) });
 	}
 
 	virtual void loadImage(const QString &tag, QString &&path)
 	{
 		m_host.WatchForImageMount(tag);
-		m_host.issue({ "load", tag, std::move(path) });
+		m_host.issue({ "load", tag, QDir::toNativeSeparators(path) });
 	}
 
 	virtual void unloadImage(const QString &tag)
@@ -1825,7 +1825,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 		for (auto &pair : behaviorImages)
 		{
 			args.push_back(std::move(pair.first));
-			args.push_back(std::move(pair.second));
+			args.push_back(QDir::toNativeSeparators(pair.second));
 		}
 		issue(args);
 	}
@@ -1835,7 +1835,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	if (!behaviorSavedStateFileName.isEmpty() && QFileInfo(behaviorSavedStateFileName).exists())
 	{
 		// no need to wait for a status update here
-		issue({ "state_load", behaviorSavedStateFileName });
+		issue({ "state_load", QDir::toNativeSeparators(behaviorSavedStateFileName) });
 	}
 
 	// do we have any images that require images?
@@ -2382,14 +2382,14 @@ void MainWindow::associateFileDialogWithMachinePrefs(QFileDialog &fileDialog, co
 		QString newPrefsPath;
 		if (pathIsFile)
 		{
-			newPrefsPath = QDir::toNativeSeparators(result);
+			newPrefsPath = result;
 		}
 		else
 		{
 			QString absolutePath = QFileInfo(result).dir().absolutePath();
 			if (!absolutePath.endsWith("/"))
 				absolutePath += "/";
-			newPrefsPath = QDir::toNativeSeparators(absolutePath);
+			newPrefsPath = std::move(absolutePath);
 		}
 
 		// and finally persist it

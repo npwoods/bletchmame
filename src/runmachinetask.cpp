@@ -147,15 +147,15 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 
 
 	// and the rest of them
-	results << "-rompath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS);
-	results << "-samplepath"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES);
-	results << "-cfg_directory"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG);
-	results << "-nvram_directory"	<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM);
-	results << "-diff_directory"	<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::DIFF);
-	results << "-hashpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::HASH);
-	results << "-artpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK);
-	results << "-pluginspath"		<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS);
-	results << "-cheatpath"			<< prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS);
+	results << "-rompath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS));
+	results << "-samplepath"		<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES));
+	results << "-cfg_directory"		<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG));
+	results << "-nvram_directory"	<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM));
+	results << "-diff_directory"	<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::DIFF));
+	results << "-hashpath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::HASH));
+	results << "-artpath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK));
+	results << "-pluginspath"		<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS));
+	results << "-cheatpath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS));
 	results << "-plugin"			<< WORKER_UI_PLUGIN_NAME;
 	results << "-window";
 	results << "-skip_gameinfo";
