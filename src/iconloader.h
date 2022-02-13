@@ -11,16 +11,19 @@
 #ifndef ICONLOADER_H
 #define ICONLOADER_H
 
-#include <QPixmap>
-
-#include <optional>
-#include <memory>
-#include <unordered_map>
-
+// bletchmame headers
 #include "assetfinder.h"
 #include "info.h"
 #include "prefs.h"
 #include "softwarelist.h"
+
+// Qt headers
+#include <QPixmap>
+
+// standard headers
+#include <optional>
+#include <memory>
+#include <unordered_map>
 
 
 //**************************************************************************

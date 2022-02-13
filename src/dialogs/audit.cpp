@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
-#include <QProgressBar>
-
+// bletchmame headers
 #include "dialogs/audit.h"
 #include "dialogs/audititemmodel.h"
 #include "ui_audit.h"
+
+// Qt headers
+#include <QProgressBar>
 
 
 //**************************************************************************

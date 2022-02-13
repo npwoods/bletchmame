@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "hash.h"
+
+// Qt headers
 #include <QCryptographicHash>
 #include <QIODevice>
-
-#include "hash.h"
 
 
 //**************************************************************************

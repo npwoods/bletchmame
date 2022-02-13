@@ -11,6 +11,7 @@
 #ifndef TABLEVIEWMANAGER_H
 #define TABLEVIEWMANAGER_H
 
+// Qt headers
 #include <QObject>
 
 QT_BEGIN_NAMESPACE

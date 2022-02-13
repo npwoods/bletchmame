@@ -11,10 +11,15 @@
 #ifndef DIALOGS_CHEATS_H
 #define DIALOGS_CHEATS_H
 
-#include <QDialog>
+// bletchmame headers
+#include "status.h"
+
+// dependency headers
 #include <observable/observable.hpp>
 
-#include "status.h"
+// Qt headers
+#include <QDialog>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class CheatsDialog; }

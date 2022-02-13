@@ -6,17 +6,20 @@
 
 ***************************************************************************/
 
-#include <fstream>
-#include <functional>
-#include <locale>
+// bletchmame headers
+#include "prefs.h"
+#include "utility.h"
+#include "xmlparser.h"
 
+// Qt headers
 #include <QDir>
 #include <QCoreApplication>
 #include <QXmlStreamWriter>
 
-#include "prefs.h"
-#include "utility.h"
-#include "xmlparser.h"
+// standard headers
+#include <fstream>
+#include <functional>
+#include <locale>
 
 
 //**************************************************************************

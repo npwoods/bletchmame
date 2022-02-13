@@ -11,11 +11,14 @@
 #ifndef THROUGHPUTTRACKER_H
 #define THROUGHPUTTRACKER_H
 
-#include <queue>
+// bletchmame headers
+#include "throttler.h"
 
+// Qt headers
 #include <QString>
 
-#include "throttler.h"
+// standard headers
+#include <queue>
 
 
 //**************************************************************************

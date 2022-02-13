@@ -11,6 +11,7 @@
 #ifndef JOB_H
 #define JOB_H
 
+// Qt headers
 #include <QProcess>
 
 #ifdef WIN32

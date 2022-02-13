@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "mameworkercontroller.h"
+
+// Qt headers
 #include <QBuffer>
 #include <QDateTime>
 #include <QProcess>
-
-#include "mameworkercontroller.h"
 
 
 //**************************************************************************

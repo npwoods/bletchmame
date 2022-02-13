@@ -8,18 +8,21 @@
 
 #pragma once
 
-#ifndef TASKCLIENT_H
-#define TASKCLIENT_H
+#ifndef TASKDISPATCHER_H
+#define TASKDISPATCHER_H
 
-#include <iostream>
-#include <thread>
+// bletchmame headers
+#include "task.h"
+#include "job.h"
 
+// Qt headers
 #include <QEvent>
 #include <QSemaphore>
 #include <QMutex>
 
-#include "task.h"
-#include "job.h"
+// standard headers
+#include <iostream>
+#include <thread>
 
 QT_BEGIN_NAMESPACE
 class QProcess;
@@ -99,4 +102,4 @@ private:
 	void joinTask(Task &task);
 };
 
-#endif // TASKCLIENT_H
+#endif // TASKDISPATCHER_H

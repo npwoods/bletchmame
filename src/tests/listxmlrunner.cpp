@@ -6,14 +6,18 @@
 
 ***************************************************************************/
 
-#include <iostream>
-#include <stdexcept>
-#include <QBuffer>
-#include <QProcess>
-
+// bletchmame headers
 #include "test.h"
 #include "info.h"
 #include "info_builder.h"
+
+// Qt headers
+#include <QBuffer>
+#include <QProcess>
+
+// standard headers
+#include <iostream>
+#include <stdexcept>
 
 
 //**************************************************************************

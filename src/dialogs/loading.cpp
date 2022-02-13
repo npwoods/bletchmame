@@ -6,11 +6,15 @@
 
 ***************************************************************************/
 
-#include <memory>
-#include <QTimer>
-
+// bletchmame headers
 #include "dialogs/loading.h"
 #include "ui_loading.h"
+
+// Qt headers
+#include <QTimer>
+
+// standard headers
+#include <memory>
 
 
 //**************************************************************************

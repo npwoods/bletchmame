@@ -11,7 +11,10 @@
 #ifndef MAMEVERSION_H
 #define MAMEVERSION_H
 
+// Qt headers
 #include <QString>
+
+// standard headers
 #include <optional>
 
 

@@ -6,13 +6,17 @@
 
 ***************************************************************************/
 
-#include <stdexcept>
-#include <QCoreApplication>
-#include <QThread>
-
+// bletchmame headers
 #include "versiontask.h"
 #include "mametask.h"
 #include "utility.h"
+
+// Qt headers
+#include <QCoreApplication>
+#include <QThread>
+
+// standard headers
+#include <stdexcept>
 
 
 //**************************************************************************

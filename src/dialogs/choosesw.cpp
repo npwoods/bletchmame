@@ -6,12 +6,15 @@
 
 ***************************************************************************/
 
-#include <QSortFilterProxyModel>
-
+// bletchmame headers
 #include "dialogs/choosesw.h"
 #include "ui_choosesw.h"
 #include "softwarelistitemmodel.h"
 #include "tableviewmanager.h"
+
+// Qt headers
+#include <QSortFilterProxyModel>
+
 
 static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
 {

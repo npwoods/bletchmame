@@ -6,16 +6,20 @@
 
 ***************************************************************************/
 
-#include <QTextStream>
-#include <QWidget>
-#include <QCoreApplication>
-#include <QDir>
-#include <thread>
-
+// bletchmame headers
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "utility.h"
 #include "prefs.h"
+
+// Qt headers
+#include <QTextStream>
+#include <QWidget>
+#include <QCoreApplication>
+#include <QDir>
+
+// standard headers
+#include <thread>
 
 
 //**************************************************************************

@@ -6,9 +6,12 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "liveinstancetracker.h"
+
+// Qt headers
 #include <QObject>
 
-#include "liveinstancetracker.h"
 
 class LiveInstanceTrackerBase::Tracking : public QObject
 {

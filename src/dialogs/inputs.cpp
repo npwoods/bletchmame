@@ -6,14 +6,16 @@
 
 ***************************************************************************/
 
-#include <QLabel>
-#include <QMenu>
-#include <QPushButton>
-
+// bletchmame headers
 #include "dialogs/inputs.h"
 #include "dialogs/inputs_multiaxis.h"
 #include "dialogs/inputs_multiquick.h"
 #include "dialogs/inputs_seqpoll.h"
+
+// Qt headers
+#include <QLabel>
+#include <QMenu>
+#include <QPushButton>
 
 
 //**************************************************************************

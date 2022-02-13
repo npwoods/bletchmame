@@ -6,17 +6,19 @@
 
 ***************************************************************************/
 
-#include <QPushButton>
-#include <QFileDialog>
-#include <QTextStream>
-#include <QStringListModel>
-
+// bletchmame headers
 #include "dialogs/paths.h"
 #include "ui_paths.h"
 #include "assetfinder.h"
 #include "pathslistviewmodel.h"
 #include "prefs.h"
 #include "utility.h"
+
+// Qt headers
+#include <QPushButton>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QStringListModel>
 
 
 //**************************************************************************

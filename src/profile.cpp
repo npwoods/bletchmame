@@ -6,13 +6,17 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "profile.h"
+#include "xmlparser.h"
+
+// Qt headers
 #include <QTextStream>
 #include <QDir>
 #include <QDirIterator>
-#include <optional>
 
-#include "profile.h"
-#include "xmlparser.h"
+// standard headers
+#include <optional>
 
 
 //**************************************************************************

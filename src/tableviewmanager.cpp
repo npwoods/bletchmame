@@ -6,13 +6,15 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "tableviewmanager.h"
+#include "prefs.h"
+
+// Qt headers
 #include <QHeaderView>
 #include <QLineEdit>
 #include <QTableView>
 #include <QSortFilterProxyModel>
-
-#include "tableviewmanager.h"
-#include "prefs.h"
 
 
 //-------------------------------------------------

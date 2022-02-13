@@ -9,6 +9,7 @@
 #ifndef AUDIT_H
 #define AUDIT_H
 
+// bletchmame headers
 #include "info.h"
 #include "prefs.h"
 #include "hash.h"

@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "softwarelist.h"
 #include "prefs.h"
 #include "xmlparser.h"

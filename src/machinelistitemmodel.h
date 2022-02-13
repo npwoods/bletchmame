@@ -9,6 +9,7 @@
 #ifndef MACHINELISTITEMMODEL_H
 #define MACHINELISTITEMMODEL_H
 
+// bletchmame headers
 #include "auditablelistitemmodel.h"
 #include "info.h"
 #include "utility.h"

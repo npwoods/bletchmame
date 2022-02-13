@@ -6,10 +6,10 @@
 
 ***************************************************************************/
 
-#include <QDataStream>
-
+// bletchmame headers
 #include "softwarelist.h"
 #include "test.h"
+
 
 class software_list::test : public QObject
 {

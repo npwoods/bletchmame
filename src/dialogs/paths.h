@@ -11,13 +11,18 @@
 #ifndef DIALOGS_PATHS_H
 #define DIALOGS_PATHS_H
 
+// bletchmame headers
+#include "prefs.h"
+
+// Qt headers
 #include <QDialog>
 #include <QWidget>
 #include <QString>
+
+// standard headers
 #include <memory>
 #include <vector>
 
-#include "prefs.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class PathsDialog; }

@@ -6,17 +6,21 @@
 
 ***************************************************************************/
 
-#include <unordered_map>
-#include <exception>
-#include <QCoreApplication>
-#include <QDir>
-
+// bletchmame headers
 #include "listxmltask.h"
 #include "perfprofiler.h"
 #include "xmlparser.h"
 #include "utility.h"
 #include "info.h"
 #include "info_builder.h"
+
+// Qt headers
+#include <QCoreApplication>
+#include <QDir>
+
+// standard headers
+#include <unordered_map>
+#include <exception>
 
 
 //**************************************************************************

@@ -6,6 +6,7 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "dialogs/inputs_base.h"
 #include "ui_inputs_base.h"
 

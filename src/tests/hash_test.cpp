@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
-#include <QBuffer>
-#include <QTest>
-
+// bletchmame headers
 #include "hash.h"
 #include "test.h"
+
+// Qt headers
+#include <QBuffer>
+#include <QTest>
 
 
 //**************************************************************************

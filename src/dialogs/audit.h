@@ -9,10 +9,12 @@
 #ifndef DIALOGS_AUDIT_H
 #define DIALOGS_AUDIT_H
 
-#include <QDialog>
-
+// bletchmame headers
 #include "info.h"
 #include "../audit.h"
+
+// Qt headers
+#include <QDialog>
 
 
 //**************************************************************************

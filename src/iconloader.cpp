@@ -6,11 +6,13 @@
 
 ***************************************************************************/
 
-#include <QPainter>
-
+// bletchmame headers
 #include "iconloader.h"
 #include "perfprofiler.h"
 #include "prefs.h"
+
+// Qt headers
+#include <QPainter>
 
 
 //**************************************************************************

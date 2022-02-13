@@ -11,9 +11,11 @@
 #ifndef DIALOGS_INPUTS_SEQPOLL_H
 #define DIALOGS_INPUTS_SEQPOLL_H
 
-#include <QDialog>
-
+// bletchmame headers
 #include "dialogs/inputs.h"
+
+// Qt headers
+#include <QDialog>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SeqPollingDialog; }

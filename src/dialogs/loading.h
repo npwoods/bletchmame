@@ -11,6 +11,7 @@
 #ifndef DIALOGS_LOADING_H
 #define DIALOGS_LOADING_H
 
+// Qt headers
 #include <QDialog>
 #include <functional>
 

@@ -6,6 +6,11 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "dialogs/cheats.h"
+#include "ui_cheats.h"
+
+// Qt headers
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -14,9 +19,6 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QStringListModel>
-
-#include "dialogs/cheats.h"
-#include "ui_cheats.h"
 
 
 //**************************************************************************

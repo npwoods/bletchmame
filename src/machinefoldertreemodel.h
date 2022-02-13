@@ -9,12 +9,15 @@
 #ifndef MACHINEFOLDERTREEMODEL_H
 #define MACHINEFOLDERTREEMODEL_H
 
-#include <array>
-#include <functional>
+// bletchmame headers
+#include "info.h"
 
+// Qt headers
 #include <QAbstractItemModel>
 
-#include "info.h"
+// standard headers
+#include <array>
+#include <functional>
 
 class Preferences;
 class FolderPrefs;

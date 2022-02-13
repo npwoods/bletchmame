@@ -6,8 +6,10 @@
 
 ***************************************************************************/
 
+// bletchmame headers
 #include "xmlparser.h"
 #include "test.h"
+
 
 class XmlParser::Test : public QObject
 {

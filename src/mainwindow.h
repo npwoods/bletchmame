@@ -9,11 +9,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QMessageBox>
-#include <QFileDialog>
-#include <memory.h>
-
+// bletchmame headers
 #include "auditcursor.h"
 #include "auditqueue.h"
 #include "info.h"
@@ -28,6 +24,14 @@
 #include "taskdispatcher.h"
 #include "throughputtracker.h"
 #include "dialogs/console.h"
+
+// Qt headers
+#include <QMainWindow>
+#include <QMessageBox>
+#include <QFileDialog>
+
+// standard headers
+#include <memory.h>
 
 
 //**************************************************************************

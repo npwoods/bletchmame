@@ -12,6 +12,14 @@
 #ifndef PERFPROFILER_H
 #define PERFPROFILER_H
 
+// bletchmame headers
+#include "throttler.h"
+#include "utility.h"
+
+// Qt headers
+#include <QThreadStorage>
+
+// standard headers
 #include <cstring>
 #include <functional>
 #include <iterator>
@@ -20,11 +28,6 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
-
-#include <QThreadStorage>
-
-#include "throttler.h"
-#include "utility.h"
 
 
 //**************************************************************************

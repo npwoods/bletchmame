@@ -9,6 +9,7 @@
 #ifndef DIALOGS_INPUTS_MULTIAXIS
 #define DIALOGS_INPUTS_MULTIAXIS
 
+// bletchmame headers
 #include "dialogs/inputs.h"
 
 QT_BEGIN_NAMESPACE

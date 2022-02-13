@@ -6,10 +6,12 @@
 
 ***************************************************************************/
 
+// bletchmame headers
+#include "throughputtracker.h"
+
+// Qt headers
 #include <QFile>
 #include <QTextStream>
-
-#include "throughputtracker.h"
 
 
 //**************************************************************************

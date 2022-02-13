@@ -6,14 +6,17 @@
 
 ***************************************************************************/
 
-#include <assert.h>
-#include <stdexcept>
+// bletchmame headers
+#include "info.h"
+#include "utility.h"
 
+// Qt headers
 #include <QBuffer>
 #include <QDataStream>
 
-#include "info.h"
-#include "utility.h"
+// standard headers
+#include <cassert>
+#include <stdexcept>
 
 
 //**************************************************************************

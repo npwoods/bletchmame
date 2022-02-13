@@ -9,12 +9,14 @@
 #ifndef AUDITQUEUE_H
 #define AUDITQUEUE_H
 
-#include <deque>
-#include <unordered_map>
-
+// bletchmame headers
 #include "audittask.h"
 #include "info.h"
 #include "softwarelist.h"
+
+// standard headers
+#include <deque>
+#include <unordered_map>
 
 
 // ======================> AuditQueue

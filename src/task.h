@@ -11,10 +11,12 @@
 #ifndef TASK_H
 #define TASK_H
 
+// Qt headers
+#include <QThread>
+
+// standard headers
 #include <memory>
 #include <vector>
-
-#include <QThread>
 
 
 //**************************************************************************
