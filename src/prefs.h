@@ -127,6 +127,13 @@ public:
 		Max = Manual
 	};
 
+	struct GlobalPathInfo
+	{
+		const char *	m_prefsName;		// name within prefs
+		const char *	m_emuSettingName;	// name within emulation
+		const char *	m_description;		// human readable description
+	};
+
 	typedef std::map<QString, std::set<QString>> CustomFoldersMap;
 
 	// ctor
@@ -212,6 +219,9 @@ public:
 	bool load(QIODevice &input);
 	void save();
 
+	// statics
+	static const std::array<GlobalPathInfo, util::enum_count<Preferences::global_path_type>()> s_globalPathInfo;
+
 signals:
 	// general status
 	void selectedTabChanged(list_view_type newSelectedTab);
@@ -274,9 +284,6 @@ private:
 		AuditStatus									m_auditStatus;
 		std::map<QString, std::vector<QString>>     m_recentDeviceFiles;
 	};
-
-	// statics
-	static std::array<const char *, util::enum_count<Preferences::global_path_type>()>			s_path_names;
 
 	// members
 	std::optional<QDir>																			m_configDirectory;

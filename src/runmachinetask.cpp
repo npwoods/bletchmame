@@ -145,17 +145,19 @@ QStringList RunMachineTask::getArguments(const Preferences &prefs) const
 	if (!m_attachWindowParameter.isEmpty())
 		results << "-attach_window" << m_attachWindowParameter;
 
+	// paths from preferences
+	for (Preferences::global_path_type pathType : util::all_enums<Preferences::global_path_type>())
+	{
+		const Preferences::GlobalPathInfo &pathInfo = Preferences::s_globalPathInfo[(size_t)pathType];
+		const char *emuSettingName = pathInfo.m_emuSettingName;
+		if (emuSettingName)
+		{
+			QString path = prefs.getGlobalPathWithSubstitutions(pathType);
+			results << QString("-%1").arg(emuSettingName) << QDir::toNativeSeparators(path);
+		}
+	}
 
 	// and the rest of them
-	results << "-rompath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ROMS));
-	results << "-samplepath"		<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::SAMPLES));
-	results << "-cfg_directory"		<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CONFIG));
-	results << "-nvram_directory"	<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::NVRAM));
-	results << "-diff_directory"	<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::DIFF));
-	results << "-hashpath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::HASH));
-	results << "-artpath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::ARTWORK));
-	results << "-pluginspath"		<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::PLUGINS));
-	results << "-cheatpath"			<< QDir::toNativeSeparators(prefs.getGlobalPathWithSubstitutions(Preferences::global_path_type::CHEATS));
 	results << "-plugin"			<< WORKER_UI_PLUGIN_NAME;
 	results << "-window";
 	results << "-skip_gameinfo";

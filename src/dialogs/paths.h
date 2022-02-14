@@ -58,7 +58,6 @@ private slots:
 
 private:
 	static const size_t PATH_COUNT = util::enum_count<Preferences::global_path_type>();
-	static const QStringList s_combo_box_strings;
 
 	class Model
 	{

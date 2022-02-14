@@ -25,8 +25,6 @@
 //  IMPLEMENTATION
 //**************************************************************************
 
-const QStringList PathsDialog::s_combo_box_strings = buildComboBoxStrings();
-
 #ifdef Q_OS_WIN32
 #define PATH_LIST_SEPARATOR	";"
 #else
@@ -51,8 +49,13 @@ PathsDialog::PathsDialog(QWidget &parent, Preferences &prefs)
 	// dialog model
 	m_model.emplace(prefs, model);
 
+	// strings
+	QStringList comboBoxStrings;
+	for (const Preferences::GlobalPathInfo &pi : Preferences::s_globalPathInfo)
+		comboBoxStrings << pi.m_description;
+
 	// combo box
-	QStringListModel &comboBoxModel = *new QStringListModel(s_combo_box_strings, this);
+	QStringListModel &comboBoxModel = *new QStringListModel(comboBoxStrings, this);
 	m_ui->comboBox->setModel(&comboBoxModel);
 
 	// listen to selection changes
@@ -88,34 +91,6 @@ PathsDialog::~PathsDialog()
 void PathsDialog::persist()
 {
 	m_model->persist();
-}
-
-
-//-------------------------------------------------
-//  buildComboBoxStrings
-//-------------------------------------------------
-
-QStringList PathsDialog::buildComboBoxStrings()
-{
-	std::array<QString, PATH_COUNT> paths;
-	paths[(size_t)Preferences::global_path_type::EMU_EXECUTABLE] = "MAME Executable";
-	paths[(size_t)Preferences::global_path_type::ROMS] = "ROMs";
-	paths[(size_t)Preferences::global_path_type::SAMPLES] = "Samples";
-	paths[(size_t)Preferences::global_path_type::CONFIG] = "Config Files";
-	paths[(size_t)Preferences::global_path_type::NVRAM] = "NVRAM Files";
-	paths[(size_t)Preferences::global_path_type::DIFF] = "CHD Diff Files";
-	paths[(size_t)Preferences::global_path_type::HASH] = "Hash Files";
-	paths[(size_t)Preferences::global_path_type::ARTWORK] = "Artwork Files";
-	paths[(size_t)Preferences::global_path_type::ICONS] = "Icons";
-	paths[(size_t)Preferences::global_path_type::PLUGINS] = "Plugins";
-	paths[(size_t)Preferences::global_path_type::PROFILES] = "Profiles";
-	paths[(size_t)Preferences::global_path_type::CHEATS] = "Cheats";
-	paths[(size_t)Preferences::global_path_type::SNAPSHOTS] = "Snapshots";
-
-	QStringList result;
-	for (QString &str : paths)
-		result.push_back(std::move(str));
-	return result;
 }
 
 

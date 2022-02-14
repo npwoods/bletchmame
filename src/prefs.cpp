@@ -26,23 +26,24 @@
 //  LOCAL VARIABLES
 //**************************************************************************
 
-std::array<const char *, util::enum_count<Preferences::global_path_type>()>	Preferences::s_path_names =
+const std::array<Preferences::GlobalPathInfo, util::enum_count<Preferences::global_path_type>()> Preferences::s_globalPathInfo
 {
-	"emu",
-	"roms",
-	"samples",
-	"config",
-	"nvram",
-	"diff",
-	"hash",
-	"artwork",
-	"icons",
-	"plugins",
-	"profiles",
-	"cheats",
-	"snap"
+	{
+		{ "emu",		nullptr,			"MAME Executable" },
+		{ "roms",		"rompath",			"ROMs" },
+		{ "samples",	"samplepath",		"Samples" },
+		{ "config",		"cfg_directory",	"Config Files" },
+		{ "nvram",		"nvram_directory",	"NVRAM Files" },
+		{ "diff",		"diff_directory",	"CHD Diff Files" },
+		{ "hash",		"hashpath",			"Hash Files" },
+		{ "artwork",	"artpath",			"Artwork Files" },
+		{ "icons",		nullptr,			"Icons" },
+		{ "plugins",	"pluginspath",		"Plugins" },
+		{ "profiles",	nullptr,			"Profiles" },
+		{ "cheats",		"cheatpath",		"Cheats" },
+		{ "snap",		nullptr,			"Snapshots" }
+	}
 };
-
 
 static const util::enum_parser_bidirectional<Qt::SortOrder> s_column_sort_type_parser =
 {
@@ -847,13 +848,16 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> type_string = attributes.get<QString>("type");
-		if (type_string)
+		std::optional<QString> typeString = attributes.get<QString>("type");
+		if (typeString)
 		{
-			auto iter = std::find(s_path_names.cbegin(), s_path_names.cend(), *type_string);
+			auto iter = std::find_if(s_globalPathInfo.cbegin(), s_globalPathInfo.cend(), [&typeString](const auto &x)
+			{
+				return x.m_prefsName == *typeString;
+			});
 			type.reset();
-			if (iter != s_path_names.cend())
-				type = static_cast<global_path_type>(iter - s_path_names.cbegin());
+			if (iter != s_globalPathInfo.cend())
+				type = static_cast<global_path_type>(iter - s_globalPathInfo.cbegin());
 		}
 	});
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
@@ -1041,7 +1045,7 @@ void Preferences::save(QIODevice &output)
 	for (global_path_type pathType : util::all_enums<global_path_type>())
 	{
 		writer.writeStartElement("path");
-		writer.writeAttribute("type", s_path_names[(size_t)pathType]);
+		writer.writeAttribute("type", s_globalPathInfo[(size_t)pathType].m_prefsName);
 		writer.writeCharacters(QDir::toNativeSeparators(getGlobalPath(pathType)));
 		writer.writeEndElement();
 	}
