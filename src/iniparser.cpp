@@ -51,7 +51,7 @@ bool IniFileParser::next(QString &name, QString &value)
 		size_t valueLength = 0;
 		while (state != State::End)
 		{
-			std::optional<QChar> ch = i < line.size()
+			std::optional<QChar> ch = i < (size_t)line.size()
 				? line[i]
 				: std::optional<QChar>();
 
