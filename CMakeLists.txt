@@ -126,10 +126,14 @@ add_library(BletchMAME_core
 	src/hash.h
 	src/iconloader.cpp
 	src/iconloader.h
+	src/importmameinijob.cpp
+	src/importmameinijob.h
 	src/info.cpp
 	src/info.h
 	src/info_builder.cpp
 	src/info_builder.h
+	src/iniparser.cpp
+	src/iniparser.h
 	src/job.cpp
 	src/job.h
 	src/listxmltask.cpp
@@ -211,6 +215,9 @@ add_library(BletchMAME_core
 	src/dialogs/console.cpp
 	src/dialogs/console.h
 	src/dialogs/console.ui
+	src/dialogs/importmameini.cpp
+	src/dialogs/importmameini.h
+	src/dialogs/importmameini.ui
 	src/dialogs/inputs.cpp
 	src/dialogs/inputs.h
 	src/dialogs/inputs_base.cpp
@@ -273,6 +280,7 @@ add_executable(BletchMAME_tests
 	src/tests/hash_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/info_test.cpp
+	src/tests/iniparser_test.cpp
 	src/tests/listxmlrunner.cpp
 	src/tests/listxmltask_test.cpp
 	src/tests/liveinstancetracker_test.cpp

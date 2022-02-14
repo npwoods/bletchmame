@@ -17,7 +17,6 @@ class PathsDialog::Test : public QObject
 
 private slots:
 	void model();
-	void buildComboBoxStrings();
 };
 
 
@@ -98,21 +97,6 @@ void PathsDialog::Test::model()
 
 
 //-------------------------------------------------
-//  buildComboBoxStrings
-//-------------------------------------------------
-
-void PathsDialog::Test::buildComboBoxStrings()
-{
-	// get the strings
-	auto strs = PathsDialog::buildComboBoxStrings();
-
-	// ensure that none are empty
-	for (const QString &s : strs)
-	{
-		QVERIFY(!s.isEmpty());
-	}
-}
-
 
 static TestFixture<PathsDialog::Test> fixture;
 #include "paths_test.moc"

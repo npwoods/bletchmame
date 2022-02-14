@@ -103,6 +103,7 @@ private slots:
 	void on_actionDipSwitches_triggered();
 	void on_actionPaths_triggered();
 	void on_actionResetToDefault_triggered();
+	void on_actionImportMameIni_triggered();
 	void on_actionAbout_triggered();
 	void on_actionRefreshMachineInfo_triggered();
 	void on_actionBletchMameWebSite_triggered();
@@ -235,6 +236,8 @@ private:
 	QString getFileDialogFilename(const QString &caption, Preferences::machine_path_type pathType, const QString &filter, QFileDialog::AcceptMode acceptMode, bool pathIsFile);
 	QString fileDialogCommand(std::vector<QString> &&commands, const QString &caption, Preferences::machine_path_type pathType, bool path_is_file, const QString &wildcard_string, QFileDialog::AcceptMode acceptMode);
 	QString getTitleBarText();
+	QString browseForMameIni();
+	bool importMameIni(const QString &fileName);
 	void issue(const std::vector<QString> &args);
 	void issue(const std::initializer_list<std::string> &args);
 	void waitForStatusUpdate();

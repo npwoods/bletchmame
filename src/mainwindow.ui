@@ -115,6 +115,7 @@
     <addaction name="separator"/>
     <addaction name="actionPaths"/>
     <addaction name="actionResetToDefault"/>
+    <addaction name="actionImportMameIni"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -458,6 +459,11 @@
   <action name="actionResetAuditingStatuses">
    <property name="text">
     <string>Reset Auditing Statuses</string>
+   </property>
+  </action>
+  <action name="actionImportMameIni">
+   <property name="text">
+    <string>Import MAME INI...</string>
    </property>
   </action>
  </widget>

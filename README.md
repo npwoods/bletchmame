@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.12 (TBD)
+	- Added a capability to import subsets of MAME.ini settings
 	- Fixed a problem (thread safety when reading from MAME) that could cause random crashes
 	- Lowering the priority of background audit tasks
 	- Placing the BletchMAME version and (when running) the MAME version on the title bar

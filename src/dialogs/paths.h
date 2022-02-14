@@ -58,7 +58,6 @@ private slots:
 
 private:
 	static const size_t PATH_COUNT = util::enum_count<Preferences::global_path_type>();
-	static const QStringList s_combo_box_strings;
 
 	class Model
 	{
@@ -95,9 +94,8 @@ private:
 	PathsListViewModel &listModel();
 	const PathsListViewModel &listModel() const;
 	bool canonicalizeAndValidate(QString &path);
-
-	// static methods
-	static QStringList buildComboBoxStrings();
+	QString browseForMameIni();
+	bool importMameIni(const QString &fileName);
 };
 
 

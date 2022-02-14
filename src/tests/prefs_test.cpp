@@ -239,8 +239,10 @@ void Preferences::Test::substitutions()
 
 void Preferences::Test::pathNames()
 {
-	auto iter = std::find(s_path_names.begin(), s_path_names.end(), nullptr);
-	QVERIFY(iter == s_path_names.end());
+	for (const GlobalPathInfo &pi : s_globalPathInfo)
+	{
+		QVERIFY(pi.m_prefsName);
+	}
 }
 
 
