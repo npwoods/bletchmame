@@ -15,6 +15,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Placing the BletchMAME version and (when running) the MAME version on the title bar
 	- Cosmetic changes to the "About..." dialog to make it appear cleaner
 	- Fixed a bug that caused auditing to not respect "romof" when identifying paths
+	- Preventing Info DB refreshes when emulations are running
 
 - 2.11 (2021-Dec-27)
 	- Enabled Link Time Optimization for Release builds
