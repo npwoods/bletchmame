@@ -1712,9 +1712,16 @@ bool MainWindow::refreshMameInfoDatabase()
 	Task::ptr task = std::make_shared<ListXmlTask>(std::move(dbPath));
 	m_taskDispatcher.launch(task);
 
+	// callback to request interruptions when an emulation is running
+	auto callback = [this, &task]()
+	{
+		if (m_state.has_value())
+			task->requestInterruption();
+	};
+
 	// and show the dialog
 	{
-		LoadingDialog dlg(*this);
+		LoadingDialog dlg(*this, callback);
 		m_currentLoadingDialog.track(dlg);
 
 		dlg.exec();
