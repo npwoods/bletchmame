@@ -220,9 +220,24 @@ bool ImportMameIniJob::isPathPresent(Preferences::global_path_type pathType, con
 	// find this file info
 	auto iter = std::find_if(prefsPaths.begin(), prefsPaths.end(), [&fi](const QString &x)
 	{
-		return fi == QFileInfo(x);
+		return areFileInfosEquivalent(fi, QFileInfo(x));
 	});
 	return iter != prefsPaths.end();
+}
+
+
+//-------------------------------------------------
+//  areFileInfosEquivalent
+//-------------------------------------------------
+
+bool ImportMameIniJob::areFileInfosEquivalent(const QFileInfo &fi1, const QFileInfo &fi2)
+{
+	// we're trying to see if these two file infos are equivalent; if the files exist we
+	// can ask the operating system, but if either are not present we have to compare the
+	// paths (fundamentally this is not a foolproof operation)
+	return fi1.exists() && fi2.exists()
+		? fi1 == fi2
+		: fi1.absoluteFilePath() == fi2.absoluteFilePath();
 }
 
 

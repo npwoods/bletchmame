@@ -24,6 +24,8 @@
 class ImportMameIniJob
 {
 public:
+	class Test;
+
 	enum class ImportAction
 	{
 		Ignore,
@@ -77,9 +79,12 @@ private:
 	Preferences &			m_prefs;
 	std::vector<Entry::ptr> m_entries;
 
-	// methods
+	// statics
 	static RawIniSettings extractRawIniSettings(QIODevice &stream);
 	static bool supportsMultiplePaths(Preferences::global_path_type pathType);
+	static bool areFileInfosEquivalent(const QFileInfo &fi1, const QFileInfo &fi2);
+
+	// methods
 	bool isPathPresent(Preferences::global_path_type pathType, const QFileInfo &fi) const;
 };
 
