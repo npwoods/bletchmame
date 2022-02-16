@@ -25,9 +25,9 @@ public:
 	// virtuals
 	virtual QString labelDisplayText() const override;
 	virtual QString valueDisplayText() const override;
-	virtual bool canAugment() const override;
+	virtual bool canSupplement() const override;
 	virtual bool canReplace() const override;
-	virtual void doAugment() override;
+	virtual void doSupplement() override;
 	virtual void doReplace() override;
 
 private:
@@ -111,7 +111,7 @@ bool ImportMameIniJob::loadMameIni(const QString &fileName)
 			if (isPathPresent(pathType, importPathFileInfo))
 				importAction = ImportAction::AlreadyPresent;
 			else
-				importAction = supportsMultiplePaths(pathType) ? ImportAction::Augment : ImportAction::Replace;
+				importAction = supportsMultiplePaths(pathType) ? ImportAction::Supplement : ImportAction::Replace;
 
 			// we can only replace if there is a single path
 			bool canReplace = importPathFileInfos.size() <= 1;
@@ -141,8 +141,8 @@ void ImportMameIniJob::apply()
 	{
 		switch (entry->importAction())
 		{
-		case ImportAction::Augment:
-			entry->doAugment();
+		case ImportAction::Supplement:
+			entry->doSupplement();
 			break;
 		case ImportAction::Replace:
 			entry->doReplace();
@@ -274,7 +274,7 @@ QString ImportMameIniJob::GlobalPathEntry::valueDisplayText() const
 //  GlobalPathEntry::canAugment
 //-------------------------------------------------
 
-bool ImportMameIniJob::GlobalPathEntry::canAugment() const
+bool ImportMameIniJob::GlobalPathEntry::canSupplement() const
 {
 	return supportsMultiplePaths(m_pathType);
 }
@@ -291,10 +291,10 @@ bool ImportMameIniJob::GlobalPathEntry::canReplace() const
 
 
 //-------------------------------------------------
-//  GlobalPathEntry::doAugment
+//  GlobalPathEntry::doSupplement
 //-------------------------------------------------
 
-void ImportMameIniJob::GlobalPathEntry::doAugment()
+void ImportMameIniJob::GlobalPathEntry::doSupplement()
 {
 	QStringList paths = m_prefs.getSplitPaths(m_pathType);
 	paths << m_path;

@@ -42,7 +42,7 @@ private:
 	enum class ImportAction
 	{
 		Ignore,
-		Augment,
+		Supplement,
 		Replace,
 		AlreadyPresent
 	};

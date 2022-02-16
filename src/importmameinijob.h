@@ -27,7 +27,7 @@ public:
 	enum class ImportAction
 	{
 		Ignore,
-		Augment,
+		Supplement,
 		Replace,
 		AlreadyPresent
 	};
@@ -49,9 +49,9 @@ public:
 		// virtuals
 		virtual QString labelDisplayText() const = 0;
 		virtual QString valueDisplayText() const = 0;
-		virtual bool canAugment() const = 0;
+		virtual bool canSupplement() const = 0;
 		virtual bool canReplace() const = 0;
-		virtual void doAugment() = 0;
+		virtual void doSupplement() = 0;
 		virtual void doReplace() = 0;
 
 	private:

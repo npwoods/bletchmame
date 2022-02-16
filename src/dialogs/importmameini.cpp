@@ -169,7 +169,7 @@ void ImportMameIniDialog::updateButtonsEnabled()
 	bool anyAction = false;
 	for (const ImportMameIniJob::Entry::ptr &entry : tableModel().job().entries())
 	{
-		if ((entry->importAction() == ImportMameIniJob::ImportAction::Augment)
+		if ((entry->importAction() == ImportMameIniJob::ImportAction::Supplement)
 			|| (entry->importAction() == ImportMameIniJob::ImportAction::Replace))
 		{
 			anyAction = true;
@@ -193,8 +193,8 @@ QString ImportMameIniDialog::importActionString(ImportAction importAction)
 	case ImportAction::Ignore:
 		result = "Ignore";
 		break;
-	case ImportAction::Augment:
-		result = "Augment";
+	case ImportAction::Supplement:
+		result = "Supplement";
 		break;
 	case ImportAction::Replace:
 		result = "Replace";
@@ -321,7 +321,7 @@ QVariant ImportMameIniDialog::TableModel::data(const QModelIndex &index, int rol
 				case ImportMameIniJob::ImportAction::Ignore:
 					// do nothing
 					break;
-				case ImportMameIniJob::ImportAction::Augment:
+				case ImportMameIniJob::ImportAction::Supplement:
 				case ImportMameIniJob::ImportAction::Replace:
 					font.emplace();
 					font->setBold(true);
@@ -419,13 +419,13 @@ QString ImportMameIniDialog::ActionColumnItemDelegate::displayText(const QVarian
 QWidget *ImportMameIniDialog::ActionColumnItemDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
 	const ImportMameIniJob::Entry *entry = m_model.entry(index);
-	bool canAugment = entry && entry->canAugment();
+	bool canSupplement = entry && entry->canSupplement();
 	bool canReplace = entry && entry->canReplace();
 
 	QComboBox &comboBox = *new QComboBox(parent);
 	comboBox.addItem(importActionString(ImportAction::Ignore));
-	if (canAugment)
-		comboBox.addItem(importActionString(ImportAction::Augment));
+	if (canSupplement)
+		comboBox.addItem(importActionString(ImportAction::Supplement));
 	if (canReplace)
 		comboBox.addItem(importActionString(ImportAction::Replace));
 	return &comboBox;
