@@ -817,6 +817,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionMiscellaneousInput,		&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::MISC); });
 	setupPropSyncAspect(*m_ui->actionConfiguration,				&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::CONFIG); });
 	setupPropSyncAspect(*m_ui->actionDipSwitches,				&QAction::isEnabled,			&QAction::setEnabled,				&status::state::inputs,				[this]() { return m_state->has_input_class(status::input::input_class::DIPSWITCH); });
+	setupPropSyncAspect(*m_ui->actionRefreshMachineInfo,		&QAction::isEnabled,			&QAction::setEnabled,				{ },								false);
 
 	// special setup for throttle dynamic menu
 	QAction &throttleSeparator = *m_ui->menuThrottle->actions()[0];
@@ -1654,6 +1655,10 @@ void MainWindow::launchVersionCheck(bool promptIfMameNotFound)
 
 bool MainWindow::loadInfoDb()
 {
+	// sanity check; bail if we're running
+	if (m_state.has_value())
+		return false;
+
 	// load the info DB
 	QString dbPath = m_prefs.getMameXmlDatabasePath();
 	bool success = m_info_db.load(dbPath, m_mameVersion.has_value() ? m_mameVersion->toString() : "");
@@ -1707,9 +1712,16 @@ bool MainWindow::refreshMameInfoDatabase()
 	Task::ptr task = std::make_shared<ListXmlTask>(std::move(dbPath));
 	m_taskDispatcher.launch(task);
 
+	// callback to request interruptions when an emulation is running
+	auto callback = [this, &task]()
+	{
+		if (m_state.has_value())
+			task->requestInterruption();
+	};
+
 	// and show the dialog
 	{
-		LoadingDialog dlg(*this);
+		LoadingDialog dlg(*this, callback);
 		m_currentLoadingDialog.track(dlg);
 
 		dlg.exec();
@@ -1721,14 +1733,7 @@ bool MainWindow::refreshMameInfoDatabase()
 	}
 
 	// we've succeeded; load the DB
-	if (!m_info_db.load(dbPath))
-	{
-		// a failure here is likely due to a very strange condition (e.g. - someone deleting the infodb
-		// file out from under me)
-		return false;
-	}
-
-	return true;
+	return loadInfoDb();
 }
 
 

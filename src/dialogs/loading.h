@@ -26,14 +26,15 @@ class LoadingDialog : public QDialog
 	Q_OBJECT
 
 public:
-	LoadingDialog(QWidget &parent);
+	LoadingDialog(QWidget &parent, std::function<void()> &&progressCallback);
 	~LoadingDialog();
 
 	// methods
 	void progress(const QString &machineName, const QString &machineDescription);
 
 private:
-	std::unique_ptr<Ui::LoadingDialog> m_ui;
+	std::unique_ptr<Ui::LoadingDialog>	m_ui;
+	std::function<void()>				m_progressCallback;
 };
 
 #endif // DIALOGS_LOADING_H
