@@ -51,6 +51,7 @@ public:
 		// virtuals
 		virtual QString labelDisplayText() const = 0;
 		virtual QString valueDisplayText() const = 0;
+		virtual QString explanationDisplayText() const = 0;
 		virtual bool canSupplement() const = 0;
 		virtual bool canReplace() const = 0;
 		virtual void doSupplement() = 0;
