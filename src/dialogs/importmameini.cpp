@@ -114,6 +114,10 @@ ImportMameIniDialog::ImportMameIniDialog(Preferences &prefs, QWidget *parent)
 	{
 		updateButtonsEnabled();
 	});
+	connect(m_ui->tableView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex &current, const QModelIndex &previous)
+	{
+		tableViewCurrentChanged(current);
+	});
 
 	// add the item delegate to provide combo boxes
 	QStyledItemDelegate &itemDelegate = *new ActionColumnItemDelegate(model, this);
@@ -178,6 +182,18 @@ void ImportMameIniDialog::updateButtonsEnabled()
 
 	// set the ok button enabled property
 	m_ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(anyAction);
+}
+
+
+//-------------------------------------------------
+//  tableViewCurrentChanged
+//-------------------------------------------------
+
+void ImportMameIniDialog::tableViewCurrentChanged(const QModelIndex &current)
+{
+	const ImportMameIniJob::Entry *entry = tableModel().entry(current);
+	m_ui->explanationLabel->setVisible(entry != nullptr);
+	m_ui->explanationLabel->setText(entry ? entry->explanationDisplayText() : "");
 }
 
 

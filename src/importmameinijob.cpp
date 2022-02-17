@@ -25,6 +25,7 @@ public:
 	// virtuals
 	virtual QString labelDisplayText() const override;
 	virtual QString valueDisplayText() const override;
+	virtual QString explanationDisplayText() const override;
 	virtual bool canSupplement() const override;
 	virtual bool canReplace() const override;
 	virtual void doSupplement() override;
@@ -272,6 +273,47 @@ ImportMameIniJob::GlobalPathEntry::GlobalPathEntry(Preferences &prefs, Preferenc
 QString ImportMameIniJob::GlobalPathEntry::labelDisplayText() const
 {
 	return Preferences::s_globalPathInfo[(size_t)m_pathType].m_description;
+}
+
+
+//-------------------------------------------------
+//  GlobalPathEntry::explanationDisplayText
+//-------------------------------------------------
+
+QString ImportMameIniJob::GlobalPathEntry::explanationDisplayText() const
+{
+	// get the current setting; this can drive the text
+	const QString &currentValue = m_prefs.getGlobalPath(m_pathType);
+
+	// build the description
+	QString text = "The MAME.ini contains the path <b>%1</b> for %2.  ";
+	if (currentValue.isEmpty())
+		text += "BletchMAME has no path of this type.  ";
+	else
+		text += "BletchMAME has paths <b>%3</b> for this setting.  ";
+	switch (importAction())
+	{
+	case ImportAction::Ignore:
+		text += "Choosing <b>Ignore</b> will ignore this path from MAME.ini.";
+		break;
+	case ImportAction::Supplement:
+		text += "Choosing <b>Supplement</b> will add this path to BletchMAME's existing path.";
+		break;
+	case ImportAction::Replace:
+		text += "Choosing <b>Replace</b> will replace BletchMAME's path with the MAME.INI path.";
+		break;
+	case ImportAction::AlreadyPresent:
+		text += "The path from MAME.ini is already present.";
+		break;
+	default:
+		throw false;
+	}
+
+	// return the description
+	return text.arg(
+		QDir::toNativeSeparators(m_path),
+		Preferences::s_globalPathInfo[(size_t)m_pathType].m_description,
+		QDir::toNativeSeparators(currentValue));
 }
 
 

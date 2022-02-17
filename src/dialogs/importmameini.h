@@ -56,6 +56,7 @@ private:
 	// methods
 	TableModel &tableModel();
 	void updateButtonsEnabled();
+	void tableViewCurrentChanged(const QModelIndex &current);
 
 	// statics
 	static QString importActionString(ImportAction importAction);
