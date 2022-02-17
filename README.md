@@ -8,12 +8,12 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.12 (TBD)
+- 2.12 (2022-Feb-17)
 	- Added a capability to import subsets of MAME.ini settings
-	- Fixed a problem (thread safety when reading from MAME) that could cause random crashes
-	- Lowering the priority of background audit tasks
 	- Placing the BletchMAME version and (when running) the MAME version on the title bar
 	- Cosmetic changes to the "About..." dialog to make it appear cleaner
+	- Fixed a thread safety problem that could cause random crashes when communicating with MAME
+	- Lowering the priority of background audit tasks
 	- Fixed a bug that caused auditing to not respect "romof" when identifying paths
 	- Preventing Info DB refreshes when emulations are running
 
