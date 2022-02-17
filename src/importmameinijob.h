@@ -24,10 +24,12 @@
 class ImportMameIniJob
 {
 public:
+	class Test;
+
 	enum class ImportAction
 	{
 		Ignore,
-		Augment,
+		Supplement,
 		Replace,
 		AlreadyPresent
 	};
@@ -49,9 +51,9 @@ public:
 		// virtuals
 		virtual QString labelDisplayText() const = 0;
 		virtual QString valueDisplayText() const = 0;
-		virtual bool canAugment() const = 0;
+		virtual bool canSupplement() const = 0;
 		virtual bool canReplace() const = 0;
-		virtual void doAugment() = 0;
+		virtual void doSupplement() = 0;
 		virtual void doReplace() = 0;
 
 	private:
@@ -77,9 +79,12 @@ private:
 	Preferences &			m_prefs;
 	std::vector<Entry::ptr> m_entries;
 
-	// methods
+	// statics
 	static RawIniSettings extractRawIniSettings(QIODevice &stream);
 	static bool supportsMultiplePaths(Preferences::global_path_type pathType);
+	static bool areFileInfosEquivalent(const QFileInfo &fi1, const QFileInfo &fi2);
+
+	// methods
 	bool isPathPresent(Preferences::global_path_type pathType, const QFileInfo &fi) const;
 };
 

@@ -25,9 +25,9 @@ public:
 	// virtuals
 	virtual QString labelDisplayText() const override;
 	virtual QString valueDisplayText() const override;
-	virtual bool canAugment() const override;
+	virtual bool canSupplement() const override;
 	virtual bool canReplace() const override;
-	virtual void doAugment() override;
+	virtual void doSupplement() override;
 	virtual void doReplace() override;
 
 private:
@@ -111,7 +111,7 @@ bool ImportMameIniJob::loadMameIni(const QString &fileName)
 			if (isPathPresent(pathType, importPathFileInfo))
 				importAction = ImportAction::AlreadyPresent;
 			else
-				importAction = supportsMultiplePaths(pathType) ? ImportAction::Augment : ImportAction::Replace;
+				importAction = supportsMultiplePaths(pathType) ? ImportAction::Supplement : ImportAction::Replace;
 
 			// we can only replace if there is a single path
 			bool canReplace = importPathFileInfos.size() <= 1;
@@ -141,8 +141,8 @@ void ImportMameIniJob::apply()
 	{
 		switch (entry->importAction())
 		{
-		case ImportAction::Augment:
-			entry->doAugment();
+		case ImportAction::Supplement:
+			entry->doSupplement();
 			break;
 		case ImportAction::Replace:
 			entry->doReplace();
@@ -220,9 +220,24 @@ bool ImportMameIniJob::isPathPresent(Preferences::global_path_type pathType, con
 	// find this file info
 	auto iter = std::find_if(prefsPaths.begin(), prefsPaths.end(), [&fi](const QString &x)
 	{
-		return fi == QFileInfo(x);
+		return areFileInfosEquivalent(fi, QFileInfo(x));
 	});
 	return iter != prefsPaths.end();
+}
+
+
+//-------------------------------------------------
+//  areFileInfosEquivalent
+//-------------------------------------------------
+
+bool ImportMameIniJob::areFileInfosEquivalent(const QFileInfo &fi1, const QFileInfo &fi2)
+{
+	// we're trying to see if these two file infos are equivalent; if the files exist we
+	// can ask the operating system, but if either are not present we have to compare the
+	// paths (fundamentally this is not a foolproof operation)
+	return fi1.exists() && fi2.exists()
+		? fi1 == fi2
+		: fi1.absoluteFilePath() == fi2.absoluteFilePath();
 }
 
 
@@ -274,7 +289,7 @@ QString ImportMameIniJob::GlobalPathEntry::valueDisplayText() const
 //  GlobalPathEntry::canAugment
 //-------------------------------------------------
 
-bool ImportMameIniJob::GlobalPathEntry::canAugment() const
+bool ImportMameIniJob::GlobalPathEntry::canSupplement() const
 {
 	return supportsMultiplePaths(m_pathType);
 }
@@ -291,10 +306,10 @@ bool ImportMameIniJob::GlobalPathEntry::canReplace() const
 
 
 //-------------------------------------------------
-//  GlobalPathEntry::doAugment
+//  GlobalPathEntry::doSupplement
 //-------------------------------------------------
 
-void ImportMameIniJob::GlobalPathEntry::doAugment()
+void ImportMameIniJob::GlobalPathEntry::doSupplement()
 {
 	QStringList paths = m_prefs.getSplitPaths(m_pathType);
 	paths << m_path;

@@ -278,6 +278,7 @@ add_executable(BletchMAME_tests
 	src/tests/audittask_test.cpp
 	src/tests/chd_test.cpp
 	src/tests/hash_test.cpp
+	src/tests/importmameinijob_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/info_test.cpp
 	src/tests/iniparser_test.cpp
