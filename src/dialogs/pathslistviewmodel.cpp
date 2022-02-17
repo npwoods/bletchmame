@@ -278,7 +278,7 @@ QVariant PathsListViewModel::data(const QModelIndex &index, int role) const
 
 	case Qt::EditRole:
 		if (entry)
-			result = entry->m_path;
+			result = QDir::toNativeSeparators(entry->m_path);
 		break;
 	}
 	return result;

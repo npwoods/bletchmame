@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.13 (TBD)
+	- Fixed a bug in the paths dialog that caused a user to see slashes as path separators when editing paths directly
+
 - 2.12 (2022-Feb-17)
 	- Added a capability to import subsets of MAME.ini settings
 	- Placing the BletchMAME version and (when running) the MAME version on the title bar
