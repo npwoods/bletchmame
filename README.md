@@ -10,6 +10,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 - 2.13 (TBD)
 	- Fixed a bug in the paths dialog that caused a user to see slashes as path separators when editing paths directly
+	- Fixed a bug that could cause the machine count to not properly update in response to searches
 
 - 2.12 (2022-Feb-17)
 	- Added a capability to import subsets of MAME.ini settings
