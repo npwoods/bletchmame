@@ -140,6 +140,14 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	{
 		updateStatusFromSelection();
 	});
+	connect(m_ui->machinesTableView->model(), &QAbstractItemModel::rowsInserted, this, [this](const QModelIndex &parent, int first, int last)
+	{
+		updateStatusFromSelection();
+	});
+	connect(m_ui->machinesTableView->model(), &QAbstractItemModel::rowsRemoved, this, [this](const QModelIndex &parent, int first, int last)
+	{
+		updateStatusFromSelection();
+	});
 
 	// set up machine folder tree
 	MachineFolderTreeModel &machineFolderTreeModel = *new MachineFolderTreeModel(this, m_infoDb, m_prefs);
