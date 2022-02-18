@@ -920,6 +920,17 @@ MainWindow::MainWindow(QWidget *parent)
 	AuditableListItemModel *newModel = m_mainPanel->currentAuditableListItemModel();
 	m_auditCursor.setListItemModel(newModel);
 
+	// set up a focusChanged() handler as per comments under ensureOsFocus()
+	if (ensureOsFocusNeeded())
+	{
+		connect(qApp, &QApplication::focusChanged, this, [this](QWidget *old, QWidget *now)
+		{
+			// this mechanism is only needed when there is a live emulation session
+			if (m_state.has_value())
+				ensureOsFocus();
+		});
+	}
+
 	// load the info DB
 	loadInfoDb();
 
@@ -1389,7 +1400,6 @@ void MainWindow::on_actionFullScreen_triggered()
 		showFullScreen();
 	else
 		showNormal();
-	ensureProperFocus();
 
 	// and update the menu item
 	m_ui->actionFullScreen->setChecked(newFullScreen);
@@ -1607,10 +1617,6 @@ bool MainWindow::event(QEvent *event)
 	else if (event->type() == ChatterEvent::eventId())
 	{
 		result = onChatter(static_cast<ChatterEvent &>(*event));
-	}
-	else if (event->type() == QEvent::WindowActivate)
-	{
-		ensureProperFocus();
 	}
 
 	// if we have a result, we've handled the event; otherwise we have to pass it on
@@ -2524,25 +2530,39 @@ QString MainWindow::getTitleBarText()
 
 
 //-------------------------------------------------
-//  ensureProperFocus
+//  ensureOsFocus
 //-------------------------------------------------
 
-void MainWindow::ensureProperFocus()
+void MainWindow::ensureOsFocus()
 {
-#ifdef WIN32
-	// Windows specific hack - for some reason, the act of moving the focus away
-	// from the application (even it is for a dialog) seems to cause the rootWidget
-	// to lose focus.  Setting the Qt focusPolicy property doesn't seem to help
-	//
-	// In absence of a better way to handle this, we have some Windows specific
-	// code below.  Eventually this code should be retired once there is an understanding
-	// of the proper Qt techniques to apply here
-	if (!attachToMainWindow() && m_currentRunMachineTask)
+#ifdef Q_OS_WINDOWS
+	// Windows specific logic - Qt doesn't guarantee that the widget that has focus
+	// in Qt also has focus in Windows.  Our technique of attaching MAME to Qt widgets
+	// is reliant on MAME having this focus
+	// 
+	// This logic handles this issue - we identify the widget that has focus in Qt and
+	// invoke the Win32 ::SetFocus API accordingly
+	QWidget *focusWidget = qApp->focusWidget();
+	if (focusWidget)
 	{
-		if (::GetFocus() == (HWND)winId())
-			::SetFocus((HWND)m_ui->rootWidget->winId());
+		HWND focusWidgetHwnd = (HWND)focusWidget->winId();
+		::SetFocus(focusWidgetHwnd);
 	}
-#endif
+#endif // Q_OS_WINDOWS
+}
+
+
+//-------------------------------------------------
+//  ensureOsFocusNeeded
+//-------------------------------------------------
+
+bool MainWindow::ensureOsFocusNeeded()
+{
+#ifdef Q_OS_WINDOWS
+	return true;
+#else // !Q_OS_WINDOWS
+	return false;
+#endif // Q_OS_WINDOWS
 }
 
 
