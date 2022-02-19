@@ -8,6 +8,7 @@
 
 // bletchmame headers
 #include "ui_confdev.h"
+#include "filedlgs.h"
 #include "dialogs/choosesw.h"
 #include "dialogs/confdev.h"
 
@@ -427,13 +428,9 @@ void ConfigurableDevicesDialog::buildImageMenuSlotItems(QMenu &popupMenu, const 
 
 bool ConfigurableDevicesDialog::createImage(const QString &tag)
 {
-	// show the fialog
-	QFileDialog dialog(
-		this,
-		"Create Image",
-		QString(),
-		getWildcardString(tag, false));
-	m_host.associateFileDialogWithMachinePrefs(dialog);
+	// show the dialog
+	QFileDialog dialog(this, "Create Image", QString(), getWildcardString(tag, false));
+	associateFileDialogWithMachinePrefs(dialog);
 	dialog.setFileMode(QFileDialog::FileMode::AnyFile);
 	dialog.exec();
 	if (dialog.result() != QDialog::DialogCode::Accepted)
@@ -454,13 +451,9 @@ bool ConfigurableDevicesDialog::createImage(const QString &tag)
 
 bool ConfigurableDevicesDialog::loadImage(const QString &tag)
 {
-	// show the fialog
-	QFileDialog dialog(
-		this,
-		"Load Image",
-		QString(),
-		getWildcardString(tag, true));
-	m_host.associateFileDialogWithMachinePrefs(dialog);
+	// show the dialog
+	QFileDialog dialog(this, "Load Image", QString(), getWildcardString(tag, true));
+	associateFileDialogWithMachinePrefs(dialog);
 	dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
 	dialog.exec();
 	if (dialog.result() != QDialog::DialogCode::Accepted)
@@ -502,16 +495,30 @@ void ConfigurableDevicesDialog::unloadImage(const QString &tag)
 
 
 //-------------------------------------------------
+//  associateFileDialogWithMachinePrefs
+//-------------------------------------------------
+
+void ConfigurableDevicesDialog::associateFileDialogWithMachinePrefs(QFileDialog &dialog)
+{
+	::associateFileDialogWithMachinePrefs(
+		dialog,
+		m_host.getPreferences(),
+		m_host.getMachine(),
+		Preferences::machine_path_type::WORKING_DIRECTORY);
+}
+
+
+//-------------------------------------------------
 //  getWildcardString
 //-------------------------------------------------
 
-QString ConfigurableDevicesDialog::getWildcardString(const QString &tag, bool support_zip) const
+QString ConfigurableDevicesDialog::getWildcardString(const QString &tag, bool supportZip) const
 {
     // get the list of extensions
     std::vector<QString> extensions = m_host.getExtensions(tag);
 
     // append zip if appropriate
-    if (support_zip)
+    if (supportZip)
         extensions.push_back("zip");
 
     // figure out the "general" wildcard part for all devices
