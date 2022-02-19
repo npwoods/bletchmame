@@ -726,6 +726,10 @@ MainWindow::MainWindow(QWidget *parent)
 	m_auditTimer->setInterval(500ms);
 	connect(m_auditTimer, &QTimer::timeout, this, &MainWindow::auditTimerProc);
 
+	// workaround for silly MSVC2019 issue
+	typedef observable::value<std::vector<status::image>> &(status::state:: *StatusStateImagesFunc)();
+	StatusStateImagesFunc status_state_images = &status::state::images;
+
 	// setup properties that pertain to runtime behavior
 	setupPropSyncAspect(*m_ui->stackedLayout,					&QStackedLayout::currentWidget,	&QStackedLayout::setCurrentWidget,	{ },								[this]() { return attachToMainWindow() ? nullptr : m_ui->emulationPanel; });
 	setupPropSyncAspect((QWidget &) *this,						&QWidget::windowTitle,			&QWidget::setWindowTitle,			&status::state::paused,				[this]() { return getTitleBarText(); });
@@ -734,7 +738,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setupPropSyncAspect(*m_ui->actionStop,						&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionPause,						&QAction::isChecked,			&QAction::setChecked,				&status::state::paused,				[this]() { return m_state->paused().get(); });
-	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,			&QAction::setEnabled,				&status::state::images,				[this]() { return m_state->images().get().size() > 0;});
+	setupPropSyncAspect(*m_ui->actionImages,					&QAction::isEnabled,			&QAction::setEnabled,				status_state_images,				[this]() { return m_state->images().get().size() > 0;});
 	setupPropSyncAspect(*m_ui->actionLoadState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionSaveState,					&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
 	setupPropSyncAspect(*m_ui->actionSaveScreenshot,			&QAction::isEnabled,			&QAction::setEnabled,				{ },								true);
