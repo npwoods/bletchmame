@@ -17,6 +17,9 @@
    <layout class="QStackedLayout" name="stackedLayout">
     <item row="0" column="0">
      <widget class="QWidget" name="emulationPanel" native="true">
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
       <property name="autoFillBackground">
        <bool>false</bool>
       </property>

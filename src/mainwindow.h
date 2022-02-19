@@ -248,7 +248,8 @@ private:
 	void changeThrottleRate(float throttle_rate);
 	void changeThrottleRate(int adjustment);
 	void changeSound(bool sound_enabled);
-	void ensureProperFocus();
+	static void ensureOsFocus();
+	static bool ensureOsFocusNeeded();
 	virtual void auditIfAppropriate(const info::machine &machine) override;
 	virtual void auditIfAppropriate(const software_list::software &software) override;
 	bool canAutomaticallyAudit() const;

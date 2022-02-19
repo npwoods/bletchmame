@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.13 (TBD)
+	- Fixed a serious issue that could cause an emulation to stop handling input (#295)
 	- Fixed a bug in the paths dialog that caused a user to see slashes as path separators when editing paths directly
 	- Fixed a bug that could cause the machine count to not properly update in response to searches
 
