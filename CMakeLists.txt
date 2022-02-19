@@ -122,6 +122,8 @@ add_library(BletchMAME_core
 	src/audittask.h
 	src/chd.cpp
 	src/chd.h
+	src/filedlgs.cpp
+	src/filedlgs.h
 	src/hash.cpp
 	src/hash.h
 	src/iconloader.cpp
