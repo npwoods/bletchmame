@@ -250,6 +250,8 @@ private:
 	void changeSound(bool sound_enabled);
 	static void ensureOsFocus();
 	static bool ensureOsFocusNeeded();
+	void updateStatusBar();
+	static QString runningStateText(const status::state &state);
 	virtual void auditIfAppropriate(const info::machine &machine) override;
 	virtual void auditIfAppropriate(const software_list::software &software) override;
 	bool canAutomaticallyAudit() const;

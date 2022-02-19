@@ -1214,7 +1214,7 @@ void MainPanel::setStatus(const std::array<QString, 3> &status)
 	if (status != m_status)
 	{
 		m_status = status;
-		emit statusChanged(status);
+		emit statusChanged(m_status);
 	}
 }
 

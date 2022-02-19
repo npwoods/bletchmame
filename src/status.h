@@ -303,25 +303,32 @@ namespace status
 		void update(update &&that);
 
 		// state accessors
-		observable::value<machine_phase> &				phase()						{ return m_phase; }
-		observable::value<bool> &						paused()					{ return m_paused; }
-		observable::value<bool> &						polling_input_seq()			{ return m_polling_input_seq; }
-		observable::value<bool> &						has_input_using_mouse()		{ return m_has_input_using_mouse; }
-		observable::value<bool> &						has_mouse_enabled_problem()	{ return m_has_mouse_enabled_problem; }
-		observable::value<QString> &					startup_text()				{ return m_startup_text; }
-		observable::value<bool>	&						debugger_present()			{ return m_debugger_present; }
-		observable::value<float> &						speed_percent()				{ return m_speed_percent; }
-		observable::value<int> &						effective_frameskip()		{ return m_effective_frameskip; }
-		observable::value<std::vector<image>> &			images()					{ return m_images; }
-		observable::value<std::vector<slot>> &			devslots()					{ return m_slots; }
-		observable::value<std::vector<input>> &			inputs()					{ return m_inputs; }
-		observable::value<std::vector<input_class>> &	input_classes()				{ return m_input_classes; }
-		observable::value<QString> &					frameskip()					{ return m_frameskip; }
-		bool											throttled() const			{ return m_throttled; }
-		observable::value<float> &						throttle_rate()				{ return m_throttle_rate; }
-		bool											is_recording() const		{ return m_is_recording; }
-		observable::value<int> &						sound_attenuation()			{ return m_sound_attenuation; }
-		observable::value<std::vector<cheat>> &			cheats()					{ return m_cheats; }
+		observable::value<machine_phase> &				phase()								{ return m_phase; }
+		const observable::value<machine_phase> &		phase() const						{ return m_phase; }
+		observable::value<bool> &						paused()							{ return m_paused; }
+		observable::value<bool> &						polling_input_seq()					{ return m_polling_input_seq; }
+		observable::value<bool> &						has_input_using_mouse()				{ return m_has_input_using_mouse; }
+		const observable::value<bool> &					has_input_using_mouse() const		{ return m_has_input_using_mouse; }
+		observable::value<bool> &						has_mouse_enabled_problem()			{ return m_has_mouse_enabled_problem; }
+		const observable::value<bool> &					has_mouse_enabled_problem()	const	{ return m_has_mouse_enabled_problem; }
+		observable::value<QString> &					startup_text()						{ return m_startup_text; }
+		const observable::value<QString> &				startup_text() const				{ return m_startup_text; }
+		observable::value<bool>	&						debugger_present()					{ return m_debugger_present; }
+		observable::value<float> &						speed_percent()						{ return m_speed_percent; }
+		const observable::value<float> &				speed_percent() const				{ return m_speed_percent; }
+		observable::value<int> &						effective_frameskip()				{ return m_effective_frameskip; }
+		const observable::value<int> &					effective_frameskip() const			{ return m_effective_frameskip; }
+		observable::value<std::vector<image>> &			images()							{ return m_images; }
+		const observable::value<std::vector<image>> &	images() const						{ return m_images; }
+		observable::value<std::vector<slot>> &			devslots()									{ return m_slots; }
+		observable::value<std::vector<input>> &			inputs()							{ return m_inputs; }
+		observable::value<std::vector<input_class>> &	input_classes()						{ return m_input_classes; }
+		observable::value<QString> &					frameskip()							{ return m_frameskip; }
+		bool											throttled() const					{ return m_throttled; }
+		observable::value<float> &						throttle_rate()						{ return m_throttle_rate; }
+		bool											is_recording() const				{ return m_is_recording; }
+		observable::value<int> &						sound_attenuation()					{ return m_sound_attenuation; }
+		observable::value<std::vector<cheat>> &			cheats()							{ return m_cheats; }
 
 		// higher level methods
 		const image *find_image(const QString &tag) const;

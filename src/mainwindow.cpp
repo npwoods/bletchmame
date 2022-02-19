@@ -473,64 +473,7 @@ private:
 
 	void update()
 	{
-		// prepare a vector with the status text
-		QStringList statusText;
-
-		// is there a running emulation?
-		if (state().has_value())
-		{
-			// first entry depends on whether we are running
-			if (state()->phase().get() == status::machine_phase::RUNNING)
-			{
-				QString speedText;
-				int speedPercent = (int)(m_host.m_state->speed_percent().get() * 100.0 + 0.5);
-				if (state()->effective_frameskip().get() == 0)
-				{
-					speedText = QString("%2%1").arg(
-						"%",
-						QString::number(speedPercent));
-				}
-				else
-				{
-					speedText = QString("%2%1 (frameskip %3/10)").arg(
-						"%",
-						QString::number(speedPercent),
-						QString::number((int)m_host.m_state->effective_frameskip().get()));
-				}
-				statusText.push_back(std::move(speedText));
-			}
-			else
-			{
-				statusText.push_back(state()->startup_text().get());
-			}
-
-			// next entries come from device displays
-			for (auto iter = state()->images().get().cbegin(); iter < state()->images().get().cend(); iter++)
-			{
-				if (!iter->m_display.isEmpty())
-					statusText.push_back(iter->m_display);
-			}
-
-			// do we have the mouse capture problem?
-			if (state()->has_input_using_mouse().get() && state()->has_mouse_enabled_problem().get())
-				statusText.push_back("This version of MAME does not support hot changes to mouse capture; the mouse may not be usable");
-		}
-
-		// and specify it
-		QString statusTextString = statusText.join(' ');
-		statusBar().showMessage(statusTextString);
-	}
-
-
-	std::optional<status::state> &state()
-	{
-		return m_host.m_state;
-	}
-
-
-	QStatusBar &statusBar()
-	{
-		return *m_host.m_ui->statusBar;
+		m_host.updateStatusBar();
 	}
 };
 
@@ -739,9 +682,7 @@ MainWindow::MainWindow(QWidget *parent)
 	// listen to status updates from MainPanel
 	connect(m_mainPanel, &MainPanel::statusChanged, this, [this](const auto &newStatus)
 	{
-		m_ui->statusBar->showMessage(newStatus[0]);
-		for (auto i = 0; i < std::min(std::size(m_statusLabels), std::size(newStatus) - 1); i++)
-			m_statusLabels[i]->setText(newStatus[i + 1]);
+		updateStatusBar();
 	});
 
 	// set up the ping timer
@@ -2772,6 +2713,79 @@ void MainWindow::changeThrottleRate(int adjustment)
 void MainWindow::changeSound(bool sound_enabled)
 {
 	issue({ "set_attenuation", std::to_string(sound_enabled ? SOUND_ATTENUATION_ON : SOUND_ATTENUATION_OFF) });
+}
+
+
+//-------------------------------------------------
+//  updateStatusBar
+//-------------------------------------------------
+
+void MainWindow::updateStatusBar()
+{
+	// get the running status if it is present
+	std::array<QString, MainPanel::STATUS_ENTRIES> runningStatus;
+	if (m_state.has_value())
+		runningStatus[0] = runningStateText(m_state.value());
+
+	// get the status to display
+	const std::array<QString, MainPanel::STATUS_ENTRIES> &newStatus = m_state.has_value()
+		? runningStatus
+		: m_mainPanel->status();
+
+	// and update the status bar and labels
+	m_ui->statusBar->showMessage(newStatus[0]);
+	for (auto i = 0; i < std::min(std::size(m_statusLabels), std::size(newStatus) - 1); i++)
+		m_statusLabels[i]->setText(newStatus[i + 1]);
+}
+
+
+//-------------------------------------------------
+//  runningStateText
+//-------------------------------------------------
+
+QString MainWindow::runningStateText(const status::state &state)
+{
+	// prepare a vector with the status text
+	QStringList statusText;
+
+	// first entry depends on whether we are running
+	if (state.phase().get() == status::machine_phase::RUNNING)
+	{
+		QString speedText;
+		int speedPercent = (int)(state.speed_percent().get() * 100.0 + 0.5);
+		if (state.effective_frameskip().get() == 0)
+		{
+			speedText = QString("%2%1").arg(
+				"%",
+				QString::number(speedPercent));
+		}
+		else
+		{
+			speedText = QString("%2%1 (frameskip %3/10)").arg(
+				"%",
+				QString::number(speedPercent),
+				QString::number((int)state.effective_frameskip().get()));
+		}
+		statusText.push_back(std::move(speedText));
+	}
+	else
+	{
+		statusText.push_back(state.startup_text().get());
+	}
+
+	// next entries come from device displays
+	for (auto iter = state.images().get().cbegin(); iter < state.images().get().cend(); iter++)
+	{
+		if (!iter->m_display.isEmpty())
+			statusText.push_back(iter->m_display);
+	}
+
+	// do we have the mouse capture problem?
+	if (state.has_input_using_mouse().get() && state.has_mouse_enabled_problem().get())
+		statusText.push_back("This version of MAME does not support hot changes to mouse capture; the mouse may not be usable");
+
+	// and return it specify it
+	return statusText.join(' ');
 }
 
 
