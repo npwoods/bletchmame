@@ -613,12 +613,14 @@ end
 
 -- SOFT_RESET command
 function command_soft_reset(args)
+	pause_when_restarted = machine().paused
 	machine():soft_reset()
 	print("@OK ### Soft Reset Scheduled")
 end
 
 -- HARD_RESET command
 function command_hard_reset(args)
+	pause_when_restarted = machine().paused
 	machine():hard_reset()
 	print("@OK ### Hard Reset Scheduled")
 end

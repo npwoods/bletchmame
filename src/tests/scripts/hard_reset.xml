@@ -1,0 +1,8 @@
+<script>
+	<command>THROTTLED 0</command>
+	<command>RESUME</command>
+	<command>SLEEP 5</command>
+	<command>HARD_RESET</command>
+	<command>SLEEP 5</command>
+	<command>EXIT</command>
+</script>
