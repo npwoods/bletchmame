@@ -293,9 +293,9 @@ QString ImportMameIniJob::expandEnvironmentVariables(const QString &s)
 	}
 #else // !Q_OS_WINDOWS
 	{
-		QString r(s);
 		QRegExp env_var("\\$([A-Za-z0-9_]+)");
 		int i;
+		r = s;
 
 		while ((i = env_var.indexIn(r)) != -1)
 		{
