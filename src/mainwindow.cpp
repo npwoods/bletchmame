@@ -14,6 +14,7 @@
 #include "ui_mainwindow.h"
 #include "audittask.h"
 #include "filedlgs.h"
+#include "focuswatchinghook.h"
 #include "listxmltask.h"
 #include "runmachinetask.h"
 #include "versiontask.h"
@@ -624,6 +625,8 @@ const QString MainWindow::s_wc_record_movie = "AVI Files (*.avi);;MNG Files (*.m
 static const int SOUND_ATTENUATION_OFF = -32;
 static const int SOUND_ATTENUATION_ON = 0;
 
+static QEvent::Type s_checkForFocusSkewEvent = (QEvent::Type)QEvent::registerEventType();
+
 
 //-------------------------------------------------
 //  ctor
@@ -861,16 +864,20 @@ MainWindow::MainWindow(QWidget *parent)
 	AuditableListItemModel *newModel = m_mainPanel->currentAuditableListItemModel();
 	m_auditCursor.setListItemModel(newModel);
 
-	// set up a focusChanged() handler as per comments under ensureOsFocus()
-	if (ensureOsFocusNeeded())
+#ifdef Q_OS_WINDOWS
+	// windows-specific steps to ensure that running emulations don't lose focus
 	{
-		connect(qApp, &QApplication::focusChanged, this, [this](QWidget *old, QWidget *now)
+		WinFocusWatchingHook &hook = *new WinFocusWatchingHook(this);
+		connect(&hook, &WinFocusWatchingHook::winFocusChanged, this, [this](WId newWindow, WId oldWindow)
 		{
-			// this mechanism is only needed when there is a live emulation session
-			if (m_state.has_value())
-				ensureOsFocus();
+			if (newWindow == winId())
+			{
+				auto event = std::make_unique<QEvent>(s_checkForFocusSkewEvent);
+				QCoreApplication::postEvent(this, event.release());
+			}
 		});
 	}
+#endif // Q_OS_WINDOWS
 
 	// load the info DB
 	loadInfoDb();
@@ -1581,6 +1588,10 @@ bool MainWindow::event(QEvent *event)
 	{
 		result = onChatter(static_cast<ChatterEvent &>(*event));
 	}
+	else if (event->type() == s_checkForFocusSkewEvent)
+	{
+		result = onCheckForFocusSkew();
+	}
 
 	// if we have a result, we've handled the event; otherwise we have to pass it on
 	// to QMainWindow::event()
@@ -1852,6 +1863,10 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 
 	// unpause
 	changePaused(false);
+
+	// set the focus
+	if (!attachToMainWindow())
+		m_ui->emulationPanel->setFocus(Qt::OtherFocusReason);
 }
 
 
@@ -2411,38 +2426,50 @@ QString MainWindow::getTitleBarText()
 
 
 //-------------------------------------------------
-//  ensureOsFocus
+//  onCheckForFocusSkew
 //-------------------------------------------------
 
-void MainWindow::ensureOsFocus()
+bool MainWindow::onCheckForFocusSkew()
 {
-#ifdef Q_OS_WINDOWS
-	// Windows specific logic - Qt doesn't guarantee that the widget that has focus
-	// in Qt also has focus in Windows.  Our technique of attaching MAME to Qt widgets
-	// is reliant on MAME having this focus
-	// 
-	// This logic handles this issue - we identify the widget that has focus in Qt and
-	// invoke the Win32 ::SetFocus API accordingly
-	QWidget *focusWidget = qApp->focusWidget();
-	if (focusWidget)
+	// this mechanism is only needed when there is a live and unpaused emulation session
+	if (m_currentRunMachineTask
+		&& winId() == winGetFocus()
+		&& qApp->focusWidget() == m_ui->emulationPanel)
 	{
-		HWND focusWidgetHwnd = (HWND)focusWidget->winId();
-		::SetFocus(focusWidgetHwnd);
+		// Qt thinks that the emulationPanel but Windows thinks the main window has focus; we
+		// need to tell Windows to change the focus
+		winSetFocus(m_ui->emulationPanel->winId());
 	}
+	return true;
+}
+
+
+//-------------------------------------------------
+//  winGetFocus - wrapper for Win32 ::GetFocus()
+//  function
+//-------------------------------------------------
+
+std::optional<WId> MainWindow::winGetFocus()
+{
+	// this compiles out when not on Windows
+#ifdef Q_OS_WINDOWS
+	return (WId) ::GetFocus();
+#else // !Q_OS_WINDOWS
+	return { };
 #endif // Q_OS_WINDOWS
 }
 
 
 //-------------------------------------------------
-//  ensureOsFocusNeeded
+//  winSetFocus - wrapper for Win32 ::SetFocus()
+//  function
 //-------------------------------------------------
 
-bool MainWindow::ensureOsFocusNeeded()
+void MainWindow::winSetFocus(WId wid)
 {
+	// this compiles out when not on Windows
 #ifdef Q_OS_WINDOWS
-	return true;
-#else // !Q_OS_WINDOWS
-	return false;
+	::SetFocus((HWND)wid);
 #endif // Q_OS_WINDOWS
 }
 
