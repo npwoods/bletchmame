@@ -467,5 +467,9 @@ void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, int dimension);
 // used to get a unique filename
 QFileInfo getUniqueFileName(const QString &directory, const QString &baseName, const QString &suffix);
 
+// utility functions to join/split paths
+QStringList splitPathList(const QString &s);
+QString joinPathList(const QStringList &list);
+
 
 #endif // UTILITY_H

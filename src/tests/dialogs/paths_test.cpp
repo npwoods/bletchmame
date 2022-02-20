@@ -33,18 +33,18 @@ void PathsDialog::Test::model()
 	// create preferences
 	Preferences prefs;
 	prefs.setGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE,	"/mame_dir/mame");
-	prefs.setGlobalPath(Preferences::global_path_type::ROMS,			Model::joinPaths(QStringList() << "/mame_dir/roms0" << "/mame_dir/roms1"));
-	prefs.setGlobalPath(Preferences::global_path_type::SAMPLES,			Model::joinPaths(QStringList() << "/mame_dir/samples0" << "/mame_dir/samples1" << "/mame_dir/samples2"));
+	prefs.setGlobalPath(Preferences::global_path_type::ROMS,			joinPathList(QStringList() << "/mame_dir/roms0" << "/mame_dir/roms1"));
+	prefs.setGlobalPath(Preferences::global_path_type::SAMPLES,			joinPathList(QStringList() << "/mame_dir/samples0" << "/mame_dir/samples1" << "/mame_dir/samples2"));
 
 	// validate the prefs
-	QStringList initialEmuExecutablePath = Model::splitPaths(prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
+	QStringList initialEmuExecutablePath = splitPathList(prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE));
 	QVERIFY(initialEmuExecutablePath.size() == 1);
 	QVERIFY(initialEmuExecutablePath[0] == "/mame_dir/mame");
-	QStringList initialRomsPath = Model::splitPaths(prefs.getGlobalPath(Preferences::global_path_type::ROMS));
+	QStringList initialRomsPath = splitPathList(prefs.getGlobalPath(Preferences::global_path_type::ROMS));
 	QVERIFY(initialRomsPath.size() == 2);
 	QVERIFY(initialRomsPath[0] == "/mame_dir/roms0");
 	QVERIFY(initialRomsPath[1] == "/mame_dir/roms1");
-	QStringList initialSamplesPath = Model::splitPaths(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES));
+	QStringList initialSamplesPath = splitPathList(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES));
 	QVERIFY(initialSamplesPath.size() == 3);
 	QVERIFY(initialSamplesPath[0] == "/mame_dir/samples0");
 	QVERIFY(initialSamplesPath[1] == "/mame_dir/samples1");
@@ -79,7 +79,7 @@ void PathsDialog::Test::model()
 	listViewModel.setData(listViewModel.index(3, 0), "/mame_dir/samples_new_3", Qt::EditRole);
 
 	// validate that the paths have not changed yet
-	QStringList samplesPathList1 = Model::splitPaths(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES));
+	QStringList samplesPathList1 = splitPathList(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES));
 	QVERIFY(samplesPathList1.size() == 3);
 	QVERIFY(samplesPathList1[0] == "/mame_dir/samples0");
 	QVERIFY(samplesPathList1[1] == "/mame_dir/samples1");
@@ -87,7 +87,7 @@ void PathsDialog::Test::model()
 
 	// persist and verify that they've changed
 	model.persist();
-	QStringList samplesPathList2 = Model::splitPaths(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES));
+	QStringList samplesPathList2 = splitPathList(prefs.getGlobalPath(Preferences::global_path_type::SAMPLES));
 	QVERIFY(samplesPathList2.size() == 4);
 	QVERIFY(samplesPathList2[0] == "/mame_dir/samples0");
 	QVERIFY(samplesPathList2[1] == "/mame_dir/samples1");
