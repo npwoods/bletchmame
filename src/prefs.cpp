@@ -89,6 +89,12 @@ static const util::enum_parser_bidirectional<Preferences::AuditingState> s_audit
 //  IMPLEMENTATION
 //**************************************************************************
 
+#ifdef Q_OS_WIN32
+#define PATH_LIST_SEPARATOR     ";"
+#else
+#define PATH_LIST_SEPARATOR     ":"
+#endif
+
 //-------------------------------------------------
 //  isValidDimension
 //-------------------------------------------------
@@ -391,7 +397,7 @@ QStringList Preferences::getSplitPaths(global_path_type type) const
 	const QString &pathsString = getGlobalPath(type);
 	if (!pathsString.isEmpty())
 	{
-		paths = pathsString.split(';');
+		paths = pathsString.split(PATH_LIST_SEPARATOR);
 		for (QString &path : paths)
 		{
 			// apply variable substituions
@@ -1333,7 +1339,7 @@ Preferences::GlobalUiInfo::GlobalUiInfo()
 Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configDirectory)
 {
 	// set up default paths - some of these require a config directory
-	m_paths[(size_t)global_path_type::PLUGINS]		= "$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/";
+	m_paths[(size_t)global_path_type::PLUGINS]		= "$(BLETCHMAMEPATH)/plugins/" PATH_LIST_SEPARATOR "$(MAMEPATH)/plugins/";
 	m_paths[(size_t)global_path_type::HASH]			= "$(MAMEPATH)/hash/";
 	if (configDirectory)
 	{

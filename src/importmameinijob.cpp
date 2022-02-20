@@ -10,6 +10,11 @@
 #include "importmameinijob.h"
 #include "iniparser.h"
 
+#ifdef Q_OS_WIN32
+#define PATH_LIST_SEPARATOR     ";"
+#else
+#define PATH_LIST_SEPARATOR     ":"
+#endif
 
 //**************************************************************************
 //  TYPES
@@ -355,7 +360,7 @@ void ImportMameIniJob::GlobalPathEntry::doSupplement()
 {
 	QStringList paths = m_prefs.getSplitPaths(m_pathType);
 	paths << m_path;
-	m_prefs.setGlobalPath(m_pathType, paths.join(";"));
+	m_prefs.setGlobalPath(m_pathType, paths.join(PATH_LIST_SEPARATOR));
 }
 
 
