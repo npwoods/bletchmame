@@ -84,8 +84,7 @@ bool ImportMameIniJob::loadMameIni(const QString &fileName)
 	std::vector<QFileInfo> importPathFileInfos;
 	for (Preferences::global_path_type pathType : util::all_enums<Preferences::global_path_type>())
 	{
-		// MAME's path separator is ';' even on non-Windows platforms
-		QStringList importPaths = rawSettings.m_paths[(size_t)pathType].split(';');
+		QStringList importPaths = splitPathList(rawSettings.m_paths[(size_t)pathType]);
 
 		// get all fileinfos
 		importPathFileInfos.clear();
@@ -381,7 +380,7 @@ void ImportMameIniJob::GlobalPathEntry::doSupplement()
 {
 	QStringList paths = m_prefs.getSplitPaths(m_pathType);
 	paths << m_path;
-	m_prefs.setGlobalPath(m_pathType, paths.join(";"));
+	m_prefs.setGlobalPath(m_pathType, joinPathList(paths));
 }
 
 

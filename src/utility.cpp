@@ -12,6 +12,7 @@
 // Qt headers
 #include <QDir>
 #include <QGridLayout>
+#include <QRegularExpression>
 
 // standard headers
 #include <sstream>
@@ -22,6 +23,12 @@
 //**************************************************************************
 
 const QString util::g_empty_string;
+
+#ifdef Q_OS_WINDOWS
+static const QChar s_pathListSeparator = ';';
+#else // !Q_OS_WINDOWS
+static const QRegularExpression s_pathListSeparator("\\:|\\;");
+#endif // Q_OS_WINDOWS
 
 
 //-------------------------------------------------
@@ -157,4 +164,25 @@ QFileInfo getUniqueFileName(const QString &directory, const QString &baseName, c
 	} while (result.exists());
 
 	return result;
+}
+
+
+//-------------------------------------------------
+//  splitPathList
+//-------------------------------------------------
+
+QStringList splitPathList(const QString &s)
+{
+	return s.split(s_pathListSeparator, Qt::SkipEmptyParts);
+}
+
+
+//-------------------------------------------------
+//  joinPathList
+//-------------------------------------------------
+
+QString joinPathList(const QStringList &list)
+{
+	// MAME uses ';' as its primary path list separator, even on non-Windows platforms
+	return list.join(';');
 }

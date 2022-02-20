@@ -26,13 +26,6 @@
 //  IMPLEMENTATION
 //**************************************************************************
 
-#ifdef Q_OS_WIN32
-#define PATH_LIST_SEPARATOR	";"
-#else
-#define PATH_LIST_SEPARATOR	":"
-#endif
-
-
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
@@ -374,7 +367,7 @@ void PathsDialog::Model::setCurrentPathType(Preferences::global_path_type newPat
 	Preferences::PathCategory category = Preferences::getPathCategory(newPathType);
 
 	// build the paths list
-	QStringList paths = splitPaths(m_pathLists[(size_t)newPathType]);
+	QStringList paths = splitPathList(m_pathLists[(size_t)newPathType]);
 
 	// is this multi select?
 	bool isMulti = category == Preferences::PathCategory::MultipleDirectories
@@ -426,29 +419,7 @@ void PathsDialog::Model::extractPathsFromListView()
 	{
 		// reflect changes on the m_current_path_list back into m_pathLists 
 		QStringList paths = m_listViewModel.paths();
-		QString pathString = joinPaths(paths);
+		QString pathString = joinPathList(paths);
 		m_pathLists[(size_t)m_currentPathType.value()] = std::move(pathString);
 	}
-}
-
-
-//-------------------------------------------------
-//  splitPaths
-//-------------------------------------------------
-
-QStringList PathsDialog::Model::splitPaths(const QString &paths)
-{
-	return paths.isEmpty()
-		? QStringList()
-		: paths.split(PATH_LIST_SEPARATOR);
-}
-
-
-//-------------------------------------------------
-//  joinPaths
-//-------------------------------------------------
-
-QString PathsDialog::Model::joinPaths(const QStringList &pathList)
-{
-	return pathList.join(PATH_LIST_SEPARATOR);
 }

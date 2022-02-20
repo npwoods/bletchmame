@@ -32,6 +32,9 @@ namespace
 		void toU8String();
 
 		void getUniqueFileName();
+		void splitPathList1();
+		void splitPathList2();
+		void joinPathList();
 
 	private:
 		template<typename TStr>
@@ -209,6 +212,55 @@ void Test::getUniqueFileName()
 	QFileInfo fi5 = ::getUniqueFileName(tempDir.path(), "bar", "txt");
 	QVERIFY(fi5.fileName() == "bar (2).txt");
 	writeStubFile(fi5);
+}
+
+
+//-------------------------------------------------
+//  splitPathList1
+//-------------------------------------------------
+
+void Test::splitPathList1()
+{
+	QString s = "/alpha;/bravo:/charlie";
+
+#ifdef Q_OS_WINDOWS
+	// ':' is not a path list separator on Windows
+	s = s.replace(':', ';');
+#endif
+
+	QStringList list = splitPathList(s);
+
+	QVERIFY(list.size() == 3);
+	QVERIFY(list[0] == "/alpha");
+	QVERIFY(list[1] == "/bravo");
+	QVERIFY(list[2] == "/charlie");
+}
+
+
+//-------------------------------------------------
+//  splitPathList2
+//-------------------------------------------------
+
+void Test::splitPathList2()
+{
+	QStringList list = splitPathList("");
+	QVERIFY(list.size() == 0);
+}
+
+
+//-------------------------------------------------
+//  joinPathList
+//-------------------------------------------------
+
+void Test::joinPathList()
+{
+	QStringList list;
+	list << "/alpha";
+	list << "/bravo";
+	list << "/charlie";
+
+	QString s = ::joinPathList(list);
+	QVERIFY(s == "/alpha;/bravo;/charlie");
 }
 
 
