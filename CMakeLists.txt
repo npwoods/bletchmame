@@ -124,6 +124,8 @@ add_library(BletchMAME_core
 	src/chd.h
 	src/filedlgs.cpp
 	src/filedlgs.h
+	src/focuswatchinghook.cpp
+	src/focuswatchinghook.h
 	src/hash.cpp
 	src/hash.h
 	src/iconloader.cpp
