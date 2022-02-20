@@ -10,6 +10,11 @@
 #include "importmameinijob.h"
 #include "iniparser.h"
 
+// windows headers
+#ifdef Q_OS_WINDOWS
+#include <windows.h>
+#endif // Q_OS_WINDOWS
+
 
 //**************************************************************************
 //  TYPES
@@ -248,21 +253,62 @@ bool ImportMameIniJob::areFileInfosEquivalent(const QFileInfo &fi1, const QFileI
 //  expandEnvironmentVariables
 //-------------------------------------------------
 
-QString ImportMameIniJob::expandEnvironmentVariables(QString s)
+QString ImportMameIniJob::expandEnvironmentVariables(const QString &s)
 {
-	QString r(s);
-	QRegExp env_var("\\$([A-Za-z0-9_]+)");
-	int i;
+	QString r;
+#ifdef Q_OS_WINDOWS
+	{
+		bool done = false;
+		DWORD tryLength = 4;
 
-	while((i = env_var.indexIn(r)) != -1) {
-		QByteArray value(qgetenv(env_var.cap(1).toLatin1().data()));
-		if(value.size() > 0) {
-			r.remove(i, env_var.matchedLength());
-			r.insert(i, value);
-		} else {
-			break;
+		while (!done)
+		{
+			// resize the string to what we think the length should be
+			r.resize(tryLength);
+
+			// call ExpandEnvironmentStringsW
+			DWORD actualLength = ::ExpandEnvironmentStringsW(
+				(LPCWSTR)s.constData(),
+				(LPWSTR)r.data(),
+				tryLength + 1);
+
+			// if it errors; just return what we were passed
+			if (actualLength == 0)
+				return s;
+
+			// was our buffer sufficient?
+			if (actualLength - 1 > tryLength)
+			{
+				// if not, try again
+				tryLength = actualLength - 1;
+			}
+			else
+			{
+				// it was - resize the result and we're done
+				done = true;
+				r.resize(actualLength - 1);
+			}
 		}
 	}
+#else // !Q_OS_WINDOWS
+	{
+		QRegExp env_var("\\$([A-Za-z0-9_]+)");
+		int i;
+		r = s;
+
+		while ((i = env_var.indexIn(r)) != -1)
+		{
+			QByteArray value(qgetenv(env_var.cap(1).toLatin1().data()));
+			if (value.size() > 0)
+			{
+				r.remove(i, env_var.matchedLength());
+				r.insert(i, value);
+			}
+			else
+				break;
+		}
+	}
+#endif // Q_OS_WINDOWS
 	return r;
 }
 
