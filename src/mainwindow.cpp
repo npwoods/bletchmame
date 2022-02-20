@@ -1062,7 +1062,17 @@ void MainWindow::on_actionSaveState_triggered()
 
 void MainWindow::on_actionSaveScreenshot_triggered()
 {
-	const QString &snapDir = m_prefs.getGlobalPath(Preferences::global_path_type::SNAPSHOTS);
+	// find a snapshot dir
+	QStringList snapshotPaths = m_prefs.getSplitPaths(Preferences::global_path_type::SNAPSHOTS);
+	QString snapDir;
+	for (QString &x : snapshotPaths)
+	{
+		if (QFileInfo(x).isDir())
+		{
+			snapDir = std::move(x);
+			break;
+		}
+	}
 
 	// prepare the dialog
 	QFileDialog dialog(this, "Save Snapshot", snapDir, s_wc_save_snapshot);
