@@ -13,6 +13,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Fixed an issue that caused resets to incorrectly pause the emulation (#294)
 	- Changing screenshots to default to the snapshot directory, and prompting with the machine name (#297)
 	- Now clearing out the right of the status bar when running an emulation
+	- Implemented support for environment variable substitution when importing MAME.ini [Davide Cavalca]
 	- Fixed a bug in the paths dialog that caused a user to see slashes as path separators when editing paths directly
 	- Fixed a bug that could cause the machine count to not properly update in response to searches
 
