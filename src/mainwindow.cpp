@@ -1062,16 +1062,24 @@ void MainWindow::on_actionSaveState_triggered()
 
 void MainWindow::on_actionSaveScreenshot_triggered()
 {
+	const QString &snapDir = m_prefs.getGlobalPath(Preferences::global_path_type::SNAPSHOTS);
+
 	// prepare the dialog
-	QFileDialog dialog(this, "Save Snapshot", QString(), s_wc_save_snapshot);
-	associateFileDialogWithMachinePrefs(dialog, m_prefs, getRunningMachine(), Preferences::machine_path_type::WORKING_DIRECTORY);
+	QFileDialog dialog(this, "Save Snapshot", snapDir, s_wc_save_snapshot);
 	dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
 	dialog.setFileMode(QFileDialog::FileMode::AnyFile);
+	if (snapDir.isEmpty())
+		associateFileDialogWithMachinePrefs(dialog, m_prefs, getRunningMachine(), Preferences::machine_path_type::WORKING_DIRECTORY);
+
+	// prep a unique name for this screenshot
+	QFileInfo fi = getUniqueFileName(
+		dialog.directory().absolutePath(),
+		getRunningMachine().name(),
+		"png");
+	dialog.selectFile(fi.fileName());
 
 	// execute the dialog
-	QString path = execFileDialogWithCommand(dialog, { "save_snapshot", "0" });
-	if (!path.isEmpty())
-		m_currentQuickState = std::move(path);
+	execFileDialogWithCommand(dialog, { "save_snapshot", "0" });
 }
 
 
