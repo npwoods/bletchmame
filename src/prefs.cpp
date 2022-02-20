@@ -389,18 +389,17 @@ QStringList Preferences::getSplitPaths(global_path_type type) const
 	QStringList paths;
 
 	const QString &pathsString = getGlobalPath(type);
-	if (!pathsString.isEmpty())
-	{
-		paths = pathsString.split(';');
-		for (QString &path : paths)
-		{
-			// apply variable substituions
-			path = applySubstitutions(path);
+	paths = splitPathList(pathsString);
 
-			// normalize path separators
-			path = QDir::fromNativeSeparators(path);
-		}
+	for (QString &path : paths)
+	{
+		// apply variable substituions
+		path = applySubstitutions(path);
+
+		// normalize path separators
+		path = QDir::fromNativeSeparators(path);
 	}
+
 	return paths;
 }
 
@@ -1333,7 +1332,7 @@ Preferences::GlobalUiInfo::GlobalUiInfo()
 Preferences::GlobalPathsInfo::GlobalPathsInfo(const std::optional<QDir> &configDirectory)
 {
 	// set up default paths - some of these require a config directory
-	m_paths[(size_t)global_path_type::PLUGINS]		= "$(BLETCHMAMEPATH)/plugins/;$(MAMEPATH)/plugins/";
+	m_paths[(size_t)global_path_type::PLUGINS]		= joinPathList(QStringList() << "$(BLETCHMAMEPATH)/plugins/" << "$(MAMEPATH)/plugins/");
 	m_paths[(size_t)global_path_type::HASH]			= "$(MAMEPATH)/hash/";
 	if (configDirectory)
 	{

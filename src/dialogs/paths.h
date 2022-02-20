@@ -70,10 +70,6 @@ private:
 		void persist();
 		const Preferences &prefs() const;
 
-		// statics
-		static QString joinPaths(const QStringList &pathList);
-		static QStringList splitPaths(const QString &paths);
-
 	private:
 		Preferences &									m_prefs;
 		PathsListViewModel &							m_listViewModel;
