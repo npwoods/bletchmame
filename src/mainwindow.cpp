@@ -1590,7 +1590,7 @@ bool MainWindow::event(QEvent *event)
 	}
 	else if (event->type() == s_checkForFocusSkewEvent)
 	{
-		onCheckForFocusSkew();
+		result = onCheckForFocusSkew();
 	}
 
 	// if we have a result, we've handled the event; otherwise we have to pass it on
@@ -2429,7 +2429,7 @@ QString MainWindow::getTitleBarText()
 //  onCheckForFocusSkew
 //-------------------------------------------------
 
-void MainWindow::onCheckForFocusSkew()
+bool MainWindow::onCheckForFocusSkew()
 {
 	// this mechanism is only needed when there is a live and unpaused emulation session
 	if (m_currentRunMachineTask
@@ -2440,6 +2440,7 @@ void MainWindow::onCheckForFocusSkew()
 		// need to tell Windows to change the focus
 		winSetFocus(m_ui->emulationPanel->winId());
 	}
+	return true;
 }
 
 

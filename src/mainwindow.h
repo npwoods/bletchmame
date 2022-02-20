@@ -246,7 +246,7 @@ private:
 	void changeThrottleRate(float throttle_rate);
 	void changeThrottleRate(int adjustment);
 	void changeSound(bool sound_enabled);
-	void onCheckForFocusSkew();
+	bool onCheckForFocusSkew();
 	static std::optional<WId> winGetFocus();
 	static void winSetFocus(WId wid);
 	void updateStatusBar();
