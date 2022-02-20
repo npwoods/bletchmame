@@ -91,6 +91,9 @@ bool ImportMameIniJob::loadMameIni(const QString &fileName)
 		importPathFileInfos.clear();
 		for (QString &importPath : importPaths)
 		{
+			// expand environment variable
+			importPath = expandEnvironmentVariables(importPath);
+
 			// no whitespace please...
 			importPath = importPath.trimmed();
 			if (!importPath.isEmpty())
@@ -239,6 +242,29 @@ bool ImportMameIniJob::areFileInfosEquivalent(const QFileInfo &fi1, const QFileI
 	return fi1.exists() && fi2.exists()
 		? fi1 == fi2
 		: fi1.absoluteFilePath() == fi2.absoluteFilePath();
+}
+
+
+//-------------------------------------------------
+//  expandEnvironmentVariables
+//-------------------------------------------------
+
+QString ImportMameIniJob::expandEnvironmentVariables(QString s)
+{
+	QString r(s);
+	QRegExp env_var("\\$([A-Za-z0-9_]+)");
+	int i;
+
+	while((i = env_var.indexIn(r)) != -1) {
+		QByteArray value(qgetenv(env_var.cap(1).toLatin1().data()));
+		if(value.size() > 0) {
+			r.remove(i, env_var.matchedLength());
+			r.insert(i, value);
+		} else {
+			break;
+		}
+	}
+	return r;
 }
 
 
