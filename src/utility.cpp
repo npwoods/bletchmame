@@ -129,3 +129,32 @@ void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, int dimension)
 {
 	setPixmapDevicePixelRatioToFit(pixmap, QSize(dimension, dimension));
 }
+
+
+//-------------------------------------------------
+//  getUniqueFileName
+//-------------------------------------------------
+
+QFileInfo getUniqueFileName(const QString &directory, const QString &baseName, const QString &suffix)
+{
+	QFileInfo result;
+	QDir dir(directory);
+	int attempt = 0;
+
+	do
+	{
+		// set up the filename
+		QString fileNameTemplate = attempt > 1
+			? "%1 (%3).%2"
+			: "%1.%2";
+		QString fileName = fileNameTemplate.arg(baseName, suffix, QString::number(attempt));
+
+		// set up the QFileInfo
+		result = QFileInfo(dir, fileName);
+
+		// bump the attempt
+		attempt++;
+	} while (result.exists());
+
+	return result;
+}

@@ -31,6 +31,8 @@ namespace
 		void toQString();
 		void toU8String();
 
+		void getUniqueFileName();
+
 	private:
 		template<typename TStr>
 		void string_split()
@@ -171,6 +173,42 @@ void Test::toU8String()
 	QString qstr = QString::fromWCharArray(L"Hey \u5582");
 	std::u8string str = util::toU8String(qstr);
 	QVERIFY(str == u8"Hey \u5582");
+}
+
+
+//-------------------------------------------------
+//  getUniqueFileName
+//-------------------------------------------------
+
+void Test::getUniqueFileName()
+{
+	auto writeStubFile = [](const QFileInfo &fi)
+	{
+		QFile file(fi.absoluteFilePath());
+		file.open(QIODevice::WriteOnly);
+	};
+
+	QTemporaryDir tempDir;
+
+	QFileInfo fi1 = ::getUniqueFileName(tempDir.path(), "foo", "txt");
+	QVERIFY(fi1.fileName() == "foo.txt");
+	writeStubFile(fi1);
+
+	QFileInfo fi2 = ::getUniqueFileName(tempDir.path(), "foo", "txt");
+	QVERIFY(fi2.fileName() == "foo (2).txt");
+	writeStubFile(fi2);
+
+	QFileInfo fi3 = ::getUniqueFileName(tempDir.path(), "foo", "txt");
+	QVERIFY(fi3.fileName() == "foo (3).txt");
+	writeStubFile(fi3);
+
+	QFileInfo fi4 = ::getUniqueFileName(tempDir.path(), "bar", "txt");
+	QVERIFY(fi4.fileName() == "bar.txt");
+	writeStubFile(fi4);
+
+	QFileInfo fi5 = ::getUniqueFileName(tempDir.path(), "bar", "txt");
+	QVERIFY(fi5.fileName() == "bar (2).txt");
+	writeStubFile(fi5);
 }
 
 

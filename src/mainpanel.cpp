@@ -472,32 +472,6 @@ void MainPanel::deleteSelectedFolder()
 
 
 //-------------------------------------------------
-//  GetUniqueFileName
-//-------------------------------------------------
-
-template<typename TFunc>
-static QString GetUniqueProfilePath(const QString &dir_path, TFunc generate_name)
-{
-	// prepare for building file paths
-	QString file_path;
-
-	// try up to 10 attempts
-	for (int attempt = 0; file_path.isEmpty() && attempt < 10; attempt++)
-	{
-		// build the file path
-		QString name = generate_name(attempt);
-		QString path = dir_path + "/" + name + ".bletchmameprofile";
-		QFileInfo fi(path);
-
-		// get the file path if this file doesn't exist
-		if (!fi.exists())
-			file_path = fi.absoluteFilePath();
-	}
-	return file_path;
-}
-
-
-//-------------------------------------------------
 //  createProfile
 //-------------------------------------------------
 
@@ -528,12 +502,11 @@ void MainPanel::createProfile(const info::machine &machine, const software_list:
 		: machine.name();
 
 	// get the full path for a new profile
-	QString new_profile_path = GetUniqueProfilePath(path, [&description](int attempt)
-	{
-		return attempt == 0
-			? QString("%1 - New profile").arg(description)
-			: QString("%1 - New profile (%2)").arg(description, QString::number(attempt + 1));
-	});
+	QFileInfo newProfileFi = getUniqueFileName(
+		path,
+		QString("%1 - New profile").arg(description),
+		"bletchmameprofile");
+	QString new_profile_path = newProfileFi.absoluteFilePath() + "." + newProfileFi.suffix();
 
 	// create the file stream
 	QFile file(new_profile_path);
@@ -572,12 +545,11 @@ void MainPanel::duplicateProfile(const profiles::profile &profile)
 	QString dir_path = fi.dir().absolutePath();
 
 	// get the full path for a new profile
-	QString new_profile_path = GetUniqueProfilePath(dir_path, [&profile](int attempt)
-	{
-		return attempt == 0
-			? QString("%1 - Copy").arg(profile.name())
-			: QString("%1 - Copy (%2)").arg(profile.name(), QString::number(attempt + 1));
-	});
+	QFileInfo newProfileFi = getUniqueFileName(
+		dir_path,
+		QString("%1 - Copy").arg(profile.name()),
+		"bletchmameprofile");
+	QString new_profile_path = newProfileFi.absoluteFilePath() + "." + newProfileFi.suffix();
 
 	// create the file stream
 	QFile file(new_profile_path);

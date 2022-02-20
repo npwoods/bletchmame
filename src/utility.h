@@ -464,5 +464,8 @@ class QPixmap;
 void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, QSize size);
 void setPixmapDevicePixelRatioToFit(QPixmap &pixmap, int dimension);
 
+// used to get a unique filename
+QFileInfo getUniqueFileName(const QString &directory, const QString &baseName, const QString &suffix);
+
 
 #endif // UTILITY_H
