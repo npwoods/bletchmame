@@ -879,6 +879,10 @@ MainWindow::MainWindow(QWidget *parent)
 	}
 #endif // Q_OS_WINDOWS
 
+	// this should cut down on flickering when resizing the window
+	m_ui->emulationPanel->setAttribute(Qt::WA_OpaquePaintEvent);
+	m_ui->emulationPanel->setAttribute(Qt::WA_NoSystemBackground);
+
 	// load the info DB
 	loadInfoDb();
 

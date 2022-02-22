@@ -16,6 +16,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Implemented support for environment variable substitution when importing MAME.ini [Davide Cavalca]
 	- Changed path list handling to tolerate both ';' and ':' as path list separators on non-Windows platforms
 	- Fixed a bug in the paths dialog that caused a user to see slashes as path separators when editing paths directly
+	- Fixed a flickering problem in running emulations when resizing the BletchMAME window
 	- Fixed a bug that could cause the machine count to not properly update in response to searches
 
 - 2.12 (2022-Feb-17)
