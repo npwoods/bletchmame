@@ -2450,7 +2450,7 @@ bool MainWindow::onCheckForFocusSkew()
 	// this mechanism is only needed when there is a live and unpaused emulation session
 	if (m_currentRunMachineTask
 		&& winId() == winGetFocus()
-		&& qApp->focusWidget() == m_ui->emulationPanel)
+		&& (!qApp->focusWidget() || (qApp->focusWidget() == m_ui->emulationPanel)))
 	{
 		if (LOG_FOCUSSKEW)
 			qDebug() << "MainWindow::onCheckForFocusSkew(): Calling winSetFocus()";
