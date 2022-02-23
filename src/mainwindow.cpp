@@ -63,6 +63,8 @@
 #undef max
 #endif // max
 
+#define LOG_FOCUSSKEW	0
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -870,6 +872,9 @@ MainWindow::MainWindow(QWidget *parent)
 		WinFocusWatchingHook &hook = *new WinFocusWatchingHook(this);
 		connect(&hook, &WinFocusWatchingHook::winFocusChanged, this, [this](WId newWindow, WId oldWindow)
 		{
+			if (LOG_FOCUSSKEW)
+				qDebug() << QString("winFocusChanged: newWindow=%1 oldWindow=%2").arg(widgetDesc(newWindow), widgetDesc(oldWindow));
+
 			if (newWindow == winId())
 			{
 				auto event = std::make_unique<QEvent>(s_checkForFocusSkewEvent);
@@ -2435,11 +2440,21 @@ QString MainWindow::getTitleBarText()
 
 bool MainWindow::onCheckForFocusSkew()
 {
+	if (LOG_FOCUSSKEW)
+	{
+		qDebug() << QString("MainWindow::onCheckForFocusSkew(): winGetFocus=%1 qApp->focusWidget()=%2").arg(
+			widgetDesc(winGetFocus().value_or(0)),
+			widgetDesc(qApp->focusWidget()));
+	}
+
 	// this mechanism is only needed when there is a live and unpaused emulation session
 	if (m_currentRunMachineTask
 		&& winId() == winGetFocus()
 		&& qApp->focusWidget() == m_ui->emulationPanel)
 	{
+		if (LOG_FOCUSSKEW)
+			qDebug() << "MainWindow::onCheckForFocusSkew(): Calling winSetFocus()";
+
 		// Qt thinks that the emulationPanel but Windows thinks the main window has focus; we
 		// need to tell Windows to change the focus
 		winSetFocus(m_ui->emulationPanel->winId());
@@ -2475,6 +2490,37 @@ void MainWindow::winSetFocus(WId wid)
 #ifdef Q_OS_WINDOWS
 	::SetFocus((HWND)wid);
 #endif // Q_OS_WINDOWS
+}
+
+
+//-------------------------------------------------
+//  widgetDesc - diagnostic function to label a WId
+//-------------------------------------------------
+
+QString MainWindow::widgetDesc(const QWidget *widget) const
+{
+	return widgetDesc(widget ? widget->winId() : (WId)0);
+}
+
+
+//-------------------------------------------------
+//  widgetDesc - diagnostic function to label a WId
+//-------------------------------------------------
+
+QString MainWindow::widgetDesc(WId wid) const
+{
+	// try to identify the WId
+	QString desc;
+	if (wid == winId())
+		desc = "MainWindow";
+	else if (wid == m_ui->emulationPanel->winId())
+		desc = "emulationPanel";
+
+	// and format accordingly
+	const char *format = !desc.isEmpty()
+		? "[0x%1 (%2)]"
+		: "[0x%1]";
+	return QString(format).arg(QString::number(wid, 16), desc);
 }
 
 
