@@ -249,6 +249,8 @@ private:
 	bool onCheckForFocusSkew();
 	static std::optional<WId> winGetFocus();
 	static void winSetFocus(WId wid);
+	QString widgetDesc(const QWidget *widget) const;
+	QString widgetDesc(WId wid) const;
 	void updateStatusBar();
 	static QString runningStateText(const status::state &state);
 	virtual void auditIfAppropriate(const info::machine &machine) override;
