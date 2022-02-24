@@ -606,6 +606,42 @@ private:
 };
 
 
+// ======================> EmulationPanelAttributesAspect
+
+class MainWindow::EmulationPanelAttributesAspect : public Aspect
+{
+public:
+	EmulationPanelAttributesAspect(MainWindow &host)
+		: m_host(host)
+	{
+		update();
+	}
+
+	virtual void start()
+	{
+		m_host.m_state.value().paused().subscribe([this] { update(); });
+	}
+
+	virtual void stop()
+	{
+		update();
+	}
+
+private:
+	MainWindow &	m_host;
+
+	void update()
+	{
+		// do we have a running emulation and are we not paused?
+		bool attrValue = m_host.m_state.has_value() && !m_host.m_state.value().paused().get();
+
+		// set these attributes accordingly - this cuts down on flicker
+		m_host.m_ui->emulationPanel->setAttribute(Qt::WA_OpaquePaintEvent, attrValue);
+		m_host.m_ui->emulationPanel->setAttribute(Qt::WA_NoSystemBackground, attrValue);
+	}
+};
+
+
 // ======================> Dummy
 
 class MainWindow::Dummy
@@ -800,6 +836,7 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<MenuBarAspect>(*this));
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
 	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
+	m_aspects.push_back(std::make_unique<EmulationPanelAttributesAspect>(*this));
 
 	// prepare the main tab
 	m_info_db.addOnChangedHandler([this]()
@@ -883,10 +920,6 @@ MainWindow::MainWindow(QWidget *parent)
 		});
 	}
 #endif // Q_OS_WINDOWS
-
-	// this should cut down on flickering when resizing the window
-	m_ui->emulationPanel->setAttribute(Qt::WA_OpaquePaintEvent);
-	m_ui->emulationPanel->setAttribute(Qt::WA_NoSystemBackground);
 
 	// load the info DB
 	loadInfoDb();

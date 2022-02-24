@@ -140,6 +140,7 @@ private:
 	class MenuBarAspect;
 	class ToggleMovieTextAspect;
 	class QuickLoadSaveAspect;
+	class EmulationPanelAttributesAspect;
 	class Dummy;
 
 	// statics
