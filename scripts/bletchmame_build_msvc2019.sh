@@ -78,8 +78,8 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include
 
 # generate version.gen.h
-mkdir -p ${BLETCHMAME_BUILD_DIR}/include
-git describe --tags | perl scripts/process_version.pl --versionhdr > ${BLETCHMAME_BUILD_DIR}/include/version.gen.h
+mkdir -p ${BLETCHMAME_DIR}/include
+git describe --tags | perl scripts/process_version.pl --versionhdr > ${BLETCHMAME_DIR}/include/version.gen.h
 
 # and build!
 cmake --build ${BLETCHMAME_BUILD_DIR} --parallel --config ${CONFIG}
