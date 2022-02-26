@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.14 (TBD)
+	- Fixed a bug that could cause duplication of items on the "recent images list" list
 	- Fixed a CMake build issue when performing out-of-tree builds [Davide Cavalca]
 
 - 2.13 (2022-Feb-26)
