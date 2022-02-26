@@ -32,6 +32,7 @@ namespace
 		void toU8String();
 
 		void getUniqueFileName();
+		void areFileInfosEquivalent();
 		void splitPathList1();
 		void splitPathList2();
 		void joinPathList();
@@ -212,6 +213,42 @@ void Test::getUniqueFileName()
 	QFileInfo fi5 = ::getUniqueFileName(tempDir.path(), "bar", "txt");
 	QVERIFY(fi5.fileName() == "bar (2).txt");
 	writeStubFile(fi5);
+}
+
+
+//-------------------------------------------------
+//  areFileInfosEquivalent
+//-------------------------------------------------
+
+void Test::areFileInfosEquivalent()
+{
+	// create a temporary directory
+	QTemporaryDir tempDirObj;
+	QVERIFY(tempDirObj.isValid());
+	QDir tempDir(tempDirObj.path());
+
+	// create two directories
+	tempDir.mkdir("./dir1");
+	tempDir.mkdir("./dir2");
+
+	// some QFileInfos...
+	QFileInfo dir1(tempDir.filePath("./dir1"));
+	QFileInfo dir2(tempDir.filePath("./dir2"));
+	QFileInfo dir3(tempDir.filePath("./dir3"));
+	QFileInfo dir1x(tempDir.filePath("././dir1"));
+
+	// the following should be equivalent
+	QVERIFY(::areFileInfosEquivalent(dir1, dir1));
+	QVERIFY(::areFileInfosEquivalent(dir1, dir1x));
+	QVERIFY(::areFileInfosEquivalent(dir1x, dir1));
+	QVERIFY(::areFileInfosEquivalent(dir1x, dir1x));
+	QVERIFY(::areFileInfosEquivalent(dir2, dir2));
+	QVERIFY(::areFileInfosEquivalent(dir3, dir3));
+
+	// the following should not be equivalent
+	QVERIFY(!::areFileInfosEquivalent(dir1, dir2));
+	QVERIFY(!::areFileInfosEquivalent(dir2, dir3));
+	QVERIFY(!::areFileInfosEquivalent(dir1x, dir3));
 }
 
 

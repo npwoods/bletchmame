@@ -84,7 +84,6 @@ private:
 	// statics
 	static RawIniSettings extractRawIniSettings(QIODevice &stream);
 	static bool supportsMultiplePaths(Preferences::global_path_type pathType);
-	static bool areFileInfosEquivalent(const QFileInfo &fi1, const QFileInfo &fi2);
 	static QString expandEnvironmentVariables(const QString &s);
 
 	// methods
