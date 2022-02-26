@@ -2346,17 +2346,19 @@ void MainWindow::placeInRecentFiles(const QString &tag, const QString &path)
 	std::vector<QString> &recentFiles = m_prefs.getRecentDeviceFiles(machine.name(), device_type);
 
 	// ...and clearing out places where that entry already exists
-	std::vector<QString>::iterator iter;
-	while ((iter = std::find(recentFiles.begin(), recentFiles.end(), path)) != recentFiles.end())
-		recentFiles.erase(iter);
+	QFileInfo pathFi(path);
+	auto endIter = std::remove_if(recentFiles.begin(), recentFiles.end(), [&pathFi](const QString &x)
+	{
+		return areFileInfosEquivalent(QFileInfo(x), pathFi);
+	});
+	recentFiles.resize(endIter - recentFiles.begin());
 
 	// ...insert the new value
 	recentFiles.insert(recentFiles.begin(), path);
 
 	// and cull the list
 	const size_t MAXIMUM_RECENT_FILES = 10;
-	if (recentFiles.size() > MAXIMUM_RECENT_FILES)
-		recentFiles.erase(recentFiles.begin() + MAXIMUM_RECENT_FILES, recentFiles.end());
+	recentFiles.resize(std::min(recentFiles.size(), MAXIMUM_RECENT_FILES));
 }
 
 
