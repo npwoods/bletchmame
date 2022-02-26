@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.13 (TBD)
+- 2.13 (2022-Feb-26)
 	- Fixed a serious issue that could cause an emulation to stop handling input (#295)
 	- Fixed an issue that caused resets to incorrectly pause the emulation (#294)
 	- Changing screenshots to default to the snapshot directory, and prompting with the machine name (#297)
