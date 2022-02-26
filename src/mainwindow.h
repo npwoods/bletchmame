@@ -225,8 +225,8 @@ private:
 	bool isMameVersionAtLeast(const SimpleMameVersion &version) const;
 	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
 	virtual void setChatterListener(std::function<void(const ChatterEvent &chatter)> &&func) override final;
-	void WatchForImageMount(const QString &tag);
-	void PlaceInRecentFiles(const QString &tag, const QString &path);
+	void watchForImageMount(const QString &tag);
+	void placeInRecentFiles(const QString &tag, const QString &path);
 	info::machine getRunningMachine() const;
 	bool attachToMainWindow() const;
 	QString attachWidgetId() const;
