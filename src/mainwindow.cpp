@@ -176,13 +176,13 @@ public:
 
 	virtual void createImage(const QString &tag, QString &&path)
 	{
-		m_host.WatchForImageMount(tag);
+		m_host.watchForImageMount(tag);
 		m_host.issue({ "create", tag, QDir::toNativeSeparators(path) });
 	}
 
 	virtual void loadImage(const QString &tag, QString &&path)
 	{
-		m_host.WatchForImageMount(tag);
+		m_host.watchForImageMount(tag);
 		m_host.issue({ "load", tag, QDir::toNativeSeparators(path) });
 	}
 
@@ -2304,10 +2304,10 @@ bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
 
 
 //-------------------------------------------------
-//  WatchForImageMount
+//  watchForImageMount
 //-------------------------------------------------
 
-void MainWindow::WatchForImageMount(const QString &tag)
+void MainWindow::watchForImageMount(const QString &tag)
 {
 	// find the current value; we want to monitor for this value changing
 	QString current_value;
@@ -2323,7 +2323,7 @@ void MainWindow::WatchForImageMount(const QString &tag)
 		if (image && image->m_file_name != current_value)
 		{
 			// it did!  place the new file in recent files
-			PlaceInRecentFiles(tag, image->m_file_name);
+			placeInRecentFiles(tag, image->m_file_name);
 
 			// and stop subscribing
 			m_watch_subscription = observable::unique_subscription();
@@ -2333,30 +2333,30 @@ void MainWindow::WatchForImageMount(const QString &tag)
 
 
 //-------------------------------------------------
-//  PlaceInRecentFiles
+//  placeInRecentFiles
 //-------------------------------------------------
 
-void MainWindow::PlaceInRecentFiles(const QString &tag, const QString &path)
+void MainWindow::placeInRecentFiles(const QString &tag, const QString &path)
 {
 	// get the machine and device type to update recents
 	info::machine machine = getRunningMachine();
 	const QString &device_type = GetDeviceType(machine, tag);
 
 	// actually edit the recent files; start by getting recent files
-	std::vector<QString> &recent_files = m_prefs.getRecentDeviceFiles(machine.name(), device_type);
+	std::vector<QString> &recentFiles = m_prefs.getRecentDeviceFiles(machine.name(), device_type);
 
 	// ...and clearing out places where that entry already exists
 	std::vector<QString>::iterator iter;
-	while ((iter = std::find(recent_files.begin(), recent_files.end(), path)) != recent_files.end())
-		recent_files.erase(iter);
+	while ((iter = std::find(recentFiles.begin(), recentFiles.end(), path)) != recentFiles.end())
+		recentFiles.erase(iter);
 
 	// ...insert the new value
-	recent_files.insert(recent_files.begin(), path);
+	recentFiles.insert(recentFiles.begin(), path);
 
 	// and cull the list
 	const size_t MAXIMUM_RECENT_FILES = 10;
-	if (recent_files.size() > MAXIMUM_RECENT_FILES)
-		recent_files.erase(recent_files.begin() + MAXIMUM_RECENT_FILES, recent_files.end());
+	if (recentFiles.size() > MAXIMUM_RECENT_FILES)
+		recentFiles.erase(recentFiles.begin() + MAXIMUM_RECENT_FILES, recentFiles.end());
 }
 
 
