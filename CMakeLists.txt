@@ -254,7 +254,7 @@ add_library(BletchMAME_core
 	src/dialogs/switches.h
 	${TS_FILES}
 )
-target_include_directories(BletchMAME_core PRIVATE src lib ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(BletchMAME_core PRIVATE src lib ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${ZLIB_LIBRARIES})
 
 
@@ -263,7 +263,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Q
 #############################################################################
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc src/winresources.rc)
-target_include_directories(BletchMAME PRIVATE src lib ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(BletchMAME PRIVATE src lib ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
