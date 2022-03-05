@@ -962,9 +962,15 @@ end
 
 -- SET_MOUSE_ENABLED command
 function command_set_mouse_enabled(args)
+	local old_mouse_enabled_by_ui = mouse_enabled_by_ui
 	mouse_enabled_by_ui = toboolean(args[2])
 	update_mouse_enabled()
 	print("@OK ### Mouse enabled set to " .. tostring(toboolean(args[2])))
+
+	-- show a popup if we have the silly mouse enabled problem
+	if not old_mouse_enabled_by_ui and mouse_enabled_by_ui and has_mouse_enabled_problem then
+		machine():popmessage("This version of MAME does not support hot changes to mouse capture; the mouse may not be usable")
+	end
 end
 
 -- SHOW_PROFILER command

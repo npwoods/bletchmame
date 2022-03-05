@@ -193,7 +193,7 @@ void Preferences::Test::defaults()
 	Preferences prefs(QDir(tempDir.path()));
 
 	// validate defaults
-	QVERIFY(prefs.getMenuBarShown()										== true);
+	QVERIFY(prefs.getWindowBarsShown()									== true);
 	QVERIFY(prefs.getWindowState()										== WindowState::Normal);
 	QVERIFY(prefs.getSelectedTab()										== list_view_type::MACHINE);
 	QVERIFY(prefs.getAuditingState()									== AuditingState::Default);

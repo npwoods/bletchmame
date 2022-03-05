@@ -477,26 +477,20 @@ private:
 };
 
 
-// ======================> MenuBarAspect
+// ======================> MouseCaptureAspect
 
-class MainWindow::MenuBarAspect : public Aspect
+class MainWindow::MouseCaptureAspect : public Aspect
 {
 public:
-	MenuBarAspect(MainWindow &host)
+	MouseCaptureAspect(MainWindow &host)
 		: m_host(host)
 	{
-		QMenuBar &menuBar = *m_host.m_ui->menubar;
-		m_host.m_menu_bar_shown.subscribe([&menuBar](bool shown) { menuBar.setVisible(shown); });
-		m_host.m_menu_bar_shown = true;
 	}
 
 	virtual void start()
 	{
-		// update the menu bar from the prefs
-		m_host.m_menu_bar_shown = m_host.m_prefs.getMenuBarShown();
-
 		// mouse capturing is a bit more involved
-		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && !m_host.m_menu_bar_shown);
+		m_mouseCaptured = observable::observe(m_host.m_state->has_input_using_mouse() && m_host.m_captureMouseIfAppropriate);
 		m_mouseCaptured.subscribe([this]()
 		{
 			m_host.issue({ "SET_MOUSE_ENABLED", m_mouseCaptured ? "true" : "false" });
@@ -506,8 +500,6 @@ public:
 
 	virtual void stop()
 	{
-		m_host.m_prefs.setMenuBarShown(m_host.m_menu_bar_shown.get());
-		m_host.m_menu_bar_shown = true;
 	}
 
 private:
@@ -833,7 +825,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	// set up other miscellaneous aspects
 	m_aspects.push_back(std::make_unique<StatusBarAspect>(*this));
-	m_aspects.push_back(std::make_unique<MenuBarAspect>(*this));
+	m_aspects.push_back(std::make_unique<MouseCaptureAspect>(*this));
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
 	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 	m_aspects.push_back(std::make_unique<EmulationPanelAttributesAspect>(*this));
@@ -852,6 +844,11 @@ MainWindow::MainWindow(QWidget *parent)
 		m_auditCursor.setListItemModel(newModel);
 		updateAuditTimer();
 	});
+	connect(&m_prefs, &Preferences::windowBarsShownChanged, this, [this](bool windowBarsShown)
+	{
+		updateWindowBarsShown();
+	});
+	updateWindowBarsShown();
 	connect(&m_prefs, &Preferences::auditingStateChanged, this, [this]()
 	{
 		// audit statuses may have changed
@@ -2059,9 +2056,9 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-	// in an ode to MAME's normal UI, ScrollLock toggles the menu bar
+	// in an ode to MAME's normal UI, ScrollLock toggles the window bars (menu bar and status bar)
 	if (event->key() == Qt::Key::Key_ScrollLock)
-		m_menu_bar_shown = !m_menu_bar_shown.get();
+		m_prefs.setWindowBarsShown(!m_prefs.getWindowBarsShown());
 
 	// pressing ALT to bring up menus is not friendly when running the emulation
 	if (m_state.has_value() && (event->modifiers() & Qt::AltModifier))
@@ -2769,6 +2766,23 @@ void MainWindow::changeSound(bool sound_enabled)
 
 
 //-------------------------------------------------
+//  updateWindowBarsShown
+//-------------------------------------------------
+
+void MainWindow::updateWindowBarsShown()
+{
+	bool shown = m_prefs.getWindowBarsShown();
+
+	// update the window bars' visibility
+	m_ui->menubar->setVisible(shown);
+	m_ui->statusBar->setVisible(shown);
+
+	// mouse capture is another thing
+	m_captureMouseIfAppropriate = !shown;
+}
+
+
+//-------------------------------------------------
 //  updateStatusBar
 //-------------------------------------------------
 
@@ -2831,10 +2845,6 @@ QString MainWindow::runningStateText(const status::state &state)
 		if (!iter->m_display.isEmpty())
 			statusText.push_back(iter->m_display);
 	}
-
-	// do we have the mouse capture problem?
-	if (state.has_input_using_mouse().get() && state.has_mouse_enabled_problem().get())
-		statusText.push_back("This version of MAME does not support hot changes to mouse capture; the mouse may not be usable");
 
 	// and return it specify it
 	return statusText.join(' ');

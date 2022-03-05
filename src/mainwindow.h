@@ -137,7 +137,7 @@ private:
 	template<typename TStartAction, typename TStopAction> class ActionAspect;
 	template<typename TObj, typename TGetValueType, typename TSetValueType, typename TSubscribable, typename TGetValue> class PropertySyncAspect;
 	class StatusBarAspect;
-	class MenuBarAspect;
+	class MouseCaptureAspect;
 	class ToggleMovieTextAspect;
 	class QuickLoadSaveAspect;
 	class EmulationPanelAttributesAspect;
@@ -182,7 +182,7 @@ private:
 #endif // USE_PROFILER
 
 	// other
-	observable::value<bool>				m_menu_bar_shown;
+	observable::value<bool>				m_captureMouseIfAppropriate;
 	bool								m_pinging;
 	const Pauser *						m_current_pauser;
 	LiveInstanceTracker<LoadingDialog>	m_currentLoadingDialog;
@@ -252,6 +252,7 @@ private:
 	static void winSetFocus(WId wid);
 	QString widgetDesc(const QWidget *widget) const;
 	QString widgetDesc(WId wid) const;
+	void updateWindowBarsShown();
 	void updateStatusBar();
 	static QString runningStateText(const status::state &state);
 	virtual void auditIfAppropriate(const info::machine &machine) override;
