@@ -301,7 +301,7 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 void Preferences::setGlobalInfo(Preferences::GlobalUiInfo &&globalInfo)
 {
-	setMenuBarShown(globalInfo.m_menuBarShown);
+	setWindowBarsShown(globalInfo.m_windowBarsShown);
 	setAuditingState(globalInfo.m_auditingState);
 }
 
@@ -648,6 +648,19 @@ void Preferences::setSelectedTab(list_view_type type)
 }
 
 
+//-------------------------------------------------
+//  setWindowBarsShown
+//-------------------------------------------------
+
+void Preferences::setWindowBarsShown(bool windowBarsShown)
+{
+	if (m_globalUiInfo.m_windowBarsShown != windowBarsShown)
+	{
+		m_globalUiInfo.m_windowBarsShown = windowBarsShown;
+		emit windowBarsShownChanged(m_globalUiInfo.m_windowBarsShown);
+	}
+}
+
 
 //-------------------------------------------------
 //  setAuditingState
@@ -829,9 +842,10 @@ bool Preferences::load(QIODevice &input)
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<bool> menuBarShown = attributes.get<bool>("menu_bar_shown");
-		if (menuBarShown)
-			globalUiInfo.m_menuBarShown = menuBarShown.value();
+		// this is called menu_bar_shown in the XML for purely historical reasons
+		std::optional<bool> windowBarsShown = attributes.get<bool>("menu_bar_shown");
+		if (windowBarsShown)
+			globalUiInfo.m_windowBarsShown = windowBarsShown.value();
 
 		std::optional<WindowState> windowState = attributes.get<WindowState>("window_state", s_windowState_parser);
 		if (windowState)
@@ -1034,7 +1048,7 @@ void Preferences::save(QIODevice &output)
 	writer.writeStartDocument();
 	writer.writeComment("Preferences for BletchMAME");
 	writer.writeStartElement("preferences");
-	writer.writeAttribute("menu_bar_shown", QString::number(getMenuBarShown() ? 1 : 0));
+	writer.writeAttribute("menu_bar_shown", QString::number(getWindowBarsShown() ? 1 : 0));
 	writer.writeAttribute("window_state", s_windowState_parser[getWindowState()]);
 	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
 	writer.writeAttribute("auditing", s_auditingStateParser[getAuditingState()]);
@@ -1319,7 +1333,7 @@ QString Preferences::getPreferencesFileName(bool ensureDirectoryExists) const
 //-------------------------------------------------
 
 Preferences::GlobalUiInfo::GlobalUiInfo()
-	: m_menuBarShown(true)
+	: m_windowBarsShown(true)
 	, m_auditingState(AuditingState::Default)
 {
 }

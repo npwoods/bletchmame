@@ -191,8 +191,8 @@ public:
 	const QString &getSearchBoxText(const char8_t *view_type) const										{ return m_list_view_filter[view_type]; }
 	void setSearchBoxText(const char8_t *view_type, QString &&search_box_text)							{ m_list_view_filter[view_type] = std::move(search_box_text); }
 
-	bool getMenuBarShown() const																		{ return m_globalUiInfo.m_menuBarShown; }
-	void setMenuBarShown(bool menu_bar_shown)															{ m_globalUiInfo.m_menuBarShown = menu_bar_shown; }
+	bool getWindowBarsShown() const																		{ return m_globalUiInfo.m_windowBarsShown; }
+	void setWindowBarsShown(bool windowBarsShown);
 
 	AuditingState getAuditingState() const																{ return m_globalUiInfo.m_auditingState; }
 	void setAuditingState(AuditingState auditingState);
@@ -226,6 +226,7 @@ signals:
 	// general status
 	void selectedTabChanged(list_view_type newSelectedTab);
 	void auditingStateChanged();
+	void windowBarsShownChanged(bool windowBarsShown);
 
 	// folders
 	void folderPrefsChanged();
@@ -253,7 +254,7 @@ private:
 		GlobalUiInfo(GlobalUiInfo &&) = default;
 
 		// members
-		bool																					m_menuBarShown;
+		bool																					m_windowBarsShown;
 		AuditingState																			m_auditingState;
 	};
 
