@@ -1075,6 +1075,14 @@ local commands =
 	["dump_status"]					= command_dump_status
 }
 
+-- wraps calls in pcall
+function protected_call(callback, callback_name)
+	local status, err = pcall(callback)
+	if (not status) then
+		print("@ERROR ## Lua runtime error on " .. callback_name .. " " .. tostring(err))
+	end
+end
+
 -- invokes a command line
 function invoke_command_line(line)
 	-- invoke the appropriate command
@@ -1093,10 +1101,7 @@ function invoke_command_line(line)
 		end
 	end)
 
-	local status, err = pcall(invocation)
-	if (not status) then
-		print("@ERROR ## Lua runtime error " .. tostring(err))
-	end
+	protected_call(invocation, "invocation")
 end
 
 function startplugin()
@@ -1108,7 +1113,7 @@ function startplugin()
 	-- we want to hold off until the prestart event; register a handler for it
 	local initial_start = false
 	local session_active = true
-	emu.register_prestart(function()
+	function callback_prestart()
 		-- prestart has been invoked; set up MAME for our control
 		machine_uiinput().presses_enabled = false
 		if machine_debugger() then
@@ -1134,16 +1139,22 @@ function startplugin()
 		-- since we had a reset, we might have images that were just loaded, therefore
 		-- the status returned by the next PING should not be light
 		 next_ping_should_be_light = false
+	end
+	emu.register_prestart(function() 
+		protected_call(callback_prestart, "callback_prestart")
 	end)
 
-	emu.register_stop(function()
+	function callback_stop()
 		-- the emulation session has stopped; tidy things up
 		stop_polling_input_seq()
 		session_active = false
+	end
+	emu.register_stop(function()
+		protected_call(callback_stop, "callback_stop")
 	end)
 
 	-- register another handler to handle commands after prestart
-	emu.register_periodic(function()
+	function callback_periodic()
 		-- it is essential that we only perform these activities when there
 		-- is an active session!
 		if session_active then
@@ -1169,6 +1180,9 @@ function startplugin()
 				conth:start(scr)
 			end
 		end
+	end
+	emu.register_periodic(function()
+		protected_call(callback_periodic, "callback_periodic")
 	end)
 
 	-- we do not want to use MAME's internal file manager - register a function
@@ -1180,7 +1194,7 @@ function startplugin()
 	-- with the mouse and vice versa.  This is because normal MAME usage from the command line
 	-- will turn on input classes with options like '-[no]mouse'.  We want to automatically turn
 	-- these on, but we need to apply a treatment to defaults that assume normal MAME
-	emu.register_before_load_settings(function()
+	function callback_before_load_settings()
 		function fix_default_input_seq(field, seq_type)
 			local old_default_seq = field:default_input_seq(seq_type)
 			local cleaned_default_seq = machine_input():seq_clean(old_default_seq)
@@ -1207,6 +1221,9 @@ function startplugin()
 
 		-- now that we've fixed the inputs that may have had mice, we're free to report the MAME 0.227 mouse problem
 		has_mouse_enabled_problem = false
+	end
+	emu.register_before_load_settings(function()
+		protected_call(callback_before_load_settings, "callback_before_load_settings")
 	end)
 
 	-- activate the cheat plugin, if present (and not started separately)
@@ -1223,11 +1240,7 @@ function startplugin()
 end
 
 function exports.startplugin()
-	-- run startplugin through pcall; we want to catch errors
-	local status, err = pcall(startplugin)
-	if (not status) then
-		print("@ERROR ## Lua runtime error on plugin startup " .. tostring(err))
-	end
+	protected_call(startplugin, "startplugin")
 end
 
 return exports
