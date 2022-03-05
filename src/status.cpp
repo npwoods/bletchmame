@@ -152,6 +152,23 @@ status::update status::update::read(QIODevice &input_stream)
 		image_format &format = util::last(*image.m_formats);
 		format.m_extensions.push_back(std::move(content));
 	});
+	xml.onElementBegin({ "status", "cassettes" }, [&](const XmlParser::Attributes &)
+	{
+		result.m_cassettes.emplace();
+	});
+	xml.onElementBegin({ "status", "cassettes", "cassette" }, [&](const XmlParser::Attributes &attributes)
+	{
+		cassette &cassette = result.m_cassettes.value().emplace_back();
+		cassette.m_tag						= attributes.get<QString>("tag").value_or("");
+		cassette.m_is_stopped				= attributes.get<bool>("is_readable").value_or(false);
+		cassette.m_is_playing				= attributes.get<bool>("is_playing").value_or(false);
+		cassette.m_is_recording				= attributes.get<bool>("is_recording").value_or(false);
+		cassette.m_motor_state				= attributes.get<bool>("motor_state").value_or(false);
+		cassette.m_speaker_state			= attributes.get<bool>("speaker_state").value_or(false);
+		cassette.m_position					= attributes.get<float>("position").value_or(0.0);
+		cassette.m_length					= attributes.get<float>("length").value_or(0.0);
+		normalize_tag(cassette.m_tag);
+	});
 	xml.onElementBegin({ "status", "slots" }, [&](const XmlParser::Attributes &)
 	{
 		result.m_slots.emplace();
@@ -341,6 +358,7 @@ void status::state::update(status::update &&that)
 	take(m_is_recording,				that.m_is_recording);
 	take(m_sound_attenuation,			that.m_sound_attenuation);
 	take(m_images,						that.m_images);
+	take(m_cassettes,					that.m_cassettes);
 	take(m_slots,						that.m_slots);
 	take(m_inputs,						that.m_inputs);
 	take(m_input_classes,				that.m_input_classes);

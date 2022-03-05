@@ -122,6 +122,8 @@ add_library(BletchMAME_core
 	src/audittask.h
 	src/chd.cpp
 	src/chd.h
+	src/devstatusdisplay.cpp
+	src/devstatusdisplay.h
 	src/filedlgs.cpp
 	src/filedlgs.h
 	src/focuswatchinghook.cpp
@@ -281,6 +283,7 @@ add_executable(BletchMAME_tests
 	src/tests/auditqueue_test.cpp
 	src/tests/audittask_test.cpp
 	src/tests/chd_test.cpp
+	src/tests/devstatusdisplay_test.cpp
 	src/tests/hash_test.cpp
 	src/tests/importmameinijob_test.cpp
 	src/tests/info_builder_test.cpp

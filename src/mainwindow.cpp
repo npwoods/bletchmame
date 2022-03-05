@@ -452,6 +452,8 @@ public:
 
 	virtual void start()
 	{
+		m_host.m_devicesStatusDisplay.subscribe(m_host.m_state.value());
+
 		m_host.m_state->phase().subscribe(						[this]() { update(); });
 		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
 		m_host.m_state->effective_frameskip().subscribe(		[this]() { update(); });
@@ -825,6 +827,16 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
 	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 	m_aspects.push_back(std::make_unique<EmulationPanelAttributesAspect>(*this));
+
+	// connect the signals on the devices status display
+	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::addWidget, this, [this](QWidget &widget)
+	{
+		m_ui->statusBar->addPermanentWidget(&widget);
+	});
+	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::removeWidget, this, [this](QWidget &widget)
+	{
+		m_ui->statusBar->removeWidget(&widget);
+	});
 
 	// prepare the main tab
 	m_info_db.addOnChangedHandler([this]()
@@ -2826,13 +2838,6 @@ QString MainWindow::runningStateText(const status::state &state)
 	else
 	{
 		statusText.push_back(state.startup_text().get());
-	}
-
-	// next entries come from device displays
-	for (auto iter = state.images().get().cbegin(); iter < state.images().get().cend(); iter++)
-	{
-		if (!iter->m_display.isEmpty())
-			statusText.push_back(iter->m_display);
 	}
 
 	// and return it specify it
