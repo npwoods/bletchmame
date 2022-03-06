@@ -244,6 +244,10 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 		updateInfoPanel(machineName);
 	});
 
+	// status labels
+	for (QLabel &label : m_statusWidgets)
+		label.setFixedWidth(120);
+
 	// update the tab contents
 	updateTabContents();
 }
@@ -871,11 +875,9 @@ void MainPanel::updateStatusFromSelection()
 	}
 
 	// actually return the status
-	std::array<QString, STATUS_ENTRIES> status;
-	status[0] = description.isEmpty() ? "No selection" : std::move(description);
-	status[1] = std::move(statusString);
-	status[2] = totalString.arg(tableView->model()->rowCount());
-	setStatus(status);
+	setStatusMessage(description.isEmpty() ? "No selection" : std::move(description));
+	m_statusWidgets[0].setText(statusString);
+	m_statusWidgets[1].setText(totalString.arg(tableView->model()->rowCount()));
 }
 
 
@@ -1178,16 +1180,31 @@ QString MainPanel::auditThisActionText(QString &&text)
 
 
 //-------------------------------------------------
-//  setStatus
+//  setStatusMessage
 //-------------------------------------------------
 
-void MainPanel::setStatus(const std::array<QString, 3> &status)
+void MainPanel::setStatusMessage(const QString &statusMessage)
 {
-	if (status != m_status)
+	if (statusMessage != m_statusMessage)
 	{
-		m_status = status;
-		emit statusChanged(m_status);
+		m_statusMessage = statusMessage;
+		emit statusMessageChanged(m_statusMessage);
 	}
+}
+
+
+//-------------------------------------------------
+//  setVisible
+//-------------------------------------------------
+
+void MainPanel::setVisible(bool visible)
+{
+	// call the inherited method
+	QWidget::setVisible(visible);
+
+	// in addition, we want to set the visibility on the status bar widgets
+	for (QWidget &widget : m_statusWidgets)
+		widget.setVisible(visible);
 }
 
 

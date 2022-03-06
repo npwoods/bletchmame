@@ -156,7 +156,6 @@ private:
 	TaskDispatcher						m_taskDispatcher;
 	RunMachineTask::ptr					m_currentRunMachineTask;
 	std::vector<Aspect::ptr>			m_aspects;
-	QLabel *							m_statusLabels[2];
 
 	// information retrieved by -version
 	bool								m_promptIfMameNotFound;
