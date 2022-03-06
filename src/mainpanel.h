@@ -17,8 +17,9 @@
 #include "audittask.h"
 
 // Qt headers
-#include <QTreeView>
+#include <QLabel>
 #include <QTableView>
+#include <QTreeView>
 
 
 QT_BEGIN_NAMESPACE
@@ -60,13 +61,12 @@ class MainPanel : public QWidget
 	Q_OBJECT
 
 public:
-	static const int STATUS_ENTRIES = 3;
-
 	MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost &host, QWidget *parent = nullptr);
 	~MainPanel();
 
 	// accessors
-	const auto &status() const { return m_status; }
+	const QString &statusMessage() const { return m_statusMessage; }
+	auto &statusWidgets() { return m_statusWidgets; }
 
 	// methods
 	void updateTabContents();
@@ -74,6 +74,7 @@ public:
 	std::optional<info::machine> currentlySelectedMachine() const;
 	const software_list::software *currentlySelectedSoftware() const;
 	std::shared_ptr<profiles::profile> currentlySelectedProfile();
+	virtual void setVisible(bool visible) override;
 
 	// auditing
 	void setAuditStatuses(const std::vector<AuditResult> &results);
@@ -85,7 +86,7 @@ public:
 	static QString auditThisActionText(QString &&text);
 
 private slots:
-	void setStatus(const std::array<QString, STATUS_ENTRIES> &status);
+	void setStatusMessage(const QString &statusMessage);
 
 	void on_machinesFolderTreeView_customContextMenuRequested(const QPoint &pos);
 	void on_machinesTableView_activated(const QModelIndex &index);
@@ -98,7 +99,7 @@ private slots:
 	void on_machinesSplitter_splitterMoved(int pos, int index);
 
 signals:
-	void statusChanged(const std::array<QString, STATUS_ENTRIES> &newStatus);
+	void statusMessageChanged(const QString &statusMessage);
 
 private:
 	class SnapshotViewEventFilter;
@@ -116,7 +117,8 @@ private:
 	IconLoader							m_iconLoader;
 	QPixmap								m_currentSnapshot;
 	std::vector<QString>				m_expandedTreeItems;
-	std::array<QString, STATUS_ENTRIES>	m_status;
+	QString								m_statusMessage;
+	std::array<QLabel, 2>				m_statusWidgets;
 
 	// methods
 	void run(const info::machine &machine, const software_list::software *software = nullptr);

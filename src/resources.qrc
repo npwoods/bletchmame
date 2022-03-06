@@ -2,6 +2,9 @@
 <RCC version="1.0">
     <qresource>
         <file>resources/cpu.ico</file>
+        <file>resources/dev_cassette.png</file>
+        <file>resources/dev_cassette_play.png</file>
+        <file>resources/dev_cassette_record.png</file>
         <file>resources/folderstoggle.png</file>
         <file>resources/infotoggle.png</file>
         <file>resources/folder.ico</file>

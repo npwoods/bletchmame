@@ -452,6 +452,8 @@ public:
 
 	virtual void start()
 	{
+		m_host.m_devicesStatusDisplay.subscribe(m_host.m_state.value());
+
 		m_host.m_state->phase().subscribe(						[this]() { update(); });
 		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
 		m_host.m_state->effective_frameskip().subscribe(		[this]() { update(); });
@@ -700,16 +702,12 @@ MainWindow::MainWindow(QWidget *parent)
 	m_ui->stackedLayout->addWidget(m_mainPanel);
 	m_ui->stackedLayout->setCurrentWidget(m_mainPanel);
 
-	// set up status labels
-	for (auto i = 0; i < std::size(m_statusLabels); i++)
-	{
-		m_statusLabels[i] = new QLabel(this);
-		m_statusLabels[i]->setFixedWidth(120);
-		m_ui->statusBar->addPermanentWidget(m_statusLabels[i]);
-	}
+	// set up status bar widgets owned by MainPanel
+	for (QWidget &widget : m_mainPanel->statusWidgets())
+		m_ui->statusBar->addPermanentWidget(&widget);
 
 	// listen to status updates from MainPanel
-	connect(m_mainPanel, &MainPanel::statusChanged, this, [this](const auto &newStatus)
+	connect(m_mainPanel, &MainPanel::statusMessageChanged, this, [this](const QString &newStatus)
 	{
 		updateStatusBar();
 	});
@@ -829,6 +827,16 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<ToggleMovieTextAspect>(m_current_recording_movie_filename, *m_ui->actionToggleRecordMovie));
 	m_aspects.push_back(std::make_unique<QuickLoadSaveAspect>(m_currentQuickState, *m_ui->actionQuickLoadState, *m_ui->actionQuickSaveState));
 	m_aspects.push_back(std::make_unique<EmulationPanelAttributesAspect>(*this));
+
+	// connect the signals on the devices status display
+	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::addWidget, this, [this](QWidget &widget)
+	{
+		m_ui->statusBar->addPermanentWidget(&widget);
+	});
+	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::removeWidget, this, [this](QWidget &widget)
+	{
+		m_ui->statusBar->removeWidget(&widget);
+	});
 
 	// prepare the main tab
 	m_info_db.addOnChangedHandler([this]()
@@ -2788,20 +2796,13 @@ void MainWindow::updateWindowBarsShown()
 
 void MainWindow::updateStatusBar()
 {
-	// get the running status if it is present
-	std::array<QString, MainPanel::STATUS_ENTRIES> runningStatus;
-	if (m_state.has_value())
-		runningStatus[0] = runningStateText(m_state.value());
+	// the status message is different depending on whether we're running
+	QString statusMessage = m_state.has_value()
+		? runningStateText(m_state.value())
+		: m_mainPanel->statusMessage();
 
-	// get the status to display
-	const std::array<QString, MainPanel::STATUS_ENTRIES> &newStatus = m_state.has_value()
-		? runningStatus
-		: m_mainPanel->status();
-
-	// and update the status bar and labels
-	m_ui->statusBar->showMessage(newStatus[0]);
-	for (auto i = 0; i < std::min(std::size(m_statusLabels), std::size(newStatus) - 1); i++)
-		m_statusLabels[i]->setText(newStatus[i + 1]);
+	// and show it
+	m_ui->statusBar->showMessage(statusMessage);
 }
 
 
@@ -2837,13 +2838,6 @@ QString MainWindow::runningStateText(const status::state &state)
 	else
 	{
 		statusText.push_back(state.startup_text().get());
-	}
-
-	// next entries come from device displays
-	for (auto iter = state.images().get().cbegin(); iter < state.images().get().cend(); iter++)
-	{
-		if (!iter->m_display.isEmpty())
-			statusText.push_back(iter->m_display);
 	}
 
 	// and return it specify it

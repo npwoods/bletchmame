@@ -184,14 +184,14 @@ else
 	plugins				= function() return manager.plugins end
 end
 
-function get_images()
-	-- return a list of images, avoiding dupes
+function get_collection(collection)
+	-- return a list of [images|cassettes], avoiding dupes
 	--
 	-- Before MAME 0.227, the images collection could be indexed by both instance_name and
 	-- brief_instance_name, but starting with MAME 0.227, it is indexed by tag.  This
 	-- technique of building a table is neutral to these changes
 	local result = {}
-	for _,image in pairs(machine().images) do
+	for _,image in pairs(collection) do
 		result[get_device_tag(image.device)] = image
 	end
 	return result
@@ -202,7 +202,7 @@ function find_image_by_tag(tag)
 		tag = ":" .. tag
 	end
 
-	for _,image in pairs(get_images()) do
+	for _,image in pairs(get_collection(machine().images)) do
 		if get_device_tag(image.device) == tag then
 			return image
 		end
@@ -411,10 +411,27 @@ function emit_status(light, out)
 		emit("\t</cheats>");
 	end
 
+	-- <cassettes>
+	if pcall(function() return machine().cassettes end) then
+		emit("\t<cassettes>")
+		for _,cassette in pairs(get_collection(machine().cassettes)) do
+			emit(string.format("\t\t<cassette tag=\"%s\" is_stopped=\"%s\" is_playing=\"%s\" is_recording=\"%s\" motor_state=\"%s\" speaker_state=\"%s\" position=\"%s\" length=\"%s\"/>",
+				xml_encode(get_device_tag(cassette.device)),
+				string_from_bool(cassette.is_stopped),
+				string_from_bool(cassette.is_playing),
+				string_from_bool(cassette.is_recording),
+				string_from_bool(cassette.motor_state),
+				string_from_bool(cassette.speaker_state),
+				tostring(cassette.position),
+				tostring(cassette.length)))
+		end	
+		emit("\t</cassettes>")
+	end	
+
 	if (not light or machine().paused or is_polling_input_seq()) then
 		-- <images>
 		emit("\t<images>")
-		for _,image in pairs(get_images()) do
+		for _,image in pairs(get_collection(machine().images)) do
 			local filename = get_image_filename(image)
 			if filename == nil then
 				filename = ""
