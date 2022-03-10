@@ -16,6 +16,7 @@
 #include <QWidget>
 
 // standard headers
+#include <tuple>
 #include <unordered_map>
 
 
@@ -58,8 +59,8 @@ private:
 	QPixmap				m_cassetteRecordPixmap;
 
 	// private methods
-	void updateCassettes(const std::vector<status::cassette> &cassettes);
-	DisplayWidget *getDeviceDisplay(const QString &tag, bool show);
+	void updateCassettes(const status::state &state);
+	std::optional<std::tuple<const status::image &, DisplayWidget &>> getDeviceDisplay(const status::state &state, const QString &tag, bool show);
 	static QString formatTime(float t);
 };
 
