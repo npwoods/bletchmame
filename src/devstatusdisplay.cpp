@@ -90,11 +90,9 @@ void DevicesStatusDisplay::updateCassettes(const status::state &state)
 	for (const status::cassette &cassette : state.cassettes().get())
 	{
 		// get the display widget if appropriate
-		auto display = getDeviceDisplay(state, cassette.m_tag, cassette.m_motor_state);
-		if (display.has_value())
+		DisplayWidget *displayWidget = getDeviceDisplay(state, cassette.m_tag, cassette.m_motor_state, m_cassettePixmap);
+		if (displayWidget)
 		{
-			auto [image, displayWidget] = display.value();
-
 			// update the widget contents
 			const QPixmap &pixmap = cassette.m_is_recording
 				? m_cassetteRecordPixmap
@@ -102,11 +100,7 @@ void DevicesStatusDisplay::updateCassettes(const status::state &state)
 			QString text = QString("%1 / %2").arg(
 				formatTime(cassette.m_position),
 				formatTime(cassette.m_length));
-			displayWidget.set(pixmap, text);
-
-			// update the tooltip
-			QString fileName = QDir::fromNativeSeparators(image.m_file_name);
-			displayWidget.setToolTip(QFileInfo(fileName).fileName());
+			displayWidget->set(pixmap, text);
 		}
 	}
 }
@@ -116,7 +110,7 @@ void DevicesStatusDisplay::updateCassettes(const status::state &state)
 //  getDeviceDisplay
 //-------------------------------------------------
 
-std::optional<std::tuple<const status::image &, DevicesStatusDisplay::DisplayWidget &>> DevicesStatusDisplay::getDeviceDisplay(const status::state &state, const QString &tag, bool show)
+DevicesStatusDisplay::DisplayWidget *DevicesStatusDisplay::getDeviceDisplay(const status::state &state, const QString &tag, bool show, const QPixmap &icon1Pixmap)
 {
 	// find the widget in our map
 	auto iter = m_displayWidgets.find(tag);
@@ -131,7 +125,7 @@ std::optional<std::tuple<const status::image &, DevicesStatusDisplay::DisplayWid
 	if (imageHasFile && iter == m_displayWidgets.end())
 	{
 		// we have to create a new widget; add it
-		DisplayWidget::ptr widget = std::make_unique<DisplayWidget>(m_cassettePixmap);
+		DisplayWidget::ptr widget = std::make_unique<DisplayWidget>(icon1Pixmap);
 		iter = m_displayWidgets.emplace(tag, std::move(widget)).first;
 
 		// and signal that we added it
@@ -144,9 +138,18 @@ std::optional<std::tuple<const status::image &, DevicesStatusDisplay::DisplayWid
 		m_displayWidgets.erase(iter);
 	}
 	
-	return imageHasFile
-		? std::make_tuple(std::cref(*image), std::ref(*iter->second))
-		: std::optional<std::tuple<const status::image &, DisplayWidget &>>();
+	// identify the widget
+	DisplayWidget *widget = imageHasFile ? &*iter->second : nullptr;
+		
+	// update the tooltip, if appropriate
+	if (imageHasFile && image && widget)
+	{
+		// update the tooltip
+		QString fileName = QDir::fromNativeSeparators(image->m_file_name);
+		widget->setToolTip(QFileInfo(fileName).fileName());
+	}
+
+	return widget;
 }
 
 

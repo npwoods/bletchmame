@@ -60,7 +60,7 @@ private:
 
 	// private methods
 	void updateCassettes(const status::state &state);
-	std::optional<std::tuple<const status::image &, DisplayWidget &>> getDeviceDisplay(const status::state &state, const QString &tag, bool show);
+	DevicesStatusDisplay::DisplayWidget *getDeviceDisplay(const status::state &state, const QString &tag, bool show, const QPixmap &icon1Pixmap);
 	static QString formatTime(float t);
 };
 
