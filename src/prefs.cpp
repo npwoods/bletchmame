@@ -77,6 +77,34 @@ static const util::enum_parser_bidirectional<AuditStatus> s_audit_status_parser 
 };
 
 
+namespace
+{
+	class GlobalPathTypeMameSettingParser
+	{
+	public:
+		bool operator()(std::u8string_view text, Preferences::global_path_type &value) const
+		{
+			auto iter = std::find_if(Preferences::s_globalPathInfo.begin(), Preferences::s_globalPathInfo.end(), [&text](const Preferences::GlobalPathInfo &x)
+			{
+				return x.m_emuSettingName && text == std::u8string_view((char8_t *)x.m_emuSettingName);
+			});
+			if (iter != Preferences::s_globalPathInfo.end())
+				value = (Preferences::global_path_type) (iter - Preferences::s_globalPathInfo.begin());
+			return iter != Preferences::s_globalPathInfo.end();
+		}
+	};
+}
+static const GlobalPathTypeMameSettingParser s_globalPathTypeMameSettingParser;
+
+
+static const util::enum_parser_bidirectional<MameIniImportActionPreference> g_mameIniImportActionPreferenceParser =
+{
+	{ "ignore", MameIniImportActionPreference::Ignore, },
+	{ "supplement", MameIniImportActionPreference::Supplement, },
+	{ "replace", MameIniImportActionPreference::Replace }
+};
+
+
 static const util::enum_parser_bidirectional<Preferences::AuditingState> s_auditingStateParser =
 {
 	{ "disabled", Preferences::AuditingState::Disabled, },
@@ -781,6 +809,32 @@ void Preferences::bulkDropSoftwareAuditStatuses()
 
 
 //-------------------------------------------------
+//  getMameIniImportActionPreference
+//-------------------------------------------------
+
+std::optional<MameIniImportActionPreference> Preferences::getMameIniImportActionPreference(global_path_type type) const
+{
+	auto iter = m_importActionPreferences.find(type);
+	return iter != m_importActionPreferences.end()
+		? iter->second
+		: std::optional<MameIniImportActionPreference>();
+}
+
+
+//-------------------------------------------------
+//  setMameIniImportActionPreference
+//-------------------------------------------------
+
+void Preferences::setMameIniImportActionPreference(global_path_type type, const std::optional<MameIniImportActionPreference> &importActionPreference)
+{
+	if (importActionPreference.has_value())
+		m_importActionPreferences[type] = importActionPreference.value();
+	else
+		m_importActionPreferences.erase(type);
+}
+
+
+//-------------------------------------------------
 //  garbageCollectMachineInfo
 //-------------------------------------------------
 
@@ -1010,6 +1064,13 @@ bool Preferences::load(QIODevice &input)
 			setSoftwareAuditStatus(list.value(), name.value(), status);
 		}
 	});
+	xml.onElementBegin({ "preferences", "mameiniimport" }, [&](const XmlParser::Attributes &attributes)
+	{
+		std::optional<global_path_type> setting = attributes.get<global_path_type>("setting", s_globalPathTypeMameSettingParser);
+		std::optional<MameIniImportActionPreference> preference = attributes.get<MameIniImportActionPreference>("preference", g_mameIniImportActionPreferenceParser);
+		if (setting.has_value())
+			setMameIniImportActionPreference(setting.value(), preference);
+	});
 	bool success = xml.parse(input);
 
 	// if we're successful, update global state
@@ -1075,6 +1136,18 @@ void Preferences::save(QIODevice &output)
 	}
 	if (!m_machine_splitter_sizes.isEmpty())
 		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
+
+	// import preference
+	for (const auto &[pathType, importPref] : m_importActionPreferences)
+	{
+		const char *settingString = Preferences::s_globalPathInfo[(size_t)pathType].m_emuSettingName;
+		const char *preferenceString = g_mameIniImportActionPreferenceParser[importPref];
+
+		writer.writeStartElement("mameiniimport");
+		writer.writeAttribute("setting", settingString);
+		writer.writeAttribute("preference", preferenceString);
+		writer.writeEndElement();
+	}
 
 	// folder prefs
 	if (!m_machine_folder_tree_selection.isEmpty() && m_folderPrefs.find(m_machine_folder_tree_selection) == m_folderPrefs.end())

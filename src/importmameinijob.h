@@ -57,6 +57,7 @@ public:
 		virtual bool canReplace() const = 0;
 		virtual void doSupplement() = 0;
 		virtual void doReplace() = 0;
+		virtual void persistPreference(Preferences &prefs) = 0;
 
 	private:
 		ImportAction m_importAction;
