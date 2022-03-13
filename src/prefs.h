@@ -37,6 +37,16 @@ enum class AuditStatus
 };
 
 
+// ======================> MameIniImportActionPreference
+
+enum class MameIniImportActionPreference
+{
+	Ignore,
+	Supplement,
+	Replace
+};
+
+
 struct ColumnPrefs
 {
 	int								m_width;
@@ -211,6 +221,9 @@ public:
 	void setSoftwareAuditStatus(const QString &softwareList, const QString &software, AuditStatus status);
 	void bulkDropSoftwareAuditStatuses();
 
+	std::optional<MameIniImportActionPreference> getMameIniImportActionPreference(global_path_type type) const;
+	void setMameIniImportActionPreference(global_path_type type, const std::optional<MameIniImportActionPreference> &importActionPreference);
+
 	QString getMameXmlDatabasePath(bool ensure_directory_exists = true) const;
 	QString applySubstitutions(const QString &path) const;
 	static QString internalApplySubstitutions(const QString &src, std::function<QString(const QString &)> func);
@@ -303,6 +316,7 @@ private:
 	std::map<QString, std::set<QString>>														m_customFolders;
 	std::unordered_map<QString, QString>														m_list_view_selection;
 	mutable std::unordered_map<QString, QString>												m_list_view_filter;
+	std::unordered_map<global_path_type, MameIniImportActionPreference>							m_importActionPreferences;
 
 	// private methods
 	void save(QIODevice &output);

@@ -25,7 +25,7 @@
 class ImportMameIniJob::GlobalPathEntry : public ImportMameIniJob::Entry
 {
 public:
-	GlobalPathEntry(Preferences &prefs, Preferences::global_path_type pathType, QString &&path, bool canReplace, ImportAction importAction);
+	GlobalPathEntry(Preferences &prefs, Preferences::global_path_type pathType, QString &&path, bool canReplace, bool pathAlreadyPresent);
 
 	// virtuals
 	virtual QString labelDisplayText() const override;
@@ -35,6 +35,7 @@ public:
 	virtual bool canReplace() const override;
 	virtual void doSupplement() override;
 	virtual void doReplace() override;
+	virtual void persistPreference(Preferences &prefs) override;
 
 private:
 	Preferences &					m_prefs;
@@ -114,23 +115,44 @@ bool ImportMameIniJob::loadMameIni(const QString &fileName)
 		// now go back and process the file infos
 		for (const QFileInfo &importPathFileInfo : importPathFileInfos)
 		{
-			// determine the import action
-			ImportAction importAction;
-			if (isPathPresent(pathType, importPathFileInfo))
-				importAction = ImportAction::AlreadyPresent;
-			else
-				importAction = supportsMultiplePaths(pathType) ? ImportAction::Supplement : ImportAction::Replace;
-
 			// we can only replace if there is a single path
 			bool canReplace = importPathFileInfos.size() <= 1;
 
-			// and add the entry
+			// is this path already present?
+			bool pathAlreadyPresent = isPathPresent(pathType, importPathFileInfo);
+
+			// create the entry
 			Entry::ptr newEntry = std::make_unique<GlobalPathEntry>(
 				m_prefs,
 				pathType,
 				importPathFileInfo.absoluteFilePath(),
 				canReplace,
-				importAction);
+				pathAlreadyPresent);
+
+			// check the preference
+			if (!pathAlreadyPresent)
+			{
+				std::optional<MameIniImportActionPreference> importActionPref = m_prefs.getMameIniImportActionPreference(pathType);
+				if (importActionPref.has_value())
+				{
+					switch (importActionPref.value())
+					{
+					case MameIniImportActionPreference::Ignore:
+						newEntry->setImportAction(ImportAction::Ignore);
+						break;
+					case MameIniImportActionPreference::Supplement:
+						if (newEntry->canSupplement())
+							newEntry->setImportAction(ImportAction::Supplement);
+						break;
+					case MameIniImportActionPreference::Replace:
+						if (newEntry->canReplace())
+							newEntry->setImportAction(ImportAction::Replace);
+						break;
+					}
+				}
+			}
+
+			// and add the entry
 			m_entries.push_back(std::move(newEntry));
 		}
 	}
@@ -160,6 +182,8 @@ void ImportMameIniJob::apply()
 			// do nothing
 			break;
 		}
+
+		entry->persistPreference(m_prefs);
 	}
 }
 
@@ -312,13 +336,19 @@ ImportMameIniJob::Entry::Entry(ImportAction importAction)
 //  GlobalPathEntry ctor
 //-------------------------------------------------
 
-ImportMameIniJob::GlobalPathEntry::GlobalPathEntry(Preferences &prefs, Preferences::global_path_type pathType, QString &&path, bool canReplace, ImportAction importAction)
-	: Entry(importAction)
+ImportMameIniJob::GlobalPathEntry::GlobalPathEntry(Preferences &prefs, Preferences::global_path_type pathType, QString &&path, bool canReplace, bool pathAlreadyPresent)
+	: Entry(ImportAction::Ignore)
 	, m_prefs(prefs)
 	, m_pathType(pathType)
 	, m_path(std::move(path))
 	, m_canReplace(canReplace)
 {
+	if (pathAlreadyPresent)
+		setImportAction(ImportAction::AlreadyPresent);
+	else if (canSupplement())
+		setImportAction(ImportAction::Supplement);
+	else
+		setImportAction(ImportAction::Replace);
 }
 
 
@@ -422,4 +452,32 @@ void ImportMameIniJob::GlobalPathEntry::doSupplement()
 void ImportMameIniJob::GlobalPathEntry::doReplace()
 {
 	m_prefs.setGlobalPath(m_pathType, m_path);
+}
+
+
+//-------------------------------------------------
+//  GlobalPathEntry::doReplace
+//-------------------------------------------------
+
+void ImportMameIniJob::GlobalPathEntry::persistPreference(Preferences &prefs)
+{
+	std::optional<MameIniImportActionPreference> importPref;
+	switch (importAction())
+	{
+	case ImportAction::Ignore:
+		importPref = MameIniImportActionPreference::Ignore;
+		break;
+	case ImportAction::Replace:
+		importPref = MameIniImportActionPreference::Replace;
+		break;
+	case ImportAction::Supplement:
+		importPref = MameIniImportActionPreference::Supplement;
+		break;
+	default:
+		// do nothing
+		break;
+	}
+
+	if (importPref.has_value())
+		m_prefs.setMameIniImportActionPreference(m_pathType, importPref);
 }
