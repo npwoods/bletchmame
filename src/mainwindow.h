@@ -185,7 +185,7 @@ private:
 	// other
 	observable::value<bool>				m_captureMouseIfAppropriate;
 	bool								m_pinging;
-	DevicesStatusDisplay				m_devicesStatusDisplay;
+	DevicesStatusDisplay *				m_devicesStatusDisplay;
 	const Pauser *						m_current_pauser;
 	LiveInstanceTracker<LoadingDialog>	m_currentLoadingDialog;
 	LiveInstanceTracker<AuditDialog>	m_currentAuditDialog;

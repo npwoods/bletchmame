@@ -378,7 +378,7 @@ public:
 
 	virtual void start()
 	{
-		m_host.m_devicesStatusDisplay.subscribe(m_host.m_state.value());
+		m_host.m_devicesStatusDisplay->subscribe(m_host.m_state.value());
 
 		m_host.m_state->phase().subscribe(						[this]() { update(); });
 		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
@@ -755,13 +755,10 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<EmulationPanelAttributesAspect>(*this));
 
 	// connect the signals on the devices status display
-	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::addWidget, this, [this](QWidget &widget)
+	m_devicesStatusDisplay = new DevicesStatusDisplay(*this, this);
+	connect(m_devicesStatusDisplay, &DevicesStatusDisplay::addWidget, this, [this](QWidget &widget)
 	{
 		m_ui->statusBar->addPermanentWidget(&widget);
-	});
-	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::removeWidget, this, [this](QWidget &widget)
-	{
-		m_ui->statusBar->removeWidget(&widget);
 	});
 
 	// prepare the main tab
