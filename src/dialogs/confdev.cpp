@@ -100,10 +100,10 @@ ConfigurableDevicesDialog::ConfigurableDevicesDialog(QWidget &parent, IConfigura
 
     // find a software list collection, if possible
     software_list_collection software_col;
-    software_col.load(m_host.getPreferences(), m_host.getMachine());
+    software_col.load(m_host.imageMenuHost().getPreferences(), m_host.imageMenuHost().getRunningMachine());
 
     // set up tree view
-    ConfigurableDevicesModel &model = *new ConfigurableDevicesModel(this, m_host.getMachine(), std::move(software_col));
+    ConfigurableDevicesModel &model = *new ConfigurableDevicesModel(this, m_host.imageMenuHost().getRunningMachine(), std::move(software_col));
     m_ui->treeView->setModel(&model);
     m_ui->treeView->setItemDelegateForColumn(1, new ConfigurableDevicesItemDelegate(*this));
 
@@ -111,8 +111,9 @@ ConfigurableDevicesDialog::ConfigurableDevicesDialog(QWidget &parent, IConfigura
     connect(&model, &QAbstractItemModel::modelReset, [this]() { onModelReset(); });
 
     // host interactions
-    m_slotsEventSubscription = m_host.getSlots().subscribe_and_call([this] { updateSlots(); });
-    m_imagesEventSubscription = m_host.getImages().subscribe_and_call([this] { updateImages(); });
+	status::state &state = m_host.imageMenuHost().getRunningState();
+    m_slotsEventSubscription = state.devslots().subscribe_and_call([this] { updateSlots(); });
+    m_imagesEventSubscription = state.images().subscribe_and_call([this] { updateImages(); });
 }
 
 
@@ -236,7 +237,7 @@ void ConfigurableDevicesDialog::accept()
 void ConfigurableDevicesDialog::updateSlots()
 {
     // get the slots status
-    const std::vector<status::slot> &devslots = m_host.getSlots().get();
+    const std::vector<status::slot> &devslots = m_host.imageMenuHost().getRunningState().devslots().get();
 
     // if we have act least one slot, we have affirmed that we are on a
     // version of MAME that can handle slot device changes
@@ -255,7 +256,7 @@ void ConfigurableDevicesDialog::updateSlots()
 void ConfigurableDevicesDialog::updateImages()
 {
     // get the image status
-    const std::vector<status::image> &images = m_host.getImages().get();
+    const std::vector<status::image> &images = m_host.imageMenuHost().getRunningState().images().get();
 
     // update the model
     model().setImages(images);
@@ -292,15 +293,7 @@ void ConfigurableDevicesDialog::deviceMenu(QPushButton &button, const QModelInde
     }
 
     // is this device "imaged"?
-    if (devInfo.image().has_value())
-    {
-        // need a separator if we have both
-        if (devInfo.slot().has_value())
-            popupMenu.addSeparator();
-
-        // and append items for image devices
-        buildImageMenuSlotItems(popupMenu, devInfo.tag(), devInfo.image().value());
-    }
+	appendImageMenuItems(m_host.imageMenuHost(), popupMenu, devInfo.tag());
 
     // and execute the popup menu
     QPoint popupPos = globalPositionBelowWidget(button);
@@ -371,169 +364,4 @@ void ConfigurableDevicesDialog::buildDeviceMenuSlotItems(QMenu &popupMenu, const
         bool isChecked = currentSlotOption == slotOptionName;
         action.setChecked(isChecked);
     }
-}
-
-
-//-------------------------------------------------
-//  buildImageMenuSlotItems
-//-------------------------------------------------
-
-void ConfigurableDevicesDialog::buildImageMenuSlotItems(QMenu &popupMenu, const QString &tag, const DeviceImage &image)
-{
-    // create image
-    if (image.m_isCreatable)
-        popupMenu.addAction("Create Image...", [this, &tag]() { createImage(tag); });
-
-    // load image
-    popupMenu.addAction("Load Image...", [this, &tag]() { loadImage(tag); });
-
-    // load software list part
-    if (!model().softwareListCollection().software_lists().empty())
-    {
-        std::optional<info::device> device = m_host.getMachine().find_device(tag);
-        const QString *devInterface = device.has_value()
-            ? &device->devinterface()
-            : nullptr;
-        if (devInterface && !devInterface->isEmpty())
-        {
-            popupMenu.addAction("Load Software List Part...", [this, &tag, devInterface]()
-            {
-                loadSoftwareListPart(model().softwareListCollection(), tag, *devInterface);
-            });
-        }
-    }
-
-    // unload
-    QAction &unloadAction = *popupMenu.addAction("Unload", [this, &tag]() { unloadImage(tag); });
-    unloadAction.setEnabled(!image.m_fileName.isEmpty());
-
-    // recent files
-    const std::vector<QString> &recent_files = m_host.getRecentFiles(tag);
-    if (!recent_files.empty())
-    {
-        QString pretty_buffer;
-        popupMenu.addSeparator();
-        for (const QString &recentFile : recent_files)
-        {
-            QString prettyRecentFile = model().prettifyImageFileName(tag, recentFile, false);
-            popupMenu.addAction(prettyRecentFile, [this, &tag, &recentFile]() { m_host.loadImage(tag, QString(recentFile)); });
-        }
-    }
-}
-
-
-//-------------------------------------------------
-//  createImage
-//-------------------------------------------------
-
-bool ConfigurableDevicesDialog::createImage(const QString &tag)
-{
-	// show the dialog
-	QFileDialog dialog(this, "Create Image", QString(), getWildcardString(tag, false));
-	associateFileDialogWithMachinePrefs(dialog);
-	dialog.setFileMode(QFileDialog::FileMode::AnyFile);
-	dialog.exec();
-	if (dialog.result() != QDialog::DialogCode::Accepted)
-		return false;
-
-	// get the result from the dialog
-	QString path = dialog.selectedFiles().first();
-
-	// and load the image
-	m_host.createImage(tag, std::move(path));
-	return true;
-}
-
-
-//-------------------------------------------------
-//  loadImage
-//-------------------------------------------------
-
-bool ConfigurableDevicesDialog::loadImage(const QString &tag)
-{
-	// show the dialog
-	QFileDialog dialog(this, "Load Image", QString(), getWildcardString(tag, true));
-	associateFileDialogWithMachinePrefs(dialog);
-	dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
-	dialog.exec();
-	if (dialog.result() != QDialog::DialogCode::Accepted)
-		return false;
-
-	// get the result from the dialog
-	QString path = dialog.selectedFiles().first();
-
-	// and load the image
-	m_host.loadImage(tag, std::move(path));
-	return true;
-}
-
-
-//-------------------------------------------------
-//  loadSoftwareListPart
-//-------------------------------------------------
-
-bool ConfigurableDevicesDialog::loadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface)
-{
-    ChooseSoftlistPartDialog dialog(this, m_host.getPreferences(), software_col, dev_interface);
-    dialog.exec();
-    if (dialog.result() != QDialog::DialogCode::Accepted)
-        return false;
-
-    m_host.loadImage(tag, dialog.selection());
-    return true;
-}
-
-
-//-------------------------------------------------
-//  unloadImage
-//-------------------------------------------------
-
-void ConfigurableDevicesDialog::unloadImage(const QString &tag)
-{
-    m_host.unloadImage(tag);
-}
-
-
-//-------------------------------------------------
-//  associateFileDialogWithMachinePrefs
-//-------------------------------------------------
-
-void ConfigurableDevicesDialog::associateFileDialogWithMachinePrefs(QFileDialog &dialog)
-{
-	::associateFileDialogWithMachinePrefs(
-		dialog,
-		m_host.getPreferences(),
-		m_host.getMachine(),
-		Preferences::machine_path_type::WORKING_DIRECTORY);
-}
-
-
-//-------------------------------------------------
-//  getWildcardString
-//-------------------------------------------------
-
-QString ConfigurableDevicesDialog::getWildcardString(const QString &tag, bool supportZip) const
-{
-    // get the list of extensions
-    std::vector<QString> extensions = m_host.getExtensions(tag);
-
-    // append zip if appropriate
-    if (supportZip)
-        extensions.push_back("zip");
-
-    // figure out the "general" wildcard part for all devices
-    QString all_extensions = util::string_join(QString(";"), extensions, [](QString ext) { return QString("*.%1").arg(ext); });
-    QString result = QString("Device files (%1)").arg(all_extensions);
-
-    // now break out each extension
-    for (const QString &ext : extensions)
-    {
-        result += QString(";;%1 files (*.%2s)").arg(
-            ext.toUpper(),
-            ext);
-    }
-
-    // and all files
-    result += ";;All files (*.*)";
-    return result;
 }

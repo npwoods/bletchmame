@@ -8,6 +8,7 @@
 
 // bletchmame headers
 #include "confdevmodel.h"
+#include "imagemenu.h"
 
 // Qt headers
 #include <QDebug>
@@ -293,47 +294,6 @@ std::map<QString, QString> ConfigurableDevicesModel::getChanges() const
 
 
 //-------------------------------------------------
-//  prettifyImageFileName
-//-------------------------------------------------
-
-QString ConfigurableDevicesModel::prettifyImageFileName(const QString &deviceTag, const QString &fileName, bool fullPath) const
-{
-	QString result;
-
-	// try to find the software
-	std::optional<info::device> device = m_machine.find_device(deviceTag);
-	const software_list::software *software = device.has_value()
-		? m_softwareListCollection.find_software_by_name(fileName, device->devinterface())
-		: nullptr;
-
-	// did we find the software?
-	if (software)
-	{
-		// if so, the pretty name is the description
-		result = software->description();
-	}
-	else if (!fullPath && !fileName.isEmpty())
-	{
-		// we want to show the base name plus the extension
-		QString normalizedFileName = QDir::fromNativeSeparators(fileName);
-		QFileInfo fileInfo(normalizedFileName);
-		result = fileInfo.baseName();
-		if (!fileInfo.suffix().isEmpty())
-		{
-			result += ".";
-			result += fileInfo.suffix();
-		}
-	}
-	else
-	{
-		// we want to show the full filename; our job is easy
-		result = fileName;
-	}
-	return result;
-}
-
-
-//-------------------------------------------------
 //  nodeFromModelIndex
 //-------------------------------------------------
 
@@ -498,7 +458,7 @@ void ConfigurableDevicesModel::deviceOptionsStatus(const ConfigurableDevicesMode
 	{
 		// this is an image
 		const DeviceImage &image = deviceNode.image().value();
-		QString prettyFileName = prettifyImageFileName(deviceNode.tag(), image.m_fileName, false);
+		QString prettyFileName = prettifyImageFileName(m_machine, m_softwareListCollection, deviceNode.tag(), image.m_fileName, false);
 		if (!prettyFileName.isEmpty())
 			text = std::move(prettyFileName);
 		else if (image.m_mustBeLoaded)

@@ -13,6 +13,7 @@
 #include "auditcursor.h"
 #include "auditqueue.h"
 #include "devstatusdisplay.h"
+#include "imagemenu.h"
 #include "info.h"
 #include "mainpanel.h"
 #include "mameversion.h"
@@ -61,7 +62,7 @@ class ChatterEvent;
 
 // ======================> MainWindow
 
-class MainWindow : public QMainWindow, private IConsoleDialogHost, private IMainPanelHost
+class MainWindow : public QMainWindow, private IConsoleDialogHost, private IMainPanelHost, private IImageMenuHost
 {
 	Q_OBJECT
 
@@ -228,11 +229,16 @@ private:
 	virtual void setChatterListener(std::function<void(const ChatterEvent &chatter)> &&func) override final;
 	void watchForImageMount(const QString &tag);
 	void placeInRecentFiles(const QString &tag, const QString &path);
-	info::machine getRunningMachine() const;
 	bool attachToMainWindow() const;
 	QString attachWidgetId() const;
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
+	virtual info::machine getRunningMachine() const override final;
+	virtual Preferences &getPreferences() override final;
 	virtual software_list_collection &getSoftwareListCollection() override final;
+	virtual status::state &getRunningState() override final;
+	virtual void createImage(const QString &tag, QString &&path) override final;
+	virtual void loadImage(const QString &tag, QString &&path) override final;
+	virtual void unloadImage(const QString &tag) override final;
 	QString preflightCheck() const;
 	QString execFileDialogWithCommand(QFileDialog &dialog, std::vector<QString> &&commands);
 	QString getTitleBarText();

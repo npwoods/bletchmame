@@ -14,6 +14,7 @@
 // bletchmame headers
 #include "confdevmodel.h"
 #include "softwarelist.h"
+#include "imagemenu.h"
 
 // dependency headers
 #include <observable/observable.hpp>
@@ -45,15 +46,7 @@ class Preferences;
 class IConfigurableDevicesDialogHost
 {
 public:
-	virtual Preferences &getPreferences() = 0;
-	virtual info::machine getMachine() = 0;
-	virtual observable::value<std::vector<status::image>> &getImages() = 0;
-	virtual observable::value<std::vector<status::slot>> &getSlots() = 0;
-	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const = 0;
-	virtual std::vector<QString> getExtensions(const QString &tag) const = 0;
-	virtual void createImage(const QString &tag, QString &&path) = 0;
-	virtual void loadImage(const QString &tag, QString &&path) = 0;
-	virtual void unloadImage(const QString &tag) = 0;
+	virtual IImageMenuHost &imageMenuHost() = 0;
 	virtual bool startedWithHashPaths() const = 0;
 	virtual void changeSlots(std::map<QString, QString> &&changes) = 0;
 };
@@ -92,13 +85,6 @@ private:
 	void updateImages();
 	void deviceMenu(QPushButton &button, const QModelIndex &index);
 	void buildDeviceMenuSlotItems(QMenu &popupMenu, const QString &tag, const info::slot &slot, const QString &currentSlotOption);
-	void buildImageMenuSlotItems(QMenu &popupMenu, const QString &tag, const DeviceImage &image);
-	bool createImage(const QString &tag);
-	bool loadImage(const QString &tag);
-	bool loadSoftwareListPart(const software_list_collection &software_col, const QString &tag, const QString &dev_interface);
-	void unloadImage(const QString &tag);
-	void associateFileDialogWithMachinePrefs(QFileDialog &dialog);
-	QString getWildcardString(const QString &tag, bool supportZip) const;
 };
 
 

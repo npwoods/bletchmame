@@ -132,6 +132,8 @@ add_library(BletchMAME_core
 	src/hash.h
 	src/iconloader.cpp
 	src/iconloader.h
+	src/imagemenu.cpp
+	src/imagemenu.h
 	src/importmameinijob.cpp
 	src/importmameinijob.h
 	src/info.cpp
