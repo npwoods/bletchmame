@@ -74,7 +74,6 @@ public:
 	DeviceInfo getDeviceInfo(const QModelIndex &index) const;
 	void changeSlotOption(const QString &tag, const QString &slotOption);
 	std::map<QString, QString> getChanges() const;
-	QString prettifyImageFileName(const QString &deviceTag, const QString &fileName, bool fullPath) const;
 
 	// statics
 	static std::optional<QString> getSlotOptionText(info::slot slot, const QString &slotOption);

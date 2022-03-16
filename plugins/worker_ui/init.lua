@@ -411,6 +411,55 @@ function emit_status(light, out)
 		emit("\t</cheats>");
 	end
 
+	-- <images>
+	emit("\t<images>")
+	for _,image in pairs(get_collection(machine().images)) do
+		local filename = get_image_filename(image)
+		if filename == nil then
+			filename = ""
+		end
+
+		-- basic image properties
+		emit(string.format("\t\t<image tag=\"%s\" instance_name=\"%s\" is_readable=\"%s\" is_writeable=\"%s\" is_creatable=\"%s\" must_be_loaded=\"%s\"",
+			xml_encode(get_device_tag(image.device)),
+			xml_encode(image.instance_name),
+			string_from_bool(image.is_readable),
+			string_from_bool(image.is_writeable),
+			string_from_bool(image.is_creatable),
+			string_from_bool(image.must_be_loaded)))
+
+		-- filename
+		if filename ~= nil and filename ~= "" then
+			emit("\t\t\tfilename=\"" .. xml_encode(filename) .. "\"")
+		end
+
+		-- display
+		local display = image:display()
+		if display ~= nil and display ~= "" then
+			emit("\t\t\tdisplay=\"" .. xml_encode(display) .. "\"")
+		end
+		emit("\t\t>")
+
+		-- formats
+		if pcall(function() return image.formatlist end) and image.formatlist ~= nil then
+			emit("\t\t\t<formats>")
+			for _,format in pairs(image.formatlist) do
+				emit(string.format("\t\t\t\t<format name=\"%s\" description=\"%s\" option_spec=\"%s\">",
+					xml_encode(format.name),
+					xml_encode(format.description),
+					xml_encode(format.option_spec)))
+				for _,ext in pairs(format.extensions) do
+					emit(string.format("\t\t\t\t\t<extension>%s</extension>", xml_encode(ext)))
+				end
+				emit("\t\t\t\t</format>")
+			end
+			emit("\t\t\t</formats>")
+		end
+
+		emit("\t\t</image>")
+	end	
+	emit("\t</images>")
+
 	-- <cassettes>
 	if pcall(function() return machine().cassettes end) then
 		emit("\t<cassettes>")
@@ -429,55 +478,6 @@ function emit_status(light, out)
 	end	
 
 	if (not light or machine().paused or is_polling_input_seq()) then
-		-- <images>
-		emit("\t<images>")
-		for _,image in pairs(get_collection(machine().images)) do
-			local filename = get_image_filename(image)
-			if filename == nil then
-				filename = ""
-			end
-
-			-- basic image properties
-			emit(string.format("\t\t<image tag=\"%s\" instance_name=\"%s\" is_readable=\"%s\" is_writeable=\"%s\" is_creatable=\"%s\" must_be_loaded=\"%s\"",
-				xml_encode(get_device_tag(image.device)),
-				xml_encode(image.instance_name),
-				string_from_bool(image.is_readable),
-				string_from_bool(image.is_writeable),
-				string_from_bool(image.is_creatable),
-				string_from_bool(image.must_be_loaded)))
-
-			-- filename
-			if filename ~= nil and filename ~= "" then
-				emit("\t\t\tfilename=\"" .. xml_encode(filename) .. "\"")
-			end
-
-			-- display
-			local display = image:display()
-			if display ~= nil and display ~= "" then
-				emit("\t\t\tdisplay=\"" .. xml_encode(display) .. "\"")
-			end
-			emit("\t\t>")
-
-			-- formats
-			if pcall(function() return image.formatlist end) and image.formatlist ~= nil then
-				emit("\t\t\t<formats>")
-				for _,format in pairs(image.formatlist) do
-					emit(string.format("\t\t\t\t<format name=\"%s\" description=\"%s\" option_spec=\"%s\">",
-						xml_encode(format.name),
-						xml_encode(format.description),
-						xml_encode(format.option_spec)))
-					for _,ext in pairs(format.extensions) do
-						emit(string.format("\t\t\t\t\t<extension>%s</extension>", xml_encode(ext)))
-					end
-					emit("\t\t\t\t</format>")
-				end
-				emit("\t\t\t</formats>")
-			end
-
-			emit("\t\t</image>")
-		end	
-		emit("\t</images>")
-
 		-- <slots>
 		if pcall(function() return machine().slots end) then
 			emit("\t<slots>");

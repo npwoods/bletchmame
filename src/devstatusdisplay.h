@@ -10,7 +10,7 @@
 #define DEVSTATUSDISPLAY_H
 
 // bletchmame headers
-#include "status.h"
+#include "imagemenu.h"
 
 // Qt headers
 #include <QWidget>
@@ -38,7 +38,7 @@ public:
 	class Test;
 
 	// ctor/dtor
-	DevicesStatusDisplay(QObject *parent = nullptr);
+	DevicesStatusDisplay(IImageMenuHost &host, QObject *parent = nullptr);
 	~DevicesStatusDisplay();
 
 	// methods
@@ -46,22 +46,27 @@ public:
 
 signals:
 	void addWidget(QWidget &widget);
-	void removeWidget(QWidget &widget);
 
 private:
 	class DisplayWidget;
-	typedef std::unordered_map<QString, std::unique_ptr<DisplayWidget>> DisplayWidgetMap;
+	typedef std::unordered_map<QString, DisplayWidget &> DisplayWidgetMap;
 
 	// member variables
+	IImageMenuHost &	m_host;
 	DisplayWidgetMap	m_displayWidgets;
+	QWidget				m_parentWidget;
+	QPixmap				m_emptyPixmap;
 	QPixmap				m_cassettePixmap;
 	QPixmap				m_cassettePlayPixmap;
 	QPixmap				m_cassetteRecordPixmap;
 
 	// private methods
+	void updateImages(const status::state &state);
 	void updateCassettes(const status::state &state);
-	DevicesStatusDisplay::DisplayWidget *getDeviceDisplay(const status::state &state, const QString &tag, bool show, const QPixmap &icon1Pixmap);
+	DevicesStatusDisplay::DisplayWidget *getDeviceDisplay(const status::state &state, const QString &tag, const QPixmap &icon1Pixmap);
 	static QString formatTime(float t);
+	void contextMenu(const QString &tag, const QPoint &pos);
+	QString imageDisplayText(const status::image &image) const;
 };
 
 #endif // DEVSTATUSDISPLAY_H

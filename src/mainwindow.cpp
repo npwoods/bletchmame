@@ -112,83 +112,9 @@ public:
 	{
 	}
 
-	virtual info::machine getMachine()
+	virtual IImageMenuHost &imageMenuHost()
 	{
-		return m_host.getRunningMachine();
-	}
-
-	virtual Preferences &getPreferences()
-	{
-		return m_host.m_prefs;
-	}
-
-	virtual observable::value<std::vector<status::image>> &getImages()
-	{
-		return m_host.m_state->images();
-	}
-
-	virtual observable::value<std::vector<status::slot>> &getSlots()
-	{
-		return m_host.m_state->devslots();
-	}
-
-	virtual const std::vector<QString> &getRecentFiles(const QString &tag) const
-	{
-		info::machine machine = m_host.getRunningMachine();
-		const QString &device_type = GetDeviceType(machine, tag);
-		return m_host.m_prefs.getRecentDeviceFiles(machine.name(), device_type);
-	}
-
-	virtual std::vector<QString> getExtensions(const QString &tag) const
-	{
-		std::vector<QString> result;
-
-		// first try getting the result from the image format
-		const status::image *image = m_host.m_state->find_image(tag);
-		if (image && image->m_formats.has_value())
-		{
-			// we did find it in the image formats
-			for (const status::image_format &format : *image->m_formats)
-			{
-				for (const QString &ext : format.m_extensions)
-				{
-					if (std::find(result.begin(), result.end(), ext) == result.end())
-						result.push_back(ext);
-				}
-			}
-		}
-		else
-		{
-			// find the device declaration
-			auto devices = m_host.getRunningMachine().devices();
-
-			auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
-			{
-				return dev.tag() == tag;
-			});
-			assert(iter != devices.end());
-
-			// and return it!
-			result = util::string_split(iter->extensions(), [](auto ch) { return ch == ','; });
-		}
-		return result;
-	}
-
-	virtual void createImage(const QString &tag, QString &&path)
-	{
-		m_host.watchForImageMount(tag);
-		m_host.issue({ "create", tag, QDir::toNativeSeparators(path) });
-	}
-
-	virtual void loadImage(const QString &tag, QString &&path)
-	{
-		m_host.watchForImageMount(tag);
-		m_host.issue({ "load", tag, QDir::toNativeSeparators(path) });
-	}
-
-	virtual void unloadImage(const QString &tag)
-	{
-		m_host.issue({ "unload", tag });
+		return m_host;
 	}
 
 	virtual bool startedWithHashPaths() const
@@ -452,7 +378,7 @@ public:
 
 	virtual void start()
 	{
-		m_host.m_devicesStatusDisplay.subscribe(m_host.m_state.value());
+		m_host.m_devicesStatusDisplay->subscribe(m_host.m_state.value());
 
 		m_host.m_state->phase().subscribe(						[this]() { update(); });
 		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
@@ -829,13 +755,10 @@ MainWindow::MainWindow(QWidget *parent)
 	m_aspects.push_back(std::make_unique<EmulationPanelAttributesAspect>(*this));
 
 	// connect the signals on the devices status display
-	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::addWidget, this, [this](QWidget &widget)
+	m_devicesStatusDisplay = new DevicesStatusDisplay(*this, this);
+	connect(m_devicesStatusDisplay, &DevicesStatusDisplay::addWidget, this, [this](QWidget &widget)
 	{
 		m_ui->statusBar->addPermanentWidget(&widget);
-	});
-	connect(&m_devicesStatusDisplay, &DevicesStatusDisplay::removeWidget, this, [this](QWidget &widget)
-	{
-		m_ui->statusBar->removeWidget(&widget);
 	});
 
 	// prepare the main tab
@@ -1918,12 +1841,64 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 
 
 //-------------------------------------------------
+//  getPreferences
+//-------------------------------------------------
+
+Preferences &MainWindow::getPreferences()
+{
+	return m_prefs;
+}
+
+
+//-------------------------------------------------
 //  getSoftwareListCollection
 //-------------------------------------------------
 
 software_list_collection &MainWindow::getSoftwareListCollection()
 {
 	return m_softwareListCollection;
+}
+
+
+//-------------------------------------------------
+//  getRunningState
+//-------------------------------------------------
+
+status::state &MainWindow::getRunningState()
+{
+	return m_state.value();
+}
+
+
+//-------------------------------------------------
+//  createImage
+//-------------------------------------------------
+
+void MainWindow::createImage(const QString &tag, QString &&path)
+{
+	watchForImageMount(tag);
+	issue({ "create", tag, QDir::toNativeSeparators(path) });
+}
+
+
+//-------------------------------------------------
+//  loadImage
+//-------------------------------------------------
+
+void MainWindow::loadImage(const QString &tag, QString &&path)
+{
+	watchForImageMount(tag);
+	issue({ "load", tag, QDir::toNativeSeparators(path) });
+}
+
+
+//-------------------------------------------------
+//  unloadImage
+//-------------------------------------------------
+
+void MainWindow::unloadImage(const QString &tag)
+{
+	issue({ "unload", tag });
 }
 
 

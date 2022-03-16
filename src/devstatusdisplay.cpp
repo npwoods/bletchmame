@@ -8,6 +8,7 @@
 
 // bletchmame headers
 #include "devstatusdisplay.h"
+#include "imagemenu.h"
 
 // Qt headers
 #include <QApplication>
@@ -29,15 +30,15 @@ public:
 	typedef std::unique_ptr<DisplayWidget> ptr;
 
 	// ctor
-	DisplayWidget(const QPixmap &icon1Pixmap);
+	DisplayWidget(QWidget *parent, const QPixmap &icon1Pixmap);
 
 	// methods
 	void set(const QPixmap &icon2Pixmap, const QString &text);
 
 private:
-	QLabel	m_icon1;
-	QLabel	m_icon2;
-	QLabel	m_label;
+	QLabel					m_icon1Label;
+	QLabel					m_icon2Label;
+	QLabel					m_textLabel;
 };
 
 
@@ -49,8 +50,9 @@ private:
 //  ctor
 //-------------------------------------------------
 
-DevicesStatusDisplay::DevicesStatusDisplay(QObject *parent)
+DevicesStatusDisplay::DevicesStatusDisplay(IImageMenuHost &host, QObject *parent)
 	: QObject(parent)
+	, m_host(host)
 	, m_cassettePixmap(":/resources/dev_cassette.png")
 	, m_cassettePlayPixmap(":/resources/dev_cassette_play.png")
 	, m_cassetteRecordPixmap(":/resources/dev_cassette_record.png")
@@ -77,7 +79,18 @@ DevicesStatusDisplay::~DevicesStatusDisplay()
 
 void DevicesStatusDisplay::subscribe(status::state &state)
 {
-	state.cassettes().subscribe([this, &state]() { updateCassettes(state); });
+	state.images().subscribe([this, &state]()		{ updateImages(state); });
+	state.cassettes().subscribe([this, &state]()	{ updateCassettes(state); });
+}
+
+
+//-------------------------------------------------
+//  updateImages
+//-------------------------------------------------
+
+void DevicesStatusDisplay::updateImages(const status::state &state)
+{
+	updateCassettes(state);
 }
 
 
@@ -90,16 +103,16 @@ void DevicesStatusDisplay::updateCassettes(const status::state &state)
 	for (const status::cassette &cassette : state.cassettes().get())
 	{
 		// get the display widget if appropriate
-		DisplayWidget *displayWidget = getDeviceDisplay(state, cassette.m_tag, cassette.m_motor_state, m_cassettePixmap);
+		DisplayWidget *displayWidget = getDeviceDisplay(state, cassette.m_tag, m_cassettePixmap);
 		if (displayWidget)
 		{
 			// update the widget contents
-			const QPixmap &pixmap = cassette.m_is_recording
-				? m_cassetteRecordPixmap
-				: m_cassettePlayPixmap;
-			QString text = QString("%1 / %2").arg(
-				formatTime(cassette.m_position),
-				formatTime(cassette.m_length));
+			const QPixmap &pixmap = cassette.m_motor_state
+				? (cassette.m_is_recording ? m_cassetteRecordPixmap : m_cassettePlayPixmap)
+				: m_emptyPixmap;
+			QString text = cassette.m_motor_state
+				? QString("%1 / %2").arg(formatTime(cassette.m_position), formatTime(cassette.m_length))
+				: "";
 			displayWidget->set(pixmap, text);
 		}
 	}
@@ -110,43 +123,50 @@ void DevicesStatusDisplay::updateCassettes(const status::state &state)
 //  getDeviceDisplay
 //-------------------------------------------------
 
-DevicesStatusDisplay::DisplayWidget *DevicesStatusDisplay::getDeviceDisplay(const status::state &state, const QString &tag, bool show, const QPixmap &icon1Pixmap)
+DevicesStatusDisplay::DisplayWidget *DevicesStatusDisplay::getDeviceDisplay(const status::state &state, const QString &tag, const QPixmap &icon1Pixmap)
 {
 	// find the widget in our map
 	auto iter = m_displayWidgets.find(tag);
 
-	// find the image if 'show' is specified
-	const status::image *image = show
-		? state.find_image(tag)
-		: nullptr;
+	// find the image and check to see if there is an image
+	const status::image *image = state.find_image(tag);
 	bool imageHasFile = image && !image->m_file_name.isEmpty();
 
 	// if we have to show a widget but it is not present, add it
 	if (imageHasFile && iter == m_displayWidgets.end())
 	{
 		// we have to create a new widget; add it
-		DisplayWidget::ptr widget = std::make_unique<DisplayWidget>(icon1Pixmap);
-		iter = m_displayWidgets.emplace(tag, std::move(widget)).first;
+		DisplayWidget &widget = *new DisplayWidget(&m_parentWidget, icon1Pixmap);
+		iter = m_displayWidgets.emplace(tag, widget).first;
+
+		// set up a context menu
+		connect(&widget, &QWidget::customContextMenuRequested, this, [this, &widget, tag](const QPoint &pos)
+		{
+			contextMenu(tag, widget.mapToGlobal(pos));
+		});
 
 		// and signal that we added it
-		emit addWidget(*iter->second);
+		emit addWidget(widget);
 	}
 	else if (!imageHasFile && iter != m_displayWidgets.end())
 	{
-		// we have a widget but the display is gone; remove it
-		emit removeWidget(*iter->second);
+		// we have a widget but the display is gone; remove it from our list
+		QWidget &widget = iter->second;
 		m_displayWidgets.erase(iter);
+
+		// and now delete it
+		delete &widget;
 	}
 	
 	// identify the widget
-	DisplayWidget *widget = imageHasFile ? &*iter->second : nullptr;
+	DisplayWidget *widget = imageHasFile ? &iter->second : nullptr;
 		
 	// update the tooltip, if appropriate
 	if (imageHasFile && image && widget)
 	{
 		// update the tooltip
-		QString fileName = QDir::fromNativeSeparators(image->m_file_name);
-		widget->setToolTip(QFileInfo(fileName).fileName());
+		QString text = imageDisplayText(*image);
+		widget->setToolTip(text);
 	}
 
 	return widget;
@@ -167,35 +187,82 @@ QString DevicesStatusDisplay::formatTime(float t)
 
 
 //-------------------------------------------------
+//  imageDisplayText
+//-------------------------------------------------
+
+QString DevicesStatusDisplay::imageDisplayText(const status::image &image) const
+{
+	QString imageFileName = prettifyImageFileName(
+		m_host.getRunningMachine(),
+		m_host.getSoftwareListCollection(),
+		image.m_tag,
+		image.m_file_name,
+		false);
+
+	return QString("%1: %2").arg(image.m_tag, imageFileName);
+}
+
+
+//-------------------------------------------------
+//  contextMenu
+//-------------------------------------------------
+
+void DevicesStatusDisplay::contextMenu(const QString &tag, const QPoint &pos)
+{
+	// get the image
+	const status::image *image = m_host.getRunningState().find_image(tag);
+	if (!image)
+		return;
+
+	// determine the display text for the image
+	QString text = imageDisplayText(*image);
+
+	// build the context menu
+	QMenu popupMenu;
+	popupMenu.addAction(text)->setEnabled(false);
+	appendImageMenuItems(m_host, popupMenu, tag);
+
+	// show the popup menu
+	popupMenu.exec(pos);
+}
+
+
+//-------------------------------------------------
 //  DisplayWidget ctor
 //-------------------------------------------------
 
-DevicesStatusDisplay::DisplayWidget::DisplayWidget(const QPixmap &icon1Pixmap)
+DevicesStatusDisplay::DisplayWidget::DisplayWidget(QWidget *parent, const QPixmap &icon1Pixmap)
+	: QWidget(parent)
 {
 	// create the layout
 	QHBoxLayout &layout = *new QHBoxLayout(this);
 	layout.setSpacing(0);
 	layout.setContentsMargins(0, 0, 0, 0);
 
-	// add the labels
-	layout.addWidget(&m_icon1);
-	layout.addWidget(&m_icon2);
-	layout.addWidget(&m_label);
+	// set the pixmap
+	m_icon1Label.setPixmap(icon1Pixmap);
 
-	// and set the pixmap
-	m_icon1.setPixmap(icon1Pixmap);
+	// add the labels
+	layout.addWidget(&m_icon1Label);
+	layout.addWidget(&m_icon2Label);
+	layout.addWidget(&m_textLabel);
+
+	// prep a context menu
+	setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
 }
 
 
 //-------------------------------------------------
-//  DisplayWidget::setLabelText
+//  DisplayWidget::set
 //-------------------------------------------------
 
 void DevicesStatusDisplay::DisplayWidget::set(const QPixmap &icon2Pixmap, const QString &text)
 {
-	m_icon2.setPixmap(icon2Pixmap);
-	m_icon2.update();
+	// icon 2
+	m_icon2Label.setPixmap(icon2Pixmap);
+	m_icon2Label.update();
 
-	m_label.setText(text);
-	m_label.update();
+	// text
+	m_textLabel.setText(text);
+	m_textLabel.update();
 }
