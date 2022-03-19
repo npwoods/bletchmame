@@ -217,6 +217,7 @@ private:
 
 	// methods
 	bool IsMameExecutablePresent() const;
+	void onGlobalPathEmuExecutableChanged(const QString& newPath);
 	void launchVersionCheck(bool promptIfMameNotFound);
 	bool loadInfoDb();
 	bool promptForMameExecutable();
@@ -243,7 +244,7 @@ private:
 	QString execFileDialogWithCommand(QFileDialog &dialog, std::vector<QString> &&commands);
 	QString getTitleBarText();
 	QString browseForMameIni();
-	bool importMameIni(const QString &fileName);
+	bool importMameIni(const QString &fileName, bool prompt);
 	void issue(const std::vector<QString> &args);
 	void issue(const std::initializer_list<std::string> &args);
 	void waitForStatusUpdate();

@@ -793,7 +793,7 @@ MainWindow::MainWindow(QWidget *parent)
 	// monitor prefs changes
 	connect(&m_prefs, &Preferences::globalPathEmuExecutableChanged, this, [this](const QString &newPath)
 	{
-		launchVersionCheck(false);
+		onGlobalPathEmuExecutableChanged(newPath);
 	});
 	connect(&m_prefs, &Preferences::globalPathRomsChanged, this, [this](const QString &newPath)
 	{
@@ -1480,7 +1480,7 @@ void MainWindow::on_actionImportMameIni_triggered()
 
 	// if we got something, present the import UI
 	if (!fileName.isEmpty())
-		importMameIni(fileName);
+		importMameIni(fileName, false);
 }
 
 
@@ -1583,6 +1583,23 @@ bool MainWindow::IsMameExecutablePresent() const
 
 
 //-------------------------------------------------
+//  onGlobalPathEmuExecutableChanged
+//-------------------------------------------------
+
+void MainWindow::onGlobalPathEmuExecutableChanged(const QString &newPath)
+{
+	// is there a MAME.ini file in that directory?  if so, give the user an opportunity to import it
+	QDir newMameDir = QFileInfo(newPath).absoluteDir();
+	QFileInfo candidateMameIni(newMameDir.filePath("mame.ini"));
+	if (candidateMameIni.exists())
+		importMameIni(candidateMameIni.filePath(), true);
+
+	// start a version check
+	launchVersionCheck(false);
+}
+
+
+//-------------------------------------------------
 //  launchVersionCheck - launches a task to check
 //	MAME's version
 //-------------------------------------------------
@@ -1633,16 +1650,8 @@ bool MainWindow::promptForMameExecutable()
 	if (path.isEmpty())
 		return false;
 
-	// if this changed, act accordingly
-	if (path != m_prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE))
-	{
-		// set the path
-		m_prefs.setGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
-
-		// and trigger a version check
-		launchVersionCheck(false);
-	}
-
+	// set the path
+	m_prefs.setGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE, std::move(path));
 	return true;
 }
 
@@ -2583,12 +2592,28 @@ QString MainWindow::browseForMameIni()
 //  importMameIni
 //-------------------------------------------------
 
-bool MainWindow::importMameIni(const QString &fileName)
+bool MainWindow::importMameIni(const QString &fileName, bool prompt)
 {
 	// prepare the import dialog
 	ImportMameIniDialog dialog(m_prefs, this);
 	if (!dialog.loadMameIni(fileName))
 		return false;
+
+	// is this an "opportunistic" MAME.ini load?  if so we should prompt the user to see if
+	// this is desirable first
+	if (prompt)
+	{
+		// if there is nothing to import, showing the dialog is pointless
+		if (!dialog.hasImportables())
+			return false;
+
+		// show the prompt
+		QString message = QString("%1 has found a MAME.ini file containing settings that can be imported.  Do you wish to import some or all of these settings?")
+			.arg(QCoreApplication::applicationName());
+		if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
+			return false;
+
+	}
 
 	// show the dialog
 	if (dialog.exec() != QDialog::Accepted)
