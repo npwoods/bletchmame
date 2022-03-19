@@ -55,7 +55,7 @@ QStringList ListXmlTask::getArguments(const Preferences &) const
 //  run
 //-------------------------------------------------
 
-void ListXmlTask::run(QProcess &process)
+void ListXmlTask::run(std::optional<QProcess> &process)
 {
 	// profile this
 	PerformanceProfiler perfProfiler("listxml.profiledata.txt");
@@ -70,19 +70,27 @@ void ListXmlTask::run(QProcess &process)
 
 	ListXmlResultEvent::Status status;
 	QString errorMessage;
-	try
+	if (process.has_value())
 	{
-		// process
-		internalRun(process, progressCallback);
+		try
+		{
+			// process
+			internalRun(process.value(), progressCallback);
 
-		// we've succeeded!
-		status = ListXmlResultEvent::Status::SUCCESS;
+			// we've succeeded!
+			status = ListXmlResultEvent::Status::SUCCESS;
+		}
+		catch (list_xml_exception& ex)
+		{
+			// an exception has occurred
+			status = ex.m_status;
+			errorMessage = std::move(ex.m_message);
+		}
 	}
-	catch (list_xml_exception &ex)
+	else
 	{
-		// an exception has occurred
-		status = ex.m_status;
-		errorMessage = std::move(ex.m_message);
+		status = ListXmlResultEvent::Status::ERROR;
+		errorMessage = "Could not invoke MAME";
 	}
 
 	// regardless of what happened, notify the main thread

@@ -74,10 +74,6 @@ void MameTask::prepare(Preferences &prefs, EventHandlerFunc &&eventHandler)
 	// identify the program
 	m_program = prefs.getGlobalPath(Preferences::global_path_type::EMU_EXECUTABLE);
 
-	// bail now if this can't meaningfully work
-	if (m_program.isEmpty())
-		return;
-
 	// get the arguments
 	m_arguments = getArguments(prefs);
 
@@ -166,33 +162,42 @@ void MameTask::formatCommandLine(QTextStream &stream, const QString &program, co
 void MameTask::run()
 {
 	// start the process
-	QProcess emuProcess;
-	emuProcess.setReadChannel(QProcess::StandardOutput);
-	emuProcess.start(m_program, m_arguments);
+	std::optional<QProcess> emuProcess;
+	emuProcess.emplace();
+	emuProcess->setReadChannel(QProcess::StandardOutput);
+	emuProcess->start(m_program, m_arguments);
 
-	// add the process to the job
-	qint64 processId = emuProcess.processId();
-	if (processId)
+	// identify the process
+	qint64 processId = emuProcess->processId();
+	if (processId != 0)
+	{
+		// add it to the job
 		s_job.addProcess(processId);
 
-	// set up the process locker
-	ProcessLocker processLocker(*this, emuProcess);
+		// set up the process locker
+		ProcessLocker processLocker(*this, emuProcess.value());
 
-	// wait for readyReadStandardOutput
-	bool waitingComplete = false;
-	connect(&emuProcess, &QProcess::finished, &emuProcess, [this, &waitingComplete](int exitCode, QProcess::ExitStatus exitStatus)
+		// wait for readyReadStandardOutput
+		bool waitingComplete = false;
+		connect(&emuProcess.value(), &QProcess::finished, &emuProcess.value(), [this, &waitingComplete](int exitCode, QProcess::ExitStatus exitStatus)
+		{
+			waitingComplete = true;
+			m_emuExitCode = exitStatus == QProcess::ExitStatus::NormalExit
+				? (EmuExitCode)exitCode
+				: EmuExitCode::Killed;
+		});
+		connect(&emuProcess.value(), &QProcess::readyReadStandardOutput, &emuProcess.value(), [&waitingComplete]()
+		{
+			waitingComplete = true;
+		});
+		while (!waitingComplete)
+			QCoreApplication::processEvents();
+	}
+	else
 	{
-		waitingComplete = true;
-		m_emuExitCode = exitStatus == QProcess::ExitStatus::NormalExit
-			? (EmuExitCode)exitCode
-			: EmuExitCode::Killed;
-	});
-	connect(&emuProcess, &QProcess::readyReadStandardOutput, &emuProcess, [&waitingComplete]()
-	{
-		waitingComplete = true;
-	});
-	while (!waitingComplete)
-		QCoreApplication::processEvents();
+		// no PID? no process
+		emuProcess.reset();
+	}
 
 	// use our own run call
 	run(emuProcess);

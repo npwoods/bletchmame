@@ -12,6 +12,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- In addition to the menu bar, ScrLk will now also toggle the visibility of the status bar
 	- Created a nicer status bar display for cassette status
 	- On MAME.ini importing, now tracking preferred actions for subsequent imports
+	- Fixed a bug that caused BletchMAME to not prompt the user to find MAME when no MAME is known
 	- Fixed a bug that could cause duplication of items on the "recent images list" list
 	- Fixed a CMake build issue when performing out-of-tree builds [Davide Cavalca]
 

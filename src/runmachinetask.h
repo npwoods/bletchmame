@@ -112,7 +112,7 @@ public:
 
 protected:
 	virtual QStringList getArguments(const Preferences &prefs) const override;
-	virtual void run(QProcess &process) override;
+	virtual void run(std::optional<QProcess> &process) override;
 
 private:
 	info::machine					m_machine;
