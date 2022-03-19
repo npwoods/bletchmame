@@ -71,7 +71,7 @@ protected:
 	virtual QStringList getArguments(const Preferences &prefs) const = 0;
 
 	// called on a child thread tasked with ownership of a MAME child process
-	virtual void run(QProcess &process) = 0;
+	virtual void run(std::optional<QProcess> &process) = 0;
 
 	// accesses the exit code
 	const std::optional<EmuExitCode> &emuExitCode() const { return m_emuExitCode; }

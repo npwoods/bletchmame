@@ -263,70 +263,80 @@ bool RunMachineTask::event(QEvent *event)
 //  run
 //-------------------------------------------------
 
-void RunMachineTask::run(QProcess &process)
+void RunMachineTask::run(std::optional<QProcess> &process)
 {
 	bool success;
 	QString errorMessage;
 
-	// set up the controller
-	MameWorkerController controller(process, [this](MameWorkerController::ChatterType type, const QString &text)
+	if (process.has_value())
 	{
-		if (m_chatterEnabled)
+		// set up the controller
+		MameWorkerController controller(process.value(), [this](MameWorkerController::ChatterType type, const QString& text)
+			{
+				if (m_chatterEnabled)
+				{
+					auto evt = std::make_unique<ChatterEvent>(type, text);
+					postEventToHost(std::move(evt));
+				}
+			});
+
+		// receive the inaugural response from MAME; we want to call it quits if this doesn't work
+		MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller);
+		if (response.m_type != MameWorkerController::Response::Type::Ok)
 		{
-			auto evt = std::make_unique<ChatterEvent>(type, text);
-			postEventToHost(std::move(evt));
+			// alas, we have an error starting MAME
+			success = false;
+
+			// try various strategies to get the best error message possible (perferring
+			// one returned by the plugin)
+			errorMessage = !response.m_text.isEmpty()
+				? std::move(response.m_text)
+				: controller.scrapeMameStartupError();
 		}
-	});
+		else
+		{
+			// loop until the process terminates
+			QString command;
+			while (!(command = getNextCommand()).isEmpty())
+			{
+				// we've received a command
+				if (LOG_RECEIVE)
+					qDebug() << "RunMachineTask::run(): received command: " << command;
 
-	// receive the inaugural response from MAME; we want to call it quits if this doesn't work
-	MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller);
-	if (response.m_type != MameWorkerController::Response::Type::Ok)
-	{
-		// alas, we have an error starting MAME
-		success = false;
+				// emit this command to MAME
+				controller.issueCommand(command);
 
-		// try various strategies to get the best error message possible (perferring
-		// one returned by the plugin)
-		errorMessage = !response.m_text.isEmpty()
-			? std::move(response.m_text)
-			: controller.scrapeMameStartupError();
+				// and receive a response from MAME
+				response = receiveResponseAndHandleUpdates(controller);
+			}
+
+			// if we didn't get a MAME status code, sounds like we need to bump off MAME
+			if (!emuExitCode().has_value())
+			{
+				killActiveEmuProcess();
+				while (!emuExitCode().has_value())
+					QCoreApplication::processEvents();
+			}
+
+			// was there an error?
+			EmuExitCode exitCode = emuExitCode().value();
+			if (exitCode != EmuExitCode::Success)
+			{
+				// if so, capture what was emitted by MAME's standard output stream
+				QByteArray errorMessageBytes = process->readAllStandardError();
+				errorMessage = errorMessageBytes.length() > 0
+					? QString::fromUtf8(errorMessageBytes)
+					: QString("Error %1 running MAME").arg(QString::number((int)exitCode));
+			}
+		}
 	}
 	else
 	{
-		// loop until the process terminates
-		QString command;
-		while (!(command = getNextCommand()).isEmpty())
-		{
-			// we've received a command
-			if (LOG_RECEIVE)
-				qDebug() << "RunMachineTask::run(): received command: " << command;
-
-			// emit this command to MAME
-			controller.issueCommand(command);
-
-			// and receive a response from MAME
-			response = receiveResponseAndHandleUpdates(controller);
-		}
-
-		// if we didn't get a MAME status code, sounds like we need to bump off MAME
-		if (!emuExitCode().has_value())
-		{
-			killActiveEmuProcess();
-			while (!emuExitCode().has_value())
-				QCoreApplication::processEvents();
-		}
-
-		// was there an error?
-		EmuExitCode exitCode = emuExitCode().value();
-		if (exitCode != EmuExitCode::Success)
-		{
-			// if so, capture what was emitted by MAME's standard output stream
-			QByteArray errorMessageBytes = process.readAllStandardError();
-			errorMessage = errorMessageBytes.length() > 0
-				? QString::fromUtf8(errorMessageBytes)
-				: QString("Error %1 running MAME").arg(QString::number((int)exitCode));
-		}
+		// we could not sucessfully invoke the MAME process
+		success = false;
+		errorMessage = "Could not invoke MAME";
 	}
+
 	auto evt = std::make_unique<RunMachineCompletedEvent>(success, std::move(errorMessage));
 	postEventToHost(std::move(evt));
 }

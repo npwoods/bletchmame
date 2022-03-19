@@ -30,7 +30,7 @@ namespace
 	{
 	protected:
 		virtual QStringList getArguments(const Preferences &) const override final;
-		virtual void run(QProcess &process) override final;
+		virtual void run(std::optional<QProcess> &process) override final;
 	};
 }
 
@@ -66,10 +66,12 @@ QStringList VersionTask::getArguments(const Preferences &) const
 //  run
 //-------------------------------------------------
 
-void VersionTask::run(QProcess &process)
+void VersionTask::run(std::optional<QProcess> &process)
 {
 	// get the version
-	auto version = QString::fromLocal8Bit(process.readLine());
+	auto version = process.has_value()
+		? QString::fromLocal8Bit(process.value().readLine())
+		: QString();
 
 	// and put it on the completion event
 	auto evt = std::make_unique<VersionResultEvent>(std::move(version));
