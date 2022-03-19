@@ -37,6 +37,7 @@ public:
 	// methods
 	bool loadMameIni(const QString &fileName);
 	void apply();
+	bool hasImportables() const;
 
 private:
 	enum class ImportAction
@@ -55,6 +56,7 @@ private:
 
 	// methods
 	TableModel &tableModel();
+	const TableModel &tableModel() const;
 	void updateButtonsEnabled();
 	void tableViewCurrentChanged(const QModelIndex &current);
 

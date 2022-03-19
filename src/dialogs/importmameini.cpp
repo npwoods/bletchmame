@@ -155,12 +155,42 @@ ImportMameIniDialog::TableModel &ImportMameIniDialog::tableModel()
 
 
 //-------------------------------------------------
+//  tableModel
+//-------------------------------------------------
+
+const ImportMameIniDialog::TableModel &ImportMameIniDialog::tableModel() const
+{
+	return *dynamic_cast<const TableModel *>(m_ui->tableView->model());
+}
+
+
+//-------------------------------------------------
 //  apply
 //-------------------------------------------------
 
 void ImportMameIniDialog::apply()
 {
 	tableModel().job().apply();
+}
+
+
+//-------------------------------------------------
+//  hasImportables
+//-------------------------------------------------
+
+bool ImportMameIniDialog::hasImportables() const
+{
+	// find the entries
+	const std::vector<ImportMameIniJob::Entry::ptr>& entries = tableModel().job().entries();
+
+	// find an entry that is not 'ImportAction::AlreadyPresent'
+	auto iter = std::find_if(entries.begin(), entries.end(), [](const ImportMameIniJob::Entry::ptr& x)
+	{
+		return x->importAction() != ImportMameIniJob::ImportAction::AlreadyPresent;
+	});
+
+	// did we find anything?
+	return iter != entries.end();
 }
 
 
