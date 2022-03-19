@@ -57,10 +57,6 @@ DevicesStatusDisplay::DevicesStatusDisplay(IImageMenuHost &host, QObject *parent
 	, m_cassettePlayPixmap(":/resources/dev_cassette_play.png")
 	, m_cassetteRecordPixmap(":/resources/dev_cassette_record.png")
 {
-	int iconSize = QApplication::font().pointSize() * 2;
-	setPixmapDevicePixelRatioToFit(m_cassettePixmap, iconSize);
-	setPixmapDevicePixelRatioToFit(m_cassettePlayPixmap, iconSize);
-	setPixmapDevicePixelRatioToFit(m_cassetteRecordPixmap, iconSize);
 }
 
 
@@ -246,6 +242,13 @@ DevicesStatusDisplay::DisplayWidget::DisplayWidget(QWidget *parent, const QPixma
 	layout.addWidget(&m_icon1Label);
 	layout.addWidget(&m_icon2Label);
 	layout.addWidget(&m_textLabel);
+
+	// set the maximum sizes - we want these icons to never exceed the height of the caption
+	int textLabelHeight = m_textLabel.sizeHint().height();
+	m_icon1Label.setMaximumSize(QSize(textLabelHeight, textLabelHeight));
+	m_icon2Label.setMaximumSize(QSize(textLabelHeight, textLabelHeight));
+	m_icon1Label.setScaledContents(true);
+	m_icon2Label.setScaledContents(true);
 
 	// prep a context menu
 	setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
