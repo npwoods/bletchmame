@@ -272,13 +272,13 @@ void RunMachineTask::run(std::optional<QProcess> &process)
 	{
 		// set up the controller
 		MameWorkerController controller(process.value(), [this](MameWorkerController::ChatterType type, const QString& text)
+		{
+			if (m_chatterEnabled)
 			{
-				if (m_chatterEnabled)
-				{
-					auto evt = std::make_unique<ChatterEvent>(type, text);
-					postEventToHost(std::move(evt));
-				}
-			});
+				auto evt = std::make_unique<ChatterEvent>(type, text);
+				postEventToHost(std::move(evt));
+			}
+		});
 
 		// receive the inaugural response from MAME; we want to call it quits if this doesn't work
 		MameWorkerController::Response response = receiveResponseAndHandleUpdates(controller);
