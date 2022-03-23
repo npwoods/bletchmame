@@ -60,6 +60,26 @@ namespace status
 		bool operator==(const image_format &) const = default;
 	};
 
+
+	// ======================> image_details
+	struct image_details
+	{
+		image_details() = default;
+		image_details(const image_details &) = delete;
+		image_details(image_details &&) = default;
+
+		QString						m_instance_name;
+		bool						m_is_readable;
+		bool						m_is_writeable;
+		bool						m_is_creatable;
+		bool						m_must_be_loaded;
+		std::vector<image_format>	m_formats;
+
+		image_details &operator=(image_details &&) = default;
+		bool operator==(const image_details &) const = default;
+	};
+
+
 	// ======================> image
 	struct image
 	{
@@ -67,18 +87,12 @@ namespace status
 		image(const image &) = delete;
 		image(image &&) = default;
 
-		QString				m_tag;
-		QString				m_instance_name;
-		bool				m_is_readable;
-		bool				m_is_writeable;
-		bool				m_is_creatable;
-		bool				m_must_be_loaded;
-		QString				m_file_name;
-		QString				m_display;
-		std::optional<std::vector<image_format>>	m_formats;
+		QString							m_tag;
+		QString							m_file_name;
+		std::shared_ptr<image_details>	m_details;
 
 		image &operator=(image &&) = default;
-		bool operator==(const image &) const = default;
+		bool operator==(const status::image &that) const;
 	};
 
 

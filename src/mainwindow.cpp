@@ -1823,7 +1823,8 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	// do we have any images that require images?
 	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [&behaviorImages](const status::image &image)
 	{
-		return image.m_must_be_loaded										// is this an image that must be loaded?
+		return image.m_details
+			&& image.m_details->m_must_be_loaded							// is this an image that must be loaded?
 			&& image.m_file_name.isEmpty()									// and the filename is empty?
 			&& behaviorImages.find(image.m_tag) == behaviorImages.end();	// and it wasn't specified as a "behavior image" (in which case we need to wait)?
 	});

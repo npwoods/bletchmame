@@ -265,7 +265,7 @@ void ConfigurableDevicesDialog::updateImages()
     auto iter = std::find_if(
         images.cbegin(),
         images.cend(),
-        [](const status::image &image) { return image.m_must_be_loaded && image.m_file_name.isEmpty(); });
+        [](const status::image &image) { return image.m_details && image.m_details->m_must_be_loaded && image.m_file_name.isEmpty(); });
     bool anyMandatoryImagesMissing = iter != images.cend();
 
     // set the ok button enabled property

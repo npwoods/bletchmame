@@ -150,13 +150,16 @@ public:
 
 	void setImage(const status::image &image)
 	{
-		m_image.emplace();
-		m_image->m_instanceName	= image.m_instance_name;
-		m_image->m_fileName		= image.m_file_name;
-		m_image->m_isReadable	= image.m_is_readable;
-		m_image->m_isWriteable	= image.m_is_writeable;
-		m_image->m_isCreatable	= image.m_is_creatable;
-		m_image->m_mustBeLoaded	= image.m_must_be_loaded;
+		if (image.m_details)
+		{
+			m_image.emplace();
+			m_image->m_fileName		= image.m_file_name;
+			m_image->m_instanceName	= image.m_details->m_instance_name;
+			m_image->m_isReadable	= image.m_details->m_is_readable;
+			m_image->m_isWriteable	= image.m_details->m_is_writeable;
+			m_image->m_isCreatable	= image.m_details->m_is_creatable;
+			m_image->m_mustBeLoaded	= image.m_details->m_must_be_loaded;
+		}
 	}
 
 private:
