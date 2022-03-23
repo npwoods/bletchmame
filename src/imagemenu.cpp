@@ -41,10 +41,10 @@ static std::vector<QString> getExtensions(IImageMenuHost &host, const QString &t
 
 	// first try getting the result from the image format
 	const status::image *image = host.getRunningState().find_image(tag);
-	if (image && image->m_formats.has_value())
+	if (image && image->m_details)
 	{
 		// we did find it in the image formats
-		for (const status::image_format &format : *image->m_formats)
+		for (const status::image_format &format : image->m_details->m_formats)
 		{
 			for (const QString &ext : format.m_extensions)
 			{
@@ -226,7 +226,7 @@ void appendImageMenuItems(IImageMenuHost &host, QMenu &popupMenu, const QString 
 		if (!popupMenu.isEmpty())
 			popupMenu.addSeparator();
 
-		if (image->m_is_creatable)
+		if (image->m_details && image->m_details->m_is_creatable)
 			popupMenu.addAction("Create Image...", [&host, &popupMenu, &tag]() { createImage(host, &popupMenu, tag); });
 
 		// load image

@@ -60,6 +60,29 @@ static void normalize_tag(QString &tag)
 }
 
 
+//-------------------------------------------------
+//  compare_pointees
+//-------------------------------------------------
+
+template<class T>
+bool compare_pointees(const std::shared_ptr<T> &x, const std::shared_ptr<T> &y)
+{
+	return (!x && !y) || (x && y && *x == *y);
+}
+
+
+//-------------------------------------------------
+//  image::operator==
+//-------------------------------------------------
+
+bool status::image::operator==(const status::image &that) const
+{
+	return m_tag == that.m_tag
+		&& m_file_name == that.m_file_name
+		&& compare_pointees(m_details, that.m_details);
+}
+
+
 //**************************************************************************
 //  STATUS UPDATES
 //**************************************************************************
@@ -124,32 +147,32 @@ status::update status::update::read(QIODevice &input_stream)
 	{
 		image &image = result.m_images.value().emplace_back();
 		image.m_tag							= attributes.get<QString>("tag").value_or("");
-		image.m_instance_name				= attributes.get<QString>("instance_name").value_or("");
-		image.m_is_readable					= attributes.get<bool>("is_readable").value_or(false);
-		image.m_is_writeable				= attributes.get<bool>("is_writeable").value_or(false);
-		image.m_is_creatable				= attributes.get<bool>("is_creatable").value_or(false);
-		image.m_must_be_loaded				= attributes.get<bool>("must_be_loaded").value_or(false);
 		image.m_file_name					= attributes.get<QString>("filename").value_or("");
-		image.m_display						= attributes.get<QString>("display").value_or("");
 		normalize_tag(image.m_tag);
 	});
-	xml.onElementBegin({ "status", "images", "image", "formats" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "images", "image", "details"}, [&](const XmlParser::Attributes &attributes)
 	{
 		image &image = util::last(*result.m_images);
-		image.m_formats.emplace();
+		image.m_details = std::make_shared<image_details>();
+		image_details &details = *image.m_details;
+		details.m_instance_name				= attributes.get<QString>("instance_name").value_or("");
+		details.m_is_readable				= attributes.get<bool>("is_readable").value_or(false);
+		details.m_is_writeable				= attributes.get<bool>("is_writeable").value_or(false);
+		details.m_is_creatable				= attributes.get<bool>("is_creatable").value_or(false);
+		details.m_must_be_loaded			= attributes.get<bool>("must_be_loaded").value_or(false);
 	});
-	xml.onElementBegin({ "status", "images", "image", "formats", "format" }, [&](const XmlParser::Attributes &attributes)
+	xml.onElementBegin({ "status", "images", "image", "details", "format" }, [&](const XmlParser::Attributes &attributes)
 	{
 		image &image = util::last(*result.m_images);
-		image_format &format = image.m_formats.value().emplace_back();
+		image_format &format = image.m_details->m_formats.emplace_back();
 		format.m_name						= attributes.get<QString>("name").value_or("");
 		format.m_description				= attributes.get<QString>("description").value_or("");
 		format.m_option_spec				= attributes.get<QString>("option_spec").value_or("");
 	});
-	xml.onElementEnd({ "status", "images", "image", "formats", "format", "extension" }, [&](QString &&content)
+	xml.onElementEnd({ "status", "images", "image", "details", "format", "extension" }, [&](QString &&content)
 	{
 		image &image = util::last(*result.m_images);
-		image_format &format = util::last(*image.m_formats);
+		image_format &format = util::last(image.m_details->m_formats);
 		format.m_extensions.push_back(std::move(content));
 	});
 	xml.onElementBegin({ "status", "cassettes" }, [&](const XmlParser::Attributes &)
@@ -343,6 +366,21 @@ status::state::~state()
 
 void status::state::update(status::update &&that)
 {
+	// if this update does not provide image details, use the current details
+	if (that.m_images.has_value())
+	{
+		for (status::image &that_image : that.m_images.value())
+		{
+			if (!that_image.m_details)
+			{
+				const status::image *image = find_image(that_image.m_tag);
+				if (image)
+					that_image.m_details = image->m_details;
+			}
+		}
+	}
+
+	// take all the things
 	take(m_phase,						that.m_phase);
 	take(m_paused,						that.m_paused);
 	take(m_polling_input_seq,			that.m_polling_input_seq);
