@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.14 (TBD)
+- 2.14 (2022-Mar-26)
 	- In addition to the menu bar, ScrLk will now also toggle the visibility of the status bar
 	- Created a nicer status bar display for cassette status
 	- When the user chooses a MAME executable accompanied by a MAME.ini, BletchMAME will now prompt the user to import these settings
