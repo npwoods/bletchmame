@@ -2328,6 +2328,10 @@ void MainWindow::watchForImageMount(const QString &tag)
 
 void MainWindow::placeInRecentFiles(const QString &tag, const QString &path)
 {
+	// don't add empty stuff
+	if (path.trimmed().isEmpty())
+		return;
+
 	// get the machine and device type to update recents
 	info::machine machine = getRunningMachine();
 	const QString &device_type = GetDeviceType(machine, tag);

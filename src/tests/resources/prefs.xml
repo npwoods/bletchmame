@@ -15,5 +15,10 @@
 	<selection view="machine">nes</selection>
 
 	<!-- Machines -->
-  <machine name="echo" working_directory="C:\My&#x20AC;choGames\" last_save_state="C:\MyLastSt&#x03B1;te.sta" />
+	<machine name="echo" working_directory="C:\My&#x20AC;choGames\" last_save_state="C:\MyLastSt&#x03B1;te.sta">
+		<device type="cassette">
+			<recentfile>C:\mycassette.cas</recentfile>
+			<recentfile></recentfile>
+		</device>
+	</machine>
 </preferences>
