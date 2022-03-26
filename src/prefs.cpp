@@ -1052,7 +1052,8 @@ bool Preferences::load(QIODevice &input)
 	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](QString &&content)
 	{
 		QString path = QDir::fromNativeSeparators(content);
-		getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(path));
+		if (!path.trimmed().isEmpty())
+			getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(path));
 	});
 	xml.onElementBegin({ "preferences", "software" }, [&](const XmlParser::Attributes &attributes)
 	{

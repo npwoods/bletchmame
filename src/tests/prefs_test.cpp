@@ -95,6 +95,11 @@ void Preferences::Test::general(bool regurgitate)
 	QVERIFY(prefs.getMachinePath("echo", Preferences::machine_path_type::LAST_SAVE_STATE)		== fixPaths(u"C:\\MyLastSt\u03B1te.sta"));
 	QVERIFY(prefs.getMachinePath("foxtrot", Preferences::machine_path_type::WORKING_DIRECTORY)	== fixPaths(""));
 	QVERIFY(prefs.getMachinePath("foxtrot", Preferences::machine_path_type::LAST_SAVE_STATE)	== fixPaths(""));
+	QVERIFY(prefs.getRecentDeviceFiles("echo", "cassette").size()								== 1);
+	QVERIFY(prefs.getRecentDeviceFiles("echo", "cassette")[0]									== fixPaths("C:\\mycassette.cas"));
+	QVERIFY(prefs.getRecentDeviceFiles("echo", "floppy").size()									== 0);
+	QVERIFY(prefs.getRecentDeviceFiles("foxtrot", "cassette").size()							== 0);
+	QVERIFY(prefs.getRecentDeviceFiles("foxtrot", "cassette").size()							== 0);
 }
 
 
