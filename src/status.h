@@ -53,7 +53,6 @@ namespace status
 
 		QString					m_name;
 		QString					m_description;
-		QString					m_option_spec;
 		std::vector<QString>	m_extensions;
 
 		image_format &operator=(image_format &&) = default;

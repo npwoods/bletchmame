@@ -61,11 +61,11 @@ static void normalize_tag(QString &tag)
 
 
 //-------------------------------------------------
-//  compare_pointees
+//  comparePointees
 //-------------------------------------------------
 
 template<class T>
-bool compare_pointees(const std::shared_ptr<T> &x, const std::shared_ptr<T> &y)
+static bool comparePointees(const std::shared_ptr<T> &x, const std::shared_ptr<T> &y)
 {
 	return (!x && !y) || (x && y && *x == *y);
 }
@@ -79,7 +79,7 @@ bool status::image::operator==(const status::image &that) const
 {
 	return m_tag == that.m_tag
 		&& m_file_name == that.m_file_name
-		&& compare_pointees(m_details, that.m_details);
+		&& comparePointees(m_details, that.m_details);
 }
 
 
@@ -167,7 +167,6 @@ status::update status::update::read(QIODevice &input_stream)
 		image_format &format = image.m_details->m_formats.emplace_back();
 		format.m_name						= attributes.get<QString>("name").value_or("");
 		format.m_description				= attributes.get<QString>("description").value_or("");
-		format.m_option_spec				= attributes.get<QString>("option_spec").value_or("");
 	});
 	xml.onElementEnd({ "status", "images", "image", "details", "format", "extension" }, [&](QString &&content)
 	{
@@ -361,24 +360,39 @@ status::state::~state()
 
 
 //-------------------------------------------------
+//  retainDetails
+//-------------------------------------------------
+
+template<class T>
+static void retainDetails(std::optional<std::vector<T>> &updateVec, const std::vector<T> &stateVec)
+{
+	// if this update does not provide image details, use the current details
+	if (updateVec.has_value())
+	{
+		for (T &thatItem : updateVec.value())
+		{
+			if (!thatItem.m_details)
+			{
+				auto iter = std::find_if(stateVec.begin(), stateVec.end(), [&thatItem](const T &x)
+				{
+					return x.m_tag == thatItem.m_tag;
+				});
+				if (iter != stateVec.end())
+					thatItem.m_details = iter->m_details;
+			}
+		}
+	}
+}
+
+
+//-------------------------------------------------
 //  state::update()
 //-------------------------------------------------
 
 void status::state::update(status::update &&that)
 {
-	// if this update does not provide image details, use the current details
-	if (that.m_images.has_value())
-	{
-		for (status::image &that_image : that.m_images.value())
-		{
-			if (!that_image.m_details)
-			{
-				const status::image *image = find_image(that_image.m_tag);
-				if (image)
-					that_image.m_details = image->m_details;
-			}
-		}
-	}
+	// retain details about images
+	retainDetails(that.m_images, m_images.get());
 
 	// take all the things
 	take(m_phase,						that.m_phase);
