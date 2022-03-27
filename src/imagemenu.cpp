@@ -219,8 +219,9 @@ void appendImageMenuItems(IImageMenuHost &host, QMenu &popupMenu, const QString 
 	const status::image *image = host.getRunningState().find_image(tag);
 	if (image)
 	{
+		// get critical information
 		info::machine machine = host.getRunningMachine();
-		const software_list_collection &softwareListCollection = host.getSoftwareListCollection();
+		const software_list_collection &softwareListCollection = host.getRunningSoftwareListCollection();
 
 		// add a separator if necessary
 		if (!popupMenu.isEmpty())

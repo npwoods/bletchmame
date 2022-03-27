@@ -49,7 +49,7 @@ public:
 	virtual void auditIfAppropriate(const info::machine &machine) = 0;
 	virtual void auditIfAppropriate(const software_list::software &software) = 0;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) = 0;
-	virtual software_list_collection &getSoftwareListCollection() = 0;
+	virtual software_list_collection &getAuditSoftwareListCollection() = 0;
 	virtual void updateAuditTimer() = 0;
 };
 

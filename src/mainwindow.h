@@ -167,7 +167,7 @@ private:
 	info::database						m_info_db;
 
 	// software lists
-	software_list_collection			m_softwareListCollection;
+	std::optional<software_list_collection>	m_runningSoftwareListCollection;
 
 	// status of running emulation
 	std::unique_ptr<SessionBehavior>	m_sessionBehavior;
@@ -175,6 +175,7 @@ private:
 
 	// auditing
 	AuditQueue							m_auditQueue;
+	software_list_collection			m_auditSoftwareListCollection;
 	QTimer *							m_auditTimer;
 	unsigned int						m_maximumConcurrentAuditTasks;
 	AuditCursor							m_auditCursor;
@@ -233,7 +234,7 @@ private:
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
 	virtual info::machine getRunningMachine() const override final;
 	virtual Preferences &getPreferences() override final;
-	virtual software_list_collection &getSoftwareListCollection() override final;
+	virtual const software_list_collection &getRunningSoftwareListCollection() const override final;
 	virtual status::state &getRunningState() override final;
 	virtual void createImage(const QString &tag, QString &&path) override final;
 	virtual void loadImage(const QString &tag, QString &&path) override final;
@@ -266,6 +267,7 @@ private:
 	bool canAutomaticallyAudit() const;
 	virtual void updateAuditTimer() override final;
 	virtual void auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<AuditTask> &&auditTask) override final;
+	virtual software_list_collection &getAuditSoftwareListCollection() override final;
 	void auditTimerProc();
 	void dispatchAuditTasks();
 	void reportAuditResults(const std::vector<AuditResult> &results);

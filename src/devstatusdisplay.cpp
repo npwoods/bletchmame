@@ -190,7 +190,7 @@ QString DevicesStatusDisplay::imageDisplayText(const status::image &image) const
 {
 	QString imageFileName = prettifyImageFileName(
 		m_host.getRunningMachine(),
-		m_host.getSoftwareListCollection(),
+		m_host.getRunningSoftwareListCollection(),
 		image.m_tag,
 		image.m_file_name,
 		false);
