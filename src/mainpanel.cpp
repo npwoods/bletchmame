@@ -807,7 +807,7 @@ void MainPanel::updateSoftwareList()
 		const info::machine machine = machineFromModelIndex(selection[0]);
 
 		// get the software list collection
-		software_list_collection &softwareListCollection = m_host.getSoftwareListCollection();
+		software_list_collection &softwareListCollection = m_host.getAuditSoftwareListCollection();
 
 		// load the software
 		m_currentSoftwareList = machine.name();

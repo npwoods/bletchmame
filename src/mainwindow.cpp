@@ -595,7 +595,7 @@ MainWindow::MainWindow(QWidget *parent)
 	, m_mainPanel(nullptr)
 	, m_prefs(QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)))
 	, m_taskDispatcher(*this, m_prefs)
-	, m_auditQueue(m_prefs, m_info_db, m_softwareListCollection, 20)
+	, m_auditQueue(m_prefs, m_info_db, m_auditSoftwareListCollection, 20)
 	, m_auditTimer(nullptr)
 	, m_maximumConcurrentAuditTasks(std::thread::hardware_concurrency() * 3 + 8)
 	, m_auditCursor(m_prefs)
@@ -1784,6 +1784,10 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	// set up running state and subscribe to events
 	m_state.emplace();
 
+	// load the software list collection
+	m_runningSoftwareListCollection.emplace();
+	m_runningSoftwareListCollection->load(m_prefs, machine);
+
 	// execute the start handler for all aspects
 	for (const auto &aspect : m_aspects)
 		aspect->start();
@@ -1861,12 +1865,12 @@ Preferences &MainWindow::getPreferences()
 
 
 //-------------------------------------------------
-//  getSoftwareListCollection
+//  getRunningSoftwareListCollection
 //-------------------------------------------------
 
-software_list_collection &MainWindow::getSoftwareListCollection()
+const software_list_collection &MainWindow::getRunningSoftwareListCollection() const
 {
-	return m_softwareListCollection;
+	return m_runningSoftwareListCollection.value();
 }
 
 
@@ -2263,6 +2267,7 @@ bool MainWindow::onRunMachineCompleted(const RunMachineCompletedEvent &event)
 	// clear out all of the state
 	m_currentRunMachineTask.reset();
 	m_state.reset();
+	m_runningSoftwareListCollection.reset();
 	m_sessionBehavior.reset();
 
 	// execute the stop handler for all aspects
@@ -2912,6 +2917,16 @@ void MainWindow::auditDialogStarted(AuditDialog &auditDialog, std::shared_ptr<Au
 
 
 //-------------------------------------------------
+//  getAuditSoftwareListCollection
+//-------------------------------------------------
+
+software_list_collection &MainWindow::getAuditSoftwareListCollection()
+{
+	return m_auditSoftwareListCollection;
+}
+
+
+//-------------------------------------------------
 //  auditTimerProc
 //-------------------------------------------------
 
@@ -3014,7 +3029,7 @@ const QString *MainWindow::auditIdentifierString(const AuditIdentifier &identifi
 		}
 		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
 		{
-			const software_list::software *software = m_softwareListCollection.find_software_by_list_and_name(
+			const software_list::software *software = m_auditSoftwareListCollection.find_software_by_list_and_name(
 				identifier.softwareList(),
 				identifier.software());
 			if (software)

@@ -37,7 +37,7 @@ class IImageMenuHost
 public:
 	virtual Preferences &getPreferences() = 0;
 	virtual info::machine getRunningMachine() const = 0;
-	virtual const software_list_collection &getSoftwareListCollection() = 0;
+	virtual const software_list_collection &getRunningSoftwareListCollection() const = 0;
 	virtual status::state &getRunningState() = 0;
 	virtual void createImage(const QString &tag, QString &&path) = 0;
 	virtual void loadImage(const QString &tag, QString &&path) = 0;
