@@ -167,7 +167,6 @@ status::update status::update::read(QIODevice &input_stream)
 		image_format &format = image.m_details->m_formats.emplace_back();
 		format.m_name						= attributes.get<QString>("name").value_or("");
 		format.m_description				= attributes.get<QString>("description").value_or("");
-		format.m_option_spec				= attributes.get<QString>("option_spec").value_or("");
 	});
 	xml.onElementEnd({ "status", "images", "image", "details", "format", "extension" }, [&](QString &&content)
 	{
