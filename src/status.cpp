@@ -361,24 +361,39 @@ status::state::~state()
 
 
 //-------------------------------------------------
+//  retainDetails
+//-------------------------------------------------
+
+template<class T>
+static void retainDetails(std::optional<std::vector<T>> &updateVec, const std::vector<T> &stateVec)
+{
+	// if this update does not provide image details, use the current details
+	if (updateVec.has_value())
+	{
+		for (T &thatItem : updateVec.value())
+		{
+			if (!thatItem.m_details)
+			{
+				auto iter = std::find_if(stateVec.begin(), stateVec.end(), [&thatItem](const T &x)
+				{
+					return x.m_tag == thatItem.m_tag;
+				});
+				if (iter != stateVec.end())
+					thatItem.m_details = iter->m_details;
+			}
+		}
+	}
+}
+
+
+//-------------------------------------------------
 //  state::update()
 //-------------------------------------------------
 
 void status::state::update(status::update &&that)
 {
-	// if this update does not provide image details, use the current details
-	if (that.m_images.has_value())
-	{
-		for (status::image &that_image : that.m_images.value())
-		{
-			if (!that_image.m_details)
-			{
-				const status::image *image = find_image(that_image.m_tag);
-				if (image)
-					that_image.m_details = image->m_details;
-			}
-		}
-	}
+	// retain details about images
+	retainDetails(that.m_images, m_images.get());
 
 	// take all the things
 	take(m_phase,						that.m_phase);
