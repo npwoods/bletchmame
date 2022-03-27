@@ -61,11 +61,11 @@ static void normalize_tag(QString &tag)
 
 
 //-------------------------------------------------
-//  compare_pointees
+//  comparePointees
 //-------------------------------------------------
 
 template<class T>
-bool compare_pointees(const std::shared_ptr<T> &x, const std::shared_ptr<T> &y)
+static bool comparePointees(const std::shared_ptr<T> &x, const std::shared_ptr<T> &y)
 {
 	return (!x && !y) || (x && y && *x == *y);
 }
@@ -79,7 +79,7 @@ bool status::image::operator==(const status::image &that) const
 {
 	return m_tag == that.m_tag
 		&& m_file_name == that.m_file_name
-		&& compare_pointees(m_details, that.m_details);
+		&& comparePointees(m_details, that.m_details);
 }
 
 
