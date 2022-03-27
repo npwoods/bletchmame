@@ -38,6 +38,7 @@ private slots:
 	void substitutions3();
 	void setFolderPrefs();
 	void customFolders();
+	void placeInRecentDeviceFiles();
 
 private:
 	static void loadSamplePrefsXml(QBuffer &buffer);
@@ -385,6 +386,98 @@ void Preferences::Test::customFolders()
 	QVERIFY(prefs.deleteCustomFolder("ThatFolder"));
 	QVERIFY(prefs.getCustomFolders().empty());
 	QVERIFY(customFoldersChanged == 5);
+}
+
+
+//-------------------------------------------------
+//  placeInRecentDeviceFiles
+//-------------------------------------------------
+
+void Preferences::Test::placeInRecentDeviceFiles()
+{
+	// create a temporary directory
+	QTemporaryDir tempDir;
+	QVERIFY(tempDir.isValid());
+	{
+		QFile file(tempDir.filePath("myfile.image"));
+		QVERIFY(file.open(QIODevice::WriteOnly));
+	}
+
+	// create initial prefs
+	Preferences prefs;
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").empty());
+
+	// drop in a softlist item
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing1");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 1);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == "mysoftlistthing1");
+
+	// drop in another softlist item
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing2");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 2);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == "mysoftlistthing2");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == "mysoftlistthing1");
+
+	// drop in an empty item
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 2);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == "mysoftlistthing2");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == "mysoftlistthing1");
+
+	// drop in the first item again
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing1");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 2);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == "mysoftlistthing1");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == "mysoftlistthing2");
+
+	// drop in a file
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", tempDir.filePath("myfile.image"));
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 3);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == tempDir.filePath("myfile.image"));
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == "mysoftlistthing1");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[2] == "mysoftlistthing2");
+
+	// drop in another file (it doesn't exist, but this shouldn't be a problem)
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", tempDir.filePath("mynonexistentfile.image"));
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 4);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == tempDir.filePath("mynonexistentfile.image"));
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == tempDir.filePath("myfile.image"));
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[2] == "mysoftlistthing1");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[3] == "mysoftlistthing2");
+
+	// ensure that file canonicalization works (which requires a case insensitive file system)
+	if (QFile::exists(tempDir.filePath("MYFILE.image")))
+	{
+		prefs.placeInRecentDeviceFiles("mymachine", "mydevice", tempDir.filePath("MYFILE.image"));
+		QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 4);
+		QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == tempDir.filePath("MYFILE.image"));
+		QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == tempDir.filePath("mynonexistentfile.image"));
+		QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[2] == "mysoftlistthing1");
+		QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[3] == "mysoftlistthing2");
+	}
+
+	// ensure that we cap at 10 files
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing3");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing4");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing5");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing6");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing7");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing8");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing9");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing10");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing11");
+	prefs.placeInRecentDeviceFiles("mymachine", "mydevice", "mysoftlistthing12");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice").size() == 10);
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[0] == "mysoftlistthing12");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[1] == "mysoftlistthing11");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[2] == "mysoftlistthing10");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[3] == "mysoftlistthing9");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[4] == "mysoftlistthing8");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[5] == "mysoftlistthing7");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[6] == "mysoftlistthing6");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[7] == "mysoftlistthing5");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[8] == "mysoftlistthing4");
+	QVERIFY(prefs.getRecentDeviceFiles("mymachine", "mydevice")[9] == "mysoftlistthing3");
 }
 
 

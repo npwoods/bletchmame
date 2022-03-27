@@ -210,8 +210,8 @@ public:
 	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
 	void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
 
-	std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type);
 	const std::vector<QString> &getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const;
+	void placeInRecentDeviceFiles(const QString &machine_name, const QString &device_type, QString &&path);
 
 	AuditStatus getMachineAuditStatus(const QString & machine_name) const;
 	void setMachineAuditStatus(const QString &machine_name, AuditStatus status);

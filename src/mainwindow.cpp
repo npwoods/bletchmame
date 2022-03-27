@@ -2299,80 +2299,43 @@ bool MainWindow::onStatusUpdate(StatusUpdateEvent &event)
 
 void MainWindow::watchForImageMount(const QString &tag)
 {
-	// find the current value; we want to monitor for this value changing
-	QString current_value;
-	const status::image *image = m_state->find_image(tag);
-	if (image)
-		current_value = image->m_file_name;
-
-	// start watching
-	m_watch_subscription = m_state->images().subscribe([this, current_value{std::move(current_value)}, tag]
-	{
-		// did the value change?
-		const status::image *image = m_state->find_image(tag);
-		if (image && image->m_file_name != current_value)
-		{
-			// it did!  place the new file in recent files
-			placeInRecentFiles(tag, image->m_file_name);
-
-			// and stop subscribing
-			m_watch_subscription = observable::unique_subscription();
-		}
-	});	
-}
-
-
-//-------------------------------------------------
-//  placeInRecentFiles
-//-------------------------------------------------
-
-void MainWindow::placeInRecentFiles(const QString &tag, const QString &path)
-{
-	// don't add empty stuff
-	if (path.trimmed().isEmpty())
-		return;
-
-	// get the machine and device type to update recents
+	// find the device type
 	info::machine machine = getRunningMachine();
-	const QString &device_type = GetDeviceType(machine, tag);
-
-	// actually edit the recent files; start by getting recent files
-	std::vector<QString> &recentFiles = m_prefs.getRecentDeviceFiles(machine.name(), device_type);
-
-	// ...and clearing out places where that entry already exists
-	QFileInfo pathFi(path);
-	auto endIter = std::remove_if(recentFiles.begin(), recentFiles.end(), [&pathFi](const QString &x)
-	{
-		return areFileInfosEquivalent(QFileInfo(x), pathFi);
-	});
-	recentFiles.resize(endIter - recentFiles.begin());
-
-	// ...insert the new value
-	recentFiles.insert(recentFiles.begin(), path);
-
-	// and cull the list
-	const size_t MAXIMUM_RECENT_FILES = 10;
-	recentFiles.resize(std::min(recentFiles.size(), MAXIMUM_RECENT_FILES));
-}
-
-
-//-------------------------------------------------
-//  GetDeviceType
-//-------------------------------------------------
-
-const QString &MainWindow::GetDeviceType(const info::machine &machine, const QString &tag)
-{
-	auto iter = std::find_if(
+	auto deviceIter = std::find_if(
 		machine.devices().begin(),
 		machine.devices().end(),
 		[&tag](const info::device device)
 		{
 			return device.tag() == tag;
 		});
+	if (deviceIter == machine.devices().end())
+		return;
+	const QString &deviceType = deviceIter->type();
 
-	return iter != machine.devices().end()
-		? iter->type()
-		: util::g_empty_string;
+	// find the current value; we want to monitor for this value changing
+	QString currentValue;
+	const status::image *image = m_state->find_image(tag);
+	if (image)
+		currentValue = image->m_file_name;
+
+	// start watching
+	const QString &machineName = machine.name();
+	m_watch_subscription.unsubscribe();
+	m_watch_subscription = m_state->images().subscribe([this, currentValue{std::move(currentValue)}, tag, &machineName, &deviceType]
+	{
+		// did the value change?
+		const status::image *image = m_state->find_image(tag);
+		if (image && image->m_file_name != currentValue)
+		{
+			// it did!  place the new file in recent files
+			QString newImageFileName = QDir::fromNativeSeparators(image->m_file_name);
+			m_prefs.placeInRecentDeviceFiles(machineName, deviceType, std::move(newImageFileName));
+
+			// and stop subscribing
+			m_watch_subscription.unsubscribe();
+			m_watch_subscription = observable::unique_subscription();
+		}
+	});	
 }
 
 

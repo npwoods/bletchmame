@@ -641,12 +641,6 @@ void Preferences::setMachinePath(const QString &machine_name, machine_path_type 
 //  getRecentDeviceFiles
 //-------------------------------------------------
 
-std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &machine_name, const QString &device_type)
-{
-	return m_machine_info[machine_name].m_recentDeviceFiles[device_type];
-}
-
-
 const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &machine_name, const QString &device_type) const
 {
 	static const std::vector<QString> empty_vector;
@@ -659,6 +653,36 @@ const std::vector<QString> &Preferences::getRecentDeviceFiles(const QString &mac
 		return empty_vector;
 
 	return iter->second;
+}
+
+
+//-------------------------------------------------
+//  placeInRecentDeviceFiles
+//-------------------------------------------------
+
+void Preferences::placeInRecentDeviceFiles(const QString &machine_name, const QString &device_type, QString &&path)
+{
+	// don't add empty stuff
+	if (path.trimmed().isEmpty())
+		return;
+
+	// actually edit the recent files; start by getting recent files
+	std::vector<QString> &recentFiles = m_machine_info[machine_name].m_recentDeviceFiles[device_type];
+
+	// ...and clearing out places where that entry already exists
+	QFileInfo pathFi(path);
+	auto endIter = std::remove_if(recentFiles.begin(), recentFiles.end(), [&pathFi](const QString &x)
+	{
+		return areFileInfosEquivalent(QFileInfo(x), pathFi);
+	});
+	recentFiles.resize(endIter - recentFiles.begin());
+
+	// ...insert the new value
+	recentFiles.insert(recentFiles.begin(), std::move(path));
+
+	// and cull the list
+	const size_t MAXIMUM_RECENT_FILES = 10;
+	recentFiles.resize(std::min(recentFiles.size(), MAXIMUM_RECENT_FILES));
 }
 
 
@@ -1053,7 +1077,7 @@ bool Preferences::load(QIODevice &input)
 	{
 		QString path = QDir::fromNativeSeparators(content);
 		if (!path.trimmed().isEmpty())
-			getRecentDeviceFiles(current_machine_name, current_device_type).push_back(std::move(path));
+			m_machine_info[current_machine_name].m_recentDeviceFiles[current_device_type].push_back(std::move(path));
 	});
 	xml.onElementBegin({ "preferences", "software" }, [&](const XmlParser::Attributes &attributes)
 	{
