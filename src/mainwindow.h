@@ -226,10 +226,8 @@ private:
 	void showInputsDialog(status::input::input_class input_class);
 	void showSwitchesDialog(status::input::input_class input_class);
 	bool isMameVersionAtLeast(const SimpleMameVersion &version) const;
-	static const QString &GetDeviceType(const info::machine &machine, const QString &tag);
 	virtual void setChatterListener(std::function<void(const ChatterEvent &chatter)> &&func) override final;
 	void watchForImageMount(const QString &tag);
-	void placeInRecentFiles(const QString &tag, const QString &path);
 	bool attachToMainWindow() const;
 	QString attachWidgetId() const;
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
