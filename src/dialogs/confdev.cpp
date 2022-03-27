@@ -318,6 +318,10 @@ void ConfigurableDevicesDialog::buildDeviceMenuSlotItems(QMenu &popupMenu, const
         QString                             m_text;
     };
 
+    // if there are no options, if makes no sense to proceed
+    if (slot.options().empty())
+        return;
+
     // if so, prepare a list of options (and the initial item)
     std::vector<SlotOptionInfo> slotOptions;
     slotOptions.emplace_back();
