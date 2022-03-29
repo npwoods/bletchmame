@@ -104,7 +104,9 @@ namespace bindata
 
 		TPublic operator[](std::size_t position) const
 		{
-			return *(begin() + position);
+			if (position >= size())
+				throw std::out_of_range("bindata::view::operator[]");
+			return begin()[position];
 		}
 
 		size_t size() const { return m_span.size(); }
