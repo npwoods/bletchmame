@@ -142,6 +142,8 @@ namespace bindata
 
 			TPublic operator*() const
 			{
+				if (!m_db)
+					throw std::out_of_range("bindata::view::iterator::operator*");
 				return TPublic(*m_db, *m_spanIter);
 			}
 				

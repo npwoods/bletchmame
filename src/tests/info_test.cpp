@@ -34,6 +34,8 @@ namespace
 		void badMachineLookup();
 		void viewIterators();
 		void viewIndexOutOfRange();
+		void viewIteratorDerefOutOfRange();
+		void viewIteratorDerefAndAddOutOfRange();
 		void loadGarbage_0_0()				{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()			{ loadGarbage(0, 1000); }
 		void loadGarbage_1000_0()			{ loadGarbage(1000, 0); }
@@ -318,6 +320,61 @@ void Test::viewIndexOutOfRange()
 		}
 		QVERIFY(caughtOutOfRange);
 	}
+}
+
+
+//-------------------------------------------------
+//  viewIteratorDerefOutOfRange
+//-------------------------------------------------
+
+void Test::viewIteratorDerefOutOfRange()
+{
+	// there is probably a better way to get the type of a view iterator
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	auto originalIter = db.machines().begin();
+	(void)originalIter;
+
+	// ensure that a deference of a default instantiated iterator throws an exception
+	decltype(originalIter) iter;
+	bool caughtOutOfRange = false;
+	try
+	{
+		(void) *iter;
+	}
+	catch (const std::out_of_range &)
+	{
+		caughtOutOfRange = true;
+	}
+	QVERIFY(caughtOutOfRange);
+}
+
+
+//-------------------------------------------------
+//  viewIteratorDerefAndAddOutOfRange
+//-------------------------------------------------
+
+void Test::viewIteratorDerefAndAddOutOfRange()
+{
+	// there is probably a better way to get the type of a view iterator
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	auto originalIter = db.machines().begin();
+	(void)originalIter;
+
+	// ensure that a deference of an offsetted default instantiated iterator throws an exception
+	decltype(originalIter) iter1;
+	decltype(originalIter) iter2 = iter1 + 42;
+	bool caughtOutOfRange = false;
+	try
+	{
+		(void)*iter2;
+	}
+	catch (const std::out_of_range &)
+	{
+		caughtOutOfRange = true;
+	}
+	QVERIFY(caughtOutOfRange);
 }
 
 
