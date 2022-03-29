@@ -33,6 +33,8 @@ namespace
 		void loadExpectedVersion_alienar()	{ loadExpectedVersion(":/resources/listxml_alienar.xml", "0.229 (mame0229)"); }
 		void badMachineLookup();
 		void viewIterators();
+		void viewIndexOutOfRange();
+		void viewIteratorDerefOutOfRange();
 		void loadGarbage_0_0()				{ loadGarbage(0, 0); }
 		void loadGarbage_0_1000()			{ loadGarbage(0, 1000); }
 		void loadGarbage_1000_0()			{ loadGarbage(1000, 0); }
@@ -274,6 +276,76 @@ void Test::viewIterators()
 	QVERIFY(!(iter1 != iter4));
 	QVERIFY(iter2 != iter4);
 	QVERIFY(iter3 != iter4);
+}
+
+
+//-------------------------------------------------
+//  viewIndexOutOfRange
+//-------------------------------------------------
+
+void Test::viewIndexOutOfRange()
+{
+	// load the db, validating we've done so successfully
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	QVERIFY(db.machines().size() > 2);
+
+	// acceptable indexes
+	QVERIFY(!db.machines()[0].name().isEmpty());
+	QVERIFY(!db.machines()[1].name().isEmpty());
+	QVERIFY(!db.machines()[2].name().isEmpty());
+	QVERIFY(!db.machines()[db.machines().size() - 2].name().isEmpty());
+	QVERIFY(!db.machines()[db.machines().size() - 1].name().isEmpty());
+
+	// these indexes are out of range
+	size_t outOfRangeIndexes[] =
+	{
+		db.machines().size(),
+		db.machines().size() + 100,
+		0xDEADBEEF,
+		0xFFFFFFFF,
+		~((size_t)0)
+	};
+	for (size_t index : outOfRangeIndexes)
+	{
+		bool caughtOutOfRange = false;
+		try
+		{
+			(void)db.machines()[index];
+		}
+		catch (const std::out_of_range &)
+		{
+			caughtOutOfRange = true;
+		}
+		QVERIFY(caughtOutOfRange);
+	}
+}
+
+
+//-------------------------------------------------
+//  viewIteratorDerefOutOfRange
+//-------------------------------------------------
+
+void Test::viewIteratorDerefOutOfRange()
+{
+	// there is probably a better way to get the type of a view iterator
+	info::database db;
+	QVERIFY(db.load(buildInfoDatabase()));
+	auto originalIter = db.machines().begin();
+	(void)originalIter;
+
+	// ensure that a deference of a default instantiated iterator throws an exception
+	decltype(originalIter) iter;
+	bool caughtOutOfRange = false;
+	try
+	{
+		(void) *iter;
+	}
+	catch (const std::out_of_range &)
+	{
+		caughtOutOfRange = true;
+	}
+	QVERIFY(caughtOutOfRange);
 }
 
 
