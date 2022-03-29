@@ -18,7 +18,7 @@ DEPS_INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msys2
 
 # parse arguments
 USE_PROFILER=off
-BUILD_TYPE=Release
+BUILD_TYPE=Release					# can be Release/Debug/RelWithDebInfo etc
 while getopts "pb:" OPTION; do
    case $OPTION in
       p)

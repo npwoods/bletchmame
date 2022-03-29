@@ -151,20 +151,6 @@ bool contains(const TContainer &container, const typename TContainer::value_type
 }
 
 
-template<typename TContainer, typename TPredicate>
-bool contains_if(typename TContainer::const_iterator begin, typename TContainer::const_iterator end, TPredicate predicate)
-{
-	return std::find_if(begin, end, predicate) != end;
-}
-
-
-template<typename TContainer, typename TPredicate>
-bool contains_if(const TContainer &container, TPredicate predicate)
-{
-	return contains_if<TContainer>(container.cbegin(), container.cend(), predicate);
-}
-
-
 //**************************************************************************
 //  ENUM UTILITY CLASSES
 //**************************************************************************
