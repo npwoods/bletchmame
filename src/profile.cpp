@@ -51,7 +51,7 @@ bool profiles::profile::is_valid() const
 	return !m_name.isEmpty()
 		&& !m_path.isEmpty()
 		&& !m_machine.isEmpty()
-		&& std::find_if(m_images.begin(), m_images.end(), [](const image &x) { return !x.is_valid(); }) == m_images.end();
+		&& std::ranges::find_if(m_images, [](const image &x) { return !x.is_valid(); }) == m_images.end();
 }
 
 

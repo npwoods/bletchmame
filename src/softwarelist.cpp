@@ -169,7 +169,7 @@ const software_list::software *software_list_collection::find_software_by_name(c
 	// local function to determine if there is a special character
 	auto has_special_character = [&name]()
 	{
-		return std::find_if(name.cbegin(), name.cend(), [](QChar ch)
+		return std::ranges::find_if(name, [](QChar ch)
 		{
 			return ch == '.' || ch == ':' || ch == '/' || ch == '\\';
 		}) != name.cend();

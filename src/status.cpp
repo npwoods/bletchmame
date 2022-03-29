@@ -373,7 +373,7 @@ static void retainDetails(std::optional<std::vector<T>> &updateVec, const std::v
 		{
 			if (!thatItem.m_details)
 			{
-				auto iter = std::find_if(stateVec.begin(), stateVec.end(), [&thatItem](const T &x)
+				auto iter = std::ranges::find_if(stateVec, [&thatItem](const T &x)
 				{
 					return x.m_tag == thatItem.m_tag;
 				});

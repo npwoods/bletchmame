@@ -174,9 +174,8 @@ private:
 	{
 		if (!slotOption.isEmpty() && m_slot.has_value())
 		{
-			auto iter = std::find_if(
-				m_slot.value().options().begin(),
-				m_slot.value().options().end(),
+			auto iter = std::ranges::find_if(
+				m_slot.value().options(),
 				[&slotOption](const info::slot_option &x)
 				{
 					return x.name() == slotOption;
@@ -386,9 +385,8 @@ std::optional<QString> ConfigurableDevicesModel::getSlotOptionText(info::slot sl
 	std::optional<QString> result;
 	if (!slotOption.isEmpty())
 	{
-		auto iter = std::find_if(
-			slot.options().begin(),
-			slot.options().end(),
+		auto iter = std::ranges::find_if(
+			slot.options(),
 			[&slotOption](const info::slot_option &x)
 			{
 				return x.name() == slotOption;
@@ -617,9 +615,8 @@ QModelIndex ConfigurableDevicesModel::parent(const QModelIndex &index) const
 	const Node *parentNode = node.parent();
 	if (parentNode)
 	{
-		auto iter = std::find_if(
-			parentNode->children().begin(),
-			parentNode->children().end(),
+		auto iter = std::ranges::find_if(
+			parentNode->children(),
 			[&node](const auto &x) { return &*x == &node; });
 		result = createIndex(iter - parentNode->children().begin(), 0, (void *)parentNode);
 	}
@@ -782,9 +779,8 @@ void ConfigurableDevicesModel::Node::populateChildren(std::optional<info::machin
 				DeviceNode::ptr child = std::make_unique<DeviceNode>(*this, QString(childTagBase() + slot.name()), slot);
 
 				// set its option to the default
-				auto iter = std::find_if(
-					slot.options().begin(),
-					slot.options().end(),
+				auto iter = std::ranges::find_if(
+					slot.options(),
 					[](const info::slot_option &opt) { return opt.is_default(); });
 				if (iter != slot.options().end())
 				{

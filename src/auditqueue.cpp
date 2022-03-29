@@ -205,7 +205,7 @@ AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &a
 const software_list::software *AuditQueue::findSoftware(const QString &softwareList, const QString &software) const
 {
 	// find the software list with the specified name
-	auto softwareListIter = std::find_if(m_softwareListCollection.software_lists().begin(), m_softwareListCollection.software_lists().end(), [&softwareList](const software_list::ptr &ptr)
+	auto softwareListIter = std::ranges::find_if(m_softwareListCollection.software_lists(), [&softwareList](const software_list::ptr &ptr)
 	{
 		return ptr->name() == softwareList;
 	});
@@ -213,7 +213,7 @@ const software_list::software *AuditQueue::findSoftware(const QString &softwareL
 		return nullptr;
 
 	// find the software with the specified name
-	auto softwareIter = std::find_if((*softwareListIter)->get_software().begin(), (*softwareListIter)->get_software().end(), [&software](const software_list::software &sw)
+	auto softwareIter = std::ranges::find_if((*softwareListIter)->get_software(), [&software](const software_list::software &sw)
 	{
 		return sw.name() == software;
 	});

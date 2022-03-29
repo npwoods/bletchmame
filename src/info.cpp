@@ -446,9 +446,8 @@ std::optional<std::array<char8_t, 6>> info::database::tryDecodeAsSmallString(std
 std::optional<info::device> info::machine::find_device(const QString &tag) const
 {
 	// find the device
-	auto iter = std::find_if(
-		devices().cbegin(),
-		devices().cend(),
+	auto iter = std::ranges::find_if(
+		devices(),
 		[&tag](info::device dev) { return tag == dev.tag(); });
 
 	// if we found a device, return the interface
@@ -465,9 +464,8 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 std::optional<info::chip> info::machine::find_chip(const QString &chipName) const
 {
 	// find the device
-	auto iter = std::find_if(
-		chips().cbegin(),
-		chips().cend(),
+	auto iter = std::ranges::find_if(
+		chips(),
 		[&chipName](info::chip chip) { return chipName == chip.name(); });
 
 	// if we found a device, return the interface

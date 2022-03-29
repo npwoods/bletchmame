@@ -184,7 +184,7 @@ bool ImportMameIniDialog::hasImportables() const
 	const std::vector<ImportMameIniJob::Entry::ptr>& entries = tableModel().job().entries();
 
 	// find an entry that is not 'ImportAction::AlreadyPresent'
-	auto iter = std::find_if(entries.begin(), entries.end(), [](const ImportMameIniJob::Entry::ptr& x)
+	auto iter = std::ranges::find_if(entries, [](const ImportMameIniJob::Entry::ptr& x)
 	{
 		return x->importAction() != ImportMameIniJob::ImportAction::AlreadyPresent;
 	});

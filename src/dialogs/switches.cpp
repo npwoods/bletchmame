@@ -100,9 +100,8 @@ std::unordered_map<std::uint32_t, QString> SwitchesDialog::GetChoices(const stat
 
 	// find the configuration with this tag
 	std::unordered_map<std::uint32_t, QString> results;
-	auto iter = std::find_if(
-		m_machine.configurations().begin(),
-		m_machine.configurations().end(),
+	auto iter = std::ranges::find_if(
+		m_machine.configurations(),
 		[&input, &tag](const info::configuration c)
 		{
 			return c.tag() == tag && c.mask() == input.m_mask;

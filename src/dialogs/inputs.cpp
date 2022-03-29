@@ -326,7 +326,7 @@ const status::input_seq &InputsDialog::FindInputSeq(const InputFieldRef &field_r
 	assert(input);
 
 	// and once we have that, look up the seq
-	return *std::find_if(input->m_seqs.begin(), input->m_seqs.end(), [seq_type](const status::input_seq &x)
+	return *std::ranges::find_if(input->m_seqs, [seq_type](const status::input_seq &x)
 	{
 		return x.m_type == seq_type;
 	});
@@ -834,12 +834,12 @@ bool InputsDialog::InputEntry::ShowMultipleQuickItemsDialog(std::vector<QuickIte
 	{
 		for (const SetInputSeqRequest &req : item.m_selections)
 		{
-			auto iter = std::find_if(merged_quick_items.begin(), merged_quick_items.end(), [&req](const SetInputSeqRequest &x)
-				{
-					return x.m_port_tag == req.m_port_tag
-						&& x.m_mask == req.m_mask
-						&& x.m_seq_type == req.m_seq_type;
-				});
+			auto iter = std::ranges::find_if(merged_quick_items, [&req](const SetInputSeqRequest &x)
+			{
+				return x.m_port_tag == req.m_port_tag
+					&& x.m_mask == req.m_mask
+					&& x.m_seq_type == req.m_seq_type;
+			});
 			if (iter == merged_quick_items.end())
 			{
 				SetInputSeqRequest &new_merged_quick_item = merged_quick_items.emplace_back();

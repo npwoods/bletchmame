@@ -145,7 +145,7 @@ static MameVersion getMameVersion(const QString &program)
 
 static void trim(std::u8string &s)
 {
-    auto begin = std::find_if(s.begin(), s.end(), [](char c) { return !isspace(c); });
+    auto begin = std::ranges::find_if(s, [](char c) { return !isspace(c); });
     auto end = std::find_if(s.rbegin(), s.rend(), [](char c) { return !isspace(c); });
     if (begin != s.begin() || end != s.rbegin())
     {

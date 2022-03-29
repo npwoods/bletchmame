@@ -84,7 +84,7 @@ namespace
 	public:
 		bool operator()(std::u8string_view text, Preferences::global_path_type &value) const
 		{
-			auto iter = std::find_if(Preferences::s_globalPathInfo.begin(), Preferences::s_globalPathInfo.end(), [&text](const Preferences::GlobalPathInfo &x)
+			auto iter = std::ranges::find_if(Preferences::s_globalPathInfo, [&text](const Preferences::GlobalPathInfo &x)
 			{
 				return x.m_emuSettingName && text == std::u8string_view((char8_t *)x.m_emuSettingName);
 			});
@@ -942,7 +942,7 @@ bool Preferences::load(QIODevice &input)
 		std::optional<QString> typeString = attributes.get<QString>("type");
 		if (typeString)
 		{
-			auto iter = std::find_if(s_globalPathInfo.cbegin(), s_globalPathInfo.cend(), [&typeString](const auto &x)
+			auto iter = std::ranges::find_if(s_globalPathInfo, [&typeString](const auto &x)
 			{
 				return x.m_prefsName == *typeString;
 			});
