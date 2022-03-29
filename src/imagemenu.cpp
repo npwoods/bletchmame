@@ -58,7 +58,7 @@ static std::vector<QString> getExtensions(IImageMenuHost &host, const QString &t
 		// find the device declaration
 		auto devices = host.getRunningMachine().devices();
 
-		auto iter = std::find_if(devices.begin(), devices.end(), [&tag](info::device dev)
+		auto iter = std::ranges::find_if(devices, [&tag](info::device dev)
 		{
 			return dev.tag() == tag;
 		});
@@ -254,9 +254,8 @@ void appendImageMenuItems(IImageMenuHost &host, QMenu &popupMenu, const QString 
 		unloadAction.setEnabled(!image->m_file_name.isEmpty());
 
 		// recent files
-		auto deviceIter = std::find_if(
-			machine.devices().begin(),
-			machine.devices().end(),
+		auto deviceIter = std::ranges::find_if(
+			machine.devices(),
 			[&tag](const info::device device)
 			{
 				return device.tag() == tag;

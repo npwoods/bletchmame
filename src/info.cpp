@@ -20,6 +20,64 @@
 
 
 //**************************************************************************
+//  ASSERTS
+//**************************************************************************
+
+// various asserts to ensure that we can use our views as C++20 random_access_ranges
+static_assert(std::ranges::random_access_range<info::machine::view>);
+static_assert(std::ranges::random_access_range<info::biosset::view>);
+static_assert(std::ranges::random_access_range<info::rom::view>);
+static_assert(std::ranges::random_access_range<info::disk::view>);
+static_assert(std::ranges::random_access_range<info::device::view>);
+static_assert(std::ranges::random_access_range<info::slot::view>);
+static_assert(std::ranges::random_access_range<info::slot_option::view>);
+static_assert(std::ranges::random_access_range<info::chip::view>);
+static_assert(std::ranges::random_access_range<info::display::view>);
+static_assert(std::ranges::random_access_range<info::sample::view>);
+static_assert(std::ranges::random_access_range<info::configuration::view>);
+static_assert(std::ranges::random_access_range<info::configuration_setting::view>);
+static_assert(std::ranges::random_access_range<info::configuration_condition::view>);
+static_assert(std::ranges::random_access_range<info::software_list::view>);
+static_assert(std::ranges::random_access_range<info::ram_option::view>);
+
+// and more asserts to ensure that we can use our views as C++20 sized_range
+static_assert(std::ranges::sized_range<info::machine::view>);
+static_assert(std::ranges::sized_range<info::machine::view>);
+static_assert(std::ranges::sized_range<info::biosset::view>);
+static_assert(std::ranges::sized_range<info::rom::view>);
+static_assert(std::ranges::sized_range<info::disk::view>);
+static_assert(std::ranges::sized_range<info::device::view>);
+static_assert(std::ranges::sized_range<info::slot::view>);
+static_assert(std::ranges::sized_range<info::slot_option::view>);
+static_assert(std::ranges::sized_range<info::chip::view>);
+static_assert(std::ranges::sized_range<info::display::view>);
+static_assert(std::ranges::sized_range<info::sample::view>);
+static_assert(std::ranges::sized_range<info::configuration::view>);
+static_assert(std::ranges::sized_range<info::configuration_setting::view>);
+static_assert(std::ranges::sized_range<info::configuration_condition::view>);
+static_assert(std::ranges::sized_range<info::software_list::view>);
+static_assert(std::ranges::sized_range<info::ram_option::view>);
+
+// and more asserts to ensure that we can use our views as C++20 borrowed_range
+static_assert(std::ranges::borrowed_range<info::machine::view>);
+static_assert(std::ranges::borrowed_range<info::machine::view>);
+static_assert(std::ranges::borrowed_range<info::biosset::view>);
+static_assert(std::ranges::borrowed_range<info::rom::view>);
+static_assert(std::ranges::borrowed_range<info::disk::view>);
+static_assert(std::ranges::borrowed_range<info::device::view>);
+static_assert(std::ranges::borrowed_range<info::slot::view>);
+static_assert(std::ranges::borrowed_range<info::slot_option::view>);
+static_assert(std::ranges::borrowed_range<info::chip::view>);
+static_assert(std::ranges::borrowed_range<info::display::view>);
+static_assert(std::ranges::borrowed_range<info::sample::view>);
+static_assert(std::ranges::borrowed_range<info::configuration::view>);
+static_assert(std::ranges::borrowed_range<info::configuration_setting::view>);
+static_assert(std::ranges::borrowed_range<info::configuration_condition::view>);
+static_assert(std::ranges::borrowed_range<info::software_list::view>);
+static_assert(std::ranges::borrowed_range<info::ram_option::view>);
+
+
+//**************************************************************************
 //  CONSTANTS
 //**************************************************************************
 
@@ -388,9 +446,8 @@ std::optional<std::array<char8_t, 6>> info::database::tryDecodeAsSmallString(std
 std::optional<info::device> info::machine::find_device(const QString &tag) const
 {
 	// find the device
-	auto iter = std::find_if(
-		devices().cbegin(),
-		devices().cend(),
+	auto iter = std::ranges::find_if(
+		devices(),
 		[&tag](info::device dev) { return tag == dev.tag(); });
 
 	// if we found a device, return the interface
@@ -407,9 +464,8 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 std::optional<info::chip> info::machine::find_chip(const QString &chipName) const
 {
 	// find the device
-	auto iter = std::find_if(
-		chips().cbegin(),
-		chips().cend(),
+	auto iter = std::ranges::find_if(
+		chips(),
 		[&chipName](info::chip chip) { return chipName == chip.name(); });
 
 	// if we found a device, return the interface

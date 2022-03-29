@@ -200,7 +200,7 @@ ImportMameIniJob::RawIniSettings ImportMameIniJob::extractRawIniSettings(QIODevi
 	QString name, value;
 	while (iniParser.next(name, value))
 	{
-		auto iter = std::find_if(Preferences::s_globalPathInfo.begin(), Preferences::s_globalPathInfo.end(), [&name](const auto &x)
+		auto iter = std::ranges::find_if(Preferences::s_globalPathInfo, [&name](const auto &x)
 		{
 			return name == x.m_emuSettingName;
 		});
@@ -250,7 +250,7 @@ bool ImportMameIniJob::isPathPresent(Preferences::global_path_type pathType, con
 	QStringList prefsPaths = m_prefs.getSplitPaths(pathType);
 
 	// find this file info
-	auto iter = std::find_if(prefsPaths.begin(), prefsPaths.end(), [&fi](const QString &x)
+	auto iter = std::ranges::find_if(prefsPaths, [&fi](const QString &x)
 	{
 		return areFileInfosEquivalent(fi, QFileInfo(x));
 	});

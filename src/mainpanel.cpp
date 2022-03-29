@@ -483,14 +483,14 @@ void MainPanel::createProfile(const info::machine &machine, const software_list:
 {
 	// find a path to create the new profile in
 	QStringList paths = m_prefs.getSplitPaths(Preferences::global_path_type::PROFILES);
-	auto iter = std::find_if(paths.begin(), paths.end(), [](const QString &path)
+	auto iter = std::ranges::find_if(paths, [](const QString &path)
 	{
 		QDir dir(path);
 		return dir.exists();
 	});
 	if (iter == paths.end())
 	{
-		iter = std::find_if(paths.begin(), paths.end(), DirExistsOrMake);
+		iter = std::ranges::find_if(paths, DirExistsOrMake);
 		profileListItemModel().refresh(false, true);
 	}
 	if (iter == paths.end())

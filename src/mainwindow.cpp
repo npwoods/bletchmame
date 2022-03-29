@@ -1825,7 +1825,7 @@ void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavi
 	}
 
 	// do we have any images that require images?
-	auto iter = std::find_if(m_state->images().get().cbegin(), m_state->images().get().cend(), [&behaviorImages](const status::image &image)
+	auto iter = std::ranges::find_if(m_state->images().get(), [&behaviorImages](const status::image &image)
 	{
 		return image.m_details
 			&& image.m_details->m_must_be_loaded							// is this an image that must be loaded?
@@ -2306,9 +2306,8 @@ void MainWindow::watchForImageMount(const QString &tag)
 {
 	// find the device type
 	info::machine machine = getRunningMachine();
-	auto deviceIter = std::find_if(
-		machine.devices().begin(),
-		machine.devices().end(),
+	auto deviceIter = std::ranges::find_if(
+		machine.devices(),
 		[&tag](const info::device device)
 		{
 			return device.tag() == tag;

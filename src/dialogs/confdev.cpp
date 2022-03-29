@@ -262,9 +262,8 @@ void ConfigurableDevicesDialog::updateImages()
     model().setImages(images);
 
     // are there any mandatory images missing?
-    auto iter = std::find_if(
-        images.cbegin(),
-        images.cend(),
+    auto iter = std::ranges::find_if(
+        images,
         [](const status::image &image) { return image.m_details && image.m_details->m_must_be_loaded && image.m_file_name.isEmpty(); });
     bool anyMandatoryImagesMissing = iter != images.cend();
 

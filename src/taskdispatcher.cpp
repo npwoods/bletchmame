@@ -110,7 +110,7 @@ void TaskDispatcher::launch(Task::ptr &&task)
 void TaskDispatcher::finalize(const Task &task)
 {
 	// find the task
-	auto iter = std::find_if(m_activeTasks.begin(), m_activeTasks.end(), [&task](const Task::ptr &thisTask)
+	auto iter = std::ranges::find_if(m_activeTasks, [&task](const Task::ptr &thisTask)
 	{
 		return &*thisTask == &task;
 	});

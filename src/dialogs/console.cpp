@@ -63,7 +63,7 @@ void ConsoleDialog::onInvoke()
 	QString command_line = m_ui->invokeLineEdit->text();
 
 	// if this just white space, bail
-	if (std::find_if(command_line.begin(), command_line.end(), [](auto ch) { return ch != ' '; }) == command_line.end())
+	if (std::ranges::find_if(command_line, [](auto ch) { return ch != ' '; }) == command_line.end())
 		return;
 
 	// issue the command

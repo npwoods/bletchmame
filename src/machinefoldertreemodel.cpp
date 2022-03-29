@@ -439,7 +439,7 @@ QModelIndex MachineFolderTreeModel::modelIndexFromPath(const QString &path) cons
 
 	for (const QString &part : path.split('/'))
 	{
-		auto iter = std::find_if(entries->begin(), entries->end(), [&part](const FolderEntry &x)
+		auto iter = std::ranges::find_if(*entries, [&part](const FolderEntry &x)
 		{
 			return x.id() == part;
 		});
@@ -497,7 +497,7 @@ QModelIndex MachineFolderTreeModel::parent(const QModelIndex &child) const
 		const FolderEntry &entry = folderEntryFromModelIndex(child);
 		if (!containsEntry(m_root, entry))
 		{
-			auto iter = std::find_if(m_root.begin(), m_root.end(), [&entry](const FolderEntry &x)
+			auto iter = std::ranges::find_if(m_root, [&entry](const FolderEntry &x)
 			{
 				return x.children() && containsEntry(*x.children(), entry);
 			});
