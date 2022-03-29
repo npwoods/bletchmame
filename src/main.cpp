@@ -19,6 +19,9 @@
 
 int main(int argc, char *argv[])
 {
+	// prepare the application; we can't do anything until this is done
+	QApplication a(argc, argv);
+
 	// profile this
 	PerformanceProfiler perfProfiler("main.profiledata.txt");
 	ProfilerScope prof(CURRENT_FUNCTION);
@@ -28,7 +31,6 @@ int main(int argc, char *argv[])
 		QCoreApplication::setApplicationVersion(BLETCHMAME_VERSION_STRING);
 
 	// run the application
-	QApplication a(argc, argv);
 	MainWindow w;
 	w.show();
 	return a.exec();
