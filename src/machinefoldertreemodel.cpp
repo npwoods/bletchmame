@@ -76,11 +76,11 @@ MachineFolderTreeModel::MachineFolderTreeModel(QObject *parent, info::database &
 	m_dumping.reserve(2);
 	m_dumping.emplace_back("bad", FolderIcon::Folder, "Bad Dump", [](const info::machine &machine)
 	{
-		return util::contains_if(machine.roms(), [](info::rom rom) { return rom.status() == info::rom::dump_status_t::BADDUMP; });
+		return std::ranges::any_of(machine.roms(), [](info::rom rom) { return rom.status() == info::rom::dump_status_t::BADDUMP; });
 	});
 	m_dumping.emplace_back("no", FolderIcon::Folder, "No Dump", [](const info::machine &machine)
 	{
-		return util::contains_if(machine.roms(), [](info::rom rom) { return rom.status() == info::rom::dump_status_t::NODUMP; });
+		return std::ranges::any_of(machine.roms(), [](info::rom rom) { return rom.status() == info::rom::dump_status_t::NODUMP; });
 	});
 
 	// a number of folders are variable, and depend on info DB info; populate them separately
@@ -186,7 +186,7 @@ static std::optional<info::machine> getBiosMachine(info::machine machine)
 
 static bool containsDisplayType(info::machine machine, info::display::type_t t)
 {
-	return util::contains_if(machine.displays(), [t](info::display d)
+	return std::ranges::any_of(machine.displays(), [t](info::display d)
 	{
 		return d.type() == t;
 	});
