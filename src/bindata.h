@@ -11,12 +11,16 @@
 #ifndef BINDATA_H
 #define BINDATA_H
 
+// bletchmame headers
+#include "utility.h"
+
+// Qt headers
 #include <QString>
+
+// standard headers
 #include <compare>
 #include <optional>
 #include <span>
-
-#include "utility.h"
 
 
 //**************************************************************************
@@ -82,8 +86,16 @@ namespace bindata
 	class view
 	{
 	public:
-		view() : m_db(nullptr), m_offset(0), m_count(0) { }
-		view(const TDatabase &db, const view_position &pos) : m_db(&db), m_offset(pos.offset()), m_count(pos.count()) { }
+		view() : m_db(nullptr)
+		{
+		}
+
+		view(const TDatabase &db, const view_position &pos)
+			: m_db(&db)
+		{
+			m_db->getDataSpan(m_span, pos.offset(), pos.count());
+		}
+
 		view(const view &) = default;
 		view(view &&) = default;
 
@@ -92,50 +104,56 @@ namespace bindata
 
 		TPublic operator[](std::size_t position) const
 		{
-			if (position >= m_count)
-				throw false;
-			std::span<const TBinary> span;
-			m_db->getDataSpan(span, m_offset, m_count);
-			return TPublic(*m_db, span[position]);
+			return *(begin() + position);
 		}
 
-		size_t size() const { return m_count; }
-		bool empty() const { return size() == 0; }
+		size_t size() const { return m_span.size(); }
+		bool empty() const { return m_span.empty(); }
 
-		view subview(std::size_t index, std::size_t count) const
+		view subview(std::size_t offset, std::size_t count) const
 		{
-			if (index > size() || (index + count > size()))
-				throw false;
-			return count > 0
-				? view(*m_db, view_position(m_offset + index * sizeof(TBinary), count))
-				: view();
+			return view(m_db, m_span.subspan(offset, count));
 		}
 
 		// ======================> view::iterator
 		class iterator
 		{
 		public:
-			iterator(const view &view, size_t position)
-				: m_view(view)
-				, m_position(util::safe_static_cast<std::uint32_t>(position))
+			iterator()
+				: m_db(nullptr)
+			{
+			}
+			iterator(const TDatabase *db, typename std::span<const TBinary>::iterator &&spanIter)
+				: m_db(db)
+				, m_spanIter(std::move(spanIter))
 			{
 			}
 			iterator(const iterator &) = default;
 			iterator(iterator &&) = default;
+			iterator &operator=(const iterator &) = default;
 
 			using iterator_category = std::random_access_iterator_tag;
 			using value_type = TPublic;
 			using difference_type = ptrdiff_t;
-			using pointer = TPublic * ;
-			using reference = TPublic & ;
+			using pointer = TPublic *;
+			using reference = TPublic &;
 
-			TPublic operator*() const { return m_view[m_position]; }
-			std::optional<TPublic> operator->() const { return m_view[m_position]; }
+			TPublic operator*() const
+			{
+				return TPublic(*m_db, *m_spanIter);
+			}
+				
+			std::optional<TPublic> operator->() const { return **this; }
+
+			TPublic operator[](difference_type offs) const
+			{
+				return *(*this + offs);
+			}
 
 			auto operator<=>(const iterator &that) const
 			{
 				asset_compatible_iterator(that);
-				return m_position <=> that.m_position;
+				return m_spanIter <=> that.m_spanIter;
 			}
 
 			bool operator==(const iterator &that) const
@@ -150,74 +168,98 @@ namespace bindata
 				return (*this <=> that) != 0;
 			}
 
-			iterator &operator=(const iterator &that)
-			{
-				asset_compatible_iterator(that);
-				m_position = that.m_position;
-				return *this;
-			}
-
 			iterator &operator++()
 			{
-				m_position++;
+				m_spanIter++;
 				return *this;
 			}
 
 			iterator operator++(int)
 			{
 				auto iter = *this;
-				m_position++;
+				m_spanIter++;
 				return iter;
 			}
 
 			iterator &operator--()
 			{
-				m_position--;
+				m_spanIter--;
 				return *this;
 			}
 
 			iterator operator--(int)
 			{
 				auto iter = *this;
-				m_position--;
+				m_spanIter--;
 				return iter;
 			}
 
-			iterator &operator+=(uint32_t offs)
+			iterator &operator+=(difference_type offs)
 			{
-				m_position += offs;
+				m_spanIter += offs;
 				return *this;
 			}
 
-			ptrdiff_t operator-(const iterator &that)
+			iterator &operator-=(difference_type offs)
 			{
-				asset_compatible_iterator(that);
-				return ((ptrdiff_t)m_position) - ((ptrdiff_t)that.m_position);
+				m_spanIter -= offs;
+				return *this;
 			}
 
+			iterator operator+(difference_type offs) const
+			{
+				auto iter = *this;
+				iter.m_spanIter += offs;
+				return iter;
+			}
+
+			iterator operator-(difference_type offs) const
+			{
+				auto iter = *this;
+				iter.m_spanIter -= offs;
+				return iter;
+			}
+
+			difference_type operator-(const iterator &that) const
+			{
+				asset_compatible_iterator(that);
+				return m_spanIter - that.m_spanIter;
+			}
+
+			friend iterator operator+(difference_type lhs, const iterator &rhs) { return rhs + lhs; }
+			friend iterator operator-(difference_type lhs, const iterator &rhs) { return rhs + lhs; }
+
 		private:
-			view				m_view;
-			uint32_t			m_position;
+			const TDatabase *							m_db;
+			typename std::span<const TBinary>::iterator	m_spanIter;
 
 			void asset_compatible_iterator(const iterator &that) const
 			{
-				assert(m_view == that.m_view);
+				assert(m_db == that.m_db);
 				(void)that;
 			}
 		};
 
 		typedef iterator const_iterator;
 
-		iterator begin() const { return iterator(*this, 0); }
-		iterator end() const { return iterator(*this, m_count); }
-		const_iterator cbegin() const { return begin(); }
-		const_iterator cend() const { return end(); }
+		iterator begin() const			{ return iterator(m_db, m_span.begin()); }
+		iterator end() const			{ return iterator(m_db, m_span.end()); }
+		const_iterator cbegin() const	{ return begin(); }
+		const_iterator cend() const		{ return end(); }
 
 	private:
-		const TDatabase *	m_db;
-		std::uint32_t		m_offset;
-		std::uint32_t		m_count;
+		const TDatabase *			m_db;
+		std::span<const TBinary>	m_span;
+
+		view(const TDatabase *db, typename std::span<const TBinary> &&span)
+			: m_db(db)
+			, m_span(std::move(span))
+		{
+		}
 	};
 }
+
+template <typename TDatabase, typename TPublic, typename TBinary>
+inline constexpr bool std::ranges::enable_borrowed_range<bindata::view<TDatabase, TPublic, TBinary>> = true;
 
 #endif // BINDATA_H
