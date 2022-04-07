@@ -1137,6 +1137,9 @@ function startplugin()
 		end
 		session_active = true
 		update_mouse_enabled()
+		
+		-- turn off image display status; we like our own UX
+		pcall(function() ui().image_display_enabled = false end)
 
 		-- do we have to pause now that we [re]started?
 		if pause_when_restarted then
