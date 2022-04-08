@@ -1,0 +1,82 @@
+########################################
+# BletchMAME Linux Github Action #
+########################################
+
+name: Linux
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        cxx: [clang++, g++-10]
+        build_type: [Debug, Release]
+        qt: [6.1.2, 6.2.0]
+    runs-on: ubuntu-latest
+    steps:
+
+    # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Install Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: ${{ matrix.qt }}
+        modules: 'qt5compat'
+        dir: ${{ github.workspace }}
+
+    # Install OpenGL
+    - name: Install OpenGL
+      uses: openrndr/setup-opengl@v1.1
+
+    # Install Packages
+    - name: Install Packages
+      run: |
+        sudo apt update
+        sudo apt install -y freeglut3-dev libalut-dev libasound2-dev libc6-dev libgl1-mesa-dev libglu1-mesa-dev llvm-6.0 libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxxf86vm-dev mesa-utils pkg-config xorg-dev xvfb
+
+    # Retrieve QuaZip
+    - name: Retrieve QuaZip
+      run: |        
+        git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git deps/quazip
+
+    # Build QuaZip
+    - name: Build QuaZip
+      run: |
+        cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
+        cmake --build deps/build/ubuntu/quazip --parallel
+        cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
+
+    # Generate version.gen.h
+    - name: Generate version.gen.h
+      run: |
+        mkdir -p ./include
+        git describe --tags | perl scripts/process_version.pl --versionhdr > ./include/version.gen.h
+
+    # Build BletchMAME
+    - name: Build BletchMAME
+      run: |
+        ls -l deps/ubuntu
+        ls -l deps/ubuntu/include
+        ls -l deps/ubuntu/lib
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQuaZip-Qt6_DIR=deps/ubuntu/lib/x86_64-linux-gnu/cmake/QuaZip-Qt6-1.1
+        make -j 8
+        strip ./BletchMAME
+
+    # Run Acceptance Tests
+    - name: Run Acceptance Tests
+      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/${{ matrix.qt }}/gcc_64/lib ; ./BletchMAME_tests
