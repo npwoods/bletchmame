@@ -11,6 +11,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 - 2.15 (TBD)
 	- Fixed a bug that could cause image dropdowns to not properly display software list part names
 	- Stopped displaying <<none>> for device slots that do not have any options
+	- Turning off the MAME intrinsic cassette animation as BletchMAME has its own UX (MAME 0.243 and later)
 
 - 2.14 (2022-Mar-26)
 	- In addition to the menu bar, ScrLk will now also toggle the visibility of the status bar
