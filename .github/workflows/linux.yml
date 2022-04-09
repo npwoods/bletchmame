@@ -76,7 +76,7 @@ jobs:
         ls -l deps/ubuntu/include/QuaZip-Qt6-1.1/quazip
         ls -l deps/ubuntu/lib
         ls -l deps/ubuntu/lib/x86_64-linux-gnu
-        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQuaZip-Qt6_DIR=deps/ubuntu/lib/x86_64-linux-gnu/cmake/QuaZip-Qt6-1.1 -DCMAKE_CXX_FLAGS=-isystem\ deps/ubuntu/include/QuaZip-Qt6-1.1/quazip\ -Ldeps/ubuntu/lib/x86_64-linux-gnu
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DQuaZip-Qt6_DIR=deps/ubuntu/lib/x86_64-linux-gnu/cmake/QuaZip-Qt6-1.1 -DCMAKE_CXX_FLAGS=-isystem\ deps/ubuntu/include/QuaZip-Qt6-1.1/quazip -DCMAKE_EXE_LINKER_FLAGS=-Ldeps/ubuntu/lib/x86_64-linux-gnu
         make -j 8
         strip ./BletchMAME
 
