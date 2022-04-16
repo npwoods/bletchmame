@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ###################################################################################
-# expat_build_msvc2019.sh - Builds Expat for MSVC                                 #
+# expat_build_msvc.sh - Builds Expat for MSVC                                     #
 ###################################################################################
 
 # Sanity check
@@ -13,23 +13,41 @@ if [ -z "$BASH_SOURCE" ]; then
 fi
 
 CONFIG=Debug
+MSVC_VER=msvc2019
 
 # parse arguments
-while getopts "c:" OPTION; do
+while getopts "c:v:" OPTION; do
    case $OPTION in
       c)
          CONFIG=$OPTARG
+         ;;
+      v)
+         MSVC_VER=$OPTARG
          ;;
    esac
 done
 
 # Identify directories
 EXPAT_DIR=$(dirname $BASH_SOURCE)/../deps/expat/expat
-EXPAT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019/expat
-INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msvc2019
+EXPAT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/$MSVC_VER/expat
+INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/$MSVC_VER
+
+# MSVC versions
+case $MSVC_VER in
+    msvc2019)
+        GENERATOR="Visual Studio 16 2019"
+        ;;
+    msvc2022)
+        GENERATOR="Visual Studio 17 2022"
+        ;;
+    *)
+        echo "Unknown MSVC version $MSVC_VER"
+        exit 1
+        ;;
+esac
 
 # Build and install it!
 rm -rf $EXPAT_BUILD_DIR
-cmake -S$EXPAT_DIR -B$EXPAT_BUILD_DIR -G"Visual Studio 16 2019"
+cmake -S$EXPAT_DIR -B$EXPAT_BUILD_DIR -G"$GENERATOR"
 cmake --build $EXPAT_BUILD_DIR --parallel --config $CONFIG
 cmake --install $EXPAT_BUILD_DIR --prefix $INSTALL_DIR --config $CONFIG

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###################################################################################
-# bletchmame_build_msys2.sh - Builds BletchMAME under MSVC                        #
+# bletchmame_build_msvc.sh - Builds BletchMAME under MSVC                         #
 ###################################################################################
 
 # sanity check
@@ -10,24 +10,19 @@ if [ -z "$BASH_SOURCE" ]; then
   exit
 fi
 
-# identify directories
-BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
-BLETCHMAME_BUILD_DIR=build/msvc2019
-BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
-DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
-
 # toolset is v142 (MSVC2019), but can also be ClangCL
 TOOLSET=v142
 
 # config is "Debug" by default, but can also be "Release"
 CONFIG=Debug
+MSVC_VER=msvc2019
 
 # QT version is 6.1.2 by default
 QT_VERSION=6.1.2
 
 # parse arguments
 USE_PROFILER=off
-while getopts "c:pq:t:" OPTION; do
+while getopts "c:pq:t:v:" OPTION; do
    case $OPTION in
       c)
          CONFIG=$OPTARG
@@ -41,8 +36,31 @@ while getopts "c:pq:t:" OPTION; do
       t)
          TOOLSET=$OPTARG
 		 ;;
+      v)
+         MSVC_VER=$OPTARG
+         ;;
    esac
 done
+
+# MSVC versions
+case $MSVC_VER in
+    msvc2019)
+        GENERATOR="Visual Studio 16 2019"
+        ;;
+    msvc2022)
+        GENERATOR="Visual Studio 17 2022"
+        ;;
+    *)
+        echo "Unknown MSVC version $MSVC_VER"
+        exit 1
+        ;;
+esac
+
+# identify directories
+BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
+BLETCHMAME_BUILD_DIR=build/$MSVC_VER
+BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
+DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/$MSVC_VER)
 
 if [ -z "${QT6_INSTALL_DIR:-}" ]; then
   QT6_INSTALL_DIR=/c/Qt/${QT_VERSION}/msvc2019_64
@@ -61,7 +79,7 @@ fi
 # set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}
 cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
-	-G"Visual Studio 16 2019"											\
+	-G"$GENERATOR"	            										\
 	-T"$TOOLSET"														\
 	-DHAS_VERSION_GEN_H=1												\
 	-DUSE_PROFILER=${USE_PROFILER}										\

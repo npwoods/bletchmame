@@ -13,12 +13,13 @@ if [ -z "$BASH_SOURCE" ]; then
 fi
 
 CONFIG=Debug
+MSVC_VER=msvc2019
 
 # QT version is 6.1.2 by default
 QT_VERSION=6.1.2
 
 # parse arguments
-while getopts "c:q:t:" OPTION; do
+while getopts "c:q:t:v:" OPTION; do
    case $OPTION in
       c)
          CONFIG=$OPTARG
@@ -29,6 +30,9 @@ while getopts "c:q:t:" OPTION; do
       t)
          TOOLSET=$OPTARG
 		 ;;
+      v)
+         MSVC_VER=$OPTARG
+         ;;
    esac
 done
 
@@ -42,8 +46,22 @@ fi
 
 # Identify directories
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
-QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msvc2019/quazip
-INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/msvc2019)
+QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/$MSVC_VER/quazip
+INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/$MSVC_VER)
+
+# MSVC versions
+case $MSVC_VER in
+    msvc2019)
+        GENERATOR="Visual Studio 16 2019"
+        ;;
+    msvc2022)
+        GENERATOR="Visual Studio 17 2022"
+        ;;
+    *)
+        echo "Unknown MSVC version $MSVC_VER"
+        exit 1
+        ;;
+esac
 
 if [ "$CONFIG" = Debug ]; then
   ZLIB_LIBNAME=zlibstaticd.lib
@@ -55,7 +73,7 @@ fi
 rm -rf $QUAZIP_BUILD_DIR
 cmake -S$QUAZIP_DIR -B$QUAZIP_BUILD_DIR -DQUAZIP_QT_MAJOR_VERSION=6	\
 	--install-prefix $INSTALL_DIR									\
-	-G"Visual Studio 16 2019"										\
+	-G"$GENERATOR"	            									\
 	-DQt6_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6						\
 	-DQt6Core_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6Core				\
 	-DQt6CoreTools_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6CoreTools		\
