@@ -115,14 +115,13 @@ std::optional<AuditIdentifier> AuditCursor::getIdentifierAtCurrentPosition() con
 
 	// get the audit status
 	std::optional<AuditStatus> status;
-	std::visit([this, &status](auto &&identifier)
+	std::visit(util::overloaded
 	{
-		using T = std::decay_t<decltype(identifier)>;
-		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		[this, &status](const MachineAuditIdentifier &identifier)
 		{
 			status = m_prefs.getMachineAuditStatus(identifier.machineName());
-		}
-		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		},
+		[this, &status](const SoftwareAuditIdentifier &identifier)
 		{
 			status = m_prefs.getSoftwareAuditStatus(identifier.softwareList(), identifier.software());
 		}
