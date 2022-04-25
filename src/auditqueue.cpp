@@ -119,10 +119,9 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdentifier) const
 {
 	std::uint64_t result = 0;
-	std::visit([this, &result](auto &&x)
+	std::visit(util::overloaded
 	{
-		using T = std::decay_t<decltype(x)>;
-		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		[this, &result] (const MachineAuditIdentifier &x)
 		{
 			// machine audit
 			std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
@@ -131,8 +130,8 @@ std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdent
 				for (info::rom rom : machine->roms())
 					result += rom.size();
 			}
-		}
-		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		},
+		[this, &result](const SoftwareAuditIdentifier &x)
 		{
 			// software audit
 			const software_list::software *software = findSoftware(x.softwareList(), x.software());
@@ -151,10 +150,6 @@ std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdent
 				}
 			}
 		}
-		else
-		{
-			throw false;
-		}
 	}, auditIdentifier);
 	return result;
 }
@@ -171,26 +166,21 @@ AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &a
 
 	for (const AuditIdentifier &identifier : auditIdentifiers)
 	{
-		std::visit([this, &auditTask](auto &&x)
+		std::visit(util::overloaded
 		{
-			using T = std::decay_t<decltype(x)>;
-			if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+			[this, &auditTask](const MachineAuditIdentifier &x)
 			{
 				// machine audit
 				std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
 				if (machine.has_value())
 					auditTask->addMachineAudit(m_prefs, *machine);
-			}
-			else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+			},
+			[this, &auditTask](const SoftwareAuditIdentifier &x)
 			{
 				// software audit
 				const software_list::software *software = findSoftware(x.softwareList(), x.software());
 				if (software)
 					auditTask->addSoftwareAudit(m_prefs, *software);
-			}
-			else
-			{
-				throw false;
 			}
 		}, identifier);
 	}

@@ -1094,10 +1094,9 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 	for (const AuditResult &result : results)
 	{
 		// determine the type of audit
-		std::visit([this, &result](auto &&identifier)
+		std::visit(util::overloaded
 		{
-			using T = std::decay_t<decltype(identifier)>;
-			if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+			[this, &result](const MachineAuditIdentifier &identifier)
 			{
 				// does this machine audit result represent a change?
 				if (m_prefs.getMachineAuditStatus(identifier.machineName()) != result.status())
@@ -1106,8 +1105,8 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 					m_prefs.setMachineAuditStatus(identifier.machineName(), result.status());
 					machineListItemModel().auditStatusChanged(identifier);
 				}
-			}
-			else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+			},
+			[this, &result](const SoftwareAuditIdentifier &identifier)
 			{
 				// does this software audit result represent a change?
 				if (m_prefs.getSoftwareAuditStatus(identifier.softwareList(), identifier.software()) != result.status())
@@ -1116,10 +1115,6 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 					m_prefs.setSoftwareAuditStatus(identifier.softwareList(), identifier.software(), result.status());
 					softwareListItemModel().auditStatusChanged(identifier);
 				}
-			}
-			else
-			{
-				throw false;
 			}
 		}, result.identifier());
 	}

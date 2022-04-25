@@ -3017,16 +3017,15 @@ const QString *MainWindow::auditIdentifierString(const AuditIdentifier &identifi
 {
 	const QString *result = nullptr;
 
-	std::visit([this, &result](auto &&identifier)
+	std::visit(util::overloaded
 	{
-		using T = std::decay_t<decltype(identifier)>;
-		if constexpr (std::is_same_v<T, MachineAuditIdentifier>)
+		[this, &result] (const MachineAuditIdentifier &identifier)
 		{
 			std::optional<info::machine> machine = m_info_db.find_machine(identifier.machineName());
 			if (machine)
 				result = &machine->description();
-		}
-		else if constexpr (std::is_same_v<T, SoftwareAuditIdentifier>)
+		},
+		[this, &result](const SoftwareAuditIdentifier &identifier)
 		{
 			const software_list::software *software = m_auditSoftwareListCollection.find_software_by_list_and_name(
 				identifier.softwareList(),
