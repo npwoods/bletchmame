@@ -733,8 +733,8 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	// if we've already cached this value, look it up
 	auto iter = std::ranges::find_if(bucket, [this, &s](std::uint32_t thatId)
 	{
-		std::u8string_view thatString(&m_data[thatId]);
-		return s == thatString;
+		return (size_t)thatId + s.size() + 1 < m_data.capacity()
+			&& !memcmp(s.data(), &m_data[thatId], s.size());
 	});
 	if (iter != bucket.end())
 		return *iter;
@@ -749,7 +749,7 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	m_data.insert(m_data.end(), '\0');
 
 	// and to the bucket
-	bucket.push_back(sizeBeforeAppend);
+	bucket.push_front(sizeBeforeAppend);
 
 	// and return
 	return sizeBeforeAppend;
