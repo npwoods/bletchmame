@@ -44,7 +44,7 @@ namespace info
 			string_table();
 			std::uint32_t get(std::u8string_view string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
-			const std::vector<char8_t> &data() const;
+			std::span<const char8_t> data() const;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
 			template<typename T> void embed_value(T value);
 
