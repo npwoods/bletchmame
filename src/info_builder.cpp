@@ -696,10 +696,23 @@ info::database_builder::string_table::string_table()
 {
 	// reserve space based on expected size (see comments above)
 	m_data.reserve(4500000);		// 4326752 bytes
-	m_map.reserve(300000);			// 264907 entries
 
 	// embed the initial magic bytes
 	embed_value(info::binaries::MAGIC_STRINGTABLE_BEGIN);
+
+	// allocate the map buckets
+	m_mapBuckets = std::make_unique<decltype(m_mapBuckets)::element_type>();
+}
+
+
+//-------------------------------------------------
+//  string_table::shrinkToFit
+//-------------------------------------------------
+
+void info::database_builder::string_table::shrinkToFit()
+{
+	// only actually done in unit tests
+	m_data.shrink_to_fit();
 }
 
 
@@ -714,10 +727,17 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	if (ssoResult)
 		return *ssoResult;
 
+	// find the bucket
+	MapBucket &bucket = (*m_mapBuckets)[std::hash<std::u8string_view>{}(s) % m_mapBuckets->size()];
+
 	// if we've already cached this value, look it up
-	auto iter = m_map.find(s);
-	if (iter != m_map.end())
-		return iter->second;
+	auto iter = std::ranges::find_if(bucket, [this, &s](std::uint32_t thatId)
+	{
+		std::u8string_view thatString(&m_data[thatId]);
+		return s == thatString;
+	});
+	if (iter != bucket.end())
+		return *iter;
 
 	// we're going to append the string; the current size becomes the position of the new string
 	uint32_t sizeBeforeAppend = to_uint32(m_data.size());
@@ -728,8 +748,8 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	// and append the NUL
 	m_data.insert(m_data.end(), '\0');
 
-	// and to m_map
-	m_map.emplace(std::u8string_view((const char8_t *) &m_data[sizeBeforeAppend], s.size()), sizeBeforeAppend);
+	// and to the bucket
+	bucket.push_back(sizeBeforeAppend);
 
 	// and return
 	return sizeBeforeAppend;
