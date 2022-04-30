@@ -14,22 +14,22 @@
 #include <QBuffer>
 
 
-namespace
+// ======================> Test
+
+class info::database_builder::Test : public QObject
 {
-    class Test : public QObject
-    {
-        Q_OBJECT
+    Q_OBJECT
 
-    private slots:
-        void general();
-		void compareBinaries_alienar()	{ compareBinaries(":/resources/listxml_alienar.xml"); }
-		void compareBinaries_coco()		{ compareBinaries(":/resources/listxml_coco.xml"); }
-		void compareBinaries_fake()		{ compareBinaries(":/resources/listxml_fake.xml"); }
+private slots:
+    void general();
+	void compareBinaries_alienar()	{ compareBinaries(":/resources/listxml_alienar.xml"); }
+	void compareBinaries_coco()		{ compareBinaries(":/resources/listxml_coco.xml"); }
+	void compareBinaries_fake()		{ compareBinaries(":/resources/listxml_fake.xml"); }
+	void stringTable();
 
-	private:
-		void compareBinaries(const QString &fileName);
-    };
-}
+private:
+	void compareBinaries(const QString &fileName);
+};
 
 
 //**************************************************************************
@@ -94,10 +94,10 @@ QByteArray buildInfoDatabase(const QString &fileName, bool skipDtd)
 
 
 //-------------------------------------------------
-//  test
+//  general
 //-------------------------------------------------
 
-void Test::general()
+void info::database_builder::Test::general()
 {
 	QByteArray byteArray = buildInfoDatabase();
 	QVERIFY(byteArray.size() > 0);
@@ -114,7 +114,7 @@ void Test::general()
 //	about are little endian
 //-------------------------------------------------
 
-void Test::compareBinaries(const QString &fileName)
+void info::database_builder::Test::compareBinaries(const QString &fileName)
 {
 	const bool dumpBinaries = false;
 
@@ -163,6 +163,51 @@ void Test::compareBinaries(const QString &fileName)
 
 
 //-------------------------------------------------
+//  stringTable
+//-------------------------------------------------
 
-static TestFixture<Test> fixture;
+void info::database_builder::Test::stringTable()
+{
+	using namespace std::literals;
+
+	// create a string table (shink it to fit so we exercise growing)
+	string_table stringTable;
+	stringTable.shrinkToFit();
+
+	// add some strings
+	std::uint32_t empty1 = stringTable.get(u8"");
+	std::uint32_t alpha1 = stringTable.get(u8"Alpha");
+	std::uint32_t bravo1 = stringTable.get(u8"BravoBravo");
+	std::uint32_t charlie1 = stringTable.get(u8"Charlie");
+	std::uint32_t delta1 = stringTable.get(u8"DeltaDelta");
+	std::uint32_t alpha2 = stringTable.get(u8"Alpha");
+	std::uint32_t empty2 = stringTable.get(u8"");
+	std::uint32_t bravo2 = stringTable.get(u8"BravoBravo");
+	std::uint32_t bravo3 = stringTable.get(u8"BravoBravo");
+	std::uint32_t delta2 = stringTable.get(u8"DeltaDelta");
+	std::uint32_t charlie2 = stringTable.get(u8"Charlie");
+	std::uint32_t delta3 = stringTable.get(u8"DeltaDelta");
+
+	// verify that a bunch of them are what we expect
+	QVERIFY(empty1 == empty2);
+	QVERIFY(alpha1 == alpha2);
+	QVERIFY(bravo1 == bravo2);
+	QVERIFY(bravo1 == bravo3);
+	QVERIFY(charlie1 == charlie2);
+	QVERIFY(delta1 == delta2);
+	QVERIFY(delta1 == delta3);
+
+	// and validate that the lookups work
+	string_table::SsoBuffer sso;
+	QVERIFY(std::u8string_view(stringTable.lookup(empty1, sso)) == u8""sv);
+	QVERIFY(std::u8string_view(stringTable.lookup(alpha1, sso)) == u8"Alpha"sv);
+	QVERIFY(std::u8string_view(stringTable.lookup(bravo1, sso)) == u8"BravoBravo"sv);
+	QVERIFY(std::u8string_view(stringTable.lookup(charlie1, sso)) == u8"Charlie"sv);
+	QVERIFY(std::u8string_view(stringTable.lookup(delta1, sso)) == u8"DeltaDelta"sv);
+}
+
+
+//-------------------------------------------------
+
+static TestFixture<info::database_builder::Test> fixture;
 #include "info_builder_test.moc"

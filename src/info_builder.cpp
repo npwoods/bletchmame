@@ -139,13 +139,24 @@ static std::uint32_t to_uint32(T &&value)
 
 
 //-------------------------------------------------
-//  writeVectorData
+//  writeContainerData
 //-------------------------------------------------
 
 template<typename T>
-static void writeVectorData(QIODevice &stream, const std::vector<T> &vector)
+static void writeContainerData(QIODevice &stream, std::span<const T> container)
 {
-	stream.write((const char *)vector.data(), vector.size() * sizeof(T));
+	stream.write((const char *)container.data(), container.size() * sizeof(T));
+}
+
+
+//-------------------------------------------------
+//  writeContainerData
+//-------------------------------------------------
+
+template<typename T>
+static void writeContainerData(QIODevice &stream, const std::vector<T> &container)
+{
+	writeContainerData(stream, std::span<const T>(container));
 }
 
 
@@ -657,23 +668,23 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 void info::database_builder::emit_info(QIODevice &output) const
 {
 	output.write((const char *) &m_salted_header, sizeof(m_salted_header));
-	writeVectorData(output, m_machines);
-	writeVectorData(output, m_biossets);
-	writeVectorData(output, m_roms);
-	writeVectorData(output, m_disks);
-	writeVectorData(output, m_devices);
-	writeVectorData(output, m_slots);
-	writeVectorData(output, m_slot_options);
-	writeVectorData(output, m_features);
-	writeVectorData(output, m_chips);
-	writeVectorData(output, m_displays);
-	writeVectorData(output, m_samples);
-	writeVectorData(output, m_configurations);
-	writeVectorData(output, m_configuration_settings);
-	writeVectorData(output, m_configuration_conditions);
-	writeVectorData(output, m_software_lists);
-	writeVectorData(output, m_ram_options);
-	writeVectorData(output, m_strings.data());
+	writeContainerData(output, m_machines);
+	writeContainerData(output, m_biossets);
+	writeContainerData(output, m_roms);
+	writeContainerData(output, m_disks);
+	writeContainerData(output, m_devices);
+	writeContainerData(output, m_slots);
+	writeContainerData(output, m_slot_options);
+	writeContainerData(output, m_features);
+	writeContainerData(output, m_chips);
+	writeContainerData(output, m_displays);
+	writeContainerData(output, m_samples);
+	writeContainerData(output, m_configurations);
+	writeContainerData(output, m_configuration_settings);
+	writeContainerData(output, m_configuration_conditions);
+	writeContainerData(output, m_software_lists);
+	writeContainerData(output, m_ram_options);
+	writeContainerData(output, m_strings.data());
 }
 
 
@@ -685,10 +696,23 @@ info::database_builder::string_table::string_table()
 {
 	// reserve space based on expected size (see comments above)
 	m_data.reserve(4500000);		// 4326752 bytes
-	m_map.reserve(300000);			// 264907 entries
 
 	// embed the initial magic bytes
 	embed_value(info::binaries::MAGIC_STRINGTABLE_BEGIN);
+
+	// allocate the map buckets
+	m_mapBuckets = std::make_unique<decltype(m_mapBuckets)::element_type>();
+}
+
+
+//-------------------------------------------------
+//  string_table::shrinkToFit
+//-------------------------------------------------
+
+void info::database_builder::string_table::shrinkToFit()
+{
+	// only actually done in unit tests
+	m_data.shrink_to_fit();
 }
 
 
@@ -703,10 +727,17 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	if (ssoResult)
 		return *ssoResult;
 
+	// find the bucket
+	MapBucket &bucket = (*m_mapBuckets)[std::hash<std::u8string_view>{}(s) % m_mapBuckets->size()];
+
 	// if we've already cached this value, look it up
-	auto iter = m_map.find(s);
-	if (iter != m_map.end())
-		return iter->second;
+	auto iter = std::ranges::find_if(bucket, [this, &s](std::uint32_t thatId)
+	{
+		std::u8string_view thatString(&m_data[thatId]);
+		return s == thatString;
+	});
+	if (iter != bucket.end())
+		return *iter;
 
 	// we're going to append the string; the current size becomes the position of the new string
 	uint32_t sizeBeforeAppend = to_uint32(m_data.size());
@@ -717,8 +748,8 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	// and append the NUL
 	m_data.insert(m_data.end(), '\0');
 
-	// and to m_map
-	m_map.emplace(std::u8string_view((const char8_t *) &m_data[sizeBeforeAppend], s.size()), sizeBeforeAppend);
+	// and to the bucket
+	bucket.push_back(sizeBeforeAppend);
 
 	// and return
 	return sizeBeforeAppend;
@@ -740,7 +771,7 @@ std::uint32_t info::database_builder::string_table::get(const XmlParser::Attribu
 //  string_table::data
 //-------------------------------------------------
 
-const std::vector<char8_t> &info::database_builder::string_table::data() const
+std::span<const char8_t> info::database_builder::string_table::data() const
 {
 	return m_data;
 }
@@ -767,4 +798,16 @@ const char8_t *info::database_builder::string_table::lookup(std::uint32_t value,
 		result = &m_data[value];
 	}
 	return result;
+}
+
+
+//-------------------------------------------------
+//  string_table::embed_value
+//-------------------------------------------------
+
+template<typename T>
+void info::database_builder::string_table::embed_value(T value)
+{
+	const std::uint8_t *bytes = (const std::uint8_t *)&value;
+	m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
 }

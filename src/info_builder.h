@@ -23,6 +23,8 @@ namespace info
 	class database_builder
 	{
 	public:
+		class Test;
+
 		typedef std::function<void(int machineCount, std::u8string_view machineName, std::u8string_view machineDescription)> ProcessXmlCallback;
 
 		// ctors
@@ -42,20 +44,18 @@ namespace info
 			typedef std::array<char8_t, 6> SsoBuffer;
 
 			string_table();
+			void shrinkToFit();
 			std::uint32_t get(std::u8string_view string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
-			const std::vector<char8_t> &data() const;
+			std::span<const char8_t> data() const;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
-
-			template<typename T> void embed_value(T value)
-			{
-				const std::uint8_t *bytes = (const std::uint8_t *) & value;
-				m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
-			}
+			template<typename T> void embed_value(T value);
 
 		private:
-			std::vector<char8_t>									m_data;
-			std::unordered_map<std::u8string_view, std::uint32_t>	m_map;
+			typedef std::vector<std::uint32_t> MapBucket;
+
+			std::vector<char8_t>								m_data;
+			std::unique_ptr<std::array<MapBucket, 198503>>		m_mapBuckets;
 		};
 
 		info::binaries::header									m_salted_header;
