@@ -59,7 +59,7 @@ jobs:
       run: |
         cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
         cmake --build deps/build/ubuntu/quazip --parallel
-        cmake --install deps/build/ubuntu/quazip
+        cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
 
     # Generate version.gen.h
     - name: Generate version.gen.h
@@ -70,7 +70,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/ubuntu
         make -j 8
         strip ./BletchMAME
 
