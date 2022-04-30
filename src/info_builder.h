@@ -46,12 +46,7 @@ namespace info
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			const std::vector<char8_t> &data() const;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
-
-			template<typename T> void embed_value(T value)
-			{
-				const std::uint8_t *bytes = (const std::uint8_t *) & value;
-				m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
-			}
+			template<typename T> void embed_value(T value);
 
 		private:
 			std::vector<char8_t>									m_data;

@@ -768,3 +768,15 @@ const char8_t *info::database_builder::string_table::lookup(std::uint32_t value,
 	}
 	return result;
 }
+
+
+//-------------------------------------------------
+//  string_table::embed_value
+//-------------------------------------------------
+
+template<typename T>
+void info::database_builder::string_table::embed_value(T value)
+{
+	const std::uint8_t *bytes = (const std::uint8_t *)&value;
+	m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
+}
