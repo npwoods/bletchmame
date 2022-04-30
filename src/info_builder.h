@@ -15,6 +15,9 @@
 #include "info.h"
 #include "xmlparser.h"
 
+// standard headers
+#include <forward_list>
+
 class QDataStream;
 
 namespace info
@@ -52,10 +55,10 @@ namespace info
 			template<typename T> void embed_value(T value);
 
 		private:
-			typedef std::vector<std::uint32_t> MapBucket;
+			typedef std::forward_list<std::uint32_t> MapBucket;
 
 			std::vector<char8_t>								m_data;
-			std::unique_ptr<std::array<MapBucket, 198503>>		m_mapBuckets;
+			std::unique_ptr<std::array<MapBucket, 318677>>		m_mapBuckets;
 		};
 
 		info::binaries::header									m_salted_header;
