@@ -11,12 +11,17 @@
 #include "test.h"
 
 
+// ======================> software_list::test
+
 class software_list::test : public QObject
 {
     Q_OBJECT
 
 private slots:
-	void general();
+	void general1()		{ general(":/resources/softlist_coco_cart.xml"); }
+
+private:
+	void general(const QString &resourceName);
 };
 
 
@@ -28,10 +33,10 @@ private slots:
 //  general
 //-------------------------------------------------
 
-void software_list::test::general()
+void software_list::test::general(const QString &resourceName)
 {
 	// get the test asset
-	QFile testAsset(":/resources/softlist.xml");
+	QFile testAsset(resourceName);
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
 	// and read it
