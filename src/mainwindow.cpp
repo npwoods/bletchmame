@@ -29,6 +29,7 @@
 #include "dialogs/loading.h"
 #include "dialogs/paths.h"
 #include "dialogs/resetprefs.h"
+#include "dialogs/stopwarning.h"
 #include "dialogs/switches.h"
 
 // Qt headers
@@ -937,15 +938,8 @@ void MainWindow::setupPropSyncAspect(TObj &obj, TValueType(TObj:: *getFunc)() co
 
 void MainWindow::on_actionStop_triggered()
 {
-	if (m_sessionBehavior->shouldPromptOnStop())
-	{
-		QString message = "Do you really want to stop?\n"
-			"\n"
-			"All data in emulated RAM will be lost";
-
-		if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
-			return;
-	}
+	if (!showStopEmulationWarning(StopWarningDialog::WarningType::Stop))
+		return;
 
 	invokeExit();
 }
@@ -1986,6 +1980,34 @@ QString MainWindow::preflightCheck() const
 
 
 //-------------------------------------------------
+//  showStopEmulationWarning
+//-------------------------------------------------
+
+bool MainWindow::showStopEmulationWarning(StopWarningDialog::WarningType warningType)
+{
+	bool result;
+	if (m_sessionBehavior->shouldPromptOnStop() && m_prefs.getShowStopEmulationWarning())
+	{
+		// prepare the dialog
+		StopWarningDialog dialog(this, warningType);
+		dialog.setShowThisChecked(m_prefs.getShowStopEmulationWarning());
+
+		// show it
+		result = dialog.exec() == QDialog::Accepted;
+
+		// and update the preference
+		m_prefs.setShowStopEmulationWarning(dialog.showThisChecked());
+	}
+	else
+	{
+		// the dialog was bypassed
+		result = true;
+	}
+	return result;
+}
+
+
+//-------------------------------------------------
 //  messageBox
 //-------------------------------------------------
 
@@ -2010,16 +2032,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	if (m_state.has_value())
 	{
 		// prompt the user, if appropriate
-		if (m_sessionBehavior->shouldPromptOnStop())
+		if (!showStopEmulationWarning(StopWarningDialog::WarningType::Exit))
 		{
-			QString message = "Do you really want to exit?\n"
-				"\n"
-				"All data in emulated RAM will be lost";
-			if (messageBox(message, QMessageBox::Yes | QMessageBox::No) != QMessageBox::StandardButton::Yes)
-			{
-				event->ignore();
-				return;
-			}
+			event->ignore();
+			return;
 		}
 
 		// issue exit command so we can shut down the emulation session gracefully

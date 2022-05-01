@@ -254,6 +254,9 @@ add_library(BletchMAME_core
 	src/dialogs/resetprefs.cpp
 	src/dialogs/resetprefs.h
 	src/dialogs/resetprefs.ui
+	src/dialogs/stopwarning.cpp
+	src/dialogs/stopwarning.h
+	src/dialogs/stopwarning.ui
 	src/dialogs/switches.cpp
 	src/dialogs/switches.h
 	${TS_FILES}

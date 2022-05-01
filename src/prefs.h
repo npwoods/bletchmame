@@ -207,6 +207,9 @@ public:
 	AuditingState getAuditingState() const																{ return m_globalUiInfo.m_auditingState; }
 	void setAuditingState(AuditingState auditingState);
 
+	bool getShowStopEmulationWarning() const															{ return m_globalUiInfo.m_showStopEmulationWarning;	}
+	void setShowStopEmulationWarning(bool show)															{ m_globalUiInfo.m_showStopEmulationWarning = show;	}
+
 	const QString &getMachinePath(const QString &machine_name, machine_path_type path_type) const;
 	void setMachinePath(const QString &machine_name, machine_path_type path_type, QString &&path);
 
@@ -269,6 +272,7 @@ private:
 		// members
 		bool																					m_windowBarsShown;
 		AuditingState																			m_auditingState;
+		bool																					m_showStopEmulationWarning;
 	};
 
 	// info pertinent to global paths state
