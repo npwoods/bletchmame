@@ -26,6 +26,7 @@
 #include "taskdispatcher.h"
 #include "throughputtracker.h"
 #include "dialogs/console.h"
+#include "dialogs/stopwarning.h"
 
 // Qt headers
 #include <QMainWindow>
@@ -223,6 +224,7 @@ private:
 	bool loadInfoDb();
 	bool promptForMameExecutable();
 	bool refreshMameInfoDatabase();
+	bool showStopEmulationWarning(StopWarningDialog::WarningType warningType);
 	QMessageBox::StandardButton messageBox(const QString &message, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
 	void showInputsDialog(status::input::input_class input_class);
 	void showSwitchesDialog(status::input::input_class input_class);

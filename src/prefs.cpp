@@ -329,8 +329,10 @@ const Preferences::MachineInfo *Preferences::getMachineInfo(const QString &machi
 
 void Preferences::setGlobalInfo(Preferences::GlobalUiInfo &&globalInfo)
 {
+	// we have to copy each of the properties individually because these might fire signals
 	setWindowBarsShown(globalInfo.m_windowBarsShown);
 	setAuditingState(globalInfo.m_auditingState);
+	setShowStopEmulationWarning(globalInfo.m_showStopEmulationWarning);
 }
 
 
@@ -936,6 +938,10 @@ bool Preferences::load(QIODevice &input)
 		std::optional<AuditingState> auditingState = attributes.get<AuditingState>("auditing", s_auditingStateParser);
 		if (auditingState)
 			globalUiInfo.m_auditingState = auditingState.value();
+
+		std::optional<bool> showStopEmulationWarning = attributes.get<bool>("show_stop_emulation_warning");
+		if (showStopEmulationWarning)
+			globalUiInfo.m_showStopEmulationWarning = showStopEmulationWarning.value();
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -1138,6 +1144,7 @@ void Preferences::save(QIODevice &output)
 	writer.writeAttribute("window_state", s_windowState_parser[getWindowState()]);
 	writer.writeAttribute("selected_tab", s_list_view_type_parser[getSelectedTab()]);
 	writer.writeAttribute("auditing", s_auditingStateParser[getAuditingState()]);
+	writer.writeAttribute("show_stop_emulation_warning", QString::number(getShowStopEmulationWarning() ? 1 : 0));
 
 	// paths
 	writer.writeComment("Paths");
@@ -1433,6 +1440,7 @@ QString Preferences::getPreferencesFileName(bool ensureDirectoryExists) const
 Preferences::GlobalUiInfo::GlobalUiInfo()
 	: m_windowBarsShown(true)
 	, m_auditingState(AuditingState::Default)
+	, m_showStopEmulationWarning(true)
 {
 }
 
