@@ -42,24 +42,38 @@
 
 namespace
 {
-	template<typename T>
-	class strtoll_parser
+	class number_parser
 	{
 	public:
-		strtoll_parser(int radix)
+		number_parser(int radix)
 			: m_radix(radix)
 		{
 		}
 
-		bool operator()(std::u8string_view text, T &value) const
+	protected:
+		int get_radix(std::u8string_view text) const
 		{
-			char *endptr;
-			long long l = strtoll((const char *) text.data(), &endptr, m_radix);
-			if (endptr != (const char *)text.data() + text.size())
-				return false;
-
-			value = (T)l;
-			return value == l;
+			// determine the actual radix
+			int radix;
+			if (m_radix > 0)
+			{
+				// the caller specified the radix
+				radix = m_radix;
+			}
+			else
+			{
+				// unspecified radix; the radix is 16 if prefixed with '0x', 10 otherwise
+				if (text.size() >= 2 && text[0] == '0' && text[1] == 'x')
+				{
+					radix = 16;
+					text.remove_prefix(2);
+				}
+				else
+				{
+					radix = 10;
+				}
+			}
+			return radix;
 		}
 
 	private:
@@ -67,27 +81,43 @@ namespace
 	};
 
 	template<typename T>
-	class strtoull_parser
+	class strtoll_parser : public number_parser
 	{
 	public:
-		strtoull_parser(int radix)
-			: m_radix(radix)
-		{
-		}
+		using number_parser::number_parser;
 
 		bool operator()(std::u8string_view text, T &value) const
 		{
+			int radix = get_radix(text);
+
 			char *endptr;
-			unsigned long long l = strtoull((const char *)text.data(), &endptr, m_radix);
+			long long l = strtoll((const char *) text.data(), &endptr, radix);
 			if (endptr != (const char *)text.data() + text.size())
 				return false;
 
 			value = (T)l;
 			return value == l;
 		}
+	};
 
-	private:
-		int m_radix;
+	template<typename T>
+	class strtoull_parser : public number_parser
+	{
+	public:
+		using number_parser::number_parser;
+
+		bool operator()(std::u8string_view text, T &value) const
+		{
+			int radix = get_radix(text);
+
+			char *endptr;
+			unsigned long long l = strtoull((const char *)text.data(), &endptr, radix);
+			if (endptr != (const char *)text.data() + text.size())
+				return false;
+
+			value = (T)l;
+			return value == l;
+		}
 	};
 
 
@@ -581,7 +611,7 @@ XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
 
 template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const
 {
-	return get<int>(attribute, 10);
+	return get<int>(attribute, -1);
 }
 
 
@@ -601,7 +631,7 @@ template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attrib
 
 template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute) const
 {
-	return get<std::uint8_t>(attribute, 10);
+	return get<std::uint8_t>(attribute, -1);
 }
 
 
@@ -621,7 +651,7 @@ template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *at
 
 template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const
 {
-	return get<std::uint32_t>(attribute, 10);
+	return get<std::uint32_t>(attribute, -1);
 }
 
 
@@ -641,7 +671,7 @@ template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *a
 
 template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const
 {
-	return get<std::uint64_t>(attribute, 10);
+	return get<std::uint64_t>(attribute, -1);
 }
 
 

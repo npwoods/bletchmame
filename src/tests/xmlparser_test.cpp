@@ -60,6 +60,8 @@ void XmlParser::Test::test()
 	std::optional<int> mike_value = 0;
 	std::optional<std::uint32_t> november_value = 0;
 	std::optional<std::uint64_t> oscar_value = 0;
+	std::optional<std::uint64_t> papa_value = 0;
+	std::optional<int> quebec_value = 0;
 
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -77,12 +79,14 @@ void XmlParser::Test::test()
 		mike_value = attributes.get<int>("mike", 16);
 		november_value = attributes.get<std::uint32_t>("november", 16);
 		oscar_value = attributes.get<std::uint64_t>("oscar", 16);
+		papa_value = attributes.get<std::uint64_t>("papa");
+		quebec_value = attributes.get<int>("quebec");
 	});
 
 	const char *xml_text =
 		"<alpha>"
 		"<bravo charlie=\"delta\"/>"
-		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\" lima=\"72455405295\" mike=\"123ABC\" november=\"DEADBEEF\" oscar=\"BAADF00DBAADF00D\" />/>"
+		"<echo foxtrot=\"42\" hotel=\"on\" india=\"off\" julliet=\"2500000000\" kilo=\"3.14159\" lima=\"72455405295\" mike=\"123ABC\" november=\"DEADBEEF\" oscar=\"BAADF00DBAADF00D\" papa=\"0xDEADBEEF\" quebec=\"0x1234\" />/>"
 		"</alpha>";
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 
@@ -98,6 +102,8 @@ void XmlParser::Test::test()
 	QVERIFY(mike_value == 0x123ABC);
 	QVERIFY(november_value == 0xDEADBEEF);
 	QVERIFY(oscar_value == 0xBAADF00DBAADF00D);
+	QVERIFY(papa_value == 0xDEADBEEF);
+	QVERIFY(quebec_value = 0x1234);
 }
 
 

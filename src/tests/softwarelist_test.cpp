@@ -11,12 +11,18 @@
 #include "test.h"
 
 
+// ======================> software_list::test
+
 class software_list::test : public QObject
 {
     Q_OBJECT
 
 private slots:
-	void general();
+	void general1()		{ general(":/resources/softlist_coco_cart.xml"); }
+	void general2()		{ general(":/resources/softlist_msx1_cart.xml"); }
+
+private:
+	void general(const QString &resourceName);
 };
 
 
@@ -28,10 +34,10 @@ private slots:
 //  general
 //-------------------------------------------------
 
-void software_list::test::general()
+void software_list::test::general(const QString &resourceName)
 {
 	// get the test asset
-	QFile testAsset(":/resources/softlist.xml");
+	QFile testAsset(resourceName);
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
 	// and read it
@@ -54,12 +60,6 @@ void software_list::test::general()
 			for (const software_list::dataarea &area : part.dataareas())
 			{
 				QVERIFY(!area.name().isEmpty());
-				QVERIFY(!area.roms().empty());
-
-				for (const software_list::rom &rom : area.roms())
-				{
-					QVERIFY(!rom.name().isEmpty());
-				}
 			}
 		}
 	}
