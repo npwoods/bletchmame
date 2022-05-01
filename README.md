@@ -13,6 +13,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Stopped displaying <<none>> for device slots that do not have any options
 	- Turning off the MAME intrinsic cassette animation as BletchMAME has its own UX (MAME 0.243 and later)
 	- Added an option to disable the warning displayed when stopping an emulation
+	- Added columns to the machine and software list views to identify source files
 	- Fixed a bug that could cause software lists with hex values (e.g. - size="0x2000") to not parse
 	- Fixed a bug that could cause crashes when parsing MAME -listxml output
 		- In practice this only happened with variant MAME builds with more machines than off the shelf MAME
