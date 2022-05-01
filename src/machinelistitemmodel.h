@@ -33,8 +33,9 @@ public:
 		Description,
 		Year,
 		Manufacturer,
+		SourceFile,
 
-		Max = Manufacturer
+		Max = SourceFile
 	};
 
 	MachineListItemModel(QObject *parent, info::database &infoDb, IconLoader *iconLoader, std::function<void(info::machine)> &&machineIconAccessedCallback);

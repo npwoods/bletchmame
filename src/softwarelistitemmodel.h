@@ -37,8 +37,9 @@ public:
 		Description,
 		Year,
 		Manufacturer,
+		SoftwareListFile,
 
-		Max = Manufacturer
+		Max = SoftwareListFile
 	};
 
 	SoftwareListItemModel(IconLoader *iconLoader, std::function<void(const software_list::software &)> &&softwareIconAccessedCallback, QObject *parent = nullptr);

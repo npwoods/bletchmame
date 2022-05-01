@@ -226,6 +226,9 @@ QVariant MachineListItemModel::data(const QModelIndex &index, int role) const
 			case Column::Manufacturer:
 				result = machine.manufacturer();
 				break;
+			case Column::SourceFile:
+				result = machine.sourcefile();
+				break;
 			}
 			break;
 
@@ -273,6 +276,9 @@ QVariant MachineListItemModel::headerData(int section, Qt::Orientation orientati
 				break;
 			case Column::Manufacturer:
 				result = "Manufacturer";
+				break;
+			case Column::SourceFile:
+				result = "Source File";
 				break;
 			}
 			break;

@@ -213,6 +213,9 @@ QVariant SoftwareListItemModel::data(const QModelIndex &index, int role) const
 			case Column::Manufacturer:
 				result = sw.publisher();
 				break;
+			case Column::SoftwareListFile:
+				result = sw.parent().name() + ".xml";
+				break;
 			}
 			break;
 
@@ -261,7 +264,10 @@ QVariant SoftwareListItemModel::headerData(int section, Qt::Orientation orientat
             case Column::Manufacturer:
                 result = "Manufacturer";
                 break;
-            }
+			case Column::SoftwareListFile:
+				result = "Software List File";
+				break;
+			}
             break;
         }
     }
