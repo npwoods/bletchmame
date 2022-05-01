@@ -19,6 +19,7 @@ class software_list::test : public QObject
 
 private slots:
 	void general1()		{ general(":/resources/softlist_coco_cart.xml"); }
+	void general2()		{ general(":/resources/softlist_msx1_cart.xml"); }
 
 private:
 	void general(const QString &resourceName);
@@ -59,12 +60,6 @@ void software_list::test::general(const QString &resourceName)
 			for (const software_list::dataarea &area : part.dataareas())
 			{
 				QVERIFY(!area.name().isEmpty());
-				QVERIFY(!area.roms().empty());
-
-				for (const software_list::rom &rom : area.roms())
-				{
-					QVERIFY(!rom.name().isEmpty());
-				}
 			}
 		}
 	}
