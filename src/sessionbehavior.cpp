@@ -32,8 +32,9 @@ SessionBehavior::~SessionBehavior()
 //-------------------------------------------------
 
 NormalSessionBehavior::NormalSessionBehavior(const software_list::software *software)
-    : m_initialSoftware(software ? software->name() : "")
 {
+	if (software)
+		m_initialSoftware = QString("%1:%2").arg(software->parent().name(), software->name());
 }
 
 
