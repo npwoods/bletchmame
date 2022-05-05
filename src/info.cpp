@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     info.cpp
 
@@ -377,12 +377,22 @@ const QString &info::database::get_string(std::uint32_t offset) const
 //  database::tryEncodeSmallStringChar
 //-------------------------------------------------
 
-std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(char8_t ch)
+std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(std::u8string_view s, std::size_t i)
 {
-	const char8_t *p = (const char8_t *) memchr(s_smallStringChars, ch, std::size(s_smallStringChars));
-	return p
-		? (std::uint32_t)(p - s_smallStringChars)
-		: std::optional<std::uint32_t>();
+	std::optional<std::uint32_t> result;
+	if (s.size() <= i)
+		result = 63;
+	else if (s[i] >= 'A' && s[i] <= 'Z')
+		result = s[i] - 'A' + 0;
+	else if (s[i] >= 'a' && s[i] <= 'z')
+		result = s[i] - 'a' + 26;
+	else if (s[i] >= '0' && s[i] <= '9')
+		result = s[i] - '0' + 52;
+	else if (s[i] == ' ')
+		result = 62;
+	else
+		result = std::nullopt;
+	return result;
 }
 
 
@@ -395,21 +405,13 @@ std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::u8strin
 	if (s.size() > 5)
 		return { };
 
-	std::optional<std::uint32_t> parts[5] =
-	{
-		tryEncodeSmallStringChar(s.size() >= 1 ? s[0] : '\0'),
-		tryEncodeSmallStringChar(s.size() >= 2 ? s[1] : '\0'),
-		tryEncodeSmallStringChar(s.size() >= 3 ? s[2] : '\0'),
-		tryEncodeSmallStringChar(s.size() >= 4 ? s[3] : '\0'),
-		tryEncodeSmallStringChar(s.size() >= 5 ? s[4] : '\0')
-	};
-
 	std::uint32_t result = 0xC0000000;
-	for (int i = 0; i < std::size(parts); i++)
+	for (int i = 0; i < 5; i++)
 	{
-		if (!parts[i])
+		std::optional<std::uint32_t> value = tryEncodeSmallStringChar(s, i);
+		if (!value)
 			return { };
-		result |= *(parts[i]) << i * 6;
+		result |= *value << i * 6;
 	}
 
 	return result;

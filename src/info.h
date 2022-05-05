@@ -780,7 +780,7 @@ namespace info
 		// private functions
 		void onChanged();
 		std::optional<int> find_machine_index(const QString &machine_name) const;
-		static std::optional<std::uint32_t> tryEncodeSmallStringChar(char8_t ch);
+		static std::optional<std::uint32_t> tryEncodeSmallStringChar(std::u8string_view s, std::size_t i);
 		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::u8string_view s);
 		static std::optional<std::array<char8_t, 6>> tryDecodeAsSmallString(std::uint32_t value);
 	};
