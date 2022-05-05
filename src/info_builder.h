@@ -53,6 +53,7 @@ namespace info
 			std::span<const char8_t> data() const;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
 			template<typename T> void embed_value(T value);
+			void dumpBucketSizeDistribution() const;
 
 		private:
 			typedef std::forward_list<std::uint32_t> MapBucket;

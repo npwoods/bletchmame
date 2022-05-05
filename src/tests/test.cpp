@@ -135,15 +135,30 @@ int main(int argc, char *argv[])
     // we support different types of tests
     if (argc >= 2 && !strcmp(argv[1], "--runmame"))
     {
-        result = runAndExcerciseMame(argc - 2, argv + 2);
+		argc -= 2;
+		argv += 2;
+		result = runAndExcerciseMame(argc, argv);
     }
     else if (argc >= 2 && !strcmp(argv[1], "--runlistxml"))
     {
-        result = runAndExcerciseListXml(argc - 2, argv + 2, false);
+		argc -= 2;
+		argv += 2;
+		result = runAndExcerciseListXml(argc, argv, false, 1);
     }
     else if (argc >= 2 && !strcmp(argv[1], "--runlistxml-sequential"))
     {
-        result = runAndExcerciseListXml(argc - 2, argv + 2, true);
+		argc -= 2;
+		argv += 2;
+
+		int run_count = 1;
+		if (argc > 2 && !strcmp(argv[0], "--runs"))
+		{
+			run_count = std::max(1, atoi(argv[1]));
+			argc -= 2;
+			argv += 2;
+		}
+
+        result = runAndExcerciseListXml(argc, argv, true, run_count);
     }
     else
     {

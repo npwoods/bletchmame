@@ -60,7 +60,7 @@ private:
 
 // runners
 int runAndExcerciseMame(int argc, char *argv[]);
-int runAndExcerciseListXml(int argc, char *argv[], bool sequential);
+int runAndExcerciseListXml(int argc, char *argv[], bool sequential, int run_count);
 
 // helper functions
 QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml_coco.xml", bool skipDtd = false);

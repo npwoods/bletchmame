@@ -89,7 +89,7 @@ static void processXmlCallback(int machineCount, std::u8string_view machineName,
 //  internalRunAndExcerciseListXml
 //-------------------------------------------------
 
-static void internalRunAndExcerciseListXml(const QString &program, bool sequential)
+static void internalRunAndExcerciseListXml(const QString &program, bool sequential, int run_count)
 {
 	// check to see if the program file exists
 	QFileInfo fileInfo(program);
@@ -131,12 +131,15 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 
 	// report that MAME has started
 	std::cout << "Processing started...\r";
+	Stopwatch buildInfoDbStopwatch;
+	QByteArray infoDbBytes;
+	for (int run = 0; run < run_count; run++)
+	{
+		infoDbBytes.clear();
+		if (run > 0)
+			listXmlSource->seek(0);
 
-    // build info DB
-    QByteArray infoDbBytes;
-    Stopwatch buildInfoDbStopwatch;
-    {
-        // and process the output
+        // process the output
         QString errorMessage;
         info::database_builder builder;
         QVERIFY(builder.process_xml(*listXmlSource, errorMessage, processXmlCallback));
@@ -146,12 +149,15 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
         QBuffer buffer(&infoDbBytes);
         QVERIFY(buffer.open(QIODevice::WriteOnly));
         builder.emit_info(buffer);
-    }   
-    auto buildInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(buildInfoDbStopwatch.elapsedDuration());
-    listXmlSource.reset();
+	}
+	listXmlSource.reset();
 
     // report our status and sanity checks
-    std::cout << "Info DB build complete (database size " << infoDbBytes.size() << " bytes; elapsed duration " << buildInfoDbDuration.count() << "ms)" << std::endl;
+	auto buildInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(buildInfoDbStopwatch.elapsedDuration()) / run_count;
+	std::cout << "Info DB build complete (database size " << infoDbBytes.size() << " bytes; ";
+	if (run_count > 1)
+		std::cout << run_count << " total runs; average ";
+	std::cout << "elapsed duration " << buildInfoDbDuration.count() << "ms)" << std::endl;
     QVERIFY(infoDbBytes.size() > 0);
 
     // prepare buffer for reading
@@ -180,7 +186,7 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 //  invoke and handle -listxml output
 //-------------------------------------------------
 
-int runAndExcerciseListXml(int argc, char *argv[], bool separateTasks)
+int runAndExcerciseListXml(int argc, char *argv[], bool separateTasks, int run_count)
 {
     // identify the program
     QString program = argv[0];
@@ -188,7 +194,7 @@ int runAndExcerciseListXml(int argc, char *argv[], bool separateTasks)
     int result;
     try
     {
-        internalRunAndExcerciseListXml(program, separateTasks);
+        internalRunAndExcerciseListXml(program, separateTasks, run_count);
         result = 0;
     }
     catch (std::exception &ex)

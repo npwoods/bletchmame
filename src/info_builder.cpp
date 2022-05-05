@@ -811,3 +811,28 @@ void info::database_builder::string_table::embed_value(T value)
 	const std::uint8_t *bytes = (const std::uint8_t *)&value;
 	m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
 }
+
+
+//-------------------------------------------------
+//  string_table::dumpBucketSizeDistribution
+//-------------------------------------------------
+
+void info::database_builder::string_table::dumpBucketSizeDistribution() const
+{
+	int total = 0;
+	std::map<int, int> bucketSizeCounts;
+
+	for (const MapBucket &bucket : *m_mapBuckets)
+	{
+		int bucketSize = (int)std::ranges::count_if(bucket, [](const auto &) { return true; });
+		auto iter = bucketSizeCounts.find(bucketSize);
+		if (iter == bucketSizeCounts.end())
+			iter = bucketSizeCounts.emplace(bucketSize, 0).first;
+		iter->second++;
+		total++;
+	}
+
+	printf("\nBucket size distribution:\n");
+	for (const auto &[size, count] : bucketSizeCounts)
+		printf("%5d: %7d (%3d%%)\n", size, count, count * 100 / total);
+}
