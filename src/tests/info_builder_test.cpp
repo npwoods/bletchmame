@@ -13,6 +13,8 @@
 // Qt headers
 #include <QBuffer>
 
+using namespace std::literals;
+
 
 // ======================> Test
 
@@ -26,9 +28,29 @@ private slots:
 	void compareBinaries_coco()		{ compareBinaries(":/resources/listxml_coco.xml"); }
 	void compareBinaries_fake()		{ compareBinaries(":/resources/listxml_fake.xml"); }
 	void stringTable();
+	void singleString1()			{ singleString(u8""sv); }
+	void singleString2()			{ singleString(u8"A"sv); }
+	void singleString3()			{ singleString(u8"BC"sv); }
+	void singleString4()			{ singleString(u8"CDE"sv); }
+	void singleString5()			{ singleString(u8"FGHI"sv); }
+	void singleString6()			{ singleString(u8"JKLMN"sv); }
+	void singleString7()			{ singleString(u8"OPQRS"sv); }
+	void singleString8()			{ singleString(u8"TUVWX"sv); }
+	void singleString9()			{ singleString(u8"YZabc"sv); }
+	void singleString10()			{ singleString(u8"defgh"sv); }
+	void singleString11()			{ singleString(u8"ijklm"sv); }
+	void singleString12()			{ singleString(u8"nopqr"sv); }
+	void singleString13()			{ singleString(u8"stuvw"sv); }
+	void singleString14()			{ singleString(u8"xyz0"sv); }
+	void singleString15()			{ singleString(u8"12345"sv); }
+	void singleString16()			{ singleString(u8"6789 "sv); }
+	void singleString17()			{ singleString(u8"123!!"sv); }
+	void singleString18()			{ singleString(u8"a_very_big_STRING!!!!"sv); }
+	void singleString19()			{ singleString(u8"***another very_big_STRING!!!!"sv); }
 
 private:
 	void compareBinaries(const QString &fileName);
+	void singleString(std::u8string_view s);
 };
 
 
@@ -204,6 +226,27 @@ void info::database_builder::Test::stringTable()
 	QVERIFY(std::u8string_view(stringTable.lookup(bravo1, sso)) == u8"BravoBravo"sv);
 	QVERIFY(std::u8string_view(stringTable.lookup(charlie1, sso)) == u8"Charlie"sv);
 	QVERIFY(std::u8string_view(stringTable.lookup(delta1, sso)) == u8"DeltaDelta"sv);
+}
+
+
+//-------------------------------------------------
+//  singleString
+//-------------------------------------------------
+
+void info::database_builder::Test::singleString(std::u8string_view s)
+{
+	// create a string table (shink it to fit so we exercise growing)
+	string_table stringTable;
+	stringTable.shrinkToFit();
+
+	// verify that the string is added sensically
+	std::uint32_t s1 = stringTable.get(s);
+	std::uint32_t s2 = stringTable.get(s);
+	QVERIFY(s1 == s2);
+
+	// and verify that a lookup does the right thing
+	string_table::SsoBuffer sso;
+	QVERIFY(stringTable.lookup(s1, sso) == s);
 }
 
 
