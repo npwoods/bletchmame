@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
 	info_builder.cpp
 
@@ -722,37 +722,52 @@ void info::database_builder::string_table::shrinkToFit()
 
 std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 {
+	std::uint32_t result;
+
 	// try encoding as a small string
 	std::optional<std::uint32_t> ssoResult = info::database::tryEncodeAsSmallString(s);
 	if (ssoResult)
-		return *ssoResult;
-
-	// find the bucket
-	MapBucket &bucket = (*m_mapBuckets)[std::hash<std::u8string_view>{}(s) % m_mapBuckets->size()];
-
-	// if we've already cached this value, look it up
-	auto iter = std::ranges::find_if(bucket, [this, &s](std::uint32_t thatId)
 	{
-		return (size_t)thatId + s.size() + 1 < m_data.capacity()
-			&& !memcmp(s.data(), &m_data[thatId], s.size());
-	});
-	if (iter != bucket.end())
-		return *iter;
+		// it was a small string!
+		result = *ssoResult;
+	}
+	else
+	{
+		// find the bucket
+		MapBucket &bucket = (*m_mapBuckets)[std::hash<std::u8string_view>{}(s) % m_mapBuckets->size()];
 
-	// we're going to append the string; the current size becomes the position of the new string
-	uint32_t sizeBeforeAppend = to_uint32(m_data.size());
+		// if we've already cached this value, look it up
+		auto iter = std::ranges::find_if(bucket, [this, &s](std::uint32_t thatId)
+		{
+			return (size_t)thatId + s.size() + 1 <= m_data.size()
+				&& !memcmp(s.data(), &m_data[thatId], s.size())
+				&& m_data[thatId + s.size()] == '\0';
+		});
 
-	// append the string to m_data (but keep track of where we are)
-	m_data.insert(m_data.end(), s.data(), s.data() + s.size());
+		// did we find it?
+		if (iter != bucket.end())
+		{
+			// if so, return it
+			result = *iter;
+		}
+		else
+		{
+			// we're going to append the string; the current size becomes the position of the new string
+			result = to_uint32(m_data.size());
 
-	// and append the NUL
-	m_data.insert(m_data.end(), '\0');
+			// append the string to m_data (but keep track of where we are)
+			m_data.insert(m_data.end(), s.data(), s.data() + s.size());
 
-	// and to the bucket
-	bucket.push_front(sizeBeforeAppend);
+			// and append the NUL
+			m_data.insert(m_data.end(), '\0');
+
+			// and to the bucket
+			bucket.push_front(result);
+		}
+	}
 
 	// and return
-	return sizeBeforeAppend;
+	return result;
 }
 
 
