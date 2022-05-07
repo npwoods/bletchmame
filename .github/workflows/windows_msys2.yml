@@ -61,6 +61,8 @@ jobs:
         mklink /J deps\qt6 C:\deps-qt6
         mkdir C:\deps-msys2
         mklink /J deps\msys2 C:\deps-msys2
+        mkdir C:\deps-build
+        mklink /J deps\build C:\deps-build
 
     # Install old CMake (needed for Qt6 build)
     - name: Install old CMake (needed for Qt6 build)
