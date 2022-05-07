@@ -59,7 +59,7 @@ jobs:
       run: |
         rmdir /s /q deps
         mkdir C:\deps
-        mklink /J deps
+        mklink /J deps C:\deps
         git checkout deps
         dir
         dir deps
