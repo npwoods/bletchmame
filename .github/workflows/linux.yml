@@ -52,7 +52,7 @@ jobs:
     # Retrieve QuaZip
     - name: Retrieve QuaZip
       run: |        
-        git submodule update deps/quazip
+        git submodule update --init deps/quazip
 
     # Build QuaZip
     - name: Build QuaZip

@@ -65,19 +65,19 @@ jobs:
     - name: Retrieve Zlib
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        git submodule update deps/zlib
+        git submodule update --init deps/zlib
 
     # Retrieve Expat
     - name: Retrieve Expat
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        git submodule update deps/expat
+        git submodule update --init deps/expat
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        git submodule update deps/quazip
+        git submodule update --init deps/quazip
 
     # Build Zlib
     - name: Build Zlib
