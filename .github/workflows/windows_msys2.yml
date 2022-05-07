@@ -61,6 +61,10 @@ jobs:
         mkdir C:\deps
         mklink /J deps
         git checkout deps
+        dir
+        dir deps
+        dir C:\
+        dir C:\deps
 
     # Install old CMake (needed for Qt6 build)
     - name: Install old CMake (needed for Qt6 build)
