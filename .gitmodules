@@ -1,5 +1,5 @@
-[submodule "deps/libexpat"]
-	path = deps/libexpat
+[submodule "deps/expat"]
+	path = deps/expat
 	url = https://github.com/libexpat/libexpat.git
 	branch = R_2_4_1
 	shallow = true
