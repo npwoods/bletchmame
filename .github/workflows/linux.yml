@@ -52,7 +52,7 @@ jobs:
     # Retrieve QuaZip
     - name: Retrieve QuaZip
       run: |        
-        git clone -b v1.1 --depth 1 https://github.com/stachenov/quazip.git deps/quazip
+        git submodule update deps/quazip
 
     # Build QuaZip
     - name: Build QuaZip

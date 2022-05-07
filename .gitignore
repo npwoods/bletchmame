@@ -35,7 +35,7 @@
 # Directories
 bin
 obj
-deps
+deps/qt6
 build
 
 # CMake artifacts
