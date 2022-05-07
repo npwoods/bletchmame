@@ -92,8 +92,9 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}										\
 	-DQt6WidgetsTools_DIR=$QT6_INSTALL_DIR/lib/cmake/Qt6WidgetsTools	\
 	-DQuaZip-Qt6_DIR=$DEPS_INSTALL_DIR/lib/cmake/QuaZip-Qt6-1.1			\
 	-DQUAZIP_LIBRARIES=$DEPS_INSTALL_DIR/lib/${QUAZIP_LIBNAME}			\
+	-DCMAKE_PREFIX_PATH=$DEPS_INSTALL_DIR								\
 	-DCMAKE_LIBRARY_PATH=$DEPS_INSTALL_DIR/lib							\
-	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include
+	-DCMAKE_INCLUDE_PATH=$DEPS_INSTALL_DIR/include						\
 
 # generate version.gen.h
 mkdir -p ${BLETCHMAME_DIR}/include

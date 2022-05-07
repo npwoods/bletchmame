@@ -97,6 +97,11 @@ jobs:
       run: |
         sh scripts/quazip_build_msvc.sh -c ${{ matrix.config }} -q ${{ matrix.qt }}
 
+    # TEMP DEBUG
+    - name: TEMP DEBUG
+      shell: cmd
+      run: dir /s deps\QuaZip-Qt6Config.cmake
+
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
