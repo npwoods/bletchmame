@@ -23,7 +23,8 @@ my @allowed_dlls =
 	"version.dll",
 	"winmm.dll",
 	"ws2_32.dll",
-	"wtsapi32.dll"
+	"wtsapi32.dll",
+	"api-ms-win-core-synch-l1-2-0.dll"
 );
 my %allowed_dlls_hash = map {$_ => 1} @allowed_dlls;
 my $bad_import_count = 0;
