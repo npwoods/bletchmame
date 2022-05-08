@@ -46,7 +46,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 6.1.2
+        version: ${{ matrix.qt }}
         modules: 'qt5compat'
         dir: C:\
         arch: win64_msvc2019_64
