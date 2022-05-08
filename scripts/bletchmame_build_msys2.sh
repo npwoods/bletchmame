@@ -14,7 +14,7 @@ fi
 BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
 BLETCHMAME_BUILD_DIR=build/msys2
 BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
-DEPS_INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msys2
+DEPS_INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/msys2
 
 # parse arguments
 USE_PROFILER=off

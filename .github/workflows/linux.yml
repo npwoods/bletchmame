@@ -1,5 +1,5 @@
 ########################################
-# BletchMAME Linux Github Action #
+# BletchMAME Linux Github Action       #
 ########################################
 
 name: Linux
@@ -59,7 +59,7 @@ jobs:
       run: |
         cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
         cmake --build deps/build/ubuntu/quazip --parallel
-        cmake --install deps/build/ubuntu/quazip --prefix deps/ubuntu
+        cmake --install deps/build/ubuntu/quazip --prefix deps/install/ubuntu
 
     # Generate version.gen.h
     - name: Generate version.gen.h
@@ -70,10 +70,10 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/ubuntu
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/install/ubuntu
         make -j 8
         strip ./BletchMAME
 
     # Run Acceptance Tests
     - name: Run Acceptance Tests
-      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/${{ matrix.qt }}/gcc_64/lib:deps/ubuntu/lib/x86_64-linux-gnu ; ./BletchMAME_tests
+      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/${{ matrix.qt }}/gcc_64/lib:deps/install/ubuntu/lib/x86_64-linux-gnu ; ./BletchMAME_tests

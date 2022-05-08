@@ -14,7 +14,7 @@ fi
 
 # Identify directories
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
-INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msys2
+INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/msys2
 QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msys2/quazip
 
 # Clean directories
@@ -22,6 +22,7 @@ rm -rf $QUAZIP_BUILD_DIR
 mkdir -p $QUAZIP_BUILD_DIR
 
 # Make directories absolute
+mkdir -p $INSTALL_DIR
 QUAZIP_DIR=$(realpath $QUAZIP_DIR)
 INSTALL_DIR=$(realpath $INSTALL_DIR)
 QUAZIP_BUILD_DIR=$(realpath $QUAZIP_BUILD_DIR)

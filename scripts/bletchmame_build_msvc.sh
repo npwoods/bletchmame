@@ -60,7 +60,7 @@ esac
 BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
 BLETCHMAME_BUILD_DIR=build/$MSVC_VER
 BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
-DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/$MSVC_VER)
+DEPS_INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/install/$MSVC_VER)
 
 if [ -z "${QT6_INSTALL_DIR:-}" ]; then
   QT6_INSTALL_DIR=/c/Qt/${QT_VERSION}/msvc2019_64
