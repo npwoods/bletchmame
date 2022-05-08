@@ -30,7 +30,7 @@ done
 # Identify directories
 ZLIB_DIR=$(dirname $BASH_SOURCE)/../deps/zlib
 ZLIB_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/$MSVC_VER/zlib
-INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/$MSVC_VER)
+INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/install/$MSVC_VER)
 
 # MSVC versions
 case $MSVC_VER in

@@ -14,7 +14,7 @@ fi
 
 # Identify directories
 QT_DIR=$(dirname $BASH_SOURCE)/../deps/qt6
-INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/msys2
+INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/msys2
 QT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msys2/qt6
 
 # Clean directories

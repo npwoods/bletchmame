@@ -37,10 +37,7 @@ bin
 obj
 deps/qt6
 deps/build
-deps/msys2
-deps/msvc2019
-deps/msvc2022
-deps/ubuntu
+deps/install
 build
 
 # CMake artifacts
