@@ -22,6 +22,7 @@ rm -rf $QT_BUILD_DIR
 mkdir -p $QT_BUILD_DIR
 
 # Make directories absolute
+mkdir -p $INSTALL_DIR
 QT_DIR=$(realpath $QT_DIR)
 INSTALL_DIR=$(realpath $INSTALL_DIR)
 QT_BUILD_DIR=$(realpath $QT_BUILD_DIR)

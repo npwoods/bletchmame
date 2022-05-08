@@ -22,6 +22,7 @@ rm -rf $QUAZIP_BUILD_DIR
 mkdir -p $QUAZIP_BUILD_DIR
 
 # Make directories absolute
+mkdir -p $INSTALL_DIR
 QUAZIP_DIR=$(realpath $QUAZIP_DIR)
 INSTALL_DIR=$(realpath $INSTALL_DIR)
 QUAZIP_BUILD_DIR=$(realpath $QUAZIP_BUILD_DIR)

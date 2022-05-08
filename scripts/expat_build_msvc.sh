@@ -32,6 +32,10 @@ EXPAT_DIR=$(dirname $BASH_SOURCE)/../deps/expat/expat
 EXPAT_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/$MSVC_VER/expat
 INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/$MSVC_VER
 
+# Make directories absolute
+mkdir -p $INSTALL_DIR
+INSTALL_DIR=$(realpath $INSTALL_DIR)
+
 # MSVC versions
 case $MSVC_VER in
     msvc2019)

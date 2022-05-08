@@ -47,7 +47,11 @@ fi
 # Identify directories
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
 QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/$MSVC_VER/quazip
-INSTALL_DIR=$(realpath $(dirname $BASH_SOURCE)/../deps/install/$MSVC_VER)
+INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/$MSVC_VER
+
+# Make directories absolute
+mkdir -p $INSTALL_DIR
+INSTALL_DIR=$(realpath $INSTALL_DIR)
 
 # MSVC versions
 case $MSVC_VER in
