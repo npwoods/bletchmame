@@ -1,0 +1,18 @@
+[submodule "deps/expat"]
+	path = deps/expat
+	url = https://github.com/libexpat/libexpat.git
+	branch = R_2_4_1
+	shallow = true
+	ignore = all
+[submodule "deps/quazip"]
+	path = deps/quazip
+	url = https://github.com/stachenov/quazip.git
+	branch = v1.1
+	shallow = true
+	ignore = all
+[submodule "deps/zlib"]
+	path = deps/zlib
+	url = https://github.com/madler/zlib.git
+	branch = v1.2.11
+	shallow = true
+	ignore = all

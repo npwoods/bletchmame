@@ -59,25 +59,25 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/msvc2019
-        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_retrieve.sh', 'scripts/expat_retrieve.sh', 'scripts/quazip_retrieve.sh', 'scripts/zlib_build_msvc.sh', 'scripts/expat_build_msvc.sh', 'scripts/quazip_build_msvc.sh')}}
+        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_build_msvc.sh', 'scripts/expat_build_msvc.sh', 'scripts/quazip_build_msvc.sh')}}
 
     # Retrieve Zlib
     - name: Retrieve Zlib
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/zlib_retrieve.sh
+        git submodule update --init deps/zlib
 
     # Retrieve Expat
     - name: Retrieve Expat
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/expat_retrieve.sh
+        git submodule update --init deps/expat
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/quazip_retrieve.sh
+        git submodule update --init deps/quazip
 
     # Build Zlib
     - name: Build Zlib
@@ -96,6 +96,11 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         sh scripts/quazip_build_msvc.sh -c ${{ matrix.config }} -q ${{ matrix.qt }}
+
+    # TEMP DEBUG
+    - name: TEMP DEBUG
+      shell: cmd
+      run: dir /s deps\QuaZip-Qt6Config.cmake
 
     # Build BletchMAME
     - name: Build BletchMAME

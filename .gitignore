@@ -35,7 +35,12 @@
 # Directories
 bin
 obj
-deps
+deps/qt6
+deps/build
+deps/msys2
+deps/msvc2019
+deps/msvc2022
+deps/ubuntu
 build
 
 # CMake artifacts

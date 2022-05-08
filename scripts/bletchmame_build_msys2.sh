@@ -38,6 +38,7 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
 	-DHAS_VERSION_GEN_H=1														\
 	-DUSE_PROFILER=${USE_PROFILER}												\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}											\
+	-DCMAKE_PREFIX_PATH=${DEPS_INSTALL_DIR}											\
 	-DQt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6									\
 	-DQt6BundledFreetype_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledFreetype	\
 	-DQt6BundledHarfbuzz_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledHarfbuzz	\
