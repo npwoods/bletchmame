@@ -25,7 +25,7 @@ while getopts "c:q:t:v:" OPTION; do
          CONFIG=$OPTARG
 		 ;;
       q)
-         QT_VERSION=6.1.2
+         QT_VERSION=$OPTARG
 		 ;;
       t)
          TOOLSET=$OPTARG
