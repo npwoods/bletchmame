@@ -31,7 +31,7 @@ while getopts "c:pq:t:v:" OPTION; do
          USE_PROFILER=1
 		 ;;
       q)
-         QT_VERSION=6.1.2
+         QT_VERSION=$OPTARG
 		 ;;
       t)
          TOOLSET=$OPTARG

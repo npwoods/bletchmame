@@ -19,7 +19,7 @@ QT_VERSION=6.1.2
 while getopts "q:" OPTION; do
    case $OPTION in
       q)
-         QT_VERSION=6.1.2
+         QT_VERSION=$OPTARG
    esac
 done
 

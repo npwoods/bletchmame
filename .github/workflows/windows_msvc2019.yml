@@ -46,7 +46,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 6.1.2
+        version: ${{ matrix.qt }}
         modules: 'qt5compat'
         dir: C:\
         arch: win64_msvc2019_64
@@ -97,11 +97,6 @@ jobs:
       run: |
         sh scripts/quazip_build_msvc.sh -c ${{ matrix.config }} -q ${{ matrix.qt }}
 
-    # TEMP DEBUG
-    - name: TEMP DEBUG
-      shell: cmd
-      run: dir /s deps\QuaZip-Qt6Config.cmake
-
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
@@ -110,6 +105,10 @@ jobs:
     # Run Unit Tests
     - name: Run Unit Tests
       run: |
+        ls -l ./build/msvc2019/${{ matrix.config }}
+        ls -l ./deps/msvc2019/bin/
         cp ./deps/msvc2019/bin/*.dll ./build/msvc2019/${{ matrix.config }}
+        ls -l $Qt6_DIR/bin
         cp $Qt6_DIR/bin/*.dll ./build/msvc2019/${{ matrix.config }}
+        ls -l ./build/msvc2019/${{ matrix.config }}
         cd ./build/msvc2019/${{ matrix.config }} ; ./BletchMAME_tests.exe
