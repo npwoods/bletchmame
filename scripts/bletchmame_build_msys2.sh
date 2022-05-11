@@ -38,18 +38,7 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
 	-DHAS_VERSION_GEN_H=1														\
 	-DUSE_PROFILER=${USE_PROFILER}												\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}											\
-	-DCMAKE_PREFIX_PATH=${DEPS_INSTALL_DIR}											\
-	-DQt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6									\
-	-DQt6BundledFreetype_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledFreetype	\
-	-DQt6BundledHarfbuzz_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledHarfbuzz	\
-	-DQt6BundledLibpng_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledLibpng		\
-	-DQt6BundledPcre2_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6BundledPcre2			\
-	-DQt6Core_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6Core							\
-	-DQt6CoreTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6CoreTools				\
-	-DQt6GuiTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6GuiTools					\
-	-DQt6Test_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6Test							\
-	-DQt6WidgetsTools_DIR=${DEPS_INSTALL_DIR}/lib/cmake/Qt6WidgetsTools			\
-	-DQuaZip-Qt6_DIR=${DEPS_INSTALL_DIR}/lib/cmake/QuaZip-Qt6-1.1
+	-DCMAKE_PREFIX_PATH="${DEPS_INSTALL_DIR}"									\
 
 # generate version.gen.h
 mkdir -p ${BLETCHMAME_DIR}/include

@@ -12,8 +12,8 @@ if [ -z "$BASH_SOURCE" ]; then
   exit
 fi
 
-# QT version is 6.1.2 by default
-QT_VERSION=6.1.2
+# QT version is 6.2.0 by default
+QT_VERSION=6.2.0
 
 # parse arguments
 while getopts "q:" OPTION; do

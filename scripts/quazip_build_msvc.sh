@@ -15,8 +15,8 @@ fi
 CONFIG=Debug
 MSVC_VER=msvc2019
 
-# QT version is 6.1.2 by default
-QT_VERSION=6.1.2
+# QT version is 6.2.0 by default
+QT_VERSION=6.2.0
 
 # parse arguments
 while getopts "c:q:t:v:" OPTION; do

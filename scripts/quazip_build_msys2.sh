@@ -28,10 +28,10 @@ INSTALL_DIR=$(realpath $INSTALL_DIR)
 QUAZIP_BUILD_DIR=$(realpath $QUAZIP_BUILD_DIR)
 
 # Build and install it!
-cmake -S$QUAZIP_DIR -B$QUAZIP_BUILD_DIR -DBUILD_SHARED_LIBS=off -DQUAZIP_QT_MAJOR_VERSION=6 \
-	-DQt6_DIR=$INSTALL_DIR/lib/cmake/Qt6											\
-	-DQt6Core_DIR=$INSTALL_DIR/lib/cmake/Qt6Core									\
-	-DQt6CoreTools_DIR=$INSTALL_DIR/lib/cmake/Qt6CoreTools							\
-	-DQt6BundledPcre2_DIR=$INSTALL_DIR/lib/cmake/Qt6BundledPcre2
+cmake -S$QUAZIP_DIR -B$QUAZIP_BUILD_DIR						\
+	-DBUILD_SHARED_LIBS=off									\
+	-DQUAZIP_QT_MAJOR_VERSION=6								\
+	-DCMAKE_PREFIX_PATH=$INSTALL_DIR						\
+	-DQt6CoreTools_DIR=$INSTALL_DIR/lib/cmake/Qt6CoreTools
 cmake --build $QUAZIP_BUILD_DIR --parallel
 cmake --install $QUAZIP_BUILD_DIR --prefix $INSTALL_DIR
