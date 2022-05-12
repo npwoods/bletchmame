@@ -717,15 +717,20 @@ void info::database_builder::string_table::shrinkToFit()
 
 
 //-------------------------------------------------
-//  string_table::get(std::u8string_view s)
+//  string_table::internalGet
 //-------------------------------------------------
 
-std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
+std::uint32_t info::database_builder::string_table::internalGet(std::span<const char8_t> string)
 {
-	std::uint32_t result;
+	// sanity check - we expect string to be a NUL-terminated string
+	assert(std::find(string.begin(), string.end(), '\0') - string.begin() + 1 == string.size());
+
+	// with that out of the way, set up a string view
+	std::u8string_view stringView(string.data(), string.size() - 1);
 
 	// try encoding as a small string
-	std::optional<std::uint32_t> ssoResult = info::database::tryEncodeAsSmallString(s);
+	std::uint32_t result;
+	std::optional<std::uint32_t> ssoResult = info::database::tryEncodeAsSmallString(stringView);
 	if (ssoResult)
 	{
 		// it was a small string!
@@ -734,14 +739,14 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 	else
 	{
 		// find the bucket
-		MapBucket &bucket = (*m_mapBuckets)[std::hash<std::u8string_view>{}(s) % m_mapBuckets->size()];
+		std::size_t stringHash = std::hash<std::u8string_view>{}(stringView);
+		MapBucket &bucket = (*m_mapBuckets)[stringHash % m_mapBuckets->size()];
 
 		// if we've already cached this value, look it up
-		auto iter = std::ranges::find_if(bucket, [this, &s](std::uint32_t thatId)
+		auto iter = std::ranges::find_if(bucket, [this, &string](std::uint32_t thatId)
 		{
-			return (size_t)thatId + s.size() + 1 <= m_data.size()
-				&& !memcmp(s.data(), &m_data[thatId], s.size())
-				&& m_data[thatId + s.size()] == '\0';
+			return (size_t)thatId + string.size() <= m_data.size()
+				&& !memcmp(string.data(), &m_data[thatId], string.size());
 		});
 
 		// did we find it?
@@ -756,10 +761,7 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 			result = to_uint32(m_data.size());
 
 			// append the string to m_data (but keep track of where we are)
-			m_data.insert(m_data.end(), s.data(), s.data() + s.size());
-
-			// and append the NUL
-			m_data.insert(m_data.end(), '\0');
+			m_data.insert(m_data.end(), string.begin(), string.end());
 
 			// and to the bucket
 			bucket.push_front(result);
@@ -772,13 +774,37 @@ std::uint32_t info::database_builder::string_table::get(std::u8string_view s)
 
 
 //-------------------------------------------------
+//  string_table::get(const char8_t *s)
+//-------------------------------------------------
+
+std::uint32_t info::database_builder::string_table::get(const char8_t *string)
+{
+	std::span<const char8_t> stringSpan(string, strlen((const char *)string) + 1);
+	return internalGet(stringSpan);
+}
+
+
+//-------------------------------------------------
+//  string_table::get(const std::u8string &string)
+//-------------------------------------------------
+
+std::uint32_t info::database_builder::string_table::get(const std::u8string &string)
+{
+	std::span<const char8_t> stringSpan(string.data(), string.size() + 1);
+	return internalGet(stringSpan);
+}
+
+
+//-------------------------------------------------
 //  string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
 //-------------------------------------------------
 
 std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
 {
-	std::optional<std::u8string_view> attributeValue = attributes.get<std::u8string_view>(attribute);
-	return get(attributeValue.value_or(u8""));
+	std::optional<const char8_t *> attributeValue = attributes.get<const char8_t *>(attribute);
+	return attributeValue.has_value()
+		? get(attributeValue.value())
+		: ~0;
 }
 
 

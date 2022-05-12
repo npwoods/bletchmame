@@ -221,6 +221,7 @@ template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *at
 template<> std::optional<bool>					XmlParser::Attributes::get<bool>(const char *attribute) const;
 template<> std::optional<float>					XmlParser::Attributes::get<float>(const char *attribute) const;
 template<> std::optional<QString>				XmlParser::Attributes::get<QString>(const char *attribute) const;
+template<> std::optional<const char8_t *>		XmlParser::Attributes::get<const char8_t *>(const char *attribute) const;
 template<> std::optional<std::u8string_view>	XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const;
 template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const;
 template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
