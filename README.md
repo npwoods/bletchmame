@@ -19,6 +19,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Fixed a bug that could cause software lists with hex values (e.g. - size="0x2000") to not parse
 	- Fixed a bug that could cause crashes when parsing MAME -listxml output
 		- In practice this only happened with variant MAME builds with more machines than off the shelf MAME
+	- Updated Qt to 6.2.0
 
 - 2.14 (2022-Mar-26)
 	- In addition to the menu bar, ScrLk will now also toggle the visibility of the status bar
