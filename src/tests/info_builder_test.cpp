@@ -28,29 +28,33 @@ private slots:
 	void compareBinaries_coco()		{ compareBinaries(":/resources/listxml_coco.xml"); }
 	void compareBinaries_fake()		{ compareBinaries(":/resources/listxml_fake.xml"); }
 	void stringTable();
-	void singleString1()			{ singleString(u8""sv); }
-	void singleString2()			{ singleString(u8"A"sv); }
-	void singleString3()			{ singleString(u8"BC"sv); }
-	void singleString4()			{ singleString(u8"CDE"sv); }
-	void singleString5()			{ singleString(u8"FGHI"sv); }
-	void singleString6()			{ singleString(u8"JKLMN"sv); }
-	void singleString7()			{ singleString(u8"OPQRS"sv); }
-	void singleString8()			{ singleString(u8"TUVWX"sv); }
-	void singleString9()			{ singleString(u8"YZabc"sv); }
-	void singleString10()			{ singleString(u8"defgh"sv); }
-	void singleString11()			{ singleString(u8"ijklm"sv); }
-	void singleString12()			{ singleString(u8"nopqr"sv); }
-	void singleString13()			{ singleString(u8"stuvw"sv); }
-	void singleString14()			{ singleString(u8"xyz0"sv); }
-	void singleString15()			{ singleString(u8"12345"sv); }
-	void singleString16()			{ singleString(u8"6789 "sv); }
-	void singleString17()			{ singleString(u8"123!!"sv); }
-	void singleString18()			{ singleString(u8"a_very_big_STRING!!!!"sv); }
-	void singleString19()			{ singleString(u8"***another very_big_STRING!!!!"sv); }
+	void singleString1()			{ singleString<const char8_t *>(u8""); }
+	void singleString2()			{ singleString<const char8_t *>(u8"A"); }
+	void singleString3()			{ singleString<const char8_t *>(u8"BC"); }
+	void singleString4()			{ singleString<const char8_t *>(u8"CDE"); }
+	void singleString5()			{ singleString<const char8_t *>(u8"FGHI"); }
+	void singleString6()			{ singleString<const char8_t *>(u8"JKLMN"); }
+	void singleString7()			{ singleString<const char8_t *>(u8"OPQRS"); }
+	void singleString8()			{ singleString<const char8_t *>(u8"TUVWX"); }
+	void singleString9()			{ singleString<const char8_t *>(u8"YZabc"); }
+	void singleString10()			{ singleString<const char8_t *>(u8"defgh"); }
+	void singleString11()			{ singleString<const char8_t *>(u8"ijklm"); }
+	void singleString12()			{ singleString<const char8_t *>(u8"nopqr"); }
+	void singleString13()			{ singleString<const char8_t *>(u8"stuvw"); }
+	void singleString14()			{ singleString<const char8_t *>(u8"xyz0"); }
+	void singleString15()			{ singleString<const char8_t *>(u8"12345"); }
+	void singleString16()			{ singleString<const char8_t *>(u8"6789 "); }
+	void singleString17()			{ singleString<const char8_t *>(u8"123!!"); }
+	void singleString18()			{ singleString<const char8_t *>(u8"a_very_big_STRING!!!!"); }
+	void singleString19()			{ singleString<const char8_t *>(u8"***another very_big_STRING!!!!"); }
+	void singleString20()			{ singleString<std::u8string>(u8""); }
+	void singleString21()			{ singleString<std::u8string>(u8"ABCD"); }
+	void singleString22()			{ singleString<std::u8string>(u8"***another very_big_STRING!!!!"); }
+	void xmlAttributeParsing();
 
 private:
 	void compareBinaries(const QString &fileName);
-	void singleString(std::u8string_view s);
+	template<class T> void singleString(T s);
 };
 
 
@@ -233,7 +237,8 @@ void info::database_builder::Test::stringTable()
 //  singleString
 //-------------------------------------------------
 
-void info::database_builder::Test::singleString(std::u8string_view s)
+template<class T>
+void info::database_builder::Test::singleString(T s)
 {
 	// create a string table (shink it to fit so we exercise growing)
 	string_table stringTable;
@@ -246,7 +251,39 @@ void info::database_builder::Test::singleString(std::u8string_view s)
 
 	// and verify that a lookup does the right thing
 	string_table::SsoBuffer sso;
-	QVERIFY(stringTable.lookup(s1, sso) == s);
+	QVERIFY(stringTable.lookup(s1, sso) == std::u8string_view(s));
+}
+
+
+//-------------------------------------------------
+//  xmlAttributeParsing
+//-------------------------------------------------
+
+void info::database_builder::Test::xmlAttributeParsing()
+{
+	// create a string table (shink it to fit so we exercise growing)
+	string_table stringTable;
+	stringTable.shrinkToFit();
+
+	XmlParser xml;
+	std::optional<std::uint32_t> alphaValue;
+	std::optional<std::uint32_t> bravoValue;
+	std::optional<std::uint32_t> charlieValue;
+	xml.onElementBegin({ "root" }, [&](const XmlParser::Attributes &attributes)
+	{
+		alphaValue = stringTable.get(attributes, "alpha");
+		bravoValue = stringTable.get(attributes, "bravo");
+		charlieValue = stringTable.get(attributes, "charlie");
+	});
+	const char *xml_text = "<root alpha=\"\" bravo=\"abcd\" charlie=\"a_big_string\"/>";
+	bool result = xml.parseBytes(xml_text, strlen(xml_text));
+	QVERIFY(result);
+
+	string_table::SsoBuffer sso;
+	QVERIFY(stringTable.lookup(alphaValue.value(), sso) == u8""sv);
+	QVERIFY(stringTable.lookup(bravoValue.value(), sso) == u8"abcd"sv);
+	QVERIFY(stringTable.lookup(charlieValue.value(), sso) == u8"a_big_string"sv);
+
 }
 
 
