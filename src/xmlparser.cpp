@@ -719,6 +719,19 @@ template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char
 
 
 //-------------------------------------------------
+//  Attributes::get<const char8_t *>
+//-------------------------------------------------
+
+template<> std::optional<const char8_t *> XmlParser::Attributes::get<const char8_t *>(const char *attribute) const
+{
+	const char8_t *s = (const char8_t *)internalGet(attribute, true);
+	return s
+		? s
+		: std::optional<const char8_t *>();
+}
+
+
+//-------------------------------------------------
 //  Attributes::get<std::u8string_view>
 //-------------------------------------------------
 

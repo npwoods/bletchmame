@@ -48,7 +48,8 @@ namespace info
 
 			string_table();
 			void shrinkToFit();
-			std::uint32_t get(std::u8string_view string);
+			std::uint32_t get(const char8_t *string);
+			std::uint32_t get(const std::u8string &string);
 			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
 			std::span<const char8_t> data() const;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
@@ -60,6 +61,8 @@ namespace info
 
 			std::vector<char8_t>								m_data;
 			std::unique_ptr<std::array<MapBucket, 318677>>		m_mapBuckets;
+
+			std::uint32_t internalGet(std::span<const char8_t> string);
 		};
 
 		info::binaries::header									m_salted_header;
