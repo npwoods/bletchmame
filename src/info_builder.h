@@ -54,15 +54,17 @@ namespace info
 			std::span<const char8_t> data() const;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
 			template<typename T> void embed_value(T value);
-			void dumpBucketSizeDistribution() const;
+			void dumpSecondaryBucketDistribution() const;
 
 		private:
-			typedef std::forward_list<std::uint32_t> MapBucket;
+			typedef std::forward_list<std::uint32_t> SecondaryMapBucket;
 
 			std::vector<char8_t>								m_data;
-			std::unique_ptr<std::array<MapBucket, 318677>>		m_mapBuckets;
+			std::unique_ptr<std::array<std::uint32_t, 550007>>	m_primaryMapBuckets;
+			std::vector<SecondaryMapBucket>						m_secondaryMapBuckets;
 
 			std::uint32_t internalGet(std::span<const char8_t> string);
+			std::uint32_t &findBucket(std::u8string_view string);
 		};
 
 		info::binaries::header									m_salted_header;

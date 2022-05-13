@@ -14,6 +14,7 @@
 // standard headers
 #include <chrono>
 #include <cmath>
+#include <ranges>
 
 
 //**************************************************************************
@@ -701,7 +702,9 @@ info::database_builder::string_table::string_table()
 	embed_value(info::binaries::MAGIC_STRINGTABLE_BEGIN);
 
 	// allocate the map buckets
-	m_mapBuckets = std::make_unique<decltype(m_mapBuckets)::element_type>();
+	m_primaryMapBuckets = std::make_unique<decltype(m_primaryMapBuckets)::element_type>();
+	std::ranges::fill(*m_primaryMapBuckets, 0);
+	m_secondaryMapBuckets.reserve(60000);
 }
 
 
@@ -713,6 +716,69 @@ void info::database_builder::string_table::shrinkToFit()
 {
 	// only actually done in unit tests
 	m_data.shrink_to_fit();
+}
+
+
+//-------------------------------------------------
+//  string_table::findBucket
+//-------------------------------------------------
+
+std::uint32_t &info::database_builder::string_table::findBucket(std::u8string_view s)
+{
+	// hash the string to find the primary bucket
+	std::size_t stringHash = std::hash<std::u8string_view>{}(s);
+	std::uint32_t &primaryBucket = (*m_primaryMapBuckets)[stringHash % m_primaryMapBuckets->size()];
+
+	// local function to determine if this ID is the target
+	const auto isTargetString = [this, &s](std::uint32_t candidateId)
+	{
+		return (size_t)candidateId + s.size() + 1 <= m_data.size()
+			&& !memcmp(s.data(), &m_data[candidateId], s.size())
+			&& m_data[candidateId + s.size()] == '\0';
+	};
+
+	SecondaryMapBucket *targetSecondaryBucket = nullptr;
+	std::uint32_t *targetBucket = nullptr;
+	if ((primaryBucket & 0xC0000000) == 0xC0000000)
+	{
+		// this is a secondary bucket
+		SecondaryMapBucket &secondaryBucket = m_secondaryMapBuckets[primaryBucket & ~0xC0000000];
+
+		// find the target
+		auto iter = std::ranges::find_if(secondaryBucket, isTargetString);
+		if (iter != secondaryBucket.end())
+			targetBucket = &*iter;
+		else
+			targetSecondaryBucket = &secondaryBucket;
+	}
+	else if (primaryBucket == 0 || isTargetString(primaryBucket))
+	{
+		// the target is this primary bucket
+		targetBucket = &primaryBucket;
+	}
+	else
+	{
+		// we need to change a primary bucket to a secondary bucket
+		std::uint32_t newPrimaryBucketValue = 0xC0000000 | to_uint32(m_secondaryMapBuckets.size());
+
+		// add the secondary bucket
+		targetSecondaryBucket = &*m_secondaryMapBuckets.emplace(m_secondaryMapBuckets.end());
+
+		// perform the move
+		targetSecondaryBucket->push_front(primaryBucket);
+		primaryBucket = newPrimaryBucketValue;
+	}
+
+	// do we need to add to the secondary bucket?
+	if (targetSecondaryBucket)
+	{
+		targetSecondaryBucket->push_front(0);
+		targetBucket = &targetSecondaryBucket->front();
+	}
+
+	// and return
+	assert(targetBucket);
+	return *targetBucket;
 }
 
 
@@ -739,33 +805,19 @@ std::uint32_t info::database_builder::string_table::internalGet(std::span<const 
 	else
 	{
 		// find the bucket
-		std::size_t stringHash = std::hash<std::u8string_view>{}(stringView);
-		MapBucket &bucket = (*m_mapBuckets)[stringHash % m_mapBuckets->size()];
-
-		// if we've already cached this value, look it up
-		auto iter = std::ranges::find_if(bucket, [this, &string](std::uint32_t thatId)
-		{
-			return (size_t)thatId + string.size() <= m_data.size()
-				&& !memcmp(string.data(), &m_data[thatId], string.size());
-		});
+		std::uint32_t &bucket = findBucket(stringView);
 
 		// did we find it?
-		if (iter != bucket.end())
-		{
-			// if so, return it
-			result = *iter;
-		}
-		else
+		if (bucket == 0)
 		{
 			// we're going to append the string; the current size becomes the position of the new string
-			result = to_uint32(m_data.size());
+			bucket = to_uint32(m_data.size());
 
 			// append the string to m_data (but keep track of where we are)
 			m_data.insert(m_data.end(), string.begin(), string.end());
-
-			// and to the bucket
-			bucket.push_front(result);
 		}
+
+		result = bucket;
 	}
 
 	// and return
@@ -855,15 +907,15 @@ void info::database_builder::string_table::embed_value(T value)
 
 
 //-------------------------------------------------
-//  string_table::dumpBucketSizeDistribution
+//  string_table::dumpSecondaryBucketDistribution
 //-------------------------------------------------
 
-void info::database_builder::string_table::dumpBucketSizeDistribution() const
+void info::database_builder::string_table::dumpSecondaryBucketDistribution() const
 {
 	int total = 0;
 	std::map<int, int> bucketSizeCounts;
 
-	for (const MapBucket &bucket : *m_mapBuckets)
+	for (const SecondaryMapBucket &bucket : m_secondaryMapBuckets)
 	{
 		int bucketSize = (int)std::ranges::count_if(bucket, [](const auto &) { return true; });
 		auto iter = bucketSizeCounts.find(bucketSize);
@@ -873,7 +925,7 @@ void info::database_builder::string_table::dumpBucketSizeDistribution() const
 		total++;
 	}
 
-	printf("\nBucket size distribution:\n");
+	printf("\nSecondary bucket size distribution (%d total):\n", (int)m_secondaryMapBuckets.size());
 	for (const auto &[size, count] : bucketSizeCounts)
 		printf("%5d: %7d (%3d%%)\n", size, count, count * 100 / total);
 }
