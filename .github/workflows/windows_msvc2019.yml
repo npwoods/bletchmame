@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         config: [Debug, Release]
-        qt: [6.2.0]
+        qt: [6.2.0, 6.3.0]
     runs-on: windows-2019
     defaults:
       run:
