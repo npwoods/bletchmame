@@ -75,20 +75,12 @@ void ListXmlTask::Test::pathWithFile()
 	QFile testAsset(":/resources/listxml_coco.xml");
 	QVERIFY(testAsset.open(QFile::ReadOnly));
 
-	// process - this should throw an exception
-	std::unique_ptr<list_xml_exception> caughtException;
-	try
-	{
-		task.internalRun(testAsset);
-	}
-	catch (list_xml_exception &exception)
-	{
-		caughtException = std::make_unique<list_xml_exception>(std::move(exception));
-	}
+	// process - this should return an error
+	std::optional<ListXmlError> caughtError = task.internalRun(testAsset);
 
 	// and validate the exception
-	QVERIFY(caughtException);
-	QVERIFY(caughtException->m_status == ListXmlResultEvent::Status::ERROR);
+	QVERIFY(caughtError);
+	QVERIFY(caughtError->status() == ListXmlResultEvent::Status::ERROR);
 }
 
 

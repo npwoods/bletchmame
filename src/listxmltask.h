@@ -102,18 +102,23 @@ protected:
 
 private:
 	// ======================> list_xml_exception
-	class list_xml_exception : public std::exception
+	class ListXmlError
 	{
 	public:
-		list_xml_exception(ListXmlResultEvent::Status status, QString &&message = QString());
+		ListXmlError(ListXmlResultEvent::Status status, QString &&message = QString());
 
+		// accessors
+		ListXmlResultEvent::Status status() const;
+		QString &message();
+
+	private:
 		ListXmlResultEvent::Status	m_status;
 		QString						m_message;
 	};
 
 	QString			m_outputFilename;
 
-	void internalRun(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback = { });
+	std::optional<ListXmlError> internalRun(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback = { });
 };
 
 #endif // LISTXMLTASK_H
