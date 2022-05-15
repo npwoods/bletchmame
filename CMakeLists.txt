@@ -223,6 +223,9 @@ add_library(BletchMAME_core
 	src/dialogs/console.cpp
 	src/dialogs/console.h
 	src/dialogs/console.ui
+	src/dialogs/customizefields.cpp
+	src/dialogs/customizefields.h
+	src/dialogs/customizefields.ui
 	src/dialogs/importmameini.cpp
 	src/dialogs/importmameini.h
 	src/dialogs/importmameini.ui

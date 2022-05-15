@@ -50,7 +50,7 @@ enum class MameIniImportActionPreference
 struct ColumnPrefs
 {
 	int								m_width;
-	int								m_order;
+	std::optional<int>				m_order;
 	std::optional<Qt::SortOrder>	m_sort;
 };
 

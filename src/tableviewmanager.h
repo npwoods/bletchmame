@@ -40,6 +40,7 @@ public:
 	{
 		const char8_t * m_id;
 		int				m_defaultWidth;
+		bool			m_defaultShown;
 	};
 
 	struct Description
@@ -66,9 +67,11 @@ private:
 	const QTableView &parentAsTableView() const;
 	QTableView &parentAsTableView();
 	void applyColumnPrefs();
+	void applyColumnOrdering(std::span<const std::optional<int>> logicalOrdering);
 	void persistColumnPrefs();
 	void applySelectedValue();
 	void headerContextMenuRequested(const QPoint &pos);
+	void customizeFields();
 };
 
 #endif // TABLEVIEWMANAGER_H

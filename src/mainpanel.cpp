@@ -70,11 +70,11 @@ private:
 
 static const TableViewManager::ColumnDesc s_machineListTableViewColumns[] =
 {
-	{ u8"name",			85 },
-	{ u8"description",	370 },
-	{ u8"year",			50 },
-	{ u8"manufacturer",	320 },
-	{ u8"sourcefile",	100 }
+	{ u8"name",			85,		true },
+	{ u8"description",	370,	true },
+	{ u8"year",			50,		true },
+	{ u8"manufacturer",	320,	true },
+	{ u8"sourcefile",	100,	false }
 };
 
 static const TableViewManager::Description s_machineListTableViewDesc =
@@ -86,9 +86,9 @@ static const TableViewManager::Description s_machineListTableViewDesc =
 
 static const TableViewManager::ColumnDesc s_profileListTableViewColumns[] =
 {
-	{ u8"name",			85 },
-	{ u8"machine",		85 },
-	{ u8"path",			600 }
+	{ u8"name",			85,		true },
+	{ u8"machine",		85,		true },
+	{ u8"path",			600,	true }
 };
 
 static const TableViewManager::Description s_profileListTableViewDesc =
