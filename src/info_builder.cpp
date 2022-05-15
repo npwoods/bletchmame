@@ -222,7 +222,7 @@ static void binaryWipe(T &x)
 //  process_xml()
 //-------------------------------------------------
 
-bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const ProcessXmlCallback &progressCallback)
+bool info::database_builder::process_xml(QIODevice &input, QString &error_message, const ProcessXmlCallback &progressCallback) noexcept
 {
 	using namespace std::chrono_literals;
 
@@ -666,7 +666,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 //  emit_info
 //-------------------------------------------------
 
-void info::database_builder::emit_info(QIODevice &output) const
+void info::database_builder::emit_info(QIODevice &output) const noexcept
 {
 	output.write((const char *) &m_salted_header, sizeof(m_salted_header));
 	writeContainerData(output, m_machines);
@@ -693,7 +693,7 @@ void info::database_builder::emit_info(QIODevice &output) const
 //  string_table ctor
 //-------------------------------------------------
 
-info::database_builder::string_table::string_table()
+info::database_builder::string_table::string_table() noexcept
 {
 	// reserve space based on expected size (see comments above)
 	m_data.reserve(4500000);		// 4326752 bytes
@@ -712,7 +712,7 @@ info::database_builder::string_table::string_table()
 //  string_table::shrinkToFit
 //-------------------------------------------------
 
-void info::database_builder::string_table::shrinkToFit()
+void info::database_builder::string_table::shrinkToFit() noexcept
 {
 	// only actually done in unit tests
 	m_data.shrink_to_fit();
@@ -829,7 +829,7 @@ std::uint32_t info::database_builder::string_table::internalGet(std::span<const 
 //  string_table::get(const char8_t *s)
 //-------------------------------------------------
 
-std::uint32_t info::database_builder::string_table::get(const char8_t *string)
+std::uint32_t info::database_builder::string_table::get(const char8_t *string) noexcept
 {
 	std::span<const char8_t> stringSpan(string, strlen((const char *)string) + 1);
 	return internalGet(stringSpan);
@@ -840,7 +840,7 @@ std::uint32_t info::database_builder::string_table::get(const char8_t *string)
 //  string_table::get(const std::u8string &string)
 //-------------------------------------------------
 
-std::uint32_t info::database_builder::string_table::get(const std::u8string &string)
+std::uint32_t info::database_builder::string_table::get(const std::u8string &string) noexcept
 {
 	std::span<const char8_t> stringSpan(string.data(), string.size() + 1);
 	return internalGet(stringSpan);
@@ -851,7 +851,7 @@ std::uint32_t info::database_builder::string_table::get(const std::u8string &str
 //  string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
 //-------------------------------------------------
 
-std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute)
+std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute) noexcept
 {
 	std::optional<const char8_t *> attributeValue = attributes.get<const char8_t *>(attribute);
 	return attributeValue.has_value()
@@ -864,7 +864,7 @@ std::uint32_t info::database_builder::string_table::get(const XmlParser::Attribu
 //  string_table::data
 //-------------------------------------------------
 
-std::span<const char8_t> info::database_builder::string_table::data() const
+std::span<const char8_t> info::database_builder::string_table::data() const noexcept
 {
 	return m_data;
 }
@@ -874,7 +874,7 @@ std::span<const char8_t> info::database_builder::string_table::data() const
 //  string_table::lookup
 //-------------------------------------------------
 
-const char8_t *info::database_builder::string_table::lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const
+const char8_t *info::database_builder::string_table::lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const noexcept
 {
 	const char8_t *result;
 
@@ -899,7 +899,7 @@ const char8_t *info::database_builder::string_table::lookup(std::uint32_t value,
 //-------------------------------------------------
 
 template<typename T>
-void info::database_builder::string_table::embed_value(T value)
+void info::database_builder::string_table::embed_value(T value) noexcept
 {
 	const std::uint8_t *bytes = (const std::uint8_t *)&value;
 	m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
@@ -910,7 +910,7 @@ void info::database_builder::string_table::embed_value(T value)
 //  string_table::dumpSecondaryBucketDistribution
 //-------------------------------------------------
 
-void info::database_builder::string_table::dumpSecondaryBucketDistribution() const
+void info::database_builder::string_table::dumpSecondaryBucketDistribution() const noexcept
 {
 	int total = 0;
 	std::map<int, int> bucketSizeCounts;

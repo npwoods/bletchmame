@@ -372,7 +372,7 @@ namespace info
 		const QString &name() const { return get_string(inner().m_name_strindex); }
 		const QString &devname() const { return get_string(inner().m_devname_strindex); }
 		bool is_default() const { return inner().m_is_default; }
-		std::optional<info::machine> machine() const;
+		std::optional<info::machine> machine() const noexcept;
 	};
 
 
@@ -623,10 +623,10 @@ namespace info
 		}
 
 		// methods
-		std::optional<info::device> find_device(const QString &tag) const;
-		std::optional<info::chip> find_chip(const QString &chipName) const;
-		std::optional<info::machine> clone_of() const;
-		std::optional<info::machine> rom_of() const;
+		std::optional<info::device> find_device(const QString &tag) const noexcept;
+		std::optional<info::chip> find_chip(const QString &chipName) const noexcept;
+		std::optional<info::machine> clone_of() const noexcept;
+		std::optional<info::machine> rom_of() const noexcept;
 
 		// properties
 		bool runnable() const								{ return inner().m_runnable; }
@@ -687,13 +687,13 @@ namespace info
 		}
 
 		// publically usable functions
-		bool load(const QString &file_name, const QString &expected_version = "");
-		bool load(QIODevice &input, const QString &expected_version = "");
-		bool load(const QByteArray &byteArray, const QString &expected_version = "");
-		void reset();
-		std::optional<machine> find_machine(const QString &machine_name) const;
-		const QString &version() const			{ return *m_version; }
-		void addOnChangedHandler(std::function<void()> &&onChanged);
+		bool load(const QString &file_name, const QString &expected_version = "") noexcept;
+		bool load(QIODevice &input, const QString &expected_version = "") noexcept;
+		bool load(const QByteArray &byteArray, const QString &expected_version = "") noexcept;
+		void reset() noexcept;
+		std::optional<machine> find_machine(const QString &machine_name) const noexcept;
+		const QString &version() const noexcept { return *m_version; }
+		void addOnChangedHandler(std::function<void()> &&onChanged) noexcept;
 
 		// views
 		auto machines() const					{ return machine::view(*this, m_state.m_machines_position); }
@@ -713,10 +713,10 @@ namespace info
 		auto ram_options() const				{ return ram_option::view(*this, m_state.m_ram_options_position); }
 
 		// statics
-		static uint64_t calculate_sizes_hash();
+		static uint64_t calculate_sizes_hash() noexcept;
 
 		// should only be called by info classes
-		const QString &get_string(std::uint32_t offset) const;
+		const QString &get_string(std::uint32_t offset) const noexcept;
 
 	private:
 		struct State
@@ -751,7 +751,7 @@ namespace info
 
 		// data access
 		template<typename T>
-		void getDataSpan(std::span<const T> &span, size_t offset, std::optional<size_t> count = { }) const
+		void getDataSpan(std::span<const T> &span, size_t offset, std::optional<size_t> count = { }) const noexcept
 		{
 			span = getDataSpan<T>(offset, count);
 		}
@@ -768,7 +768,7 @@ namespace info
 
 		// data access
 		template<typename T>
-		static std::optional<std::span<const T>> tryGetDataSpan(const State &state, size_t offset, std::optional<size_t> count = { })
+		static std::optional<std::span<const T>> tryGetDataSpan(const State &state, size_t offset, std::optional<size_t> count = { }) noexcept
 		{
 			size_t actualCount = count.value_or(state.m_data.size() - offset);
 			if (offset > state.m_data.size() || (offset + actualCount * sizeof(T) > state.m_data.size()))
@@ -778,11 +778,11 @@ namespace info
 		}
 
 		// private functions
-		void onChanged();
-		std::optional<int> find_machine_index(const QString &machine_name) const;
-		static std::optional<std::uint32_t> tryEncodeSmallStringChar(std::u8string_view s, std::size_t i);
-		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::u8string_view s);
-		static std::optional<std::array<char8_t, 6>> tryDecodeAsSmallString(std::uint32_t value);
+		void onChanged() noexcept;
+		std::optional<int> find_machine_index(const QString &machine_name) const noexcept;
+		static std::optional<std::uint32_t> tryEncodeSmallStringChar(std::u8string_view s, std::size_t i) noexcept;
+		static std::optional<std::uint32_t> tryEncodeAsSmallString(std::u8string_view s) noexcept;
+		static std::optional<std::array<char8_t, 6>> tryDecodeAsSmallString(std::uint32_t value) noexcept;
 	};
 
 	inline biosset::view				machine::biossets() const		{ return db().biossets().subview(inner().m_biossets_index, inner().m_biossets_count); }
