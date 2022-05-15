@@ -58,6 +58,7 @@ private:
 
 	// methods
 	const QTableView &parentAsTableView() const;
+	QTableView &parentAsTableView();
 	void applyColumnPrefs();
 	void persistColumnPrefs();
 	void applySelectedValue();

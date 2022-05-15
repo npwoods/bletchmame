@@ -143,6 +143,16 @@ const QTableView &TableViewManager::parentAsTableView() const
 
 
 //-------------------------------------------------
+//  parentAsTableView
+//-------------------------------------------------
+
+QTableView &TableViewManager::parentAsTableView()
+{
+	return *dynamic_cast<QTableView *>(QObject::parent());
+}
+
+
+//-------------------------------------------------
 //  applyColumnPrefs
 //-------------------------------------------------
 
@@ -151,11 +161,8 @@ void TableViewManager::applyColumnPrefs()
 	// we are applying column prefs - we don't want to trample on ourselves
 	m_currentlyApplyingColumnPrefs = true;
 
-	// identify the QTableView
-	QTableView &tableView = *dynamic_cast<QTableView *>(parent());
-
 	// identify the header
-	QHeaderView &horizontalHeader = *tableView.horizontalHeader();
+	QHeaderView &horizontalHeader = *parentAsTableView().horizontalHeader();
 
 	// get the preferences
 	const std::unordered_map<std::u8string, ColumnPrefs> &columnPrefs = m_prefs.getColumnPrefs(m_desc.m_name);
@@ -251,7 +258,7 @@ void TableViewManager::persistColumnPrefs()
 
 void TableViewManager::applySelectedValue()
 {
-	QTableView &tableView = *dynamic_cast<QTableView *>(parent());
+	QTableView &tableView = parentAsTableView();
 	QAbstractItemModel &itemModel = *m_proxyModel->sourceModel();
 
 	const QString &selectedValue = m_prefs.getListViewSelection(m_desc.m_name, util::g_empty_string);
