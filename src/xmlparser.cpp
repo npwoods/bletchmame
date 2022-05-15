@@ -189,7 +189,7 @@ XmlParser::~XmlParser()
 //  parse
 //-------------------------------------------------
 
-bool XmlParser::parse(QIODevice &input)
+bool XmlParser::parse(QIODevice &input) noexcept
 {
 	m_currentNode = m_root.get();
 	m_skippingDepth = 0;
@@ -206,7 +206,7 @@ bool XmlParser::parse(QIODevice &input)
 //  parse
 //-------------------------------------------------
 
-bool XmlParser::parse(const QString &file_name)
+bool XmlParser::parse(const QString &file_name) noexcept
 {
 	QFile file(file_name);
 	if (!file.open(QFile::ReadOnly))
@@ -219,7 +219,7 @@ bool XmlParser::parse(const QString &file_name)
 //  parseBytes
 //-------------------------------------------------
 
-bool XmlParser::parseBytes(const void *ptr, size_t sz)
+bool XmlParser::parseBytes(const void *ptr, size_t sz) noexcept
 {
 	QByteArray byteArray((const char *) ptr, (int)sz);
 	QBuffer input(&byteArray);
@@ -232,7 +232,7 @@ bool XmlParser::parseBytes(const void *ptr, size_t sz)
 //  internalParse
 //-------------------------------------------------
 
-bool XmlParser::internalParse(QIODevice &input)
+bool XmlParser::internalParse(QIODevice &input) noexcept
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
 
@@ -279,7 +279,7 @@ bool XmlParser::internalParse(QIODevice &input)
 //  parseSingleBuffer
 //-------------------------------------------------
 
-bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDataLog, bool &done)
+bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDataLog, bool &done) noexcept
 {
 	const int bufferSize = 131072;
 
@@ -312,7 +312,7 @@ bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDat
 //  appendCurrentXmlError
 //-------------------------------------------------
 
-void XmlParser::appendCurrentXmlError()
+void XmlParser::appendCurrentXmlError() noexcept
 {
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *errorString = XML_ErrorString(code);
@@ -324,7 +324,7 @@ void XmlParser::appendCurrentXmlError()
 //  appendError
 //-------------------------------------------------
 
-void XmlParser::appendError(QString &&message)
+void XmlParser::appendError(QString &&message) noexcept
 {
 	Error &error = m_errors.emplace_back();
 	error.m_lineNumber = XML_GetCurrentLineNumber(m_parser);
@@ -338,7 +338,7 @@ void XmlParser::appendError(QString &&message)
 //  errorContext
 //-------------------------------------------------
 
-QString XmlParser::errorContext() const
+QString XmlParser::errorContext() const noexcept
 {
 	int contextOffset = 0, contextSize = 0;
 	const char *contextString = XML_GetInputContext(m_parser, &contextOffset, &contextSize);
@@ -350,7 +350,7 @@ QString XmlParser::errorContext() const
 //  errorContext
 //-------------------------------------------------
 
-QString XmlParser::errorContext(const char *contextString, int contextOffset, int contextSize)
+QString XmlParser::errorContext(const char *contextString, int contextOffset, int contextSize) noexcept
 {
 	QString result;
 	if (contextString)
@@ -383,7 +383,7 @@ QString XmlParser::errorContext(const char *contextString, int contextOffset, in
 //  errorMessagesSingleString
 //-------------------------------------------------
 
-QString XmlParser::errorMessagesSingleString() const
+QString XmlParser::errorMessagesSingleString() const noexcept
 {
 	QString result;
 	for (const Error &error : m_errors)
@@ -403,7 +403,7 @@ QString XmlParser::errorMessagesSingleString() const
 //  isLineEnding
 //-------------------------------------------------
 
-bool XmlParser::isLineEnding(char ch)
+bool XmlParser::isLineEnding(char ch) noexcept
 {
 	return ch == '\r' || ch == '\n';
 }
@@ -413,7 +413,7 @@ bool XmlParser::isLineEnding(char ch)
 //  isWhitespace
 //-------------------------------------------------
 
-bool XmlParser::isWhitespace(char ch)
+bool XmlParser::isWhitespace(char ch) noexcept
 {
 	return ch == ' ' || ch == '\t';
 }
@@ -423,7 +423,7 @@ bool XmlParser::isWhitespace(char ch)
 //  getNode
 //-------------------------------------------------
 
-XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &elements)
+XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &elements) noexcept
 {
 	Node *node = m_root.get();
 
@@ -445,7 +445,7 @@ XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &e
 //  startElement
 //-------------------------------------------------
 
-void XmlParser::startElement(const char *element, const char **attributes)
+void XmlParser::startElement(const char *element, const char **attributes) noexcept
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
 
@@ -518,7 +518,7 @@ void XmlParser::startElement(const char *element, const char **attributes)
 //  endElement
 //-------------------------------------------------
 
-void XmlParser::endElement(const char *)
+void XmlParser::endElement(const char *) noexcept
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
 
@@ -546,7 +546,7 @@ void XmlParser::endElement(const char *)
 //  characterData
 //-------------------------------------------------
 
-void XmlParser::characterData(const char *s, int len)
+void XmlParser::characterData(const char *s, int len) noexcept
 {
 	if (m_currentContent)
 		*m_currentContent += std::u8string_view((const char8_t *) s, len);
@@ -609,7 +609,7 @@ XmlParser::Attributes::Attributes(XmlParser &parser, const char **attributes)
 //  Attributes::get<int>
 //-------------------------------------------------
 
-template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute) const noexcept
 {
 	return get<int>(attribute, -1);
 }
@@ -619,7 +619,7 @@ template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attrib
 //  Attributes::get<int>
 //-------------------------------------------------
 
-template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute, int radix) const
+template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attribute, int radix) const noexcept
 {
 	return get<int>(attribute, strtoll_parser<int>(radix));
 }
@@ -629,7 +629,7 @@ template<> std::optional<int> XmlParser::Attributes::get<int>(const char *attrib
 //  Attributes::get<std::uint8_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute) const
+template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute) const noexcept
 {
 	return get<std::uint8_t>(attribute, -1);
 }
@@ -639,7 +639,7 @@ template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *at
 //  Attributes::get<std::uint8_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute, int radix) const
+template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *attribute, int radix) const noexcept
 {
 	return get<std::uint8_t>(attribute, strtoull_parser<std::uint8_t>(radix));
 }
@@ -649,7 +649,7 @@ template<> std::optional<std::uint8_t> XmlParser::Attributes::get(const char *at
 //  Attributes::get<std::uint32_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute) const noexcept
 {
 	return get<std::uint32_t>(attribute, -1);
 }
@@ -659,7 +659,7 @@ template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *a
 //  Attributes::get<std::uint32_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute, int radix) const
+template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *attribute, int radix) const noexcept
 {
 	return get<std::uint32_t>(attribute, strtoull_parser<std::uint32_t>(radix));
 }
@@ -669,7 +669,7 @@ template<> std::optional<std::uint32_t> XmlParser::Attributes::get(const char *a
 //  Attributes::get<std::uint64_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute) const noexcept
 {
 	return get<std::uint64_t>(attribute, -1);
 }
@@ -679,7 +679,7 @@ template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *a
 //  Attributes::get<std::uint64_t>
 //-------------------------------------------------
 
-template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute, int radix) const
+template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *attribute, int radix) const noexcept
 {
 	return get<std::uint64_t>(attribute, strtoull_parser<std::uint64_t>(radix));
 }
@@ -689,7 +689,7 @@ template<> std::optional<std::uint64_t> XmlParser::Attributes::get(const char *a
 //  Attributes::get<bool>
 //-------------------------------------------------
 
-template<> std::optional<bool> XmlParser::Attributes::get<bool>(const char *attribute) const
+template<> std::optional<bool> XmlParser::Attributes::get<bool>(const char *attribute) const noexcept
 {
 	return get<bool>(attribute, s_bool_parser);
 }
@@ -699,7 +699,7 @@ template<> std::optional<bool> XmlParser::Attributes::get<bool>(const char *attr
 //  Attributes::get<float>
 //-------------------------------------------------
 
-template<> std::optional<float> XmlParser::Attributes::get<float>(const char *attribute) const
+template<> std::optional<float> XmlParser::Attributes::get<float>(const char *attribute) const noexcept
 {
 	return get<float>(attribute, strtof_parser<float>());
 }
@@ -709,7 +709,7 @@ template<> std::optional<float> XmlParser::Attributes::get<float>(const char *at
 //  Attributes::get<QString>
 //-------------------------------------------------
 
-template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char *attribute) const
+template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char *attribute) const noexcept
 {
 	const char *s = internalGet(attribute, true);
 	return s
@@ -722,7 +722,7 @@ template<> std::optional<QString> XmlParser::Attributes::get<QString>(const char
 //  Attributes::get<const char8_t *>
 //-------------------------------------------------
 
-template<> std::optional<const char8_t *> XmlParser::Attributes::get<const char8_t *>(const char *attribute) const
+template<> std::optional<const char8_t *> XmlParser::Attributes::get<const char8_t *>(const char *attribute) const noexcept
 {
 	const char8_t *s = (const char8_t *)internalGet(attribute, true);
 	return s
@@ -735,7 +735,7 @@ template<> std::optional<const char8_t *> XmlParser::Attributes::get<const char8
 //  Attributes::get<std::u8string_view>
 //-------------------------------------------------
 
-template<> std::optional<std::u8string_view> XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const
+template<> std::optional<std::u8string_view> XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const noexcept
 {
 	const char8_t *s = (const char8_t *) internalGet(attribute, true);
 	return s
@@ -748,7 +748,7 @@ template<> std::optional<std::u8string_view> XmlParser::Attributes::get<std::u8s
 //  Attributes::internalGet
 //-------------------------------------------------
 
-const char *XmlParser::Attributes::internalGet(const char *attribute, bool return_null) const
+const char *XmlParser::Attributes::internalGet(const char *attribute, bool return_null) const noexcept
 {
 	for (size_t i = 0; m_attributes[i]; i += 2)
 	{
@@ -764,7 +764,7 @@ const char *XmlParser::Attributes::internalGet(const char *attribute, bool retur
 //  Attributes::reportAttributeParsingError
 //-------------------------------------------------
 
-void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, std::u8string_view value) const
+void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, std::u8string_view value) const noexcept
 {
 	QString message = QString("Error parsing attribute \"%1\" (text=\"%2\")").arg(
 		QString(attribute),

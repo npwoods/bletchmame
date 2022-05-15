@@ -59,20 +59,20 @@ public:
 		Attributes(XmlParser &parser, const char **attributes);
 
 		// main attribute getter
-		template<class T> std::optional<T> get(const char *attribute) const
+		template<class T> std::optional<T> get(const char *attribute) const noexcept
 		{
 			static_assert(sizeof(T) == -1, "Expected use of template specialization");
 		}
 
 		// alternate radices
-		template<class T> std::optional<T> get(const char *attribute, int radix) const
+		template<class T> std::optional<T> get(const char *attribute, int radix) const noexcept
 		{
 			static_assert(sizeof(T) == -1, "Expected use of template specialization");
 		}
 
 		// generic getter with a parser function
 		template<typename T, typename TFunc>
-		std::optional<T> get(const char *attribute, TFunc func) const
+		std::optional<T> get(const char *attribute, TFunc func) const noexcept
 		{
 			std::optional<T> result = { };
 			std::optional<std::u8string_view> text = get<std::u8string_view>(attribute);
@@ -91,8 +91,8 @@ public:
 		XmlParser &		m_parser;
 		const char **	m_attributes;
 
-		const char *internalGet(const char *attribute, bool return_null = false) const;
-		void reportAttributeParsingError(const char *attribute, std::u8string_view value) const;
+		const char *internalGet(const char *attribute, bool return_null = false) const noexcept;
+		void reportAttributeParsingError(const char *attribute, std::u8string_view value) const noexcept;
 	};
 
 	// ctor/dtor
@@ -101,7 +101,7 @@ public:
 
 	typedef std::function<ElementResult (const Attributes &node) > OnBeginElementCallback;
 	template<typename TFunc>
-	void onElementBegin(const std::initializer_list<const char *> &elements, TFunc &&func)
+	void onElementBegin(const std::initializer_list<const char *> &elements, TFunc &&func) noexcept
 	{
 		// we don't want to force callers to specify a return value in the TFunc (usually a
 		// lambda) because most of the time it would just return ElementResult::Ok
@@ -121,7 +121,7 @@ public:
 
 	// onElementBegin
 	template<typename TFunc>
-	void onElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func)
+	void onElementBegin(const std::initializer_list<const std::initializer_list<const char *>> &elements, const TFunc &func) noexcept
 	{
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
 		{
@@ -132,11 +132,11 @@ public:
 
 	// onElementEnd (std::u8string)
 	typedef std::function<void(std::u8string &&content)> OnEndElementCallback;
-	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func)
+	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func) noexcept
 	{
 		getNode(elements)->m_endFunc = std::move(func);
 	}
-	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func)
+	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func) noexcept
 	{
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
 		{
@@ -147,14 +147,14 @@ public:
 
 	// onElementEnd (QString)
 	typedef std::function<void(QString &&content)> OnEndElementQStringCallback;
-	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementQStringCallback &&func)
+	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementQStringCallback &&func) noexcept
 	{
 		getNode(elements)->m_endFunc = [func{std::move(func)}](std::u8string &&content)
 		{
 			func(util::toQString(content));
 		};
 	}
-	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementQStringCallback &&func)
+	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementQStringCallback &&func) noexcept
 	{
 		for (auto iter = elements.begin(); iter != elements.end(); iter++)
 		{
@@ -163,10 +163,10 @@ public:
 		}
 	}
 
-	bool parse(QIODevice &input);
-	bool parse(const QString &file_name);
-	bool parseBytes(const void *ptr, size_t sz);
-	QString errorMessagesSingleString() const;
+	bool parse(QIODevice &input) noexcept;
+	bool parse(const QString &file_name) noexcept;
+	bool parseBytes(const void *ptr, size_t sz) noexcept;
+	QString errorMessagesSingleString() const noexcept;
 
 private:
 	struct Node
@@ -194,18 +194,18 @@ private:
 	std::optional<std::u8string>	m_currentContent;
 	std::vector<Error>				m_errors;
 
-	bool internalParse(QIODevice &input);
-	bool parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDataLog, bool &done);
-	void startElement(const char *name, const char **attributes);
-	void endElement(const char *name);
-	void characterData(const char *s, int len);
-	void appendError(QString &&message);
-	void appendCurrentXmlError();
-	QString errorContext() const;
-	static QString errorContext(const char *contextString, int contextOffset, int contextSize);
-	static bool isLineEnding(char ch);
-	static bool isWhitespace(char ch);
-	Node *getNode(const std::initializer_list<const char *> &elements);
+	bool internalParse(QIODevice &input) noexcept;
+	bool parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDataLog, bool &done) noexcept;
+	void startElement(const char *name, const char **attributes) noexcept;
+	void endElement(const char *name) noexcept;
+	void characterData(const char *s, int len) noexcept;
+	void appendError(QString &&message) noexcept;
+	void appendCurrentXmlError() noexcept;
+	QString errorContext() const noexcept;
+	static QString errorContext(const char *contextString, int contextOffset, int contextSize) noexcept;
+	static bool isLineEnding(char ch) noexcept;
+	static bool isWhitespace(char ch) noexcept;
+	Node *getNode(const std::initializer_list<const char *> &elements) noexcept;
 
 	static void startElementHandler(void *user_data, const char *name, const char **attributes);
 	static void endElementHandler(void *user_data, const char *name);
@@ -217,20 +217,20 @@ private:
 //  TEMPLATE SPECIALIZATIONS
 //**************************************************************************
 
-template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute) const;
-template<> std::optional<bool>					XmlParser::Attributes::get<bool>(const char *attribute) const;
-template<> std::optional<float>					XmlParser::Attributes::get<float>(const char *attribute) const;
-template<> std::optional<QString>				XmlParser::Attributes::get<QString>(const char *attribute) const;
-template<> std::optional<const char8_t *>		XmlParser::Attributes::get<const char8_t *>(const char *attribute) const;
-template<> std::optional<std::u8string_view>	XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const;
-template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const;
-template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const;
-template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const;
+template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute) const noexcept;
+template<> std::optional<bool>					XmlParser::Attributes::get<bool>(const char *attribute) const noexcept;
+template<> std::optional<float>					XmlParser::Attributes::get<float>(const char *attribute) const noexcept;
+template<> std::optional<QString>				XmlParser::Attributes::get<QString>(const char *attribute) const noexcept;
+template<> std::optional<const char8_t *>		XmlParser::Attributes::get<const char8_t *>(const char *attribute) const noexcept;
+template<> std::optional<std::u8string_view>	XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const noexcept;
+template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const noexcept;
+template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const noexcept;
+template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const noexcept;
 
-template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute, int radix) const;
-template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute, int radix) const;
-template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const;
-template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const;
+template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute, int radix) const noexcept;
+template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute, int radix) const noexcept;
+template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const noexcept;
+template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const noexcept;
 
 
 #endif // XMLPARSER_H

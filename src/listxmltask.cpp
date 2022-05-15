@@ -72,19 +72,18 @@ void ListXmlTask::run(std::optional<QProcess> &process)
 	QString errorMessage;
 	if (process.has_value())
 	{
-		try
-		{
-			// process
-			internalRun(process.value(), progressCallback);
-
-			// we've succeeded!
-			status = ListXmlResultEvent::Status::SUCCESS;
-		}
-		catch (list_xml_exception& ex)
+		// process
+		std::optional<ListXmlError> result = internalRun(process.value(), progressCallback);
+		if (result.has_value())
 		{
 			// an exception has occurred
-			status = ex.m_status;
-			errorMessage = std::move(ex.m_message);
+			status = result.value().status();
+			errorMessage = result.value().message();
+		}
+		else
+		{
+			// we've succeeded!
+			status = ListXmlResultEvent::Status::SUCCESS;
 		}
 	}
 	else
@@ -103,7 +102,7 @@ void ListXmlTask::run(std::optional<QProcess> &process)
 //  internalRun
 //-------------------------------------------------
 
-void ListXmlTask::internalRun(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback)
+std::optional<ListXmlTask::ListXmlError> ListXmlTask::internalRun(QIODevice &process, const info::database_builder::ProcessXmlCallback &progressCallback)
 {
 	info::database_builder builder;
 
@@ -114,11 +113,11 @@ void ListXmlTask::internalRun(QIODevice &process, const info::database_builder::
 	// before we check to see if there is a parsing error, check for an abort - under which
 	// scenario a parsing error is expected
 	if (isInterruptionRequested())
-		throw list_xml_exception(ListXmlResultEvent::Status::ABORTED);
+		return ListXmlError(ListXmlResultEvent::Status::ABORTED);
 
 	// now check for a parse error (which should be very unlikely)
 	if (!success)
-		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Error parsing XML from MAME -listxml: %1").arg(error_message));
+		return ListXmlError(ListXmlResultEvent::Status::ERROR, QString("Error parsing XML from MAME -listxml: %1").arg(error_message));
 
 	// try creating the directory if its not present
 	QDir dir = QFileInfo(m_outputFilename).dir();
@@ -129,10 +128,11 @@ void ListXmlTask::internalRun(QIODevice &process, const info::database_builder::
 	// to the actual file
 	QFile file(m_outputFilename);
 	if (!file.open(QIODevice::WriteOnly))
-		throw list_xml_exception(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_outputFilename));
+		return ListXmlError(ListXmlResultEvent::Status::ERROR, QString("Could not open file: %1").arg(m_outputFilename));
 
-	// emit the data
+	// emit the data and return
 	builder.emit_info(file);
+	return { };
 }
 
 
@@ -163,11 +163,32 @@ ListXmlResultEvent::ListXmlResultEvent(Status status, QString &&errorMessage)
 
 
 //-------------------------------------------------
-//  list_xml_exception ctor
+//  ListXmlError ctor
 //-------------------------------------------------
 
-ListXmlTask::list_xml_exception::list_xml_exception(ListXmlResultEvent::Status status, QString &&message)
+ListXmlTask::ListXmlError::ListXmlError(ListXmlResultEvent::Status status, QString &&message)
 	: m_status(status)
-	, m_message(message)
+	, m_message(std::move(message))
 {
 }
+
+
+//-------------------------------------------------
+//  ListXmlError::status
+//-------------------------------------------------
+
+ListXmlResultEvent::Status ListXmlTask::ListXmlError::status() const
+{
+	return m_status;
+}
+
+
+//-------------------------------------------------
+//  ListXmlError::message
+//-------------------------------------------------
+
+QString &ListXmlTask::ListXmlError::message()
+{
+	return m_message;
+}
+

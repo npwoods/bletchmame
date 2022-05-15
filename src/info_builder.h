@@ -36,8 +36,8 @@ namespace info
 		database_builder(database_builder &&) = default;
 
 		// methods
-		bool process_xml(QIODevice &stream, QString &error_message, const ProcessXmlCallback &progressCallback = { });
-		void emit_info(QIODevice &stream) const;
+		bool process_xml(QIODevice &stream, QString &error_message, const ProcessXmlCallback &progressCallback = { }) noexcept;
+		void emit_info(QIODevice &stream) const noexcept;
 
 	private:
 		// ======================> string_table
@@ -46,15 +46,15 @@ namespace info
 		public:
 			typedef std::array<char8_t, 6> SsoBuffer;
 
-			string_table();
-			void shrinkToFit();
-			std::uint32_t get(const char8_t *string);
-			std::uint32_t get(const std::u8string &string);
-			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute);
-			std::span<const char8_t> data() const;
-			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const;
-			template<typename T> void embed_value(T value);
-			void dumpSecondaryBucketDistribution() const;
+			string_table() noexcept;
+			void shrinkToFit() noexcept;
+			std::uint32_t get(const char8_t *string) noexcept;
+			std::uint32_t get(const std::u8string &string) noexcept;
+			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute) noexcept;
+			std::span<const char8_t> data() const noexcept;
+			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const noexcept;
+			template<typename T> void embed_value(T value) noexcept;
+			void dumpSecondaryBucketDistribution() const noexcept;
 
 		private:
 			typedef std::forward_list<std::uint32_t> SecondaryMapBucket;

@@ -93,7 +93,7 @@ static const char8_t s_smallStringChars[] = u8"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefg
 //-------------------------------------------------
 
 template<typename T>
-static bool unaligned_check(const void *ptr, T value)
+static bool unaligned_check(const void *ptr, T value) noexcept
 {
 	T data;
 	memcpy(&data, ptr, sizeof(data));
@@ -105,7 +105,7 @@ static bool unaligned_check(const void *ptr, T value)
 //  tryGetQStringFromCharSpan
 //-------------------------------------------------
 
-static std::optional<QString> tryGetQStringFromCharSpan(const std::span<const char> &span)
+static std::optional<QString> tryGetQStringFromCharSpan(const std::span<const char> &span) noexcept
 {
 	auto iter = std::find(span.begin(), span.end(), '\0');
 	if (iter == span.end())
@@ -118,12 +118,10 @@ static std::optional<QString> tryGetQStringFromCharSpan(const std::span<const ch
 //  getQStringFromCharSpan
 //-------------------------------------------------
 
-static QString getQStringFromCharSpan(const std::span<const char> &span)
+static QString getQStringFromCharSpan(const std::span<const char> &span) noexcept
 {
 	std::optional<QString> result = tryGetQStringFromCharSpan(span);
-	if (!result)
-		throw false;
-	return std::move(*result);
+	return std::move(result.value());
 }
 
 
@@ -131,7 +129,7 @@ static QString getQStringFromCharSpan(const std::span<const char> &span)
 //  load_data
 //-------------------------------------------------
 
-static std::vector<std::uint8_t> load_data(QIODevice &input, info::binaries::header &header)
+static std::vector<std::uint8_t> load_data(QIODevice &input, info::binaries::header &header) noexcept
 {
 	// get the file size and read the header
 	size_t size = util::safe_static_cast<size_t>(input.bytesAvailable());
@@ -156,7 +154,7 @@ static std::vector<std::uint8_t> load_data(QIODevice &input, info::binaries::hea
 //-------------------------------------------------
 
 template<class T>
-bindata::view_position getPosition(size_t &cursor, std::uint32_t count)
+bindata::view_position getPosition(size_t &cursor, std::uint32_t count) noexcept
 {
 	std::uint32_t offset = util::safe_static_cast<std::uint32_t>(cursor);
 	cursor += sizeof(T) * count;
@@ -168,7 +166,7 @@ bindata::view_position getPosition(size_t &cursor, std::uint32_t count)
 //  database::load
 //-------------------------------------------------
 
-bool info::database::load(const QString &file_name, const QString &expected_version)
+bool info::database::load(const QString &file_name, const QString &expected_version) noexcept
 {
 	// check for file existance
 	QFile file(file_name);
@@ -185,7 +183,7 @@ bool info::database::load(const QString &file_name, const QString &expected_vers
 //	only be used by unit tests
 //-------------------------------------------------
 
-bool info::database::load(const QByteArray &byteArray, const QString &expected_version)
+bool info::database::load(const QByteArray &byteArray, const QString &expected_version) noexcept
 {
 	QBuffer buffer((QByteArray *) &byteArray);
 	return buffer.open(QIODevice::ReadOnly)
@@ -197,7 +195,7 @@ bool info::database::load(const QByteArray &byteArray, const QString &expected_v
 //  database::load
 //-------------------------------------------------
 
-bool info::database::load(QIODevice &input, const QString &expected_version)
+bool info::database::load(QIODevice &input, const QString &expected_version) noexcept
 {
 	info::database::State newState;
 
@@ -273,7 +271,7 @@ bool info::database::load(QIODevice &input, const QString &expected_version)
 //  database::calculate_sizes_hash
 //-------------------------------------------------
  
-uint64_t info::database::calculate_sizes_hash()
+uint64_t info::database::calculate_sizes_hash() noexcept
 {
 	static const uint64_t sizes[] =
 	{
@@ -310,7 +308,7 @@ uint64_t info::database::calculate_sizes_hash()
 //  database::reset
 //-------------------------------------------------
 
-void info::database::reset()
+void info::database::reset() noexcept
 {
 	m_state = State();
 	m_loaded_strings.clear();
@@ -323,7 +321,7 @@ void info::database::reset()
 //  database::addOnChangedHandler
 //-------------------------------------------------
 
-void info::database::addOnChangedHandler(std::function<void()> &&onChanged)
+void info::database::addOnChangedHandler(std::function<void()> &&onChanged) noexcept
 {
 	m_onChangedHandlers.push_back(std::move(onChanged));
 }
@@ -333,7 +331,7 @@ void info::database::addOnChangedHandler(std::function<void()> &&onChanged)
 //  database::onChanged
 //-------------------------------------------------
 
-void info::database::onChanged()
+void info::database::onChanged() noexcept
 {
 	for (const std::function<void()> &func : m_onChangedHandlers)
 		func();
@@ -344,7 +342,7 @@ void info::database::onChanged()
 //  database::get_string
 //-------------------------------------------------
 
-const QString &info::database::get_string(std::uint32_t offset) const
+const QString &info::database::get_string(std::uint32_t offset) const noexcept
 {
 	// do we have this string in our loaded string cache?
 	auto iter = m_loaded_strings.find(offset);
@@ -377,7 +375,7 @@ const QString &info::database::get_string(std::uint32_t offset) const
 //  database::tryEncodeSmallStringChar
 //-------------------------------------------------
 
-std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(std::u8string_view s, std::size_t i)
+std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(std::u8string_view s, std::size_t i) noexcept
 {
 	std::optional<std::uint32_t> result;
 	if (s.size() <= i)
@@ -400,7 +398,7 @@ std::optional<std::uint32_t> info::database::tryEncodeSmallStringChar(std::u8str
 //  database::tryEncodeAsSmallString
 //-------------------------------------------------
 
-std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::u8string_view s)
+std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::u8string_view s) noexcept
 {
 	if (s.size() > 5)
 		return { };
@@ -422,7 +420,7 @@ std::optional<std::uint32_t> info::database::tryEncodeAsSmallString(std::u8strin
 //  database::tryDecodeAsSmallString
 //-------------------------------------------------
 
-std::optional<std::array<char8_t, 6>> info::database::tryDecodeAsSmallString(std::uint32_t value)
+std::optional<std::array<char8_t, 6>> info::database::tryDecodeAsSmallString(std::uint32_t value) noexcept
 {
 	std::optional<std::array<char8_t, 6>> result = { };
 
@@ -445,7 +443,7 @@ std::optional<std::array<char8_t, 6>> info::database::tryDecodeAsSmallString(std
 //  machine::find_device
 //-------------------------------------------------
 
-std::optional<info::device> info::machine::find_device(const QString &tag) const
+std::optional<info::device> info::machine::find_device(const QString &tag) const noexcept
 {
 	// find the device
 	auto iter = std::ranges::find_if(
@@ -463,7 +461,7 @@ std::optional<info::device> info::machine::find_device(const QString &tag) const
 //  machine::find_chip
 //-------------------------------------------------
 
-std::optional<info::chip> info::machine::find_chip(const QString &chipName) const
+std::optional<info::chip> info::machine::find_chip(const QString &chipName) const noexcept
 {
 	// find the device
 	auto iter = std::ranges::find_if(
@@ -481,7 +479,7 @@ std::optional<info::chip> info::machine::find_chip(const QString &chipName) cons
 //  machine::clone_of
 //-------------------------------------------------
 
-std::optional<info::machine> info::machine::clone_of() const
+std::optional<info::machine> info::machine::clone_of() const noexcept
 {
 	return inner().m_clone_of_machindex < db().machines().size()
 		? db().machines()[inner().m_clone_of_machindex]
@@ -493,7 +491,7 @@ std::optional<info::machine> info::machine::clone_of() const
 //  machine::rom_of
 //-------------------------------------------------
 
-std::optional<info::machine> info::machine::rom_of() const
+std::optional<info::machine> info::machine::rom_of() const noexcept
 {
 	return inner().m_rom_of_machindex < db().machines().size()
 		? db().machines()[inner().m_rom_of_machindex]
@@ -505,7 +503,7 @@ std::optional<info::machine> info::machine::rom_of() const
 //  slot_option::machine
 //-------------------------------------------------
 
-std::optional<info::machine> info::slot_option::machine() const
+std::optional<info::machine> info::slot_option::machine() const noexcept
 {
 	return db().find_machine(devname());
 
@@ -516,7 +514,7 @@ std::optional<info::machine> info::slot_option::machine() const
 //  database::find_machine_index
 //-------------------------------------------------
 
-std::optional<int> info::database::find_machine_index(const QString &machine_name) const
+std::optional<int> info::database::find_machine_index(const QString &machine_name) const noexcept
 {
 	auto iter = std::lower_bound(
 		machines().begin(),
@@ -536,7 +534,7 @@ std::optional<int> info::database::find_machine_index(const QString &machine_nam
 //  database::find_machine
 //-------------------------------------------------
 
-std::optional<info::machine> info::database::find_machine(const QString &machine_name) const
+std::optional<info::machine> info::database::find_machine(const QString &machine_name) const noexcept
 {
 	std::optional<int> index = find_machine_index(machine_name);
 	return index
