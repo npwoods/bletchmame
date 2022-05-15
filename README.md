@@ -13,7 +13,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Stopped displaying <<none>> for device slots that do not have any options
 	- Turning off the MAME intrinsic cassette animation as BletchMAME has its own UX (MAME 0.243 and later)
 	- Added an option to disable the warning displayed when stopping an emulation
-	- Added columns to the machine and software list views to identify source files
+	- Improvements to the various column views
+		- Added columns to the machine and software list views to identify source files
+		- Added a right click context menu to control sort order
 	- When invoking software from software lists, now specifying the full name
 		- Failing to do so could cause problems when mulitple lists have the same name (e.g. - msx1_cart:hero vs msx1_cass:hero)
 	- Fixed a bug that could cause software lists with hex values (e.g. - size="0x2000") to not parse

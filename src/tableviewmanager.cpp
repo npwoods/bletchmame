@@ -13,8 +13,9 @@
 // Qt headers
 #include <QHeaderView>
 #include <QLineEdit>
-#include <QTableView>
+#include <QMenu>
 #include <QSortFilterProxyModel>
+#include <QTableView>
 
 
 //-------------------------------------------------
@@ -66,7 +67,9 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
 		m_columnCount++;
 
 	// configure the header
-	tableView.horizontalHeader()->setSectionsMovable(true);
+	QHeaderView &horizontalHeader = *tableView.horizontalHeader();
+	horizontalHeader.setSectionsMovable(true);
+	horizontalHeader.setContextMenuPolicy(Qt::CustomContextMenu);
 
 	// set the model
 	tableView.setModel(m_proxyModel);
@@ -93,24 +96,30 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
 	});
 
 	// handle resizing
-	connect(tableView.horizontalHeader(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
+	connect(&horizontalHeader, &QHeaderView::sectionResized, this, [this](int logicalIndex, int oldSize, int newSize)
 	{
 		if (!m_currentlyApplyingColumnPrefs)
 			persistColumnPrefs();
 	});
 
 	// handle reordering
-	connect(tableView.horizontalHeader(), &QHeaderView::sectionMoved, this, [this](int logicalIndex, int oldVisualIndex, int newVisualIndex)
+	connect(&horizontalHeader, &QHeaderView::sectionMoved, this, [this](int logicalIndex, int oldVisualIndex, int newVisualIndex)
 	{
 		if (!m_currentlyApplyingColumnPrefs)
 			persistColumnPrefs();
 	});
 
 	// handle when sort order changes
-	connect(tableView.horizontalHeader(), &QHeaderView::sortIndicatorChanged, this, [this](int logicalIndex, Qt::SortOrder order)
+	connect(&horizontalHeader, &QHeaderView::sortIndicatorChanged, this, [this](int logicalIndex, Qt::SortOrder order)
 	{
 		if (!m_currentlyApplyingColumnPrefs)
 			persistColumnPrefs();
+	});
+
+	// handle context menu
+	connect(&horizontalHeader, &QHeaderView::customContextMenuRequested, this, [this](const QPoint &pos)
+	{
+		headerContextMenuRequested(pos);
 	});
 }
 
@@ -290,4 +299,36 @@ void TableViewManager::applySelectedValue()
 	{
 		tableView.clearSelection();
 	}
+}
+
+
+//-------------------------------------------------
+//  headerContextMenuRequested
+//-------------------------------------------------
+
+void TableViewManager::headerContextMenuRequested(const QPoint &pos)
+{
+	QHeaderView &horizontalHeader = *parentAsTableView().horizontalHeader();
+	int currentSortSection = horizontalHeader.sortIndicatorSection();
+	int contextMenuSection = horizontalHeader.logicalIndexAt(pos);
+
+	// wrap logic for adding sort order items
+	auto addSortMenuItem = [&horizontalHeader, currentSortSection, contextMenuSection](QMenu &popupMenu, const QString &text, Qt::SortOrder sortOrder)
+	{
+		QAction &action = *popupMenu.addAction(text, [&horizontalHeader, contextMenuSection, sortOrder]()
+		{
+			horizontalHeader.setSortIndicator(contextMenuSection, sortOrder);
+		});
+		action.setCheckable(true);
+		action.setChecked(currentSortSection == contextMenuSection && horizontalHeader.sortIndicatorOrder() == sortOrder);
+	};
+
+	// build the popup menu
+	QMenu popupMenu;
+	addSortMenuItem(popupMenu, "Sort Ascending", Qt::SortOrder::AscendingOrder);
+	addSortMenuItem(popupMenu, "Sort Descending", Qt::SortOrder::DescendingOrder);
+
+	// and display it
+	QPoint popupPos = parentAsTableView().mapToGlobal(pos);
+	popupMenu.exec(popupPos);
 }

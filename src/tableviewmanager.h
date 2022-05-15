@@ -62,6 +62,7 @@ private:
 	void applyColumnPrefs();
 	void persistColumnPrefs();
 	void applySelectedValue();
+	void headerContextMenuRequested(const QPoint &pos);
 };
 
 #endif // TABLEVIEWMANAGER_H
