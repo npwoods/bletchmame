@@ -29,38 +29,38 @@ class Preferences;
 class TableViewManager : public QObject
 {
 public:
-    struct ColumnDesc
-    {
-        const char8_t * m_id;
-        int				m_defaultWidth;
-    };
+	struct ColumnDesc
+	{
+		const char8_t * m_id;
+		int				m_defaultWidth;
+	};
 
-    struct Description
-    {
-        const char8_t *     m_name;
-        int                 m_keyColumnIndex;
-        const ColumnDesc *  m_columns;
-    };
+	struct Description
+	{
+		const char8_t *     m_name;
+		int                 m_keyColumnIndex;
+		const ColumnDesc *  m_columns;
+	};
 
-    // static methods
-    static TableViewManager &setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback = { });
+	// static methods
+	static TableViewManager &setup(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback = { });
 
 private:
-    Preferences &                           m_prefs;
-    const Description &                     m_desc;
-    std::function<void(const QString &)>    m_selectionChangedCallback;
-    int                                     m_columnCount;
-    QSortFilterProxyModel *                 m_proxyModel;
-    bool                                    m_currentlyApplyingColumnPrefs;
+	Preferences &                           m_prefs;
+	const Description &                     m_desc;
+	std::function<void(const QString &)>    m_selectionChangedCallback;
+	int                                     m_columnCount;
+	QSortFilterProxyModel *                 m_proxyModel;
+	bool                                    m_currentlyApplyingColumnPrefs;
 
-    // ctor
-    TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback);
+	// ctor
+	TableViewManager(QTableView &tableView, QAbstractItemModel &itemModel, QLineEdit *lineEdit, Preferences &prefs, const Description &desc, std::function<void(const QString &)> &&selectionChangedCallback);
 
-    // methods
-    const QTableView &parentAsTableView() const;
-    void applyColumnPrefs();
-    void persistColumnPrefs();
-    void applySelectedValue();
+	// methods
+	const QTableView &parentAsTableView() const;
+	void applyColumnPrefs();
+	void persistColumnPrefs();
+	void applySelectedValue();
 };
 
 #endif // TABLEVIEWMANAGER_H
