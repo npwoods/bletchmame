@@ -14,6 +14,14 @@
 // Qt headers
 #include <QObject>
 
+// standard headers
+#include <span>
+
+
+//**************************************************************************
+//  TYPE DEFINITIONS
+//**************************************************************************
+
 QT_BEGIN_NAMESPACE
 class QAbstractItemModel;
 class QLineEdit;
@@ -22,7 +30,6 @@ class QTableView;
 QT_END_NAMESPACE
 
 class Preferences;
-
 
 // ======================> TableViewManager
 
@@ -37,9 +44,9 @@ public:
 
 	struct Description
 	{
-		const char8_t *     m_name;
-		int                 m_keyColumnIndex;
-		const ColumnDesc *  m_columns;
+		const char8_t *				m_name;
+		int							m_keyColumnIndex;
+		std::span<const ColumnDesc>	m_columns;
 	};
 
 	// static methods
@@ -49,7 +56,6 @@ private:
 	Preferences &                           m_prefs;
 	const Description &                     m_desc;
 	std::function<void(const QString &)>    m_selectionChangedCallback;
-	int                                     m_columnCount;
 	QSortFilterProxyModel *                 m_proxyModel;
 	bool                                    m_currentlyApplyingColumnPrefs;
 

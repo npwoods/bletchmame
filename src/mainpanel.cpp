@@ -74,7 +74,7 @@ static const TableViewManager::ColumnDesc s_machineListTableViewColumns[] =
 	{ u8"description",	370 },
 	{ u8"year",			50 },
 	{ u8"manufacturer",	320 },
-	{ nullptr }
+	{ u8"sourcefile",	100 }
 };
 
 static const TableViewManager::Description s_machineListTableViewDesc =
@@ -88,8 +88,7 @@ static const TableViewManager::ColumnDesc s_profileListTableViewColumns[] =
 {
 	{ u8"name",			85 },
 	{ u8"machine",		85 },
-	{ u8"path",			600 },
-	{ nullptr }
+	{ u8"path",			600 }
 };
 
 static const TableViewManager::Description s_profileListTableViewDesc =
@@ -98,6 +97,9 @@ static const TableViewManager::Description s_profileListTableViewDesc =
 	(int)ProfileListItemModel::Column::Path,
 	s_profileListTableViewColumns
 };
+
+static_assert(std::size(s_machineListTableViewColumns) == util::enum_count<MachineListItemModel::Column>());
+static_assert(std::size(s_profileListTableViewColumns) == util::enum_count<ProfileListItemModel::Column>());
 
 
 //**************************************************************************

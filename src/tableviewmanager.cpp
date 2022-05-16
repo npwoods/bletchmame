@@ -27,7 +27,6 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
 	, m_prefs(prefs)
 	, m_desc(desc)
 	, m_selectionChangedCallback(std::move(selectionChangedCallback))
-	, m_columnCount(-1)
 	, m_proxyModel(nullptr)
 	, m_currentlyApplyingColumnPrefs(false)
 {
@@ -60,11 +59,6 @@ TableViewManager::TableViewManager(QTableView &tableView, QAbstractItemModel &it
 		};
 		connect(lineEdit, &QLineEdit::textEdited, this, callback);
 	}
-
-	// count the number of columns
-	m_columnCount = 0;
-	while (m_desc.m_columns[m_columnCount].m_id)
-		m_columnCount++;
 
 	// configure the header
 	QHeaderView &horizontalHeader = *tableView.horizontalHeader();
@@ -180,8 +174,8 @@ void TableViewManager::applyColumnPrefs()
 	int sortLogicalColumn = 0;
 	Qt::SortOrder sortType = Qt::SortOrder::AscendingOrder;
 	std::vector<int> logicalColumnOrdering;
-	logicalColumnOrdering.resize(m_columnCount);
-	for (int logicalColumn = 0; logicalColumn < m_columnCount; logicalColumn++)
+	logicalColumnOrdering.resize(m_desc.m_columns.size());
+	for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
 	{
 		// get the info out of preferences
 		auto iter = columnPrefs.find(m_desc.m_columns[logicalColumn].m_id);
@@ -207,7 +201,7 @@ void TableViewManager::applyColumnPrefs()
 	m_proxyModel->sort(sortLogicalColumn, sortType);
 
 	// reorder columns appropriately
-	for (int column = 0; column < m_columnCount - 1; column++)
+	for (int column = 0; column < m_desc.m_columns.size() - 1; column++)
 	{
 		if (logicalColumnOrdering[column] != column)
 		{
@@ -243,10 +237,10 @@ void TableViewManager::persistColumnPrefs()
 
 	// start preparing column prefs
 	std::unordered_map<std::u8string, ColumnPrefs> col_prefs;
-	col_prefs.reserve(m_columnCount);
+	col_prefs.reserve(m_desc.m_columns.size());
 
 	// get all info about each column
-	for (int logicalColumn = 0; logicalColumn < m_columnCount; logicalColumn++)
+	for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
 	{
 		ColumnPrefs &this_col_pref = col_prefs[m_desc.m_columns[logicalColumn].m_id];
 		this_col_pref.m_width = headerView.sectionSize(logicalColumn);
