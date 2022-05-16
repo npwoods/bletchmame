@@ -16,13 +16,17 @@
 #include <QSortFilterProxyModel>
 
 
+//**************************************************************************
+//  CONSTANTS
+//**************************************************************************
+
 static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
 {
 	{ u8"name",			85 },
 	{ u8"description",	220 },
 	{ u8"year",			50 },
-	{ u8"publisher",		190 },
-	{ nullptr }
+	{ u8"publisher",	190 },
+	{ u8"file",			120 }
 };
 
 const TableViewManager::Description ChooseSoftlistPartDialog::s_tableViewDesc =
@@ -31,6 +35,9 @@ const TableViewManager::Description ChooseSoftlistPartDialog::s_tableViewDesc =
 	(int)SoftwareListItemModel::Column::Name,
 	s_softwareListTableViewColumns
 };
+
+
+static_assert(std::size(s_softwareListTableViewColumns) == util::enum_count<SoftwareListItemModel::Column>());
 
 
 //**************************************************************************
