@@ -690,6 +690,47 @@ void info::database_builder::emit_info(QIODevice &output) const noexcept
 
 
 //-------------------------------------------------
+//  dump - dumps diagnostic information about what
+//	was built
+//-------------------------------------------------
+
+void info::database_builder::dump() const noexcept
+{
+	dumpTableSizes();
+	m_strings.dumpStringSizeDistribution();
+	m_strings.dumpPrimaryBucketDistribution();
+	m_strings.dumpSecondaryBucketDistribution();
+}
+
+
+//-------------------------------------------------
+//  dumpTableSizes
+//-------------------------------------------------
+
+void info::database_builder::dumpTableSizes() const noexcept
+{
+	printf("\nDump of info::database_builder state:\n");
+	printf("m_machines.size():                 %7lu\n", (unsigned long)m_machines.size());
+	printf("m_biossets.size():                 %7lu\n", (unsigned long)m_biossets.size());
+	printf("m_roms.size():                     %7lu\n", (unsigned long)m_roms.size());
+	printf("m_disks.size():                    %7lu\n", (unsigned long)m_disks.size());
+	printf("m_devices.size():                  %7lu\n", (unsigned long)m_devices.size());
+	printf("m_slots.size():                    %7lu\n", (unsigned long)m_slots.size());
+	printf("m_slot_options.size():             %7lu\n", (unsigned long)m_slot_options.size());
+	printf("m_features.size():                 %7lu\n", (unsigned long)m_features.size());
+	printf("m_chips.size():                    %7lu\n", (unsigned long)m_chips.size());
+	printf("m_displays.size():                 %7lu\n", (unsigned long)m_displays.size());
+	printf("m_samples.size():                  %7lu\n", (unsigned long)m_samples.size());
+	printf("m_configurations.size():           %7lu\n", (unsigned long)m_configurations.size());
+	printf("m_configuration_settings.size():   %7lu\n", (unsigned long)m_configuration_settings.size());
+	printf("m_configuration_conditions.size(): %7lu\n", (unsigned long)m_configuration_conditions.size());
+	printf("m_software_lists.size():           %7lu\n", (unsigned long)m_software_lists.size());
+	printf("m_ram_options.size():              %7lu\n", (unsigned long)m_ram_options.size());
+	printf("m_strings.data().size():           %7lu\n", (unsigned long)m_strings.data().size());
+}
+
+
+//-------------------------------------------------
 //  string_table ctor
 //-------------------------------------------------
 
@@ -903,6 +944,90 @@ void info::database_builder::string_table::embed_value(T value) noexcept
 {
 	const std::uint8_t *bytes = (const std::uint8_t *)&value;
 	m_data.insert(m_data.end(), &bytes[0], &bytes[0] + sizeof(value));
+}
+
+
+//-------------------------------------------------
+//  string_table::dumpStringSizeDistribution
+//-------------------------------------------------
+
+void info::database_builder::string_table::dumpStringSizeDistribution() const noexcept
+{
+	// list of buckets for listing distribution
+	static const std::array s_buckets = { 5, 10, 20, 50, 100 };
+
+	// array to store the size distribution
+	std::array<int, std::size(s_buckets) + 1> sizeDistribution;
+	std::ranges::fill(sizeDistribution, 0);
+
+	// count the size of strings and bucket the sizes
+	int totalStringCount = 0;
+	auto iter = m_data.begin() + sizeof(info::binaries::MAGIC_STRINGTABLE_BEGIN);
+	while (iter < m_data.end() - sizeof(info::binaries::MAGIC_STRINGTABLE_END))
+	{
+		auto nextIter = std::find(iter, m_data.end(), '\0');
+		if (nextIter < m_data.end())
+		{
+			// how big is this string?
+			int thisStringSize = (int)(nextIter - iter);
+
+			// which bucket is this in?
+			int thisStringSizeBucket = std::ranges::lower_bound(s_buckets, thisStringSize) - s_buckets.begin();
+
+			// add to this bucket
+			sizeDistribution[thisStringSizeBucket]++;
+			totalStringCount++;
+
+			// skip over NUL
+			nextIter++;
+		}
+		iter = nextIter;
+	}
+
+	printf("\nDistribution of string sizes:\n");
+	int rangeStart = 0;
+	for (auto i = 0; i < std::size(sizeDistribution); i++)
+	{
+		int rangeEnd = i < std::size(s_buckets)
+			? s_buckets[i]
+			: -1;
+
+		if (rangeEnd >= 0)
+			printf("%3d - %3d: ", rangeStart, rangeEnd);
+		else
+			printf("%3d -    : ", rangeStart);
+		printf("%6d (%2d%%)\n", sizeDistribution[i], sizeDistribution[i] * 100 / totalStringCount);
+
+		rangeStart = rangeEnd + 1;
+	}
+	printf("  Total:   %6d\n", totalStringCount);
+}
+
+
+//-------------------------------------------------
+//  string_table::dumpPrimaryBucketDistribution
+//-------------------------------------------------
+
+void info::database_builder::string_table::dumpPrimaryBucketDistribution() const noexcept
+{
+	int singularBucketCount = 0;
+	int multiBucketCount = 0;
+	int totalBucketCount = (int)m_primaryMapBuckets->size();
+
+	for (std::uint32_t bucket : *m_primaryMapBuckets)
+	{
+		if ((bucket & 0xC0000000) == 0xC0000000)
+			multiBucketCount++;
+		else if (bucket > 0)
+			singularBucketCount++;
+	}
+	int emptyBucketCount = totalBucketCount - singularBucketCount - multiBucketCount;
+
+	printf("\nPrimary bucket distribution:\n");
+	printf("%8d empty buckets    (%2d%%)\n", emptyBucketCount, emptyBucketCount * 100 / totalBucketCount);
+	printf("%8d singular buckets (%2d%%)\n", singularBucketCount, singularBucketCount * 100 / totalBucketCount);
+	printf("%8d multi buckets    (%2d%%)\n", multiBucketCount, multiBucketCount * 100 / totalBucketCount);
+	printf("%8d total buckets\n", totalBucketCount);
 }
 
 

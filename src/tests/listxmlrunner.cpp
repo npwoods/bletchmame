@@ -89,7 +89,7 @@ static void processXmlCallback(int machineCount, std::u8string_view machineName,
 //  internalRunAndExcerciseListXml
 //-------------------------------------------------
 
-static void internalRunAndExcerciseListXml(const QString &program, bool sequential, int run_count)
+static void internalRunAndExcerciseListXml(const QString &program, bool sequential, int run_count, bool dump)
 {
 	// check to see if the program file exists
 	QFileInfo fileInfo(program);
@@ -133,6 +133,7 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 	std::cout << "Processing started...\r";
 	Stopwatch buildInfoDbStopwatch;
 	QByteArray infoDbBytes;
+	std::optional<info::database_builder> builder;
 	for (int run = 0; run < run_count; run++)
 	{
 		infoDbBytes.clear();
@@ -141,14 +142,14 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 
 		// process the output
 		QString errorMessage;
-		info::database_builder builder;
-		QVERIFY(builder.process_xml(*listXmlSource, errorMessage, processXmlCallback));
+		builder.emplace();
+		QVERIFY(builder.value().process_xml(*listXmlSource, errorMessage, processXmlCallback));
 		QVERIFY(errorMessage.isEmpty());
 
 		// and put it in the byte array
 		QBuffer buffer(&infoDbBytes);
 		QVERIFY(buffer.open(QIODevice::WriteOnly));
-		builder.emit_info(buffer);
+		builder.value().emit_info(buffer);
 	}
 	listXmlSource.reset();
 
@@ -178,6 +179,10 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 	// report our status and sanity checks
 	std::cout << "Info DB read complete (" << db.machines().size() << " total machines; elapsed duration " << readInfoDbDuration.count() << "ms)" << std::endl;
 	QVERIFY(db.machines().size() > 0);
+
+	// dump if we're asked to
+	if (dump && builder.has_value())
+		builder.value().dump();
 }
 
 
@@ -188,13 +193,22 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 
 int runAndExcerciseListXml(int argc, char *argv[], bool separateTasks, int run_count)
 {
+	// are we being asked to dump?
+	bool dump = false;
+	if (argc > 1 && !strcmp(argv[0], "--dump"))
+	{
+		dump = true;
+		argc--;
+		argv++;
+	}
+
 	// identify the program
 	QString program = argv[0];
 
 	int result;
 	try
 	{
-		internalRunAndExcerciseListXml(program, separateTasks, run_count);
+		internalRunAndExcerciseListXml(program, separateTasks, run_count, dump);
 		result = 0;
 	}
 	catch (std::exception &ex)

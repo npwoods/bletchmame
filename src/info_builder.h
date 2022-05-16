@@ -38,6 +38,7 @@ namespace info
 		// methods
 		bool process_xml(QIODevice &stream, QString &error_message, const ProcessXmlCallback &progressCallback = { }) noexcept;
 		void emit_info(QIODevice &stream) const noexcept;
+		void dump() const noexcept;
 
 	private:
 		// ======================> string_table
@@ -54,6 +55,8 @@ namespace info
 			std::span<const char8_t> data() const noexcept;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const noexcept;
 			template<typename T> void embed_value(T value) noexcept;
+			void dumpStringSizeDistribution() const noexcept;
+			void dumpPrimaryBucketDistribution() const noexcept;
 			void dumpSecondaryBucketDistribution() const noexcept;
 
 		private:
@@ -85,6 +88,8 @@ namespace info
 		std::vector<info::binaries::software_list>				m_software_lists;
 		std::vector<info::binaries::ram_option>					m_ram_options;
 		string_table											m_strings;
+
+		void dumpTableSizes() const noexcept;
 	};
 }
 
