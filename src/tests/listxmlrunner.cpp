@@ -26,23 +26,23 @@
 
 namespace
 {
-    class Stopwatch
-    {
-    public:
-        Stopwatch()
-        {
-            _start = std::clock();
-        }
+	class Stopwatch
+	{
+	public:
+		Stopwatch()
+		{
+			_start = std::clock();
+		}
 
-        auto elapsedDuration() const
-        {
-            std::clock_t current = std::clock();
-            return std::chrono::duration<std::clock_t, std::ratio<1, CLOCKS_PER_SEC>>(current - _start);
-        }
+		auto elapsedDuration() const
+		{
+			std::clock_t current = std::clock();
+			return std::chrono::duration<std::clock_t, std::ratio<1, CLOCKS_PER_SEC>>(current - _start);
+		}
 
-    private:
-        std::clock_t _start;
-    };
+	private:
+		std::clock_t _start;
+	};
 }
 
 
@@ -52,8 +52,8 @@ namespace
 
 static void invokeListXml(QProcess &process, const QString &program)
 {
-    process.setReadChannel(QProcess::StandardOutput);
-    process.start(program, QStringList() << "-listxml");
+	process.setReadChannel(QProcess::StandardOutput);
+	process.start(program, QStringList() << "-listxml");
 }
 
 
@@ -89,7 +89,7 @@ static void processXmlCallback(int machineCount, std::u8string_view machineName,
 //  internalRunAndExcerciseListXml
 //-------------------------------------------------
 
-static void internalRunAndExcerciseListXml(const QString &program, bool sequential, int run_count)
+static void internalRunAndExcerciseListXml(const QString &program, bool sequential, int run_count, bool dump)
 {
 	// check to see if the program file exists
 	QFileInfo fileInfo(program);
@@ -133,51 +133,56 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 	std::cout << "Processing started...\r";
 	Stopwatch buildInfoDbStopwatch;
 	QByteArray infoDbBytes;
+	std::optional<info::database_builder> builder;
 	for (int run = 0; run < run_count; run++)
 	{
 		infoDbBytes.clear();
 		if (run > 0)
 			listXmlSource->seek(0);
 
-        // process the output
-        QString errorMessage;
-        info::database_builder builder;
-        QVERIFY(builder.process_xml(*listXmlSource, errorMessage, processXmlCallback));
-        QVERIFY(errorMessage.isEmpty());
+		// process the output
+		QString errorMessage;
+		builder.emplace();
+		QVERIFY(builder.value().process_xml(*listXmlSource, errorMessage, processXmlCallback));
+		QVERIFY(errorMessage.isEmpty());
 
-        // and put it in the byte array
-        QBuffer buffer(&infoDbBytes);
-        QVERIFY(buffer.open(QIODevice::WriteOnly));
-        builder.emit_info(buffer);
+		// and put it in the byte array
+		QBuffer buffer(&infoDbBytes);
+		QVERIFY(buffer.open(QIODevice::WriteOnly));
+		builder.value().emit_info(buffer);
 	}
 	listXmlSource.reset();
 
-    // report our status and sanity checks
+	// report our status and sanity checks
 	auto buildInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(buildInfoDbStopwatch.elapsedDuration()) / run_count;
 	std::cout << "Info DB build complete (database size " << infoDbBytes.size() << " bytes; ";
 	if (run_count > 1)
 		std::cout << run_count << " total runs; average ";
 	std::cout << "elapsed duration " << buildInfoDbDuration.count() << "ms)" << std::endl;
-    QVERIFY(infoDbBytes.size() > 0);
+	QVERIFY(infoDbBytes.size() > 0);
 
-    // prepare buffer for reading
-    QBuffer buffer(&infoDbBytes);
-    QVERIFY(buffer.open(QIODevice::ReadOnly));
+	// prepare buffer for reading
+	QBuffer buffer(&infoDbBytes);
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
 
-    // and process it, validating we've done so successfully
-    info::database db;
-    Stopwatch readInfoDbStopwatch;
-    {
-        bool dbChanged = false;
-        db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
-        QVERIFY(db.load(buffer));
-        QVERIFY(dbChanged);
-    }
-    auto readInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(readInfoDbStopwatch.elapsedDuration());
+	// and process it, validating we've done so successfully
+	info::database db;
+	Stopwatch readInfoDbStopwatch;
+	{
+		bool dbChanged = false;
+		db.addOnChangedHandler([&dbChanged]() { dbChanged = true; });
+		QVERIFY(db.load(buffer));
+		QVERIFY(dbChanged);
+	}
+	auto readInfoDbDuration = std::chrono::duration_cast<std::chrono::milliseconds>(readInfoDbStopwatch.elapsedDuration());
 
-    // report our status and sanity checks
-    std::cout << "Info DB read complete (" << db.machines().size() << " total machines; elapsed duration " << readInfoDbDuration.count() << "ms)" << std::endl;
-    QVERIFY(db.machines().size() > 0);
+	// report our status and sanity checks
+	std::cout << "Info DB read complete (" << db.machines().size() << " total machines; elapsed duration " << readInfoDbDuration.count() << "ms)" << std::endl;
+	QVERIFY(db.machines().size() > 0);
+
+	// dump if we're asked to
+	if (dump && builder.has_value())
+		builder.value().dump();
 }
 
 
@@ -188,19 +193,28 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 
 int runAndExcerciseListXml(int argc, char *argv[], bool separateTasks, int run_count)
 {
-    // identify the program
-    QString program = argv[0];
+	// are we being asked to dump?
+	bool dump = false;
+	if (argc > 1 && !strcmp(argv[0], "--dump"))
+	{
+		dump = true;
+		argc--;
+		argv++;
+	}
 
-    int result;
-    try
-    {
-        internalRunAndExcerciseListXml(program, separateTasks, run_count);
-        result = 0;
-    }
-    catch (std::exception &ex)
-    {
-        std::cout << "EXCEPTION: " << ex.what() << std::endl;
-        result = 1;
-    }
-    return result;
+	// identify the program
+	QString program = argv[0];
+
+	int result;
+	try
+	{
+		internalRunAndExcerciseListXml(program, separateTasks, run_count, dump);
+		result = 0;
+	}
+	catch (std::exception &ex)
+	{
+		std::cout << "EXCEPTION: " << ex.what() << std::endl;
+		result = 1;
+	}
+	return result;
 }
