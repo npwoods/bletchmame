@@ -22,11 +22,11 @@
 
 static const TableViewManager::ColumnDesc s_softwareListTableViewColumns[] =
 {
-	{ u8"name",			85 },
-	{ u8"description",	220 },
-	{ u8"year",			50 },
-	{ u8"publisher",	190 },
-	{ u8"file",			120 }
+	{ u8"name",			85,		true },
+	{ u8"description",	220,	true },
+	{ u8"year",			50,		true },
+	{ u8"publisher",	190,	true },
+	{ u8"file",			120,	false }
 };
 
 const TableViewManager::Description ChooseSoftlistPartDialog::s_tableViewDesc =

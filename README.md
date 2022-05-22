@@ -15,6 +15,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 	- Added an option to disable the warning displayed when stopping an emulation
 	- Improvements to the various table views
 		- Added columns to the machine and software list views to identify source files
+		- Added the ability to customize the field list and show/hide specific fields
 		- Added a right click context menu to control sort order
 	- When invoking software from software lists, now specifying the full name
 		- Failing to do so could cause problems when mulitple lists have the same name (e.g. - msx1_cart:hero vs msx1_cass:hero)

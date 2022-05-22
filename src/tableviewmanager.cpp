@@ -8,6 +8,7 @@
 
 // bletchmame headers
 #include "tableviewmanager.h"
+#include "dialogs/customizefields.h"
 #include "prefs.h"
 
 // Qt headers
@@ -167,33 +168,45 @@ void TableViewManager::applyColumnPrefs()
 	// identify the header
 	QHeaderView &horizontalHeader = *parentAsTableView().horizontalHeader();
 
+	// in absence of anything in the preferences, this is the default sort column and direction
+	int sortLogicalColumn = 0;
+	Qt::SortOrder sortType = Qt::SortOrder::AscendingOrder;
+
+	// and in absence of anything in the preferences, set up the default sort order
+	std::vector<std::optional<int>> logicalColumnOrdering;
+	logicalColumnOrdering.reserve(m_desc.m_columns.size());
+
 	// get the preferences
 	const std::unordered_map<std::u8string, ColumnPrefs> &columnPrefs = m_prefs.getColumnPrefs(m_desc.m_name);
 
 	// unpack them
-	int sortLogicalColumn = 0;
-	Qt::SortOrder sortType = Qt::SortOrder::AscendingOrder;
-	std::vector<int> logicalColumnOrdering;
-	logicalColumnOrdering.resize(m_desc.m_columns.size());
 	for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
 	{
+		// defaults
+		int width = m_desc.m_columns[logicalColumn].m_defaultWidth;
+		std::optional<int> order = m_desc.m_columns[logicalColumn].m_defaultShown
+			? logicalColumn
+			: std::optional<int>();
+
 		// get the info out of preferences
 		auto iter = columnPrefs.find(m_desc.m_columns[logicalColumn].m_id);
-		int width = iter != columnPrefs.end() ? iter->second.m_width : m_desc.m_columns[logicalColumn].m_defaultWidth;
-		int order = iter != columnPrefs.end() ? iter->second.m_order : logicalColumn;
-
-		// track the sort
-		if (iter != columnPrefs.end() && iter->second.m_sort.has_value())
+		if (iter != columnPrefs.end())
 		{
-			sortLogicalColumn = logicalColumn;
-			sortType = iter->second.m_sort.value();
+			width = iter->second.m_width;
+			order = iter->second.m_order;
+
+			if (iter->second.m_sort.has_value())
+			{
+				sortLogicalColumn = logicalColumn;
+				sortType = iter->second.m_sort.value();
+			}
 		}
 
 		// resize the column
 		horizontalHeader.resizeSection(logicalColumn, width);
 
-		// track the order
-		logicalColumnOrdering[logicalColumn] = order;
+		// set the ordering
+		logicalColumnOrdering.push_back(order);
 	}
 
 	// specify the sort indicator
@@ -201,28 +214,40 @@ void TableViewManager::applyColumnPrefs()
 	m_proxyModel->sort(sortLogicalColumn, sortType);
 
 	// reorder columns appropriately
-	for (int column = 0; column < m_desc.m_columns.size() - 1; column++)
-	{
-		if (logicalColumnOrdering[column] != column)
-		{
-			auto iter = std::find(
-				logicalColumnOrdering.begin() + column + 1,
-				logicalColumnOrdering.end(),
-				column);
-			if (iter != logicalColumnOrdering.end())
-			{
-				// move on the header
-				horizontalHeader.moveSection(iter - logicalColumnOrdering.begin(), column);
-
-				// update the ordering
-				logicalColumnOrdering.erase(iter);
-				logicalColumnOrdering.insert(logicalColumnOrdering.begin() + column, column);
-			}
-		}
-	}
+	applyColumnOrdering(logicalColumnOrdering);
 
 	// we're done
 	m_currentlyApplyingColumnPrefs = false;
+}
+
+
+//-------------------------------------------------
+//  applyColumnOrdering
+//-------------------------------------------------
+
+void TableViewManager::applyColumnOrdering(std::span<const std::optional<int>> logicalOrdering)
+{
+	// these really need to be the same size
+	assert(logicalOrdering.size() == m_desc.m_columns.size());
+
+	// identify the header
+	QHeaderView &horizontalHeader = *parentAsTableView().horizontalHeader();
+
+	// first set the visibility
+	for (int logicalIndex = 0; logicalIndex < logicalOrdering.size(); logicalIndex++)
+		horizontalHeader.setSectionHidden(logicalIndex, !logicalOrdering[logicalIndex].has_value());
+
+	// now move the sections around
+	for (int logicalIndex = 0; logicalIndex < logicalOrdering.size(); logicalIndex++)
+	{
+		if (logicalOrdering[logicalIndex].has_value())
+		{
+			int sectionFrom = horizontalHeader.visualIndex(logicalIndex);
+			int sectionTo = logicalOrdering[logicalIndex].value();
+			if (sectionFrom != sectionTo)
+				horizontalHeader.moveSection(sectionFrom, sectionTo);
+		}
+	}
 }
 
 
@@ -244,7 +269,9 @@ void TableViewManager::persistColumnPrefs()
 	{
 		ColumnPrefs &this_col_pref = col_prefs[m_desc.m_columns[logicalColumn].m_id];
 		this_col_pref.m_width = headerView.sectionSize(logicalColumn);
-		this_col_pref.m_order = headerView.visualIndex(logicalColumn);
+		this_col_pref.m_order = headerView.isSectionHidden(logicalColumn)
+			? std::optional<int>()
+			: headerView.visualIndex(logicalColumn);
 		this_col_pref.m_sort = headerView.sortIndicatorSection() == logicalColumn
 			? headerView.sortIndicatorOrder()
 			: std::optional<Qt::SortOrder>();
@@ -321,8 +348,50 @@ void TableViewManager::headerContextMenuRequested(const QPoint &pos)
 	QMenu popupMenu;
 	addSortMenuItem(popupMenu, "Sort Ascending", Qt::SortOrder::AscendingOrder);
 	addSortMenuItem(popupMenu, "Sort Descending", Qt::SortOrder::DescendingOrder);
+	popupMenu.addSeparator();
+	popupMenu.addAction("Customize Fields...", [this]() { customizeFields(); });
 
 	// and display it
 	QPoint popupPos = parentAsTableView().mapToGlobal(pos);
 	popupMenu.exec(popupPos);
+}
+
+
+//-------------------------------------------------
+//  customizeFields
+//-------------------------------------------------
+
+void TableViewManager::customizeFields()
+{
+	// create the dialog and set other stuff up
+	QTableView &tableView = parentAsTableView();
+	CustomizeFieldsDialog dialog(&tableView);
+	QAbstractItemModel &tableModel = *tableView.model();
+	const QHeaderView &headerView = *tableView.horizontalHeader();
+
+	// add each of the fields
+	for (int logicalColumn = 0; logicalColumn < m_desc.m_columns.size(); logicalColumn++)
+	{
+		// get the name and order of this column
+		QString name = tableModel.headerData(logicalColumn, Qt::Orientation::Horizontal).toString();
+		std::optional<int> order = headerView.isSectionHidden(logicalColumn)
+			? std::optional<int>()
+			: headerView.visualIndex(logicalColumn);
+
+		// and add it
+		dialog.addField(std::move(name), order);
+	}
+	dialog.updateStringViews();
+
+	// run the dialog
+	if (dialog.exec() == QDialog::DialogCode::Accepted)
+	{
+		std::vector<std::optional<int>> logicalOrdering;
+		logicalOrdering.reserve(dialog.fields().size());
+
+		for (const auto &field : dialog.fields())
+			logicalOrdering.push_back(field.m_order);
+
+		applyColumnOrdering(logicalOrdering);
+	}
 }

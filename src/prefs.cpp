@@ -139,6 +139,17 @@ static QString getListViewSelectionKey(std::u8string_view view_type, const QStri
 
 
 //-------------------------------------------------
+//  coalesce
+//-------------------------------------------------
+
+template<class T>
+static T coalesce(T lhs, T rhs)
+{
+	return lhs ? lhs : rhs;
+}
+
+
+//-------------------------------------------------
 //  splitListViewSelectionKey
 //-------------------------------------------------
 
@@ -1046,7 +1057,10 @@ bool Preferences::load(QIODevice &input)
 		{
 			ColumnPrefs &col_prefs = m_column_prefs[std::u8string(*view_type)][std::u8string(*id)];
 			col_prefs.m_width = attributes.get<int>("width").value_or(col_prefs.m_width);
-			col_prefs.m_order = attributes.get<int>("order").value_or(col_prefs.m_order);
+			if (attributes.get<QString>("order") == "hidden")
+				col_prefs.m_order = std::nullopt;
+			else
+				col_prefs.m_order = coalesce(attributes.get<int>("order"), col_prefs.m_order);
 			col_prefs.m_sort = attributes.get<Qt::SortOrder>("sort", s_column_sort_type_parser);
 		}
 	});
@@ -1240,7 +1254,9 @@ void Preferences::save(QIODevice &output)
 			writer.writeAttribute("type", util::toQString(view_prefs.first));
 			writer.writeAttribute("id", util::toQString(col_prefs.first));
 			writer.writeAttribute("width", QString::number(col_prefs.second.m_width));
-			writer.writeAttribute("order", QString::number(col_prefs.second.m_order));
+			writer.writeAttribute("order", col_prefs.second.m_order.has_value()
+				? QString::number(col_prefs.second.m_order.value())
+				: "hidden");
 			if (col_prefs.second.m_sort.has_value())
 				writer.writeAttribute("sort", s_column_sort_type_parser[col_prefs.second.m_sort.value()]);
 			writer.writeEndElement();
