@@ -8,7 +8,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
-- 2.15 (TBD)
+- 2.15 (2022-May-22)
 	- Fixed a bug that could cause image dropdowns to not properly display software list part names
 	- Stopped displaying <<none>> for device slots that do not have any options
 	- Turning off the MAME intrinsic cassette animation as BletchMAME has its own UX (MAME 0.243 and later)
