@@ -8,7 +8,12 @@
 
 // bletchmame headers
 #include "assetfinder.h"
+#include "hash.h"
 #include "test.h"
+
+// Qt headers
+#include <QBuffer>
+
 
 namespace
 {
@@ -21,10 +26,14 @@ namespace
 		void archive_zip()				{ archive(":/resources/sample_archive.zip"); }
 		void isValidArchive_zip()       { isValidArchive(":/resources/sample_archive.zip", true); }
 		void isValidArchive_garbage()   { isValidArchive(":/resources/garbage.bin", false); }
+		void loadByCrc_zip_1()			{ loadByCrc(":/resources/sample_archive.zip", "verybig/big1.bin"); }
+		void loadByCrc_zip_2()			{ loadByCrc(":/resources/sample_archive.zip", "verybig/big2.bin"); }
+		void loadByCrc_zip_3()			{ loadByCrc(":/resources/sample_archive.zip", "verybig/big3.bin"); }
 
 	private:
 		void isValidArchive(const char *path, bool expectedResult);
 		void archive(const QString &fileName);
+		void loadByCrc(const QString &fileName, const QString &member);
 	};
 }
 
@@ -89,6 +98,38 @@ void Test::isValidArchive(const char *path, bool expectedResult)
 	QVERIFY(result == expectedResult);
 }
 
+
+//-------------------------------------------------
+//  loadByCrc
+//-------------------------------------------------
+
+void Test::loadByCrc(const QString &fileName, const QString &member)
+{
+	AssetFinder assetFinder;
+	assetFinder.setPaths({ fileName });
+
+	// look up the member by file name
+	std::optional<QByteArray> byteArray = assetFinder.findAssetBytes(member);
+	QVERIFY(byteArray.has_value());
+
+	// prepare a QBuffer with the same bytes
+	QBuffer buffer;
+	buffer.setData(byteArray.value());
+	QVERIFY(buffer.open(QIODevice::ReadOnly));
+
+	// calculate the CRC32
+	std::optional<Hash> hash = Hash::calculate(buffer, [](std::uint64_t) { return false; });
+	QVERIFY(hash.has_value());
+	QVERIFY(hash->crc32().has_value());
+	std::uint32_t crc32 = hash->crc32().value();
+
+	// open up the file again by CRC-32
+	std::optional<QByteArray> byteArray2 = assetFinder.findAssetBytes("NONSENSE", crc32);
+	QVERIFY(byteArray2 == byteArray);
+}
+
+
+//-------------------------------------------------
 
 static TestFixture<Test> fixture;
 #include "assetfinder_test.moc"
