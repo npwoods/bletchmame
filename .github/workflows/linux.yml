@@ -82,7 +82,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/install/ubuntu
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/install/ubuntu -DLZMA_INCLUDE_DIR=deps/install/ubuntu/include
         make -j 8
         strip ./BletchMAME
 

@@ -46,6 +46,7 @@ include_directories(${ZLIB_INCLUDE_DIR})
 
 # LZMA
 set(LZMA_LIBRARIES lzma)
+include_directories(${LZMA_INCLUDE_DIR})
 
 # Qt
 find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
