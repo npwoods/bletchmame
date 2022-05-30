@@ -53,7 +53,7 @@ private:
 };
 
 
-// ======================> IconLoader::DirectoryIconFinder
+// ======================> AssetFinder::ZipFileLookup
 class AssetFinder::ZipFileLookup : public AssetFinder::Lookup
 {
 public:
@@ -75,6 +75,14 @@ public:
 
 		// and return a QuaZipFile
 		return std::make_unique<QuaZipFile>(&m_zip);
+	}
+
+	static Lookup::ptr tryOpen(const QString &path)
+	{
+		auto lookup = std::make_unique<ZipFileLookup>(path);
+		return lookup->openZip()
+			? std::move(lookup)
+			: nullptr;
 	}
 
 private:
@@ -183,9 +191,8 @@ void AssetFinder::setPaths(QStringList &&paths)
 		}
 		else if (fi.isFile())
 		{
-			auto zipLookup = std::make_unique<ZipFileLookup>(path);
-			if (zipLookup->openZip())
-				lookup = std::move(zipLookup);
+			// is this a ZIP file?
+			lookup = ZipFileLookup::tryOpen(path);
 		}
 
 		// if successful, add it
@@ -247,6 +254,5 @@ std::optional<QByteArray> AssetFinder::findAssetBytes(const QString &fileName, s
 
 bool AssetFinder::isValidArchive(const QString &path)
 {
-	QuaZip zip(path);
-	return zip.open(QuaZip::Mode::mdUnzip);
+	return (bool)ZipFileLookup::tryOpen(path);
 }
