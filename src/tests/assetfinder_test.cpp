@@ -24,7 +24,9 @@ namespace
 	private slots:
 		void empty();
 		void archive_zip()				{ archive(":/resources/sample_archive.zip"); }
+		void archive_7zip()				{ archive(":/resources/sample_archive.7z"); }
 		void isValidArchive_zip()       { isValidArchive(":/resources/sample_archive.zip", true); }
+		void isValidArchive_7zip()      { isValidArchive(":/resources/sample_archive.7z", true); }
 		void isValidArchive_garbage()   { isValidArchive(":/resources/garbage.bin", false); }
 		void loadByCrc_zip_1()			{ loadByCrc(":/resources/sample_archive.zip", "verybig/big1.bin"); }
 		void loadByCrc_zip_2()			{ loadByCrc(":/resources/sample_archive.zip", "verybig/big2.bin"); }

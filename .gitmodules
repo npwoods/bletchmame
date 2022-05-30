@@ -16,3 +16,9 @@
 	branch = v1.2.11
 	shallow = true
 	ignore = all
+[submodule "deps/lzma-c-sdk"]
+	path = deps/lzma-c-sdk
+	url = https://github.com/npwoods/lzma-c-sdk.git
+	branch = 21.07-1
+	shallow = true
+	ignore = all

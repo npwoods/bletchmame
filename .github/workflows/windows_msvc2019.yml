@@ -79,6 +79,11 @@ jobs:
       run: |
         git submodule update --init deps/quazip
 
+    # Retrieve lzma-c-sdk
+    - name: Retrieve lzma-c-sdk
+      run: |        
+        git submodule update --init deps/lzma-c-sdk
+
     # Build Zlib
     - name: Build Zlib
       if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -96,6 +101,12 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         sh scripts/quazip_build_msvc.sh -c ${{ matrix.config }} -q ${{ matrix.qt }}
+
+    # Build lzma-c-sdk
+    - name: Build lzma-c-sdk
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/lzma_build_msvc.sh -c ${{ matrix.config }}
 
     # Build BletchMAME
     - name: Build BletchMAME
