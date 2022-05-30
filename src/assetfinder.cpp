@@ -9,6 +9,7 @@
 // bletchmame headers
 #include "assetfinder.h"
 #include "perfprofiler.h"
+#include "7zip.h"
 
 // dependency headers
 #include <quazip.h>
@@ -125,6 +126,41 @@ private:
 };
 
 
+// ======================> AssetFinder::SevenZipFileLookup
+class AssetFinder::SevenZipFileLookup : public AssetFinder::Lookup
+{
+public:
+	bool open(const QString &path)
+	{
+		return m_7zipFile.open(path);
+	}
+
+	virtual std::unique_ptr<QIODevice> getAsset(const QString &fileName, std::optional<std::uint32_t> crc32) override
+	{
+		// try the CRC-32 if present
+		std::unique_ptr<QIODevice> file;
+		if (crc32.has_value())
+			file = m_7zipFile.get(crc32.value());
+
+		// otherwise try the file name
+		if (!file)
+			file = m_7zipFile.get(fileName);
+		return file;
+	}
+
+	static Lookup::ptr tryOpen(const QString &path)
+	{
+		auto lookup = std::make_unique<SevenZipFileLookup>();
+		return lookup->open(path)
+			? std::move(lookup)
+			: nullptr;
+	}
+
+private:
+	SevenZipFile	m_7zipFile;
+};
+
+
 //**************************************************************************
 //  IMPLEMENTATION
 //**************************************************************************
@@ -191,8 +227,10 @@ void AssetFinder::setPaths(QStringList &&paths)
 		}
 		else if (fi.isFile())
 		{
-			// is this a ZIP file?
+			// is this an archive (ZIP or 7-Zip) file?
 			lookup = ZipFileLookup::tryOpen(path);
+			if (!lookup)
+				lookup = SevenZipFileLookup::tryOpen(path);
 		}
 
 		// if successful, add it
@@ -254,5 +292,5 @@ std::optional<QByteArray> AssetFinder::findAssetBytes(const QString &fileName, s
 
 bool AssetFinder::isValidArchive(const QString &path)
 {
-	return (bool)ZipFileLookup::tryOpen(path);
+	return ZipFileLookup::tryOpen(path) || SevenZipFileLookup::tryOpen(path);
 }

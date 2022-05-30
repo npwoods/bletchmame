@@ -61,10 +61,6 @@ jobs:
         mkdir C:\deps
         mklink /J deps C:\deps
         git checkout deps
-        dir
-        dir deps
-        dir C:\
-        dir C:\deps
 
     # Install old CMake (needed for Qt6 build)
     - name: Install old CMake (needed for Qt6 build)
@@ -84,6 +80,12 @@ jobs:
       run: |
         git submodule update --init deps/quazip
 
+    # Retrieve lzma-c-sdk
+    - name: Retrieve lzma-c-sdk
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        git submodule update --init deps/lzma-c-sdk
+
     # Build Qt6
     - name: Build Qt6
       if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -95,6 +97,12 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         sh scripts/quazip_build_msys2.sh
+
+    # Build lzma-c-sdk
+    - name: Build lzma-c-sdk
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        sh scripts/lzma_build_msys2.sh
 
     # Build BletchMAME
     - name: Build BletchMAME

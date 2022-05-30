@@ -46,6 +46,7 @@ private:
 	class Lookup;
 	class DirectoryLookup;
 	class ZipFileLookup;
+	class SevenZipFileLookup;
 
 	// members
 	std::vector<std::unique_ptr<Lookup>> m_lookups;

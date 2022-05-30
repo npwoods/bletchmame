@@ -54,12 +54,24 @@ jobs:
       run: |        
         git submodule update --init deps/quazip
 
+    # Retrieve lzma-c-sdk
+    - name: Retrieve lzma-c-sdk
+      run: |        
+        git submodule update --init deps/lzma-c-sdk
+
     # Build QuaZip
     - name: Build QuaZip
       run: |
         cmake -Sdeps/quazip -Bdeps/build/ubuntu/quazip -DQUAZIP_QT_MAJOR_VERSION=6
         cmake --build deps/build/ubuntu/quazip --parallel
         cmake --install deps/build/ubuntu/quazip --prefix deps/install/ubuntu
+
+    # Build lzma-c-sdk
+    - name: Build lzma-c-sdk
+      run: |
+        cmake -Sdeps/lzma-c-sdk -Bdeps/build/ubuntu/lzma-c-sdk
+        cmake --build deps/build/ubuntu/lzma-c-sdk --parallel
+        cmake --install deps/build/ubuntu/lzma-c-sdk --prefix deps/install/ubuntu
 
     # Generate version.gen.h
     - name: Generate version.gen.h
@@ -70,7 +82,7 @@ jobs:
     # Build BletchMAME
     - name: Build BletchMAME
       run: |
-        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/install/ubuntu
+        cmake . -DHAS_VERSION_GEN_H=1 -D CMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH=deps/install/ubuntu -DLZMA_INCLUDE_DIR=deps/install/ubuntu/include
         make -j 8
         strip ./BletchMAME
 
