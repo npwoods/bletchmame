@@ -102,7 +102,7 @@ jobs:
     - name: Build lzma-c-sdk
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/lzma_build_msys2.sh
+        sh scripts/lzma_build_msys2.sh -b ${{ matrix.build_type }}
 
     # Build BletchMAME
     - name: Build BletchMAME

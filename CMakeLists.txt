@@ -45,7 +45,11 @@ find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIR})
 
 # LZMA
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+set(LZMA_LIBRARIES lzmad)
+else()
 set(LZMA_LIBRARIES lzma)
+endif()
 include_directories(${LZMA_INCLUDE_DIR})
 
 # Qt
