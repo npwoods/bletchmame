@@ -8,6 +8,7 @@
 
 // bletchmame headers
 #include "7zip.h"
+#include "perfprofiler.h"
 
 // Qt headers
 #include <QBuffer>
@@ -50,6 +51,7 @@ public:
 
 	// methods
 	bool open(std::unique_ptr<QIODevice> &&stream);
+	void close();
 	std::unique_ptr<QIODevice> extract(int index);
 	int entryCount() const;
 	QString entryName(int index) const;
@@ -62,6 +64,9 @@ private:
 	static const CrcTableGenerator	s_crcTableGenerator;
 
 	std::unique_ptr<QIODevice>		m_stream;
+	UInt32							m_blockIndex;
+	Byte *							m_outBuffer;
+	std::size_t						m_outBufferSize;
 	CSzArEx							m_db;
 	CLookToRead2					m_lookToRead;
 	Byte							m_lookToReadBuffer[4096];
@@ -115,6 +120,8 @@ SevenZipFile::~SevenZipFile()
 
 bool SevenZipFile::open(const QString &path)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// create the file
 	std::unique_ptr<QFile> file = std::make_unique<QFile>(path);
 	if (!file->open(QFile::ReadOnly))
@@ -144,6 +151,8 @@ bool SevenZipFile::open(const QString &path)
 
 std::unique_ptr<QIODevice> SevenZipFile::get(const QString &fileName)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// find this file
 	QString normalizedFileName = normalizeFileName(fileName);
 	auto iter = m_filesByName.find(normalizedFileName);
@@ -162,6 +171,8 @@ std::unique_ptr<QIODevice> SevenZipFile::get(const QString &fileName)
 
 std::unique_ptr<QIODevice> SevenZipFile::get(std::uint32_t crc32)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// find this file
 	auto iter = m_filesByCrc32.find(crc32);
 
@@ -192,6 +203,8 @@ std::unique_ptr<QIODevice> SevenZipFile::extractOrPopulate(
 	const std::optional<QString> &targetNormalizedFileName,
 	std::optional<std::uint32_t> targetCrc32)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// when we're first called, we _might_ already have the result; we might equally
 	// find the result in the process of iterating
 	while(!index.has_value() && m_cursor < m_impl->entryCount())
@@ -232,6 +245,7 @@ std::unique_ptr<QIODevice> SevenZipFile::extractOrPopulate(
 //-------------------------------------------------
 
 SevenZipFile::Impl::Impl()
+	: m_outBuffer(nullptr)
 {
 	// initialize archive
 	SzArEx_Init(&m_db);
@@ -256,6 +270,7 @@ SevenZipFile::Impl::Impl()
 
 SevenZipFile::Impl::~Impl()
 {
+	close();
 	SzArEx_Free(&m_db, &s_allocImpl);
 }
 
@@ -266,9 +281,30 @@ SevenZipFile::Impl::~Impl()
 
 bool SevenZipFile::Impl::open(std::unique_ptr<QIODevice> &&stream)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
+	close();
 	m_stream = std::move(stream);
+	m_blockIndex = 0;
+	m_outBufferSize = 0;
 	SRes res = SzArEx_Open(&m_db, &m_lookToRead.vt, &s_allocImpl, &s_allocTempImpl);
 	return res == SZ_OK;
+}
+
+
+//-------------------------------------------------
+//  Impl::close
+//-------------------------------------------------
+
+void SevenZipFile::Impl::close()
+{
+	m_stream.reset();
+
+	if (m_outBuffer)
+	{
+		IAlloc_Free(&s_allocImpl, m_outBuffer);
+		m_outBuffer = nullptr;
+	}
 }
 
 
@@ -278,13 +314,12 @@ bool SevenZipFile::Impl::open(std::unique_ptr<QIODevice> &&stream)
 
 std::unique_ptr<QIODevice> SevenZipFile::Impl::extract(int index)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// perform the extraction
-	UInt32 blockIndex = 0;
-	Byte *buffer = nullptr;
-	std::size_t bufferSize = 0;
 	std::size_t offset = 0;
 	std::size_t sizeProcessed = 0;
-	SRes res = SzArEx_Extract(&m_db, &m_lookToRead.vt, index, &blockIndex, &buffer, &bufferSize, &offset, &sizeProcessed, &s_allocImpl, &s_allocTempImpl);
+	SRes res = SzArEx_Extract(&m_db, &m_lookToRead.vt, index, &m_blockIndex, &m_outBuffer, &m_outBufferSize, &offset, &sizeProcessed, &s_allocImpl, &s_allocTempImpl);
 	if (res != SZ_OK)
 		return { };
 
@@ -299,7 +334,7 @@ std::unique_ptr<QIODevice> SevenZipFile::Impl::extract(int index)
 	byteArray.resize(intSizeProcessed);
 
 	// copy the buffer and return
-	memcpy(byteArray.data(), buffer + offset, sizeProcessed);
+	memcpy(byteArray.data(), m_outBuffer + offset, sizeProcessed);
 	return result;
 }
 
@@ -363,6 +398,8 @@ std::optional<std::uint32_t> SevenZipFile::Impl::entryCrc32(int index) const
 
 SRes SevenZipFile::Impl::doRead(void *buf, size_t *size)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	qint64 byteCount = *size;
 	*size = m_stream->read(reinterpret_cast<char *>(buf), byteCount);
 	return *size == byteCount ? SZ_OK : SZ_ERROR_READ;
@@ -375,6 +412,8 @@ SRes SevenZipFile::Impl::doRead(void *buf, size_t *size)
 
 SRes SevenZipFile::Impl::doSeek(Int64 *pos, ESzSeek origin)
 {
+	ProfilerScope prof(CURRENT_FUNCTION);
+
 	// determine the absolute position
 	qint64 qpos;
 	switch (origin)
