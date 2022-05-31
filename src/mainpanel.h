@@ -115,6 +115,7 @@ private:
 	// other
 	QString								m_currentSoftwareList;
 	IconLoader							m_iconLoader;
+	std::optional<AssetFinder>			m_snapshotAssetFinder;
 	QPixmap								m_currentSnapshot;
 	std::vector<QString>				m_expandedTreeItems;
 	QString								m_statusMessage;

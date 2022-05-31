@@ -241,6 +241,7 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	});
 	connect(&m_prefs, &Preferences::globalPathSnapshotsChanged, this, [this](const QString &newPath)
 	{
+		m_snapshotAssetFinder.reset();
 		std::optional<info::machine> selectedMachine = currentlySelectedMachine();
 		QString machineName = selectedMachine ? selectedMachine->name() : QString();
 		updateInfoPanel(machineName);
@@ -969,9 +970,12 @@ void MainPanel::updateInfoPanel(const QString &machineName)
 	// do we have a machine?
 	if (!machineName.isEmpty())
 	{
+		// initialize the snapshot AssetFinder, if needed
+		if (!m_snapshotAssetFinder.has_value())
+			m_snapshotAssetFinder.emplace(m_prefs, Preferences::global_path_type::SNAPSHOTS);
+
 		// find the snapshot asset
-		AssetFinder assetFinder(m_prefs, Preferences::global_path_type::SNAPSHOTS);
-		std::optional<QByteArray> byteArray = assetFinder.findAssetBytes(machineName + ".png");
+		std::optional<QByteArray> byteArray = m_snapshotAssetFinder.value().findAssetBytes(machineName + ".png");
 
 		// and if we got something, load it
 		if (byteArray)
