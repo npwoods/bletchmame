@@ -44,6 +44,8 @@ public:
 
 	// ctor/dtor
 	Impl();
+	Impl(const Impl &) = delete;
+	Impl(Impl &&) = delete;
 	~Impl();
 
 	// methods
@@ -93,6 +95,7 @@ const CrcTableGenerator SevenZipFile::Impl::s_crcTableGenerator;
 //-------------------------------------------------
 
 SevenZipFile::SevenZipFile()
+	: m_cursor(0)
 {
 }
 
@@ -128,20 +131,7 @@ bool SevenZipFile::open(const QString &path)
 	m_filesByCrc32.clear();
 	m_filesByName.reserve(entryCount);
 	m_filesByCrc32.reserve(entryCount);
-
-	// add all the entries
-	for (int i = 0; i < m_impl->entryCount(); i++)
-	{
-		if (!m_impl->entryIsDirectory(i))
-		{
-			QString name = m_impl->entryName(i);
-			m_filesByName.emplace(normalizeFileName(name), i);
-
-			std::optional<std::uint32_t> crc32 = m_impl->entryCrc32(i);
-			if (crc32.has_value())
-				m_filesByCrc32.emplace(crc32.value(), i);
-		}
-	}
+	m_cursor = 0;
 
 	// and we're done
 	return true;
@@ -154,11 +144,15 @@ bool SevenZipFile::open(const QString &path)
 
 std::unique_ptr<QIODevice> SevenZipFile::get(const QString &fileName)
 {
+	// find this file
 	QString normalizedFileName = normalizeFileName(fileName);
 	auto iter = m_filesByName.find(normalizedFileName);
-	return iter != m_filesByName.end()
-		? m_impl->extract(iter->second)
-		: std::unique_ptr<QIODevice>();
+
+	// extract or populate as appropriate
+	std::optional<int> index = iter != m_filesByName.end()
+		? iter->second
+		: std::optional<int>();
+	return extractOrPopulate(index, normalizedFileName, { });
 }
 
 
@@ -168,10 +162,14 @@ std::unique_ptr<QIODevice> SevenZipFile::get(const QString &fileName)
 
 std::unique_ptr<QIODevice> SevenZipFile::get(std::uint32_t crc32)
 {
+	// find this file
 	auto iter = m_filesByCrc32.find(crc32);
-	return iter != m_filesByCrc32.end()
-		? m_impl->extract(iter->second)
-		: std::unique_ptr<QIODevice>();
+
+	// extract or populate as appropriate
+	std::optional<int> index = iter != m_filesByCrc32.end()
+		? iter->second
+		: std::optional<int>();
+	return extractOrPopulate(index, { }, crc32);
 }
 
 
@@ -182,6 +180,50 @@ std::unique_ptr<QIODevice> SevenZipFile::get(std::uint32_t crc32)
 QString SevenZipFile::normalizeFileName(const QString &fileName)
 {
 	return fileName.toUpper();
+}
+
+
+//-------------------------------------------------
+//  extractOrPopulate
+//-------------------------------------------------
+
+std::unique_ptr<QIODevice> SevenZipFile::extractOrPopulate(
+	std::optional<int> index,
+	const std::optional<QString> &targetNormalizedFileName,
+	std::optional<std::uint32_t> targetCrc32)
+{
+	// when we're first called, we _might_ already have the result; we might equally
+	// find the result in the process of iterating
+	while(!index.has_value() && m_cursor < m_impl->entryCount())
+	{
+		// only look at this entry if its a directory
+		if (!m_impl->entryIsDirectory(m_cursor))
+		{
+			// add this filename to the map
+			QString thisNormalizedFileName = normalizeFileName(m_impl->entryName(m_cursor));
+			m_filesByName.emplace(thisNormalizedFileName, m_cursor);
+
+			// and do the same for the CRC-32
+			std::optional<std::uint32_t> thisCrc32 = m_impl->entryCrc32(m_cursor);
+			if (thisCrc32.has_value())
+				m_filesByCrc32.emplace(thisCrc32.value(), m_cursor);
+
+			// is this the target?
+			if ((!targetNormalizedFileName.has_value() || targetNormalizedFileName == thisNormalizedFileName)
+				&& (!targetCrc32.has_value() || targetCrc32 == thisCrc32))
+			{
+				index = m_cursor;
+			}
+		}
+
+		// next item
+		m_cursor++;
+	}
+
+	// we're done; do we have an index to extract?
+	return index.has_value()
+		? m_impl->extract(index.value())
+		: std::unique_ptr<QIODevice>();
 }
 
 
