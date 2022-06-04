@@ -96,7 +96,7 @@ jobs:
     - name: Build QuaZip
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/quazip_build_msys2.sh
+        sh scripts/quazip_build_msys2.sh -b ${{ matrix.build_type }}
 
     # Build lzma-c-sdk
     - name: Build lzma-c-sdk
