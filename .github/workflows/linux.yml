@@ -69,6 +69,7 @@ jobs:
     # Build lzma-c-sdk
     - name: Build lzma-c-sdk
       run: |
+        ls -l deps/lzma-c-sdk      
         cmake -Sdeps/lzma-c-sdk -Bdeps/build/ubuntu/lzma-c-sdk -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         cmake --build deps/build/ubuntu/lzma-c-sdk --parallel
         cmake --install deps/build/ubuntu/lzma-c-sdk --prefix deps/install/ubuntu
