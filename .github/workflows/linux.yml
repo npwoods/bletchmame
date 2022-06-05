@@ -69,12 +69,9 @@ jobs:
     # Build lzma-c-sdk
     - name: Build lzma-c-sdk
       run: |
-        ls -l deps/lzma-c-sdk      
         cmake -Sdeps/lzma-c-sdk -Bdeps/build/ubuntu/lzma-c-sdk -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         cmake --build deps/build/ubuntu/lzma-c-sdk --parallel
         cmake --install deps/build/ubuntu/lzma-c-sdk --prefix deps/install/ubuntu
-        ls -l deps/install/ubuntu/lib/cmake/lzma/
-        cat deps/install/ubuntu/lib/cmake/lzma/LZMAConfig.cmake
 
     # Generate version.gen.h
     - name: Generate version.gen.h

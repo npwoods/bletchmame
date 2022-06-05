@@ -59,7 +59,7 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/install
-        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_build_msvc.sh', 'scripts/expat_build_msvc.sh', 'scripts/quazip_build_msvc.sh')}}
+        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_build_msvc.sh', 'scripts/expat_build_msvc.sh', 'scripts/quazip_build_msvc.sh', 'scripts/lzma_build_msvc.sh')}}
 
     # Retrieve Zlib
     - name: Retrieve Zlib
