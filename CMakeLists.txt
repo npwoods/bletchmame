@@ -47,6 +47,7 @@ include_directories(${ZLIB_INCLUDE_DIR})
 # LZMA
 find_package(LZMA REQUIRED)
 include_directories(${LZMA_INCLUDE_DIR})
+#message(FATAL_ERROR ${LZMA_INCLUDE_DIR})
 
 # Qt
 find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
