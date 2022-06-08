@@ -106,7 +106,7 @@ jobs:
     - name: Build lzma-c-sdk
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        sh scripts/lzma_build_msvc.sh -c Release # LZMA build doesn't generate the correct LZMAConfig.cmake for MSVC/Debug yet
+        sh scripts/lzma_build_msvc.sh -c ${{ matrix.config }}
 
     # Build BletchMAME
     - name: Build BletchMAME

@@ -169,3 +169,4 @@ jobs:
       if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release' && matrix.qt == '6.2.0'
       shell: bash
       run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete
+

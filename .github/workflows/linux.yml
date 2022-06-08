@@ -89,3 +89,4 @@ jobs:
     # Run Acceptance Tests
     - name: Run Acceptance Tests
       run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/Qt/${{ matrix.qt }}/gcc_64/lib:deps/install/ubuntu/lib/x86_64-linux-gnu ; ./BletchMAME_tests
+
