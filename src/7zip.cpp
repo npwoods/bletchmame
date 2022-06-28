@@ -207,7 +207,7 @@ std::unique_ptr<QIODevice> SevenZipFile::extractOrPopulate(
 
 	// when we're first called, we _might_ already have the result; we might equally
 	// find the result in the process of iterating
-	while(!index.has_value() && m_cursor < m_impl->entryCount())
+	while(!index && m_cursor < m_impl->entryCount())
 	{
 		// only look at this entry if its a directory
 		if (!m_impl->entryIsDirectory(m_cursor))
@@ -218,12 +218,12 @@ std::unique_ptr<QIODevice> SevenZipFile::extractOrPopulate(
 
 			// and do the same for the CRC-32
 			std::optional<std::uint32_t> thisCrc32 = m_impl->entryCrc32(m_cursor);
-			if (thisCrc32.has_value())
-				m_filesByCrc32.emplace(thisCrc32.value(), m_cursor);
+			if (thisCrc32)
+				m_filesByCrc32.emplace(*thisCrc32, m_cursor);
 
 			// is this the target?
-			if ((!targetNormalizedFileName.has_value() || targetNormalizedFileName == thisNormalizedFileName)
-				&& (!targetCrc32.has_value() || targetCrc32 == thisCrc32))
+			if ((!targetNormalizedFileName || targetNormalizedFileName == thisNormalizedFileName)
+				&& (!targetCrc32 || targetCrc32 == thisCrc32))
 			{
 				index = m_cursor;
 			}
@@ -234,8 +234,8 @@ std::unique_ptr<QIODevice> SevenZipFile::extractOrPopulate(
 	}
 
 	// we're done; do we have an index to extract?
-	return index.has_value()
-		? m_impl->extract(index.value())
+	return index
+		? m_impl->extract(*index)
 		: std::unique_ptr<QIODevice>();
 }
 

@@ -81,7 +81,7 @@ public:
 		, m_last_pauser(host.m_current_pauser)
 	{
 		// if we're running and not pause, pause while the message box is up
-		m_is_running = actually_pause && m_host.m_state.has_value() && !m_host.m_state->paused().get();
+		m_is_running = actually_pause && m_host.m_state && !m_host.m_state->paused().get();
 		if (m_is_running)
 			m_host.changePaused(true);
 
@@ -270,7 +270,7 @@ public:
 	virtual void setCheatState(const QString &id, bool enabled, std::optional<std::uint64_t> parameter) override
 	{
 		if (parameter)
-			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(parameter.value()) });
+			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0", QString::number(*parameter) });
 		else
 			m_host.issue({ "set_cheat_state", id, enabled ? "1" : "0" });
 	}
@@ -379,7 +379,7 @@ public:
 
 	virtual void start()
 	{
-		m_host.m_devicesStatusDisplay->subscribe(m_host.m_state.value());
+		m_host.m_devicesStatusDisplay->subscribe(*m_host.m_state);
 
 		m_host.m_state->phase().subscribe(						[this]() { update(); });
 		m_host.m_state->speed_percent().subscribe(				[this]() { update(); });
@@ -540,7 +540,7 @@ public:
 
 	virtual void start()
 	{
-		m_host.m_state.value().paused().subscribe([this] { update(); });
+		m_host.m_state->paused().subscribe([this] { update(); });
 	}
 
 	virtual void stop()
@@ -554,7 +554,7 @@ private:
 	void update()
 	{
 		// do we have a running emulation and are we not paused?
-		bool attrValue = m_host.m_state.has_value() && !m_host.m_state.value().paused().get();
+		bool attrValue = m_host.m_state && !m_host.m_state->paused().get();
 
 		// set these attributes accordingly - this cuts down on flicker
 		m_host.m_ui->emulationPanel->setAttribute(Qt::WA_OpaquePaintEvent, attrValue);
@@ -659,7 +659,7 @@ MainWindow::MainWindow(QWidget *parent)
 	switch (m_prefs.getWindowState())
 	{
 	case Preferences::WindowState::Normal:
-		if (m_prefs.getSize().has_value())
+		if (m_prefs.getSize())
 			resize(*m_prefs.getSize());
 		break;
 
@@ -1080,7 +1080,7 @@ void MainWindow::on_actionToggleRecordMovie_triggered()
 	}
 
 	// We're toggling the movie status... so are we recording?
-	if (m_state.value().is_recording())
+	if (m_state->is_recording())
 	{
 		// If so, stop the recording
 		issue({ "end_recording" });
@@ -1559,8 +1559,8 @@ bool MainWindow::event(QEvent *event)
 
 	// if we have a result, we've handled the event; otherwise we have to pass it on
 	// to QMainWindow::event()
-	return result.has_value()
-		? result.value()
+	return result
+		? *result
 		: QMainWindow::event(event);
 }
 
@@ -1617,16 +1617,16 @@ void MainWindow::launchVersionCheck(bool promptIfMameNotFound)
 bool MainWindow::loadInfoDb()
 {
 	// sanity check; bail if we're running
-	if (m_state.has_value())
+	if (m_state)
 		return false;
 
 	// load the info DB
 	QString dbPath = m_prefs.getMameXmlDatabasePath();
-	bool success = m_info_db.load(dbPath, m_mameVersion.has_value() ? m_mameVersion->toString() : "");
+	bool success = m_info_db.load(dbPath, m_mameVersion? m_mameVersion->toString() : "");
 
 	// special case for when we're starting up - if we successfully load Info DB but we have
 	// not determined the MAME version yet, lets assume that Info DB is correct
-	if (success && !m_mameVersion.has_value())
+	if (success && !m_mameVersion)
 		m_mameVersion = MameVersion(m_info_db.version());
 
 	return success;
@@ -1668,7 +1668,7 @@ bool MainWindow::refreshMameInfoDatabase()
 	// callback to request interruptions when an emulation is running
 	auto callback = [this, &task]()
 	{
-		if (m_state.has_value())
+		if (m_state)
 			task->requestInterruption();
 	};
 
@@ -1710,8 +1710,8 @@ info::machine MainWindow::getRunningMachine() const
 
 bool MainWindow::attachToMainWindow() const
 {
-	return !MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.has_value()
-		|| !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.value());
+	return !MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW
+		|| !isMameVersionAtLeast(*MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW);
 }
 
 
@@ -1723,8 +1723,8 @@ QString MainWindow::attachWidgetId() const
 {
 	QString result;
 
-	if (MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.has_value()
-		&& isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW.value()))
+	if (MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW
+		&& isMameVersionAtLeast(*MameVersion::Capabilities::HAS_ATTACH_CHILD_WINDOW))
 	{
 		QWidget *attachWidget = attachToMainWindow()
 			? (QWidget *)this
@@ -1745,7 +1745,7 @@ QString MainWindow::attachWidgetId() const
 void MainWindow::run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior)
 {
 	// sanity check - this should never happen
-	assert(m_mameVersion.has_value());
+	assert(m_mameVersion);
 
 	// set the session behavior
 	m_sessionBehavior = std::move(sessionBehavior);
@@ -1864,7 +1864,7 @@ Preferences &MainWindow::getPreferences()
 
 const software_list_collection &MainWindow::getRunningSoftwareListCollection() const
 {
-	return m_runningSoftwareListCollection.value();
+	return *m_runningSoftwareListCollection;
 }
 
 
@@ -1874,7 +1874,7 @@ const software_list_collection &MainWindow::getRunningSoftwareListCollection() c
 
 status::state &MainWindow::getRunningState()
 {
-	return m_state.value();
+	return *m_state;
 }
 
 
@@ -2029,7 +2029,7 @@ QMessageBox::StandardButton MainWindow::messageBox(const QString &message, QMess
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-	if (m_state.has_value())
+	if (m_state)
 	{
 		// prompt the user, if appropriate
 		if (!showStopEmulationWarning(StopWarningDialog::WarningType::Exit))
@@ -2040,7 +2040,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 		// issue exit command so we can shut down the emulation session gracefully
 		invokeExit();
-		while (m_state.has_value())
+		while (m_state)
 		{
 			QCoreApplication::processEvents();
 			QThread::yieldCurrentThread();
@@ -2074,7 +2074,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 		m_prefs.setWindowBarsShown(!m_prefs.getWindowBarsShown());
 
 	// pressing ALT to bring up menus is not friendly when running the emulation
-	if (m_state.has_value() && (event->modifiers() & Qt::AltModifier))
+	if (m_state && (event->modifiers() & Qt::AltModifier))
 		event->ignore();
 }
 
@@ -2144,7 +2144,7 @@ void MainWindow::showSwitchesDialog(status::input::input_class input_class)
 
 bool MainWindow::isMameVersionAtLeast(const SimpleMameVersion &version) const
 {
-	return m_mameVersion.has_value() && m_mameVersion->isAtLeast(version);
+	return m_mameVersion && m_mameVersion->isAtLeast(version);
 }
 
 
@@ -2173,19 +2173,19 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 
 	// if the current MAME version is problematic, generate a warning
 	QString message;
-	if (m_mameVersion.has_value() && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
+	if (m_mameVersion && !isMameVersionAtLeast(MameVersion::Capabilities::MINIMUM_SUPPORTED))
 	{
 		message = QString("This version of MAME doesn't seem to be supported; BletchMAME requires %1 or newer to function correctly").arg(
 			MameVersion::Capabilities::MINIMUM_SUPPORTED.toPrettyString());
 	}
-	else if (!MameVersion::Capabilities::HAS_ATTACH_WINDOW.has_value())
+	else if (!MameVersion::Capabilities::HAS_ATTACH_WINDOW)
 	{
 		message = "MAME on this platform does not support -attach_window, and the MAME window will not properly be embedded within BletchMAME";
 	}
-	else if (m_mameVersion.has_value() && !isMameVersionAtLeast(MameVersion::Capabilities::HAS_ATTACH_WINDOW.value()))
+	else if (m_mameVersion && !isMameVersionAtLeast(*MameVersion::Capabilities::HAS_ATTACH_WINDOW))
 	{
 		message = QString("%1 is needed on this platform for -attach_window, and consequently the MAME window will not properly be embedded within BletchMAME").arg(
-			MameVersion::Capabilities::HAS_ATTACH_WINDOW.value().toPrettyString());
+			MameVersion::Capabilities::HAS_ATTACH_WINDOW->toPrettyString());
 	}
 
 	// ...and display the warning if appropriate
@@ -2193,7 +2193,7 @@ bool MainWindow::onVersionCompleted(VersionResultEvent &event)
 		messageBox(message);
 
 	// the version check completed and we've dispensed with warnings; does this new version inform anything?
-	if (!m_mameVersion.has_value())
+	if (!m_mameVersion)
 	{
 		// no MAME found - reset the database
 		m_info_db.reset();
@@ -2419,13 +2419,13 @@ QString MainWindow::getTitleBarText()
 
 	// are we running?
 	QString result;
-	if (m_state.has_value())
+	if (m_state)
 	{
 		// get the machine description
 		const QString &machineDesc = m_currentRunMachineTask->getMachine().description();
 
 		// assemble a running description (e.g. - 'Pac-Man (MAME 0.234)')
-		QString runningDesc = m_mameVersion.has_value()
+		QString runningDesc = m_mameVersion
 			? QString("%1 (%2)").arg(machineDesc, m_mameVersion->toPrettyString())
 			: machineDesc;
 
@@ -2656,7 +2656,7 @@ void MainWindow::waitForStatusUpdate()
 	m_pinging = true;
 	while (m_pinging)
 	{
-		if (!m_state.has_value())
+		if (!m_state)
 			return;
 		QCoreApplication::processEvents();
 		QThread::yieldCurrentThread();
@@ -2671,7 +2671,7 @@ void MainWindow::waitForStatusUpdate()
 void MainWindow::invokePing()
 {
 	// only issue a ping if there is an active session, and there is no ping in flight
-	if (!m_pinging && m_state.has_value())
+	if (!m_pinging && m_state)
 	{
 		m_pinging = true;
 		issue({ "ping" });
@@ -2785,8 +2785,8 @@ void MainWindow::updateWindowBarsShown()
 void MainWindow::updateStatusBar()
 {
 	// the status message is different depending on whether we're running
-	QString statusMessage = m_state.has_value()
-		? runningStateText(m_state.value())
+	QString statusMessage = m_state
+		? runningStateText(*m_state)
 		: m_mainPanel->statusMessage();
 
 	// and show it
@@ -3096,9 +3096,9 @@ void MainWindow::addLowPriorityAudits()
 
 		// keep on getting identifiers
 		std::optional<AuditIdentifier> identifier;
-		while (m_auditQueue.isCloseToEmpty() && (identifier = m_auditCursor.next(basePosition)).has_value())
+		while (m_auditQueue.isCloseToEmpty() && bool(identifier = m_auditCursor.next(basePosition)))
 		{
-			m_auditQueue.push(std::move(identifier.value()), false);
+			m_auditQueue.push(std::move(*identifier), false);
 		}
 	}
 }

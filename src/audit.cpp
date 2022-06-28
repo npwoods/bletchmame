@@ -60,10 +60,10 @@ static Audit::Entry::CalculateHashStatus calculateHashForFile(QIODevice &stream,
 	std::optional<Hash> hash = Hash::calculate(stream, callback);
 
 	// return the result
-	result = hash.has_value() ? hash.value() : Hash();
+	result = hash.value_or(Hash());
 
 	// and return the proper status
-	return hash.has_value()
+	return hash
 		? Audit::Entry::CalculateHashStatus::Success
 		: Audit::Entry::CalculateHashStatus::Cancelled;
 }
@@ -79,10 +79,10 @@ static Audit::Entry::CalculateHashStatus calculateHashForChd(QIODevice &stream, 
 	std::optional<Hash> hash = getHashForChd(stream);
 
 	// return the result
-	result = hash.has_value() ? hash.value() : Hash();
+	result = hash.value_or(Hash());
 
 	// and return the proper status
-	return hash.has_value()
+	return hash
 		? Audit::Entry::CalculateHashStatus::Success
 		: Audit::Entry::CalculateHashStatus::CantProcess;
 }
@@ -127,9 +127,9 @@ QStringList Audit::buildMachinePaths(const Preferences &prefs, Preferences::glob
 
 	// blow these out to machine paths
 	QStringList results;
-	for (auto machineIter1 = machine; machineIter1.has_value(); machineIter1 = machineIter1->clone_of())
+	for (auto machineIter1 = machine; machineIter1; machineIter1 = machineIter1->clone_of())
 	{
-		for (auto machineIter2 = machine; machineIter2.has_value(); machineIter2 = machineIter2->rom_of())
+		for (auto machineIter2 = machine; machineIter2; machineIter2 = machineIter2->rom_of())
 		{
 			for (const QString &path : basePaths)
 			{
@@ -270,7 +270,7 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 		case Entry::CalculateHashStatus::Success:
 			// we've successfully processed the hash - now evaluate them
 			actualSize = streamSize;
-			verdictType = evaluateHashes(entry.expectedSize(), entry.expectedHash(), actualSize.value(), actualHash, entry.dumpStatus());
+			verdictType = evaluateHashes(entry.expectedSize(), entry.expectedHash(), *actualSize, actualHash, entry.dumpStatus());
 			break;
 
 		case Entry::CalculateHashStatus::Cancelled:
@@ -286,11 +286,11 @@ void Audit::auditSingleMedia(Session &session, int entryIndex, std::vector<std::
 	}
 
 	// build the actual verdict
-	Verdict verdict(verdictType.value(), actualSize.value(), actualHash);
+	Verdict verdict(*verdictType, *actualSize, actualHash);
 
 	// determine the audit status
 	AuditStatus status;
-	if (isVerdictSuccessful(verdictType.value()))
+	if (isVerdictSuccessful(*verdictType))
 		status = AuditStatus::Found;
 	else if (entry.optional())
 		status = AuditStatus::MissingOptional;
@@ -324,8 +324,8 @@ Audit::Verdict::Type Audit::evaluateHashes(const std::optional<std::uint32_t> &e
 	{
 		// get a hash for comparison purposes
 		Hash comparisonHash = actualHash.mask(
-			expectedHash.crc32().has_value(),
-			expectedHash.sha1().has_value());
+			bool(expectedHash.crc32()),
+			bool(expectedHash.sha1()));
 
 		// do they match?
 		result = expectedHash == comparisonHash
@@ -357,7 +357,7 @@ bool Audit::isVerdictSuccessful(Audit::Verdict::Type verdictType)
 		result = false;
 		break;
 	}
-	return result.value();
+	return *result;
 }
 
 

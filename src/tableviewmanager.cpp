@@ -195,10 +195,10 @@ void TableViewManager::applyColumnPrefs()
 			width = iter->second.m_width;
 			order = iter->second.m_order;
 
-			if (iter->second.m_sort.has_value())
+			if (iter->second.m_sort)
 			{
 				sortLogicalColumn = logicalColumn;
-				sortType = iter->second.m_sort.value();
+				sortType = *iter->second.m_sort;
 			}
 		}
 
@@ -235,15 +235,15 @@ void TableViewManager::applyColumnOrdering(std::span<const std::optional<int>> l
 
 	// first set the visibility
 	for (int logicalIndex = 0; logicalIndex < logicalOrdering.size(); logicalIndex++)
-		horizontalHeader.setSectionHidden(logicalIndex, !logicalOrdering[logicalIndex].has_value());
+		horizontalHeader.setSectionHidden(logicalIndex, !logicalOrdering[logicalIndex]);
 
 	// now move the sections around
 	for (int logicalIndex = 0; logicalIndex < logicalOrdering.size(); logicalIndex++)
 	{
-		if (logicalOrdering[logicalIndex].has_value())
+		if (logicalOrdering[logicalIndex])
 		{
 			int sectionFrom = horizontalHeader.visualIndex(logicalIndex);
-			int sectionTo = logicalOrdering[logicalIndex].value();
+			int sectionTo = *logicalOrdering[logicalIndex];
 			if (sectionFrom != sectionTo)
 				horizontalHeader.moveSection(sectionFrom, sectionTo);
 		}

@@ -253,8 +253,8 @@ bool RunMachineTask::event(QEvent *event)
 		result = true;
 	}
 
-	return result.has_value()
-		? result.value()
+	return result
+		? *result
 		: MameTask::event(event);
 }
 
@@ -268,10 +268,10 @@ void RunMachineTask::run(std::optional<QProcess> &process)
 	bool success;
 	QString errorMessage;
 
-	if (process.has_value())
+	if (process)
 	{
 		// set up the controller
-		MameWorkerController controller(process.value(), [this](MameWorkerController::ChatterType type, const QString& text)
+		MameWorkerController controller(*process, [this](MameWorkerController::ChatterType type, const QString& text)
 		{
 			if (m_chatterEnabled)
 			{
@@ -311,15 +311,15 @@ void RunMachineTask::run(std::optional<QProcess> &process)
 			}
 
 			// if we didn't get a MAME status code, sounds like we need to bump off MAME
-			if (!emuExitCode().has_value())
+			if (!emuExitCode())
 			{
 				killActiveEmuProcess();
-				while (!emuExitCode().has_value())
+				while (!emuExitCode())
 					QCoreApplication::processEvents();
 			}
 
 			// was there an error?
-			EmuExitCode exitCode = emuExitCode().value();
+			EmuExitCode exitCode = *emuExitCode();
 			if (exitCode != EmuExitCode::Success)
 			{
 				// if so, capture what was emitted by MAME's standard output stream
@@ -349,7 +349,7 @@ void RunMachineTask::run(std::optional<QProcess> &process)
 QString RunMachineTask::getNextCommand()
 {
 	// process events until we have something in the queue, or until we need to bail
-	while(m_commandQueue.empty() && !isInterruptionRequested() && !emuExitCode().has_value())
+	while(m_commandQueue.empty() && !isInterruptionRequested() && !emuExitCode())
 		QCoreApplication::processEvents();
 
 	// get the command if we have one

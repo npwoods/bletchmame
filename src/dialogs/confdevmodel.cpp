@@ -172,15 +172,15 @@ private:
 
 	std::optional<info::machine> getMachineForSlotOption(const QString &slotOption)
 	{
-		if (!slotOption.isEmpty() && m_slot.has_value())
+		if (!slotOption.isEmpty() && m_slot)
 		{
 			auto iter = std::ranges::find_if(
-				m_slot.value().options(),
+				m_slot->options(),
 				[&slotOption](const info::slot_option &x)
 				{
 					return x.name() == slotOption;
 				});
-			if (iter != m_slot.value().options().end())
+			if (iter != m_slot->options().end())
 				return iter->machine();
 		}
 		return std::nullopt;
@@ -419,10 +419,10 @@ std::optional<QString> ConfigurableDevicesModel::getSlotOptionText(info::slot sl
 std::optional<QString> ConfigurableDevicesModel::getSlotOptionText(info::slot slot, std::optional<info::slot_option> slotOption)
 {
 	std::optional<QString> result;
-	if (slotOption.has_value())
+	if (slotOption)
 	{
 		std::optional<info::machine> slotOptionMachine = slotOption->machine();
-		result = slotOptionMachine.has_value()
+		result = slotOptionMachine
 			? QString("%1 (%2)").arg(slotOptionMachine->description(), slotOption->name())
 			: slotOption->name();
 	}
@@ -455,10 +455,10 @@ void ConfigurableDevicesModel::deviceOptionsStatus(const ConfigurableDevicesMode
 	mandatoryImageMissing = false;
 
 	// do we have an image?
-	if (deviceNode.image().has_value())
+	if (deviceNode.image())
 	{
 		// this is an image
-		const DeviceImage &image = deviceNode.image().value();
+		const DeviceImage &image = *deviceNode.image();
 		QString prettyFileName = prettifyImageFileName(m_machine, m_softwareListCollection, deviceNode.tag(), image.m_fileName, false);
 		if (!prettyFileName.isEmpty())
 			text = std::move(prettyFileName);
@@ -467,10 +467,10 @@ void ConfigurableDevicesModel::deviceOptionsStatus(const ConfigurableDevicesMode
 	}
 
 	// if we don't have image text, try for a slot
-	if (!text.has_value() && deviceNode.slot().has_value() && !mandatoryImageMissing)
+	if (!text && deviceNode.slot() && !mandatoryImageMissing)
 	{
 		// yes this is a slot
-		text = getSlotOptionText(deviceNode.slot().value(), deviceNode.currentOption());
+		text = getSlotOptionText(*deviceNode.slot(), deviceNode.currentOption());
 	}
 }
 
@@ -487,8 +487,8 @@ QString ConfigurableDevicesModel::deviceOptionsDisplayText(const ConfigurableDev
 	deviceOptionsStatus(deviceNode, text, mandatoryImageMissing);
 
 	// and return
-	return text.has_value()
-		? std::move(text.value())
+	return text
+		? std::move(*text)
 		: TEXT_NONE;
 }
 
@@ -506,7 +506,7 @@ QFont ConfigurableDevicesModel::deviceOptionsDisplayFont(const ConfigurableDevic
 
 	// and format it
 	QFont font;
-	font.setItalic(!text.has_value());
+	font.setItalic(!text);
 	font.setBold(mandatoryImageMissing);
 	return font;
 }

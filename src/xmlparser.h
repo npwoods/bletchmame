@@ -76,13 +76,13 @@ public:
 		{
 			std::optional<T> result = { };
 			std::optional<std::u8string_view> text = get<std::u8string_view>(attribute);
-			if (text.has_value())
+			if (text)
 			{
 				T funcResult;
-				if (func(text.value(), funcResult))
+				if (func(*text, funcResult))
 					result = std::move(funcResult);
 				else
-					reportAttributeParsingError(attribute, text.value());
+					reportAttributeParsingError(attribute, *text);
 			}
 			return result;
 		}

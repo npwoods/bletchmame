@@ -223,8 +223,8 @@ QVariant SoftwareListItemModel::data(const QModelIndex &index, int role) const
 			if (column == Column::Name && m_iconLoader)
 			{
 				std::optional<QPixmap> icon = m_iconLoader->getIcon(sw);
-				if (icon.has_value())
-					result = std::move(icon.value());
+				if (icon)
+					result = std::move(*icon);
 
 				// invoke the "accessed" callback, which can trigger an audit when autoauditing
 				if (m_softwareIconAccessedCallback)

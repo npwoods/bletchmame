@@ -145,7 +145,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
-		image &image = result.m_images.value().emplace_back();
+		image &image = result.m_images->emplace_back();
 		image.m_tag							= attributes.get<QString>("tag").value_or("");
 		image.m_file_name					= attributes.get<QString>("filename").value_or("");
 		normalize_tag(image.m_tag);
@@ -180,7 +180,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "cassettes", "cassette" }, [&](const XmlParser::Attributes &attributes)
 	{
-		cassette &cassette = result.m_cassettes.value().emplace_back();
+		cassette &cassette = result.m_cassettes->emplace_back();
 		cassette.m_tag						= attributes.get<QString>("tag").value_or("");
 		cassette.m_is_stopped				= attributes.get<bool>("is_readable").value_or(false);
 		cassette.m_is_playing				= attributes.get<bool>("is_playing").value_or(false);
@@ -208,7 +208,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "slots", "slot" }, [&](const XmlParser::Attributes &attributes)
 	{
-		slot &slot = result.m_slots.value().emplace_back();
+		slot &slot = result.m_slots->emplace_back();
 		slot.m_name							= attributes.get<QString>("name").value_or("");
 		slot.m_current_option				= attributes.get<QString>("current_option").value_or("");
 		slot.m_fixed						= attributes.get<bool>("fixed").value_or(false);
@@ -220,7 +220,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
-		input &input = result.m_inputs.value().emplace_back();
+		input &input = result.m_inputs->emplace_back();
 		input.m_port_tag					= attributes.get<QString>("port_tag").value_or("");
 		input.m_name						= attributes.get<QString>("name").value_or("");
 		input.m_mask						= attributes.get<ioport_value>("mask").value_or(0);
@@ -235,7 +235,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
-		input_seq &seq = util::last(result.m_inputs.value()).m_seqs.emplace_back();
+		input_seq &seq = util::last(*result.m_inputs).m_seqs.emplace_back();
 		seq.m_type							= attributes.get<status::input_seq::type>("type", s_inputseq_type_parser).value_or(status::input_seq::type::STANDARD);
 		seq.m_tokens						= attributes.get<QString>("tokens").value_or("");
 	});
@@ -245,21 +245,21 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "input_devices", "class" }, [&](const XmlParser::Attributes &attributes)
 	{
-		input_class &input_class = result.m_input_classes.value().emplace_back();
+		input_class &input_class = result.m_input_classes->emplace_back();
 		input_class.m_name					= attributes.get<QString>("name").value_or("");
 		input_class.m_enabled				= attributes.get<bool>("enabled").value_or(false);
 		input_class.m_multi					= attributes.get<bool>("multi").value_or(false);
 	});
 	xml.onElementBegin({ "status", "input_devices", "class", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
-		input_device &input_device = result.m_input_classes.value().back().m_devices.emplace_back();
+		input_device &input_device = result.m_input_classes->back().m_devices.emplace_back();
 		input_device.m_name					= attributes.get<QString>("name").value_or("");
 		input_device.m_id					= attributes.get<QString>("id").value_or("");
 		input_device.m_index				= attributes.get<int>("devindex").value_or(0);
 	});
 	xml.onElementBegin({ "status", "input_devices", "class", "device", "item" }, [&](const XmlParser::Attributes &attributes)
 	{
-		input_device_item &item = result.m_input_classes.value().back().m_devices.back().m_items.emplace_back();
+		input_device_item &item = result.m_input_classes->back().m_devices.back().m_items.emplace_back();
 		item.m_name							= attributes.get<QString>("name").value_or("");
 		item.m_token						= attributes.get<QString>("token").value_or("");
 		item.m_code							= attributes.get<QString>("code").value_or("");
@@ -270,7 +270,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "cheats", "cheat" }, [&](const XmlParser::Attributes &attributes)
 	{
-		cheat &cheat = result.m_cheats.value().emplace_back();
+		cheat &cheat = result.m_cheats->emplace_back();
 		cheat.m_id							= attributes.get<QString>("id").value_or("");
 		cheat.m_enabled						= attributes.get<bool>("enabled").value_or(false);
 		cheat.m_has_run_script				= attributes.get<bool>("has_run_script").value_or(false);
@@ -282,7 +282,7 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "cheats", "cheat", "parameter" }, [&](const XmlParser::Attributes &attributes)
 	{
-		cheat &cheat = util::last(result.m_cheats.value());
+		cheat &cheat = util::last(*result.m_cheats);
 		cheat_parameter &param = cheat.m_parameter.emplace();
 		param.m_value						= attributes.get<std::uint64_t>("value").value_or(0);
 		param.m_minimum						= attributes.get<std::uint64_t>("minimum").value_or(0);
@@ -291,8 +291,8 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "cheats", "cheat", "parameter", "item" }, [&](const XmlParser::Attributes &attributes)
 	{
-		cheat &cheat = util::last(result.m_cheats.value());
-		cheat_parameter &param = cheat.m_parameter.value();
+		cheat &cheat = util::last(*result.m_cheats);
+		cheat_parameter &param = *cheat.m_parameter;
 		std::uint64_t value					= attributes.get<std::uint64_t>("value").value_or(0);
 		QString text						= attributes.get<QString>("text").value_or("");
 		param.m_items[value] = std::move(text);
@@ -315,7 +315,7 @@ status::update status::update::read(QIODevice &input_stream)
 	// sort the results
 	if (result.m_images)
 	{
-		std::sort(result.m_images.value().begin(), result.m_images.value().end(), [](const status::image &x, const status::image &y)
+		std::sort(result.m_images->begin(), result.m_images->end(), [](const status::image &x, const status::image &y)
 		{
 			return x.m_tag < y.m_tag;
 		});
@@ -367,9 +367,9 @@ template<class T>
 static void retainDetails(std::optional<std::vector<T>> &updateVec, const std::vector<T> &stateVec)
 {
 	// if this update does not provide image details, use the current details
-	if (updateVec.has_value())
+	if (updateVec)
 	{
-		for (T &thatItem : updateVec.value())
+		for (T &thatItem : *updateVec)
 		{
 			if (!thatItem.m_details)
 			{
@@ -423,14 +423,11 @@ void status::state::update(status::update &&that)
 //-------------------------------------------------
 
 template<typename TStateField, typename TUpdateField>
-bool status::state::take(TStateField &state_field, std::optional<TUpdateField> &update_field)
+bool status::state::take(TStateField &state_field, TUpdateField &update_field)
 {
-	bool result = update_field.has_value();
+	bool result = bool(update_field);
 	if (result)
-	{
-		TUpdateField extracted_value = std::move(update_field.value());
-		state_field = std::move(extracted_value);
-	}
+		state_field = std::move(*update_field);
 	return result;
 }
 

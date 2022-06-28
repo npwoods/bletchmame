@@ -68,7 +68,7 @@ void AuditTask::Test::general(bool hasMedia, AuditStatus expectedResult)
 	// set up an info DB
 	info::database db;
 	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_fake.xml", false)));
-	info::machine machine = db.find_machine("fake").value();
+	info::machine machine = *db.find_machine("fake");
 
 	// prepare a task
 	AuditTask task(true, 123);
@@ -80,7 +80,7 @@ void AuditTask::Test::general(bool hasMedia, AuditStatus expectedResult)
 	{
 		// filter out the intermediate progess events; they are not deterministic
 		AuditProgressEvent *auditProgressEvent = dynamic_cast<AuditProgressEvent *>(event.get());
-		if (!auditProgressEvent || auditProgressEvent->verdict().has_value())
+		if (!auditProgressEvent || auditProgressEvent->verdict())
 			events.push_back(std::move(event));
 	};
 	task.prepare(prefs, callback);
@@ -99,7 +99,7 @@ void AuditTask::Test::general(bool hasMedia, AuditStatus expectedResult)
 	{
 		QVERIFY(auditProgressEvents[i]);
 		QVERIFY(auditProgressEvents[i]->entryIndex() == (int)i);
-		QVERIFY(auditProgressEvents[i]->verdict().has_value());
+		QVERIFY(auditProgressEvents[i]->verdict());
 	}
 	QVERIFY(auditProgressEvents[0]->verdict()->type() == (hasMedia ? Audit::Verdict::Type::Ok			: Audit::Verdict::Type::NotFound));
 	QVERIFY(auditProgressEvents[1]->verdict()->type() == (hasMedia ? Audit::Verdict::Type::OkNoGoodDump	: Audit::Verdict::Type::NotFound));

@@ -864,8 +864,8 @@ std::optional<MameIniImportActionPreference> Preferences::getMameIniImportAction
 
 void Preferences::setMameIniImportActionPreference(global_path_type type, const std::optional<MameIniImportActionPreference> &importActionPreference)
 {
-	if (importActionPreference.has_value())
-		m_importActionPreferences[type] = importActionPreference.value();
+	if (importActionPreference)
+		m_importActionPreferences[type] = *importActionPreference;
 	else
 		m_importActionPreferences.erase(type);
 }
@@ -936,7 +936,7 @@ bool Preferences::load(QIODevice &input)
 		// this is called menu_bar_shown in the XML for purely historical reasons
 		std::optional<bool> windowBarsShown = attributes.get<bool>("menu_bar_shown");
 		if (windowBarsShown)
-			globalUiInfo.m_windowBarsShown = windowBarsShown.value();
+			globalUiInfo.m_windowBarsShown = *windowBarsShown;
 
 		std::optional<WindowState> windowState = attributes.get<WindowState>("window_state", s_windowState_parser);
 		if (windowState)
@@ -948,11 +948,11 @@ bool Preferences::load(QIODevice &input)
 
 		std::optional<AuditingState> auditingState = attributes.get<AuditingState>("auditing", s_auditingStateParser);
 		if (auditingState)
-			globalUiInfo.m_auditingState = auditingState.value();
+			globalUiInfo.m_auditingState = *auditingState;
 
 		std::optional<bool> showStopEmulationWarning = attributes.get<bool>("show_stop_emulation_warning");
 		if (showStopEmulationWarning)
-			globalUiInfo.m_showStopEmulationWarning = showStopEmulationWarning.value();
+			globalUiInfo.m_showStopEmulationWarning = *showStopEmulationWarning;
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -971,7 +971,7 @@ bool Preferences::load(QIODevice &input)
 	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
 	{
 		if (type)
-			globalPathsInfo.m_paths[(size_t) type.value()] = QDir::fromNativeSeparators(content);
+			globalPathsInfo.m_paths[(size_t) *type] = QDir::fromNativeSeparators(content);
 		type.reset();
 	});
 	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
@@ -1009,14 +1009,14 @@ bool Preferences::load(QIODevice &input)
 			setFolderPrefs(*id, std::move(folderPrefs));
 			
 			if (attributes.get<bool>("selected") == true)
-				setMachineFolderTreeSelection(std::move(id.value()));
+				setMachineFolderTreeSelection(std::move(*id));
 		}
 	});
 	xml.onElementBegin({ "preferences", "customfolder" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::optional<QString> name = attributes.get<QString>("name");
 		if (name)
-			current_custom_folder = &m_customFolders.emplace(name.value(), std::set<QString>()).first->second;
+			current_custom_folder = &m_customFolders.emplace(*name, std::set<QString>()).first->second;
 	});
 	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
 	{
@@ -1106,15 +1106,15 @@ bool Preferences::load(QIODevice &input)
 		if (list && name)
 		{
 			AuditStatus status = attributes.get<AuditStatus>("audit_status", s_audit_status_parser).value_or(AuditStatus::Unknown);
-			setSoftwareAuditStatus(list.value(), name.value(), status);
+			setSoftwareAuditStatus(*list, *name, status);
 		}
 	});
 	xml.onElementBegin({ "preferences", "mameiniimport" }, [&](const XmlParser::Attributes &attributes)
 	{
 		std::optional<global_path_type> setting = attributes.get<global_path_type>("setting", s_globalPathTypeMameSettingParser);
 		std::optional<MameIniImportActionPreference> preference = attributes.get<MameIniImportActionPreference>("preference", g_mameIniImportActionPreferenceParser);
-		if (setting.has_value())
-			setMameIniImportActionPreference(setting.value(), preference);
+		if (setting)
+			setMameIniImportActionPreference(*setting, preference);
 	});
 	bool success = xml.parse(input);
 
@@ -1255,10 +1255,10 @@ void Preferences::save(QIODevice &output)
 			writer.writeAttribute("id", util::toQString(col_prefs.first));
 			writer.writeAttribute("width", QString::number(col_prefs.second.m_width));
 			writer.writeAttribute("order", col_prefs.second.m_order.has_value()
-				? QString::number(col_prefs.second.m_order.value())
+				? QString::number(*col_prefs.second.m_order)
 				: "hidden");
-			if (col_prefs.second.m_sort.has_value())
-				writer.writeAttribute("sort", s_column_sort_type_parser[col_prefs.second.m_sort.value()]);
+			if (col_prefs.second.m_sort)
+				writer.writeAttribute("sort", s_column_sort_type_parser[*col_prefs.second.m_sort]);
 			writer.writeEndElement();
 		}
 	}

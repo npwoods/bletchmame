@@ -359,7 +359,7 @@ void MainPanel::run(std::shared_ptr<profiles::profile> &&profile)
 		return;
 	}
 
-	run(machine.value(), std::make_unique<ProfileSessionBehavior>(std::move(profile)));
+	run(*machine, std::make_unique<ProfileSessionBehavior>(std::move(profile)));
 }
 
 
@@ -847,7 +847,7 @@ void MainPanel::updateStatusFromSelection()
 		if (selectedMachine)
 		{
 			description = selectedMachine->description();
-			statusString = machineStatusString(selectedMachine.value());
+			statusString = machineStatusString(*selectedMachine);
 		}
 		totalString = "%1 machines";
 		tableView = m_ui->machinesTableView;
@@ -971,11 +971,11 @@ void MainPanel::updateInfoPanel(const QString &machineName)
 	if (!machineName.isEmpty())
 	{
 		// initialize the snapshot AssetFinder, if needed
-		if (!m_snapshotAssetFinder.has_value())
+		if (!m_snapshotAssetFinder)
 			m_snapshotAssetFinder.emplace(m_prefs, Preferences::global_path_type::SNAPSHOTS);
 
 		// find the snapshot asset
-		std::optional<QByteArray> byteArray = m_snapshotAssetFinder.value().findAssetBytes(machineName + ".png");
+		std::optional<QByteArray> byteArray = m_snapshotAssetFinder->findAssetBytes(machineName + ".png");
 
 		// and if we got something, load it
 		if (byteArray)
@@ -1277,7 +1277,7 @@ void MainPanel::on_machinesTableView_customContextMenuRequested(const QPoint &po
 void MainPanel::on_softwareTableView_activated(const QModelIndex &index)
 {
 	// identify the machine
-	const info::machine machine = m_infoDb.find_machine(m_currentSoftwareList).value();
+	const info::machine machine = *m_infoDb.find_machine(m_currentSoftwareList);
 
 	// map the index to the actual index
 	QModelIndex actualIndex = sortFilterProxyModel(*m_ui->softwareTableView).mapToSource(index);

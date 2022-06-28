@@ -172,7 +172,7 @@ void MachineFolderTreeModel::refresh()
 static std::optional<info::machine> getBiosMachine(info::machine machine)
 {
 	std::optional<info::machine> cloneOf;
-	while ((cloneOf = machine.clone_of()).has_value())
+	while (bool(cloneOf = machine.clone_of()))
 		machine = *cloneOf;
 
 	std::optional<info::machine> romOf = machine.rom_of();
@@ -215,7 +215,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 			else if (!strcmp(desc.id(), "chd"))
 				m_root.emplace_back(desc.id(), FolderIcon::HardDisk, desc.displayName(), [](const info::machine &machine) { return machine.disks().size() > 0; });
 			else if (!strcmp(desc.id(), "clones"))
-				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.clone_of().has_value(); });
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return (bool) machine.clone_of(); });
 			else if (!strcmp(desc.id(), "cpu"))
 				m_root.emplace_back(desc.id(), FolderIcon::Cpu, desc.displayName(), m_cpu);
 			else if (!strcmp(desc.id(), "custom"))
@@ -227,7 +227,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 			else if (!strcmp(desc.id(), "nonmechanical"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return machine.is_mechanical() == false; });
 			else if (!strcmp(desc.id(), "originals"))
-				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of().has_value(); });
+				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return !machine.clone_of(); });
 			else if (!strcmp(desc.id(), "raster"))
 				m_root.emplace_back(desc.id(), FolderIcon::Folder, desc.displayName(), [](const info::machine &machine) { return containsDisplayType(machine, info::display::type_t::RASTER); });
 			else if (!strcmp(desc.id(), "samples"))
@@ -312,7 +312,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	m_cpu.reserve(cpus.size());
 	for (const QString &cpu : cpus)
 	{
-		auto predicate = [&cpu](const info::machine &machine) { return machine.find_chip(cpu).has_value(); };
+		auto predicate = [&cpu](const info::machine &machine) { return (bool) machine.find_chip(cpu); };
 		m_cpu.emplace_back(cpu, FolderIcon::Cpu, cpu, std::move(predicate));
 	}
 
@@ -342,7 +342,7 @@ void MachineFolderTreeModel::populateVariableFolders()
 	m_sound.reserve(sounds.size());
 	for (const QString &sound : sounds)
 	{
-		auto predicate = [&sound](const info::machine &machine) { return machine.find_chip(sound).has_value(); };
+		auto predicate = [&sound](const info::machine &machine) { return (bool) machine.find_chip(sound); };
 		m_sound.emplace_back(sound, FolderIcon::Sound, sound, std::move(predicate));
 	}
 

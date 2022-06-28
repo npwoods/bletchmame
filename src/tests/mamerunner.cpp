@@ -76,7 +76,7 @@ static void chatter(MameWorkerController::ChatterType chatterType, const QString
 
 static void checkResponseForParseError(const MameWorkerController::Response &response)
 {
-    if (response.m_update.has_value() && !response.m_update->m_parse_error.isEmpty())
+    if (response.m_update && !response.m_update->m_parse_error.isEmpty())
         throw std::logic_error(QString("Error parsing status update: %1").arg(response.m_update->m_parse_error).toLocal8Bit());
 }
 

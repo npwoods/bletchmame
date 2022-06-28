@@ -85,7 +85,7 @@ QString AboutDialog::getAboutText(const std::optional<MameVersion> &mameVersion)
 		stream << "\n\n";
 
 		// MAME version
-		if (mameVersion.has_value())
+		if (mameVersion)
 			stream << mameVersion->toPrettyString() << "\n";
 
 		// Qt version

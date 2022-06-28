@@ -377,8 +377,8 @@ QVariant ImportMameIniDialog::TableModel::data(const QModelIndex &index, int rol
 					font->setItalic(true);
 					break;
 				}
-				if (font.has_value())
-					result = std::move(font.value());
+				if (font)
+					result = std::move(*font);
 			}
 			break;
 

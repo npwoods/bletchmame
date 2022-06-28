@@ -314,5 +314,5 @@ bool MachineListItemModel::isAuditIdentifierPresent(const AuditIdentifier &ident
 	if (!machine)
 		return false;
 
-	return isMachinePresent(machine.value());
+	return isMachinePresent(*machine);
 }

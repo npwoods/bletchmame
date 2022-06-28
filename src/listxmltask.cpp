@@ -70,15 +70,15 @@ void ListXmlTask::run(std::optional<QProcess> &process)
 
 	ListXmlResultEvent::Status status;
 	QString errorMessage;
-	if (process.has_value())
+	if (process)
 	{
 		// process
-		std::optional<ListXmlError> result = internalRun(process.value(), progressCallback);
-		if (result.has_value())
+		std::optional<ListXmlError> result = internalRun(*process, progressCallback);
+		if (result)
 		{
 			// an exception has occurred
-			status = result.value().status();
-			errorMessage = result.value().message();
+			status = result->status();
+			errorMessage = result->message();
 		}
 		else
 		{

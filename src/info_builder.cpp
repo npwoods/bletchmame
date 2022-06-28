@@ -167,7 +167,7 @@ static void writeContainerData(QIODevice &stream, const std::vector<T> &containe
 
 static constexpr std::uint8_t encodeBool(std::optional<bool> b, std::uint8_t defaultValue = 0xFF)
 {
-	return b.has_value()
+	return b
 		? (*b ? 0x01 : 0x00)
 		: defaultValue;
 }
@@ -180,8 +180,8 @@ static constexpr std::uint8_t encodeBool(std::optional<bool> b, std::uint8_t def
 template<typename T>
 static constexpr std::uint8_t encodeEnum(std::optional<T> &&value, std::uint8_t defaultValue = 0)
 {
-	return value.has_value()
-		? (std::uint8_t) value.value()
+	return value
+		? (std::uint8_t) *value
 		: defaultValue;
 }
 
@@ -194,14 +194,14 @@ template<int N>
 static bool binaryFromHex(std::uint8_t (&dest)[N], const std::optional<std::u8string_view> &hex)
 {
 	std::optional<std::array<std::uint8_t, N>> result;
-	if (hex.has_value())
+	if (hex)
 		result = util::fixedByteArrayFromHex<N>(*hex);
 
-	if (result.has_value())
+	if (result)
 		std::copy(result->begin(), result->end(), dest);
 	else
 		std::fill(dest, dest + N, 0);
-	return result.has_value();
+	return bool(result);
 }
 
 
@@ -895,8 +895,8 @@ std::uint32_t info::database_builder::string_table::get(const std::u8string &str
 std::uint32_t info::database_builder::string_table::get(const XmlParser::Attributes &attributes, const char *attribute) noexcept
 {
 	std::optional<const char8_t *> attributeValue = attributes.get<const char8_t *>(attribute);
-	return attributeValue.has_value()
-		? get(attributeValue.value())
+	return attributeValue
+		? get(*attributeValue)
 		: ~0;
 }
 

@@ -32,9 +32,9 @@ void AuditCursor::setListItemModel(AuditableListItemModel *model)
 	if (model != m_model)
 	{
 		// disconnect all connections
-		if (m_modelResetConnection.has_value())
+		if (m_modelResetConnection)
 		{
-			disconnect(m_modelResetConnection.value());
+			disconnect(*m_modelResetConnection);
 			m_modelResetConnection.reset();
 		}
 
@@ -81,7 +81,7 @@ std::optional<AuditIdentifier> AuditCursor::next(int basePosition)
 		basePosition %= rowCount;
 
 		// try to find the next auditable
-		while (m_position >= 0 && !result.has_value())
+		while (m_position >= 0 && !result)
 		{
 			// get the value at the cursor
 			result = getIdentifierAtCurrentPosition();

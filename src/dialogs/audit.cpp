@@ -61,7 +61,7 @@ AuditDialog::~AuditDialog()
 void AuditDialog::auditProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t totalBytes, const std::optional<Audit::Verdict> &verdict)
 {
 	// destroy the existing progress bar if we have to
-	if (m_activeProgressBar.has_value() && (verdict.has_value() || m_activeProgressBar.value().entryIndex() != entryIndex))
+	if (m_activeProgressBar && (verdict || m_activeProgressBar->entryIndex() != entryIndex))
 	{
 		QModelIndex index = modelIndexForProgressBar(m_activeProgressBar->entryIndex());
 		m_ui->tableView->setIndexWidget(index, nullptr);
@@ -69,9 +69,9 @@ void AuditDialog::auditProgress(int entryIndex, std::uint64_t bytesProcessed, st
 	}
 
 	// and set up a progress bar (if we have to)
-	if (!verdict.has_value())
+	if (!verdict)
 	{
-		if (!m_activeProgressBar.has_value())
+		if (!m_activeProgressBar)
 		{
 			// there is no active progress bar; we have to set one up
 			m_activeProgressBar.emplace(entryIndex);
@@ -85,10 +85,10 @@ void AuditDialog::auditProgress(int entryIndex, std::uint64_t bytesProcessed, st
 		m_activeProgressBar->update(bytesProcessed, totalBytes);
 	}
 
-	if (verdict.has_value())
+	if (verdict)
 	{
 		AuditItemModel &model = *dynamic_cast<AuditItemModel *>(m_ui->tableView->model());
-		model.singleMediaAudited(entryIndex, verdict.value());
+		model.singleMediaAudited(entryIndex, *verdict);
 	}
 }
 

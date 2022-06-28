@@ -300,8 +300,8 @@ bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDat
 	done = lastRead <= 0;
 
 	// log the XML data if appropriate
-	if (xmlDataLog.has_value() && lastRead > 0)
-		xmlDataLog.value().write((const char *) buffer, lastRead);
+	if (xmlDataLog && lastRead > 0)
+		xmlDataLog->write((const char *) buffer, lastRead);
 
 	// and feed this into expat
 	return XML_ParseBuffer(m_parser, done ? 0 : lastRead, done) != XML_STATUS_ERROR;
@@ -532,7 +532,7 @@ void XmlParser::endElement(const char *) noexcept
 		// call back the end func, if appropriate
 		if (m_currentNode->m_endFunc)
 		{
-			m_currentNode->m_endFunc(m_currentContent.has_value() ? std::move(*m_currentContent) : std::u8string());
+			m_currentNode->m_endFunc(m_currentContent ? std::move(*m_currentContent) : std::u8string());
 			m_currentContent.reset();
 		}
 

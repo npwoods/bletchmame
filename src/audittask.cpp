@@ -109,7 +109,7 @@ void AuditTask::run()
 	Callback callback(*this);
 
 	// if we're a background audit, lower the priority (lets be nice!)
-	if (!m_reportThrottler.has_value())
+	if (!m_reportThrottler)
 		setPriority(QThread::LowestPriority);
 
 	// run all the audits
@@ -123,7 +123,7 @@ void AuditTask::run()
 			break;
 
 		// and record the results
-		results.emplace_back(AuditIdentifier(entry.m_identifier), status.value());
+		results.emplace_back(AuditIdentifier(entry.m_identifier), *status);
 	}
 
 	// and respond with the event
@@ -160,7 +160,7 @@ AuditTask::Callback::Callback(AuditTask &host)
 bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProcessed, std::uint64_t total)
 {
 	// report progress, if we were asked to do so
-	if (m_host.m_reportThrottler.has_value() && m_host.m_reportThrottler->check())
+	if (m_host.m_reportThrottler && m_host.m_reportThrottler->check())
 		postProgressEvent(entryIndex, bytesProcessed, total);
 
 	return m_host.isInterruptionRequested();
@@ -174,7 +174,7 @@ bool AuditTask::Callback::reportProgress(int entryIndex, std::uint64_t bytesProc
 void AuditTask::Callback::reportVerdict(int entryIndex, const Audit::Verdict &verdict)
 {
 	// report progress, if we were asked to do so
-	if (m_host.m_reportThrottler.has_value())
+	if (m_host.m_reportThrottler)
 		postProgressEvent(entryIndex, ~0, ~0, Audit::Verdict(verdict));
 }
 

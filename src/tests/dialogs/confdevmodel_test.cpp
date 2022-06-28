@@ -43,7 +43,7 @@ void ConfigurableDevicesModel::Test::test()
 
 	// find a machine
 	std::optional<info::machine> machine = infoDb.find_machine("coco2b");
-	QVERIFY(machine.has_value());
+	QVERIFY(machine);
 
 	// load the model
 	ConfigurableDevicesModel model(nullptr, *machine, software_list_collection());
@@ -79,9 +79,9 @@ void ConfigurableDevicesModel::Test::updateModelWithStatus(ConfigurableDevicesMo
 	QVERIFY(statusUpdateFile.open(QIODevice::ReadOnly));
 	status::update statusUpdate = status::update::read(statusUpdateFile);
 	
-	if (statusUpdate.m_slots.has_value())
+	if (statusUpdate.m_slots)
 		model.setSlots(*statusUpdate.m_slots);
-	if (statusUpdate.m_images.has_value())
+	if (statusUpdate.m_images)
 		model.setImages(*statusUpdate.m_images);
 }
 
