@@ -125,7 +125,7 @@ std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdent
 		{
 			// machine audit
 			std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
-			if (machine.has_value())
+			if (machine)
 			{
 				for (info::rom rom : machine->roms())
 					result += rom.size();
@@ -143,8 +143,8 @@ std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdent
 					{
 						for (const software_list::rom &rom : area.roms())
 						{
-							if (rom.size().has_value())
-								result += rom.size().value();
+							if (rom.size())
+								result += *rom.size();
 						}
 					}
 				}
@@ -172,7 +172,7 @@ AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &a
 			{
 				// machine audit
 				std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
-				if (machine.has_value())
+				if (machine)
 					auditTask->addMachineAudit(m_prefs, *machine);
 			},
 			[this, &auditTask](const SoftwareAuditIdentifier &x)

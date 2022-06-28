@@ -169,7 +169,7 @@ void Test::machineLookup(const QString &fileName)
 		std::optional<info::machine> foundMachine = db.find_machine(machine.name());
 
 		// and check that we have the same results
-		QVERIFY(foundMachine.has_value());
+		QVERIFY(foundMachine);
 		QVERIFY(foundMachine->name() == machine.name());
 		QVERIFY(foundMachine->manufacturer() == machine.manufacturer());
 		QVERIFY(foundMachine->year() == machine.year());
@@ -190,7 +190,7 @@ void Test::badMachineLookup()
 	QVERIFY(db.machines().size() > 0);
 
 	std::optional<info::machine> result = db.find_machine("this_is_an_invalid_machine");
-	QVERIFY(!result.has_value());
+	QVERIFY(!result);
 }
 
 
@@ -207,16 +207,16 @@ void Test::deviceLookup(const QString &fileName, const QString &machineName)
 
 	// get the machine
 	std::optional<info::machine> machine = db.find_machine(machineName);
-	QVERIFY(machine.has_value());
+	QVERIFY(machine);
 
 	// for all devices...
-	for (info::device device : machine.value().devices())
+	for (info::device device : machine->devices())
 	{
 		// ...look it up
 		std::optional<info::device> foundDevice = machine->find_device(device.tag());
 
 		// and check that we have the same results
-		QVERIFY(foundDevice.has_value());
+		QVERIFY(foundDevice);
 		QVERIFY(foundDevice->tag() == device.tag());
 		QVERIFY(foundDevice->type() == device.type());
 	}
@@ -507,17 +507,17 @@ void Test::sortable()
 		vec.end(),
 		[](const std::optional<info::machine> &a, const std::optional<info::machine> &b)
 		{
-			return a.has_value() && b.has_value()
+			return a && b
 				? a->name() > b->name()
-				: b.has_value();
+				: bool(b);
 		});
 
 	// validate the order
-	QVERIFY(!vec[0].has_value());
-	QVERIFY(!vec[1].has_value());
+	QVERIFY(!vec[0]);
+	QVERIFY(!vec[1]);
 	for (size_t i = 2; i < vec.size(); i++)
 	{
-		QVERIFY(vec[i].has_value());
+		QVERIFY(vec[i]);
 		if (i > 2)
 			QVERIFY(vec[i - 1]->name() > vec[i]->name());
 	}
@@ -534,12 +534,12 @@ void Test::scrutinize_alienar()
 	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_alienar.xml")));
 
 	std::optional<info::machine> machine = db.find_machine("alienar");
-	QVERIFY(machine.has_value());
+	QVERIFY(machine);
 	QVERIFY(machine->name() == "alienar");
 	QVERIFY(machine->description() == "Alien Arena");
 	QVERIFY(machine->manufacturer() == "Duncan Brown");
-	QVERIFY(!machine->clone_of().has_value());
-	QVERIFY(!machine->rom_of().has_value());
+	QVERIFY(!machine->clone_of());
+	QVERIFY(!machine->rom_of());
 	QVERIFY(machine->sound_channels() == 1);
 
 	QVERIFY(machine->roms().size() == 12);
@@ -574,11 +574,11 @@ void Test::scrutinize_coco()
 	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_coco.xml")));
 
 	std::optional<info::machine> machine = db.find_machine("coco");
-	QVERIFY(machine.has_value());
+	QVERIFY(machine);
 	QVERIFY(machine->name() == "coco");
 	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
-	QVERIFY(!machine->clone_of().has_value());
-	QVERIFY(!machine->rom_of().has_value());
+	QVERIFY(!machine->clone_of());
+	QVERIFY(!machine->rom_of());
 	QVERIFY(machine->sound_channels() == 1);
 }
 
@@ -596,9 +596,9 @@ void Test::scrutinize_coco2b()
 	QVERIFY(machine.has_value());
 	QVERIFY(machine->name() == "coco2b");
 	QVERIFY(machine->manufacturer() == "Tandy Radio Shack");
-	QVERIFY(machine->clone_of().has_value());
+	QVERIFY(machine->clone_of());
 	QVERIFY(machine->clone_of()->name() == "coco");
-	QVERIFY(machine->rom_of().has_value());
+	QVERIFY(machine->rom_of());
 	QVERIFY(machine->rom_of()->name() == "coco");
 	QVERIFY(machine->sound_channels() == 3);
 }

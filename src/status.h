@@ -395,7 +395,7 @@ namespace status
 		observable::value<std::vector<cheat>>			m_cheats;
 
 		template<typename TStateField, typename TUpdateField>
-		bool take(TStateField &state_field, std::optional<TUpdateField> &update_field);
+		bool take(TStateField &state_field, TUpdateField &update_field);
 	};
 }
 

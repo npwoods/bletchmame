@@ -278,11 +278,12 @@ void info::database_builder::Test::xmlAttributeParsing()
 	const char *xml_text = "<root alpha=\"\" bravo=\"abcd\" charlie=\"a_big_string\"/>";
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
+	QVERIFY(alphaValue && bravoValue && charlieValue);
 
 	string_table::SsoBuffer sso;
-	QVERIFY(stringTable.lookup(alphaValue.value(), sso) == u8""sv);
-	QVERIFY(stringTable.lookup(bravoValue.value(), sso) == u8"abcd"sv);
-	QVERIFY(stringTable.lookup(charlieValue.value(), sso) == u8"a_big_string"sv);
+	QVERIFY(stringTable.lookup(*alphaValue, sso) == u8""sv);
+	QVERIFY(stringTable.lookup(*bravoValue, sso) == u8"abcd"sv);
+	QVERIFY(stringTable.lookup(*charlieValue, sso) == u8"a_big_string"sv);
 
 }
 

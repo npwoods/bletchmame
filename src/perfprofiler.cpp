@@ -81,8 +81,8 @@ RealPerformanceProfiler::~RealPerformanceProfiler()
 
 RealPerformanceProfiler *RealPerformanceProfiler::current()
 {
-	return s_instance.hasLocalData() && s_instance.localData().has_value()
-		? &((RealPerformanceProfiler &) s_instance.localData().value())
+	return s_instance.hasLocalData() && s_instance.localData()
+		? &((RealPerformanceProfiler &) *s_instance.localData())
 		: nullptr;
 }
 

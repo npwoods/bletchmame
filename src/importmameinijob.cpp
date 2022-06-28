@@ -133,9 +133,9 @@ bool ImportMameIniJob::loadMameIni(const QString &fileName)
 			if (!pathAlreadyPresent)
 			{
 				std::optional<MameIniImportActionPreference> importActionPref = m_prefs.getMameIniImportActionPreference(pathType);
-				if (importActionPref.has_value())
+				if (importActionPref)
 				{
-					switch (importActionPref.value())
+					switch (*importActionPref)
 					{
 					case MameIniImportActionPreference::Ignore:
 						newEntry->setImportAction(ImportAction::Ignore);
@@ -478,6 +478,6 @@ void ImportMameIniJob::GlobalPathEntry::persistPreference(Preferences &prefs)
 		break;
 	}
 
-	if (importPref.has_value())
+	if (importPref)
 		m_prefs.setMameIniImportActionPreference(m_pathType, importPref);
 }

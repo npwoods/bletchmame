@@ -101,11 +101,11 @@ void Audit::Test::general(bool hasRom, bool hasNoDumpRom, bool hasSample, bool h
 	info::database db;
 	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_fake.xml", false)));
 	std::optional<info::machine> machine = db.find_machine("fake");
-	QVERIFY(machine.has_value());
+	QVERIFY(machine);
 
 	// prepare an audit
 	Audit audit;
-	audit.addMediaForMachine(prefs, machine.value());
+	audit.addMediaForMachine(prefs, *machine);
 
 	// and run the audit!
 	std::vector<Audit::Verdict> verdicts;
@@ -133,12 +133,13 @@ void Audit::Test::addMediaForMachine()
 	// get an info DB and a machine
 	info::database db;
 	QVERIFY(db.load(buildInfoDatabase(":/resources/listxml_alienar.xml")));
-	info::machine machine = db.find_machine("alienar").value();
+	std::optional<info::machine> machine = db.find_machine("alienar");
+	QVERIFY(machine);
 
 	// set up an audit
 	Preferences prefs;
 	Audit audit;
-	audit.addMediaForMachine(prefs, machine);
+	audit.addMediaForMachine(prefs, *machine);
 
 	// validate the results
 	QVERIFY(audit.entries().size() == 14);

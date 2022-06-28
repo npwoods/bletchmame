@@ -112,18 +112,18 @@ void Test::loadByCrc(const QString &fileName, const QString &member)
 
 	// look up the member by file name
 	std::optional<QByteArray> byteArray = assetFinder.findAssetBytes(member);
-	QVERIFY(byteArray.has_value());
+	QVERIFY(byteArray);
 
 	// prepare a QBuffer with the same bytes
 	QBuffer buffer;
-	buffer.setData(byteArray.value());
+	buffer.setData(*byteArray);
 	QVERIFY(buffer.open(QIODevice::ReadOnly));
 
 	// calculate the CRC32
 	std::optional<Hash> hash = Hash::calculate(buffer, [](std::uint64_t) { return false; });
-	QVERIFY(hash.has_value());
-	QVERIFY(hash->crc32().has_value());
-	std::uint32_t crc32 = hash->crc32().value();
+	QVERIFY(hash);
+	QVERIFY(hash->crc32());
+	std::uint32_t crc32 = *hash->crc32();
 
 	// open up the file again by CRC-32
 	std::optional<QByteArray> byteArray2 = assetFinder.findAssetBytes("NONSENSE", crc32);

@@ -69,8 +69,8 @@ QStringList VersionTask::getArguments(const Preferences &) const
 void VersionTask::run(std::optional<QProcess> &process)
 {
 	// get the version
-	auto version = process.has_value()
-		? QString::fromLocal8Bit(process.value().readLine())
+	auto version = process
+		? QString::fromLocal8Bit(process->readLine())
 		: QString();
 
 	// and put it on the completion event

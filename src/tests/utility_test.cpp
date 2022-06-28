@@ -131,7 +131,7 @@ void Test::fixedByteArrayFromHex()
 	using namespace std::literals;
 
 	auto buffer = util::fixedByteArrayFromHex<10>(u8"BaaDF00DDEADBeeF12345678"sv);
-	QVERIFY(buffer.has_value());
+	QVERIFY(buffer);
 	QVERIFY((*buffer)[0] == 0xBA);
 	QVERIFY((*buffer)[1] == 0xAD);
 	QVERIFY((*buffer)[2] == 0xF0);
@@ -152,7 +152,7 @@ void Test::fixedByteArrayFromHex()
 void Test::fixedByteArrayFromHex_parseError(std::u8string_view s)
 {
 	auto buffer = util::fixedByteArrayFromHex<4>(s);
-	QVERIFY(!buffer.has_value());
+	QVERIFY(!buffer);
 }
 
 

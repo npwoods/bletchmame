@@ -160,8 +160,8 @@ SimpleMameVersion MameVersion::nextCleanVersion() const
 QString MameVersion::toString() const
 {
 	// this is guaranteed to return the original string passed to us
-	return m_rawVersionString.has_value()
-		? m_rawVersionString.value()
+	return m_rawVersionString
+		? *m_rawVersionString
 		: toSimpleMameVersion().toString();
 }
 
@@ -174,7 +174,7 @@ QString MameVersion::toString() const
 QString MameVersion::toPrettyString() const
 {
 	QString result;
-	if (!m_rawVersionString.has_value())
+	if (!m_rawVersionString)
 	{
 		// normal case, we're using a real MAME release
 		result = toSimpleMameVersion().toPrettyString();
@@ -182,7 +182,7 @@ QString MameVersion::toPrettyString() const
 	else if (!m_rawVersionString->isEmpty())
 	{
 		// we're using a dirty MAME version
-		result = QString("MAME %1").arg(m_rawVersionString.value());
+		result = QString("MAME %1").arg(*m_rawVersionString);
 	}
 	else
 	{
@@ -200,6 +200,6 @@ QString MameVersion::toPrettyString() const
 
 SimpleMameVersion MameVersion::toSimpleMameVersion() const
 {
-	assert(!m_rawVersionString.has_value());
+	assert(!m_rawVersionString);
 	return SimpleMameVersion(major(), minor());
 }

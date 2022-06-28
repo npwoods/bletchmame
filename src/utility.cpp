@@ -72,14 +72,14 @@ std::size_t util::bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
 	{
 		// parse two hex digits
 		std::optional<std::uint8_t> hiDigit = hexDigit(hex[pos * 2 + 0]);
-		if (!hiDigit.has_value())
+		if (!hiDigit)
 			break;
 		std::optional<std::uint8_t> loDigit = hexDigit(hex[pos * 2 + 1]);
-		if (!loDigit.has_value())
+		if (!loDigit)
 			break;
 
 		// and store the value
-		dest[pos++] = (hiDigit.value() << 4) | (loDigit.value() << 0);
+		dest[pos++] = (*hiDigit << 4) | (*loDigit << 0);
 	}
 	return pos;
 }

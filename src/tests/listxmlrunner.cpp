@@ -143,13 +143,13 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 		// process the output
 		QString errorMessage;
 		builder.emplace();
-		QVERIFY(builder.value().process_xml(*listXmlSource, errorMessage, processXmlCallback));
+		QVERIFY(builder->process_xml(*listXmlSource, errorMessage, processXmlCallback));
 		QVERIFY(errorMessage.isEmpty());
 
 		// and put it in the byte array
 		QBuffer buffer(&infoDbBytes);
 		QVERIFY(buffer.open(QIODevice::WriteOnly));
-		builder.value().emit_info(buffer);
+		builder->emit_info(buffer);
 	}
 	listXmlSource.reset();
 
@@ -181,8 +181,8 @@ static void internalRunAndExcerciseListXml(const QString &program, bool sequenti
 	QVERIFY(db.machines().size() > 0);
 
 	// dump if we're asked to
-	if (dump && builder.has_value())
-		builder.value().dump();
+	if (dump && builder)
+		builder->dump();
 }
 
 

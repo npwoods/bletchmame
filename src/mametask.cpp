@@ -108,7 +108,7 @@ void MameTask::appendExtraArguments(QStringList &argv, const QString &extraArgum
 			|| (inQuotes && extraArguments[i] == '\"')
 			|| (!inQuotes && extraArguments[i].isSpace()))
 		{
-			if (wordStartPos.has_value())
+			if (wordStartPos)
 			{
 				QString word = extraArguments.mid(wordStartPos.value(), i - wordStartPos.value());
 				argv.append(std::move(word));
@@ -121,7 +121,7 @@ void MameTask::appendExtraArguments(QStringList &argv, const QString &extraArgum
 			inQuotes = true;
 			wordStartPos = i + 1;
 		}
-		else if (!inQuotes && !wordStartPos.has_value())
+		else if (!inQuotes && !wordStartPos)
 		{
 			wordStartPos = i;
 		}

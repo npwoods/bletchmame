@@ -97,7 +97,8 @@ void XmlParser::Test::test()
 	QVERIFY(hotel_value == true);
 	QVERIFY(india_value == false);
 	QVERIFY(julliet_value == 2500000000);
-	QVERIFY(abs(kilo_value.value() - 3.14159f) < 0.000000001);
+	QVERIFY(kilo_value);
+	QVERIFY(abs(*kilo_value - 3.14159f) < 0.000000001);
 	QVERIFY(lima_value == 0x10DEADBEEF);
 	QVERIFY(mike_value == 0x123ABC);
 	QVERIFY(november_value == 0xDEADBEEF);
@@ -129,7 +130,7 @@ void XmlParser::Test::unicodeStdString()
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
 	QVERIFY(bravo_value == u8"\u60AA");
-	QVERIFY(charlie_value.has_value());
+	QVERIFY(charlie_value);
 	QVERIFY(charlie_value == u8"\u6B7B");
 }
 
@@ -156,7 +157,7 @@ void XmlParser::Test::unicodeQString()
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
 	QVERIFY(bravo_value.toStdWString() == L"\u60AA");
-	QVERIFY(charlie_value.has_value());
+	QVERIFY(charlie_value);
 	QVERIFY(charlie_value->toStdWString() == L"\u6B7B");
 }
 
@@ -172,7 +173,7 @@ void XmlParser::Test::skipping()
 	int unexpected_invocations = 0;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		bool skip_value = attributes.get<bool>("skip").value();
+		bool skip_value = *attributes.get<bool>("skip");
 		return skip_value ? XmlParser::ElementResult::Skip : XmlParser::ElementResult::Ok;
 	});
 	xml.onElementBegin({ "alpha", "bravo", "expected" }, [&](const XmlParser::Attributes &)
@@ -208,7 +209,7 @@ void XmlParser::Test::multiple()
 						 { "alpha", "charlie" },
 						 { "alpha", "delta" } }, [&](const XmlParser::Attributes &attributes)
 	{
-		int value = attributes.get<int>("value").value();
+		int value = *attributes.get<int>("value");
 		total += value;
 	});
 
@@ -248,7 +249,7 @@ void XmlParser::Test::localeSensitivity()
 	const char *xmlText = "<alpha bravo=\"1.234\"/>";
 	bool result = xml.parseBytes(xmlText, strlen(xmlText));
 	QVERIFY(result);
-	QVERIFY(f.has_value());
+	QVERIFY(f);
 	QVERIFY(std::abs(*f - 1.234) < 0.001);
 }
 
@@ -263,7 +264,7 @@ void XmlParser::Test::xmlParsingError()
 	std::vector<int> values;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
-		int value = attributes.get<int>("value").value();
+		int value = *attributes.get<int>("value");
 		values.push_back(value);
 	});
 
@@ -292,7 +293,7 @@ void XmlParser::Test::attributeParsingError(const char *xmlText)
 
 	QVERIFY(!xml.parseBytes(xmlText, strlen(xmlText)));
 	QVERIFY(xml.m_errors.size() == 1);
-	QVERIFY(!value.has_value());
+	QVERIFY(!value);
 }
 
 

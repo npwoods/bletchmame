@@ -121,7 +121,7 @@ static std::optional<QString> tryGetQStringFromCharSpan(const std::span<const ch
 static QString getQStringFromCharSpan(const std::span<const char> &span) noexcept
 {
 	std::optional<QString> result = tryGetQStringFromCharSpan(span);
-	return std::move(result.value());
+	return std::move(*result);
 }
 
 

@@ -174,7 +174,7 @@ QString prettifyImageFileName(const info::machine &machine, const software_list_
 
 	// try to find the software
 	std::optional<info::device> device = machine.find_device(deviceTag);
-	const software_list::software *software = device.has_value()
+	const software_list::software *software = device
 		? software_col.find_software_by_name(fileName, device->devinterface())
 		: nullptr;
 
@@ -237,7 +237,7 @@ void appendImageMenuItems(IImageMenuHost &host, QMenu &popupMenu, const QString 
 		if (!softwareListCollection.software_lists().empty())
 		{
 			std::optional<info::device> device = machine.find_device(tag);
-			const QString *devInterface = device.has_value()
+			const QString *devInterface = device
 				? &device->devinterface()
 				: nullptr;
 			if (devInterface && !devInterface->isEmpty())

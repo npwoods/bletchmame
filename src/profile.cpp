@@ -72,7 +72,7 @@ std::vector<std::shared_ptr<profiles::profile>> profiles::profile::scan_director
 			std::optional<profile> profile = load(std::move(file));
 			if (profile)
 			{
-				std::shared_ptr<profiles::profile> profilePtr = std::make_shared<profiles::profile>(std::move(profile.value()));
+				std::shared_ptr<profiles::profile> profilePtr = std::make_shared<profiles::profile>(std::move(*profile));
 				results.push_back(std::move(profilePtr));
 			}
 		}

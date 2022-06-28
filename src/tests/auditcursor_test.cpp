@@ -56,8 +56,8 @@ void Test::createInfoDb(info::database &db)
 
 void Test::validateAuditIdentifier(const std::optional<AuditIdentifier> &identifier, const char *expected)
 {
-	QVERIFY(identifier.has_value());
-	const MachineAuditIdentifier *machineAuditIdentifier = std::get_if<MachineAuditIdentifier>(&identifier.value());
+	QVERIFY(identifier);
+	const MachineAuditIdentifier *machineAuditIdentifier = std::get_if<MachineAuditIdentifier>(&*identifier);
 	QVERIFY(machineAuditIdentifier);
 	QVERIFY(machineAuditIdentifier->machineName() == expected);
 }
@@ -91,7 +91,7 @@ void Test::general()
 		validateAuditIdentifier(cursor.next(0), "coco2");
 		validateAuditIdentifier(cursor.next(0), "coco2b");
 		validateAuditIdentifier(cursor.next(0), "coco3");
-		QVERIFY(!cursor.next(0).has_value());
+		QVERIFY(!cursor.next(0));
 	}
 
 	// now repeat this process after marking some of these as audited
@@ -102,7 +102,7 @@ void Test::general()
 		cursor.setListItemModel(&model);
 		validateAuditIdentifier(cursor.next(0), "coco");
 		validateAuditIdentifier(cursor.next(0), "coco3");
-		QVERIFY(!cursor.next(0).has_value());
+		QVERIFY(!cursor.next(0));
 	}
 }
 
@@ -139,7 +139,7 @@ void Test::filterChange1()
 	QVERIFY(model.rowCount(QModelIndex()) == 0);
 
 	// and ensure the cursor is still functional
-	QVERIFY(!cursor.next(0).has_value());
+	QVERIFY(!cursor.next(0));
 }
 
 
@@ -176,7 +176,7 @@ void Test::filterChange2()
 
 	// and ensure the cursor is still functional
 	validateAuditIdentifier(cursor.next(0), "coco");
-	QVERIFY(!cursor.next(0).has_value());
+	QVERIFY(!cursor.next(0));
 }
 
 

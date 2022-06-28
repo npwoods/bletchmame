@@ -208,7 +208,7 @@ QPixmap IconLoader::getIcon(const info::machine &machine, std::optional<bool> sh
 	ProfilerScope prof(CURRENT_FUNCTION);
 
 	// do we need to get audit adornment from prefs?
-	bool actualShowAuditAdornment = showAuditAdornment.has_value()
+	bool actualShowAuditAdornment = showAuditAdornment
 		? *showAuditAdornment
 		: m_prefs.getAuditingState() != Preferences::AuditingState::Disabled;
 
@@ -229,7 +229,7 @@ QPixmap IconLoader::getIcon(const info::machine &machine, std::optional<bool> sh
 
 	// if we still have not got anything, just use the adornment
 	if (!result)
-		result = getIcon(adornment).value();
+		result = *getIcon(adornment);
 
 	return *result;
 }

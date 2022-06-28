@@ -87,7 +87,7 @@ void CustomizeFieldsDialog::updateStringViews()
 	{
 		const Field &field = m_fields[i];
 
-		if (field.m_order.has_value())
+		if (field.m_order)
 		{
 			// this field is shown - insert it into the list in the correct place
 			auto iter = std::ranges::lower_bound(
@@ -95,7 +95,7 @@ void CustomizeFieldsDialog::updateStringViews()
 				i,
 				[this](int x, int y)
 				{
-					return m_fields[x].m_order.value() < m_fields[y].m_order.value();
+					return *m_fields[x].m_order < *m_fields[y].m_order;
 				});
 			m_shownFields.insert(iter, i);
 		}
@@ -162,9 +162,9 @@ void CustomizeFieldsDialog::updateListModel(QListView &listView, const std::vect
 	listViewModel.setStringList(stringList);
 
 	// fix the current index
-	if (newCurrentRow.has_value())
+	if (newCurrentRow)
 	{
-		QModelIndex index = listViewModel.index(newCurrentRow.value(), 0);
+		QModelIndex index = listViewModel.index(*newCurrentRow, 0);
 		listView.setCurrentIndex(index);
 	}
 

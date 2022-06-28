@@ -257,8 +257,8 @@ void PathsDialog::updateButtonsEnabled()
 	std::vector<int> deleteTargets = listModel().getDeleteTargetsForSelection(selectedIndexes);
 
 	// set the buttons accordingly
-	m_ui->browseButton->setEnabled(browseTarget.has_value());
-	m_ui->insertButton->setEnabled(insertTarget.has_value());
+	m_ui->browseButton->setEnabled(bool(browseTarget));
+	m_ui->insertButton->setEnabled(bool(insertTarget));
 	m_ui->deleteButton->setEnabled(deleteTargets.size() > 0);
 }
 
@@ -415,11 +415,11 @@ const Preferences &PathsDialog::Model::prefs() const
 
 void PathsDialog::Model::extractPathsFromListView()
 {
-	if (m_currentPathType.has_value())
+	if (m_currentPathType)
 	{
 		// reflect changes on the m_current_path_list back into m_pathLists 
 		QStringList paths = m_listViewModel.paths();
 		QString pathString = joinPathList(paths);
-		m_pathLists[(size_t)m_currentPathType.value()] = std::move(pathString);
+		m_pathLists[(size_t)*m_currentPathType] = std::move(pathString);
 	}
 }

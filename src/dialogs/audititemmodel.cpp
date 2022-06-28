@@ -82,7 +82,7 @@ std::u8string_view AuditItemModel::iconFromAuditEntryType(Audit::Entry::Type ent
 AuditStatus AuditItemModel::auditStatusFromVerdict(const std::optional<Audit::Verdict> &verdict, bool optional)
 {
 	std::optional<AuditStatus> result;
-	if (verdict.has_value())
+	if (verdict)
 	{
 		switch (verdict->type())
 		{
@@ -106,7 +106,7 @@ AuditStatus AuditItemModel::auditStatusFromVerdict(const std::optional<Audit::Ve
 	{
 		result = AuditStatus::Unknown;
 	}
-	return result.value();
+	return *result;
 }
 
 
@@ -163,7 +163,7 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 	{
 		const Audit::Entry &entry = m_audit.entries()[index.row()];
 		const std::optional<Audit::Verdict> &verdict = m_verdicts[index.row()];
-		bool verdictFailed = verdict.has_value() && !Audit::isVerdictSuccessful(verdict->type());
+		bool verdictFailed = verdict && !Audit::isVerdictSuccessful(verdict->type());
 		Column column = (Column)index.column();
 
 		switch (role)
@@ -185,7 +185,7 @@ QVariant AuditItemModel::data(const QModelIndex &index, int role) const
 				break;
 
 			case Column::Status:
-				if (verdict.has_value())
+				if (verdict)
 				{
 					switch (verdict->type())
 					{

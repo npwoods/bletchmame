@@ -97,8 +97,8 @@ void Test::auditStatusChanged()
 
 	// invoke with a bogus item; nothing should happen
 	model.auditStatusChanged(MachineAuditIdentifier("BOGUS_MACHINE"));
-	QVERIFY(!topLeft.has_value());
-	QVERIFY(!bottomRight.has_value());
+	QVERIFY(!topLeft);
+	QVERIFY(!bottomRight);
 
 	// now try a real machine
 	model.auditStatusChanged(MachineAuditIdentifier("coco"));
@@ -139,13 +139,13 @@ void Test::allAuditStatusesChanged()
 
 	// invoke allAuditStatusesChanged(); everything should change
 	model.allAuditStatusesChanged();
-	QVERIFY(topLeft.has_value());
-	QVERIFY(topLeft.value().row() == 0);
-	QVERIFY(bottomRight.has_value());
-	QVERIFY(bottomRight.value().row() == db.machines().size() - 1);
-	QVERIFY(roles.has_value());
-	QVERIFY(roles.value().size() == 1);
-	QVERIFY(roles.value()[0] == Qt::DecorationRole);
+	QVERIFY(topLeft);
+	QVERIFY(topLeft->row() == 0);
+	QVERIFY(bottomRight);
+	QVERIFY(bottomRight->row() == db.machines().size() - 1);
+	QVERIFY(roles);
+	QVERIFY(roles->size() == 1);
+	QVERIFY((*roles)[0] == Qt::DecorationRole);
 }
 
 

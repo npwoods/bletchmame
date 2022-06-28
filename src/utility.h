@@ -417,7 +417,7 @@ std::optional<std::array<std::uint8_t, N>> fixedByteArrayFromHex(std::optional<s
 {
 	std::array<std::uint8_t, N> result;
 	std::span<std::uint8_t> span(result);
-	return hex.has_value() && bytesFromHex(span, *hex) == N
+	return hex && bytesFromHex(span, *hex) == N
 		? result
 		: std::optional<std::array<std::uint8_t, N>>();
 }

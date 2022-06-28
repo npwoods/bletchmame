@@ -139,8 +139,8 @@ public:
 	{
 		// try the CRC-32 if present
 		std::unique_ptr<QIODevice> file;
-		if (crc32.has_value())
-			file = m_7zipFile.get(crc32.value());
+		if (crc32)
+			file = m_7zipFile.get(*crc32);
 
 		// otherwise try the file name
 		if (!file)

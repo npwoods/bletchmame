@@ -88,9 +88,9 @@ void InputsDialog::MultiAxisInputDialog::on_restoreDefaultsButton_pressed()
 void InputsDialog::MultiAxisInputDialog::setupInputPanel(QLabel &label, QPushButton &button, QPushButton &menuButton, const std::optional<InputFieldRef> &fieldRef, status::input_seq::type seqType, const QString &text)
 {
     // only enable these controls if something is specified
-    button.setEnabled(fieldRef.has_value());
-    menuButton.setEnabled(fieldRef.has_value());
-    label.setEnabled(fieldRef.has_value());
+    button.setEnabled(bool(fieldRef));
+    menuButton.setEnabled(bool(fieldRef));
+    label.setEnabled(bool(fieldRef));
 
     // set the text
     button.setText(text);

@@ -285,10 +285,10 @@ void ConfigurableDevicesDialog::deviceMenu(QPushButton &button, const QModelInde
     QMenu popupMenu;
 
     // is this device slotted?
-    if (devInfo.slot().has_value())
+    if (devInfo.slot())
     {
         // if so, append items for slot devices
-        buildDeviceMenuSlotItems(popupMenu, devInfo.tag(), devInfo.slot().value(), devInfo.slotOption());
+        buildDeviceMenuSlotItems(popupMenu, devInfo.tag(), *devInfo.slot(), devInfo.slotOption());
     }
 
     // is this device "imaged"?
@@ -349,7 +349,7 @@ void ConfigurableDevicesDialog::buildDeviceMenuSlotItems(QMenu &popupMenu, const
     for (const SlotOptionInfo &soi : slotOptions)
     {
         // identify the name
-        const QString &slotOptionName = soi.m_slotOption.has_value()
+        const QString &slotOptionName = soi.m_slotOption
             ? soi.m_slotOption->name()
             : util::g_empty_string;
 
