@@ -25,7 +25,7 @@ class IconLoader;
 class Preferences;
 
 
-// ======================> MachineListItemModel
+// ======================> ProfileListItemModel
 
 class ProfileListItemModel : public QAbstractItemModel
 {
