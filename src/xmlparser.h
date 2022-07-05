@@ -11,14 +11,17 @@
 #ifndef XMLPARSER_H
 #define XMLPARSER_H
 
-#include <initializer_list>
-#include <memory>
-#include <type_traits>
-#include <optional>
+// bletchmame headers
+#include "utility.h"
 
+// Qt headers
 #include <QIODevice>
 
-#include "utility.h"
+// standard headers
+#include <initializer_list>
+#include <memory>
+#include <optional>
+#include <type_traits>
 
 struct XML_ParserStruct;
 
