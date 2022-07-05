@@ -164,8 +164,7 @@ static const util::enum_parser<bool> s_bool_parser =
 //-------------------------------------------------
 
 XmlParser::XmlParser()
-	: m_root(std::make_unique<Node>(nullptr))
-	, m_skippingDepth(0)
+	: m_root(std::make_unique<Node>())
 {
 	m_parser = XML_ParserCreate(nullptr);
 
@@ -191,13 +190,16 @@ XmlParser::~XmlParser()
 
 bool XmlParser::parse(QIODevice &input) noexcept
 {
-	m_currentNode = m_root.get();
-	m_skippingDepth = 0;
+	// push the initial node onto the stack
+	assert(m_currentNodeStack.empty());
+	m_currentNodeStack.push(m_root.get());
 
+	// parse all the things!
 	bool success = internalParse(input);
 
-	m_currentNode = nullptr;
-	m_skippingDepth = 0;
+	// clear out the node stack and return
+	assert(!success || m_currentNodeStack.size() == 1);
+	m_currentNodeStack = decltype(m_currentNodeStack)();
 	return success;
 }
 
@@ -420,24 +422,84 @@ bool XmlParser::isWhitespace(char ch) noexcept
 
 
 //-------------------------------------------------
+//  onElementEnd (const char *)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func) noexcept
+{
+	getNode(elements).m_endFunc = std::move(func);
+}
+
+
+//-------------------------------------------------
+//  onElementEnd (multiple const char *)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func) noexcept
+{
+	for (auto iter = elements.begin(); iter != elements.end(); iter++)
+	{
+		OnEndElementCallback func_duplicate(func);
+		onElementEnd(*iter, std::move(func_duplicate));
+	}
+}
+
+
+//-------------------------------------------------
+//  onElementEnd (void)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementVoidCallback &&func) noexcept
+{
+	getNode(elements).m_endFunc = [func{ std::move(func) }](std::u8string &&)
+	{
+		func();
+	};
+}
+
+
+//-------------------------------------------------
+//  onElementEnd (multiple void)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementVoidCallback &&func) noexcept
+{
+	for (auto iter = elements.begin(); iter != elements.end(); iter++)
+	{
+		OnEndElementVoidCallback func_duplicate(func);
+		onElementEnd(*iter, std::move(func_duplicate));
+	}
+}
+
+
+//-------------------------------------------------
 //  getNode
 //-------------------------------------------------
 
-XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &elements) noexcept
+XmlParser::Node &XmlParser::getNode(const std::initializer_list<const char *> &elements) noexcept
 {
 	Node *node = m_root.get();
 
 	for (auto iter = elements.begin(); iter != elements.end(); iter++)
 	{
-		Node::ptr &child(node->m_map[*iter]);
+		// special case
+		bool isElipsis = !strcmp(*iter, "...");
 
-		// create the child node if it is not present
-		if (!child)
-			child = std::make_unique<Node>(node);
+		// find out the element name used to walk
+		const char *elementName = iter[isElipsis ? -1 : 0];
 
-		node = child.get();
+		Node::ptr &child(node->m_map[elementName]);
+
+		if (!isElipsis)
+		{
+			// create the child node if it is not present
+			if (!child)
+				child = std::make_unique<Node>();
+
+			node = child.get();
+		}
 	}
-	return node;
+	return *node;
 }
 
 
@@ -450,59 +512,46 @@ void XmlParser::startElement(const char *element, const char **attributes) noexc
 	ProfilerScope prof(CURRENT_FUNCTION);
 
 	// only try to find this node in our tables if we are not skipping
-	Node *child = nullptr;
-	if (m_skippingDepth == 0)
+	const Node *currentNode = m_currentNodeStack.top();
+	const Node *childNode;
+	if (currentNode)
 	{
-		auto iter = m_currentNode->m_map.find(element);
-		if (iter != m_currentNode->m_map.end())
-			child = iter->second.get();
-	}
-
-	// figure out how to handle this element
-	ElementResult result;
-	if (child)
-	{
-		// we do - traverse down the tree
-		m_currentNode = child;
-
-		// do we have a callback function for beginning this node?
-		if (m_currentNode->m_beginFunc)
+		// we're in a node - find the child element
+		auto iter = currentNode->m_map.find(element);
+		if (iter != currentNode->m_map.end())
 		{
-			// we do - call it
-			Attributes attributesObject(*this, attributes);
-			result = m_currentNode->m_beginFunc(attributesObject);
+			// we've found the child (which could be the current node if we're recursing)
+			childNode = iter->second ? iter->second.get() : currentNode;
 		}
 		else
 		{
-			// we don't; we treat this as a normal node
-			result = ElementResult::Ok;
+			// this child is unknown - we have to ignore it
+			childNode = nullptr;
 		}
 	}
 	else
 	{
-		// we don't - we start skipping
-		result = ElementResult::Skip;
+		// we're currently in an unknown node and we're ignoring it - so we need to ignore the child too
+		childNode = nullptr;
 	}
 
-	// do the dirty work
-	switch (result)
+	// do we have a callback function for beginning this node?
+	if (childNode && childNode->m_beginFunc)
 	{
-	case ElementResult::Ok:
-		// do nothing
-		break;
+		// we do - call it
+		Attributes attributesObject(*this, attributes);
+		ElementResult result = childNode->m_beginFunc(attributesObject);
 
-	case ElementResult::Skip:
-		// we're skipping this element; treat it the same as an unknown element
-		m_skippingDepth++;
-		break;
-
-	default:
-		assert(false);
-		break;
+		// were we instructed to skip?
+		if (result == ElementResult::Skip)
+			childNode = nullptr;
 	}
+
+	// and push this onto the stack
+	m_currentNodeStack.push(childNode);
 
 	// set up content, but only if we expect to emit it later
-	if (m_skippingDepth == 0 && m_currentNode->m_endFunc)
+	if (childNode && childNode->m_endFunc)
 	{
 		m_currentContent.emplace();
 		m_currentContent->reserve(1024);
@@ -522,23 +571,16 @@ void XmlParser::endElement(const char *) noexcept
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
 
-	if (m_skippingDepth)
+	// call back the end func, if appropriate
+	const Node *currentNode = m_currentNodeStack.top();
+	if (currentNode && currentNode->m_endFunc)
 	{
-		// coming out of an unknown element type
-		m_skippingDepth--;
+		currentNode->m_endFunc(m_currentContent ? std::move(*m_currentContent) : std::u8string());
+		m_currentContent.reset();
 	}
-	else
-	{
-		// call back the end func, if appropriate
-		if (m_currentNode->m_endFunc)
-		{
-			m_currentNode->m_endFunc(m_currentContent ? std::move(*m_currentContent) : std::u8string());
-			m_currentContent.reset();
-		}
 
-		// and go up the tree
-		m_currentNode = m_currentNode->m_parent;
-	}
+	// and go up the tree
+	m_currentNodeStack.pop();
 }
 
 
@@ -770,24 +812,4 @@ void XmlParser::Attributes::reportAttributeParsingError(const char *attribute, s
 		QString(attribute),
 		util::toQString(value));
 	m_parser.appendError(std::move(message));
-}
-
-
-//-------------------------------------------------
-//  Node ctor
-//-------------------------------------------------
-
-XmlParser::Node::Node(Node *parent)
-	: m_parent(parent)
-{
-
-}
-
-
-//-------------------------------------------------
-//  Node dtor
-//-------------------------------------------------
-
-XmlParser::Node::~Node()
-{
 }

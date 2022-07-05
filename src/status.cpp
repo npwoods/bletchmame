@@ -168,11 +168,11 @@ status::update status::update::read(QIODevice &input_stream)
 		format.m_name						= attributes.get<QString>("name").value_or("");
 		format.m_description				= attributes.get<QString>("description").value_or("");
 	});
-	xml.onElementEnd({ "status", "images", "image", "details", "format", "extension" }, [&](QString &&content)
+	xml.onElementEnd({ "status", "images", "image", "details", "format", "extension" }, [&](std::u8string &&content)
 	{
 		image &image = util::last(*result.m_images);
 		image_format &format = util::last(image.m_details->m_formats);
-		format.m_extensions.push_back(std::move(content));
+		format.m_extensions.push_back(util::toQString(content));
 	});
 	xml.onElementBegin({ "status", "cassettes" }, [&](const XmlParser::Attributes &)
 	{
@@ -195,7 +195,7 @@ status::update status::update::read(QIODevice &input_stream)
 	{
 		result.m_slots.emplace();
 	});
-	xml.onElementEnd({ "status", "slots" }, [&](QString &&content)
+	xml.onElementEnd({ "status", "slots" }, [&]()
 	{
 		// downstream logic becomes much simpler if this is sorted
 		std::sort(
