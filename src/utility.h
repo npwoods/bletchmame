@@ -333,7 +333,7 @@ TStr string_join(const TStr &delim, const TColl &collection, TFunc func)
 	TStr result;
 	bool is_first = true;
 
-	for (const TStr &member : collection)
+	for (const auto &member : collection)
 	{
 		if (is_first)
 			is_first = false;
