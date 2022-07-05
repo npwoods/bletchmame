@@ -420,10 +420,61 @@ bool XmlParser::isWhitespace(char ch) noexcept
 
 
 //-------------------------------------------------
+//  onElementEnd (const char *)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func) noexcept
+{
+	getNode(elements).m_endFunc = std::move(func);
+}
+
+
+//-------------------------------------------------
+//  onElementEnd (multiple const char *)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func) noexcept
+{
+	for (auto iter = elements.begin(); iter != elements.end(); iter++)
+	{
+		OnEndElementCallback func_duplicate(func);
+		onElementEnd(*iter, std::move(func_duplicate));
+	}
+}
+
+
+//-------------------------------------------------
+//  onElementEnd (void)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementVoidCallback &&func) noexcept
+{
+	getNode(elements).m_endFunc = [func{ std::move(func) }](std::u8string &&)
+	{
+		func();
+	};
+}
+
+
+//-------------------------------------------------
+//  onElementEnd (multiple void)
+//-------------------------------------------------
+
+void XmlParser::onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementVoidCallback &&func) noexcept
+{
+	for (auto iter = elements.begin(); iter != elements.end(); iter++)
+	{
+		OnEndElementVoidCallback func_duplicate(func);
+		onElementEnd(*iter, std::move(func_duplicate));
+	}
+}
+
+
+//-------------------------------------------------
 //  getNode
 //-------------------------------------------------
 
-XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &elements) noexcept
+XmlParser::Node &XmlParser::getNode(const std::initializer_list<const char *> &elements) noexcept
 {
 	Node *node = m_root.get();
 
@@ -437,7 +488,7 @@ XmlParser::Node *XmlParser::getNode(const std::initializer_list<const char *> &e
 
 		node = child.get();
 	}
-	return node;
+	return *node;
 }
 
 

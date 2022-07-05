@@ -173,10 +173,10 @@ static std::tuple<const QChar *, const QChar *> splitListViewSelectionKey(const 
 //  intListFromString
 //-------------------------------------------------
 
-static QList<int> intListFromString(const QString &s)
+static QList<int> intListFromString(std::u8string_view s)
 {
 	QList<int> result;
-	for (const QString &part : s.split(','))
+	for (const QString &part : util::toQString(s).split(','))
 	{
 		bool ok = false;
 		int i = part.toInt(&ok);
@@ -968,15 +968,15 @@ bool Preferences::load(QIODevice &input)
 				type = static_cast<global_path_type>(iter - s_globalPathInfo.cbegin());
 		}
 	});
-	xml.onElementEnd({ "preferences", "path" }, [&](QString &&content)
+	xml.onElementEnd({ "preferences", "path" }, [&](std::u8string &&content)
 	{
 		if (type)
-			globalPathsInfo.m_paths[(size_t) *type] = QDir::fromNativeSeparators(content);
+			globalPathsInfo.m_paths[(size_t) *type] = QDir::fromNativeSeparators(util::toQString(content));
 		type.reset();
 	});
-	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](QString &&content)
+	xml.onElementEnd({ "preferences", "mameextraarguments" }, [&](std::u8string &&content)
 	{
-		setMameExtraArguments(std::move(content));
+		setMameExtraArguments(util::toQString(content));
 	});
 	xml.onElementBegin({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -991,7 +991,7 @@ bool Preferences::load(QIODevice &input)
 			setSize(size);
 		}
 	});	
-	xml.onElementEnd({ "preferences", "machinelistsplitters" }, [&](QString &&content)
+	xml.onElementEnd({ "preferences", "machinelistsplitters" }, [&](std::u8string &&content)
 	{
 		QList<int> splitterSizes = intListFromString(content);
 		if (!splitterSizes.isEmpty())
@@ -1018,14 +1018,14 @@ bool Preferences::load(QIODevice &input)
 		if (name)
 			current_custom_folder = &m_customFolders.emplace(*name, std::set<QString>()).first->second;
 	});
-	xml.onElementEnd({ "preferences", "customfolder" }, [&](QString &&content)
+	xml.onElementEnd({ "preferences", "customfolder" }, [&]()
 	{
 		current_custom_folder = nullptr;
 	});
-	xml.onElementEnd({ "preferences", "customfolder", "system" }, [&](QString &&content)
+	xml.onElementEnd({ "preferences", "customfolder", "system" }, [&](std::u8string &&content)
 	{
 		if (current_custom_folder)
-			current_custom_folder->emplace(std::move(content));
+			current_custom_folder->emplace(util::toQString(content));
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -1043,10 +1043,10 @@ bool Preferences::load(QIODevice &input)
 		current_list_view_parameter = &m_list_view_filter[list_view];
 	});
 	xml.onElementEnd({{ "preferences", "selection" },
-					  { "preferences", "searchboxtext" }}, [&](QString &&content)
+					  { "preferences", "searchboxtext" }}, [&](std::u8string &&content)
 	{
 		assert(current_list_view_parameter);
-		*current_list_view_parameter = std::move(content);
+		*current_list_view_parameter = util::toQString(content);
 		current_list_view_parameter = nullptr;
 	});
 	xml.onElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
@@ -1093,9 +1093,9 @@ bool Preferences::load(QIODevice &input)
 		current_device_type = std::move(*type);
 		return XmlParser::ElementResult::Ok;
 	});
-	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](QString &&content)
+	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](std::u8string &&content)
 	{
-		QString path = QDir::fromNativeSeparators(content);
+			QString path = QDir::fromNativeSeparators(util::toQString(content));
 		if (!path.trimmed().isEmpty())
 			m_machine_info[current_machine_name].m_recentDeviceFiles[current_device_type].push_back(std::move(path));
 	});

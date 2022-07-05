@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 
     xmlparser_test.cpp
 
@@ -142,13 +142,13 @@ void XmlParser::Test::unicodeStdString()
 void XmlParser::Test::unicodeQString()
 {
 	XmlParser xml;
-	QString bravo_value;
+	std::u8string bravo_value;
 	std::optional<QString> charlie_value;
 	xml.onElementBegin({ "alpha", "bravo" }, [&](const XmlParser::Attributes &attributes)
 	{
 		charlie_value = attributes.get<QString>("charlie");
 	});
-	xml.onElementEnd({ "alpha", "bravo" }, [&](QString &&value)
+	xml.onElementEnd({ "alpha", "bravo" }, [&](std::u8string &&value)
 	{
 		bravo_value = std::move(value);
 	});
@@ -156,7 +156,7 @@ void XmlParser::Test::unicodeQString()
 	const char *xml_text = "<alpha><bravo charlie=\"&#x6B7B;\">&#x60AA;</bravo></alpha>";
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
-	QVERIFY(bravo_value.toStdWString() == L"\u60AA");
+	QVERIFY(bravo_value == u8"\u60AA");
 	QVERIFY(charlie_value);
 	QVERIFY(charlie_value->toStdWString() == L"\u6B7B");
 }

@@ -119,7 +119,7 @@ public:
 		auto proxy = proxy_type(std::move(func));
 
 		// supply the proxy
-		getNode(elements)->m_beginFunc = std::move(proxy);
+		getNode(elements).m_beginFunc = std::move(proxy);
 	}
 
 	// onElementBegin
@@ -135,36 +135,13 @@ public:
 
 	// onElementEnd (std::u8string)
 	typedef std::function<void(std::u8string &&content)> OnEndElementCallback;
-	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func) noexcept
-	{
-		getNode(elements)->m_endFunc = std::move(func);
-	}
-	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func) noexcept
-	{
-		for (auto iter = elements.begin(); iter != elements.end(); iter++)
-		{
-			OnEndElementCallback func_duplicate(func);
-			onElementEnd(*iter, std::move(func_duplicate));
-		}
-	}
+	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementCallback &&func) noexcept;
+	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementCallback &&func) noexcept;
 
-	// onElementEnd (QString)
-	typedef std::function<void(QString &&content)> OnEndElementQStringCallback;
-	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementQStringCallback &&func) noexcept
-	{
-		getNode(elements)->m_endFunc = [func{std::move(func)}](std::u8string &&content)
-		{
-			func(util::toQString(content));
-		};
-	}
-	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementQStringCallback &&func) noexcept
-	{
-		for (auto iter = elements.begin(); iter != elements.end(); iter++)
-		{
-			OnEndElementQStringCallback func_duplicate(func);
-			onElementEnd(*iter, std::move(func_duplicate));
-		}
-	}
+	// onElementEnd (void)
+	typedef std::function<void()> OnEndElementVoidCallback;
+	void onElementEnd(const std::initializer_list<const char *> &elements, OnEndElementVoidCallback &&func) noexcept;
+	void onElementEnd(const std::initializer_list<const std::initializer_list<const char *>> &elements, OnEndElementVoidCallback &&func) noexcept;
 
 	bool parse(QIODevice &input) noexcept;
 	bool parse(const QString &file_name) noexcept;
@@ -208,7 +185,7 @@ private:
 	static QString errorContext(const char *contextString, int contextOffset, int contextSize) noexcept;
 	static bool isLineEnding(char ch) noexcept;
 	static bool isWhitespace(char ch) noexcept;
-	Node *getNode(const std::initializer_list<const char *> &elements) noexcept;
+	Node &getNode(const std::initializer_list<const char *> &elements) noexcept;
 
 	static void startElementHandler(void *user_data, const char *name, const char **attributes);
 	static void endElementHandler(void *user_data, const char *name);

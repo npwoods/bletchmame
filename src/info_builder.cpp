@@ -504,7 +504,7 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 			current_device_extensions.append(u8",");
 		}
 	});
-	xml.onElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions](QString &&)
+	xml.onElementEnd({ "mame", "machine", "device" }, [this, &current_device_extensions]()
 	{
 		ProfilerScope prof(CURRENT_FUNCTION);
 		if (!current_device_extensions.empty())
@@ -561,11 +561,11 @@ bool info::database_builder::process_xml(QIODevice &input, QString &error_messag
 		ram_option.m_value						= 0;
 		util::last(m_machines).m_ram_options_count++;
 	});
-	xml.onElementEnd({ "mame", "machine", "ramoption" }, [this](QString &&content)
+	xml.onElementEnd({ "mame", "machine", "ramoption" }, [this](std::u8string &&content)
 	{
 		ProfilerScope prof(CURRENT_FUNCTION);
 		bool ok;
-		unsigned long val = content.toULong(&ok);
+		unsigned long val = util::toQString(content).toULong(&ok);
 		util::last(m_ram_options).m_value = ok ? val : 0;
 	});
 	xml.onElementBegin({ "mame", "machine", "sound" }, [this](const XmlParser::Attributes &attributes)

@@ -35,21 +35,21 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 		s.m_name		= attributes.get<QString>("name").value_or("");
 		s.m_parts.reserve(16);
 	});
-	xml.onElementEnd({ "softwarelist", "software" }, [this](QString &&)
+	xml.onElementEnd({ "softwarelist", "software" }, [this]()
 	{
 		util::last(m_software).m_parts.shrink_to_fit();
 	});
-	xml.onElementEnd({ "softwarelist", "software", "description" }, [this](QString &&content)
+	xml.onElementEnd({ "softwarelist", "software", "description" }, [this](std::u8string &&content)
 	{
-		util::last(m_software).m_description = std::move(content);
+		util::last(m_software).m_description = util::toQString(content);
 	});
-	xml.onElementEnd({ "softwarelist", "software", "year" }, [this](QString &&content)
+	xml.onElementEnd({ "softwarelist", "software", "year" }, [this](std::u8string &&content)
 	{
-		util::last(m_software).m_year = std::move(content);
+		util::last(m_software).m_year = util::toQString(content);
 	});
-	xml.onElementEnd({ "softwarelist", "software", "publisher" }, [this](QString &&content)
+	xml.onElementEnd({ "softwarelist", "software", "publisher" }, [this](std::u8string &&content)
 	{
-		util::last(m_software).m_publisher = std::move(content);
+		util::last(m_software).m_publisher = util::toQString(content);
 	});
 	xml.onElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
 	{
