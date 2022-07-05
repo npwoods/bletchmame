@@ -21,6 +21,7 @@ private slots:
 	void unicodeQString();
 	void skipping();
 	void multiple();
+	void recursive();
 	void localeSensitivity();
 	void xmlParsingError();
 
@@ -223,6 +224,50 @@ void XmlParser::Test::multiple()
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));
 	QVERIFY(result);
 	QVERIFY(total == 10);
+}
+
+
+//-------------------------------------------------
+//  recursive
+//-------------------------------------------------
+
+void XmlParser::Test::recursive()
+{
+	XmlParser xml;
+	int bravoTotal = 0;
+	int charlieTotal = 0;
+	xml.onElementBegin({ "alpha", "bravo", "..."}, [&](const XmlParser::Attributes &attributes)
+	{
+		int value = *attributes.get<int>("value");
+		bravoTotal += value;
+	});
+	xml.onElementBegin({ "alpha", "bravo", "charlie"}, [&](const XmlParser::Attributes &attributes)
+	{
+		int value = *attributes.get<int>("value");
+		charlieTotal += value;
+	});
+
+	const char *xml_text =
+		"<alpha>"
+		"\t<bravo value=\"2\">"
+		"\t\t<bravo value=\"3\">"
+		"\t\t\t<charlie value=\"5\"/>"
+		"\t\t\t<charlie value=\"8\">"
+		"\t\t\t\t<charlie value=\"8\"/>"
+		"\t\t\t\t<delta dummy=\"yeah\">"
+		"\t\t\t\t\t<charlie value=\"666\"/>"
+		"\t\t\t\t</delta>"
+		"\t\t\t</charlie>"
+		"\t\t</bravo>"
+		"\t\t<charlie value=\"13\"/>"
+		"\t\t<charlie value=\"21\"/>"
+		"\t</bravo>"
+		"\t<bravo value=\"34\"/>"
+		"</alpha>";
+	bool result = xml.parseBytes(xml_text, strlen(xml_text));
+	QVERIFY(result);
+	QVERIFY(bravoTotal == 39);
+	QVERIFY(charlieTotal == 47);
 }
 
 

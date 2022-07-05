@@ -21,6 +21,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <stack>
 #include <type_traits>
 
 struct XML_ParserStruct;
@@ -155,22 +156,22 @@ private:
 		typedef std::unordered_map<const char *, Node::ptr> Map;
 
 		// ctor/dtor
-		Node(Node *parent);
+		Node() = default;
 		Node(const Node &) = delete;
 		Node(Node &&) = delete;
-		~Node();
+		~Node() = default;
 
 		// fields
 		OnBeginElementCallback		m_beginFunc;
 		OnEndElementCallback		m_endFunc;
-		Node *						m_parent;
 		Map							m_map;
 	};
 
+	typedef std::stack<const Node *> NodeStack;
+
 	struct XML_ParserStruct *		m_parser;
 	Node::ptr						m_root;
-	Node *							m_currentNode;
-	int								m_skippingDepth;
+	NodeStack						m_currentNodeStack;
 	std::optional<std::u8string>	m_currentContent;
 	std::vector<Error>				m_errors;
 
