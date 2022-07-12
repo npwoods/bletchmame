@@ -271,9 +271,10 @@ void info::database_builder::Test::xmlAttributeParsing()
 	std::optional<std::uint32_t> charlieValue;
 	xml.onElementBegin({ "root" }, [&](const XmlParser::Attributes &attributes)
 	{
-		alphaValue = stringTable.get(attributes, "alpha");
-		bravoValue = stringTable.get(attributes, "bravo");
-		charlieValue = stringTable.get(attributes, "charlie");
+		const auto [alpha, bravo, charlie] = attributes.get("alpha", "bravo", "charlie");
+		alphaValue = stringTable.get(alpha);
+		bravoValue = stringTable.get(bravo);
+		charlieValue = stringTable.get(charlie);
 	});
 	const char *xml_text = "<root alpha=\"\" bravo=\"abcd\" charlie=\"a_big_string\"/>";
 	bool result = xml.parseBytes(xml_text, strlen(xml_text));

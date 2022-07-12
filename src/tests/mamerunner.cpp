@@ -109,7 +109,8 @@ static std::optional<SimpleMameVersion> getScriptRequiredMameVersion(const QStri
     XmlParser xml;
     xml.onElementBegin({ "script" }, [&result](const XmlParser::Attributes &attributes)
     {
-        std::optional<QString> requiredVersionString = attributes.get<QString>("requiredVersion");
+		const auto [requiredVersionAttr] = attributes.get("requiredVersion");
+        std::optional<QString> requiredVersionString = requiredVersionAttr.as<QString>();
 		if (requiredVersionString)
 		{
 			MameVersion requiredVersion(*requiredVersionString);

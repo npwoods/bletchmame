@@ -51,7 +51,7 @@ namespace info
 			void shrinkToFit() noexcept;
 			std::uint32_t get(const char8_t *string) noexcept;
 			std::uint32_t get(const std::u8string &string) noexcept;
-			std::uint32_t get(const XmlParser::Attributes &attributes, const char *attribute) noexcept;
+			std::uint32_t get(const XmlParser::Attribute &attribute) noexcept;
 			std::span<const char8_t> data() const noexcept;
 			const char8_t *lookup(std::uint32_t value, SsoBuffer &ssoBuffer) const noexcept;
 			template<typename T> void embed_value(T value) noexcept;
