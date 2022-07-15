@@ -18,6 +18,7 @@
 #include <QIODevice>
 
 // standard headers
+#include <array>
 #include <initializer_list>
 #include <memory>
 #include <optional>
@@ -55,48 +56,95 @@ public:
 	};
 
 
-	// ======================> Attributes
+	// ======================> Attribute
 
-	class Attributes
+	class Attribute
 	{
 	public:
-		Attributes(XmlParser &parser, const char **attributes);
+		// ctor
+		constexpr Attribute(const char **valuePtr = nullptr)
+			: m_valuePtr(valuePtr)
+		{
+		}
+
+		// operator overloading
+		operator bool() const;
 
 		// main attribute getter
-		template<class T> std::optional<T> get(const char *attribute) const noexcept
+		template<class T> std::optional<T> as() const noexcept
 		{
 			static_assert(sizeof(T) == -1, "Expected use of template specialization");
 		}
 
 		// alternate radices
-		template<class T> std::optional<T> get(const char *attribute, int radix) const noexcept
+		template<class T> std::optional<T> as(int radix) const noexcept
 		{
 			static_assert(sizeof(T) == -1, "Expected use of template specialization");
 		}
 
 		// generic getter with a parser function
 		template<typename T, typename TFunc>
-		std::optional<T> get(const char *attribute, TFunc func) const noexcept
+		std::optional<T> as(TFunc func) const noexcept
 		{
 			std::optional<T> result = { };
-			std::optional<std::u8string_view> text = get<std::u8string_view>(attribute);
+			std::optional<std::u8string_view> text = as<std::u8string_view>();
 			if (text)
 			{
 				T funcResult;
 				if (func(*text, funcResult))
 					result = std::move(funcResult);
 				else
-					reportAttributeParsingError(attribute, *text);
+					reportAttributeParsingError(m_valuePtr[-1], m_valuePtr[0]);
+
 			}
 			return result;
 		}
 
 	private:
-		XmlParser &		m_parser;
-		const char **	m_attributes;
+		const char **	m_valuePtr;
 
-		const char *internalGet(const char *attribute, bool return_null = false) const noexcept;
-		void reportAttributeParsingError(const char *attribute, std::u8string_view value) const noexcept;
+		static void reportAttributeParsingError(const char *attrName, const char *attrValue) noexcept;
+	};
+
+
+	// ======================> Attributes
+
+	class Attributes
+	{
+	public:
+		Attributes(const char **attributes);
+
+		// bulk attribute retrieval
+		template<typename... TArgs>
+		auto get(TArgs... attrs) const noexcept
+		{
+			// convert attributes to an array
+			const std::array<std::string_view, sizeof...(attrs)> attrsArray = { std::forward<TArgs>(attrs)... };
+
+			// prepare an array of results
+			std::array<Attribute, attrsArray.size()> results;
+			std::ranges::fill(results, Attribute((const char **)&m_zero));
+
+			// loop through all attributes
+			for (auto i = 0; m_attributes[i]; i += 2)
+			{
+				std::string_view attrName = m_attributes[i + 0];
+
+				auto iter = std::ranges::find_if(attrsArray, [attrName](std::string_view x)
+				{
+					return attrName == x;
+				});
+				if (iter != attrsArray.end())
+					results[iter - attrsArray.begin()] = Attribute(&m_attributes[i + 1]);
+			}
+
+			// and return
+			return results;
+		}
+
+	private:
+		const char **	m_attributes;
+		const char *	m_zero;
 	};
 
 	// ctor/dtor
@@ -169,6 +217,7 @@ private:
 
 	typedef std::stack<const Node *> NodeStack;
 
+	thread_local static XmlParser *	s_currentParser;
 	struct XML_ParserStruct *		m_parser;
 	Node::ptr						m_root;
 	NodeStack						m_currentNodeStack;
@@ -198,20 +247,20 @@ private:
 //  TEMPLATE SPECIALIZATIONS
 //**************************************************************************
 
-template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute) const noexcept;
-template<> std::optional<bool>					XmlParser::Attributes::get<bool>(const char *attribute) const noexcept;
-template<> std::optional<float>					XmlParser::Attributes::get<float>(const char *attribute) const noexcept;
-template<> std::optional<QString>				XmlParser::Attributes::get<QString>(const char *attribute) const noexcept;
-template<> std::optional<const char8_t *>		XmlParser::Attributes::get<const char8_t *>(const char *attribute) const noexcept;
-template<> std::optional<std::u8string_view>	XmlParser::Attributes::get<std::u8string_view>(const char *attribute) const noexcept;
-template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute) const noexcept;
-template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute) const noexcept;
-template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute) const noexcept;
+template<> std::optional<int>					XmlParser::Attribute::as<int>() const noexcept;
+template<> std::optional<bool>					XmlParser::Attribute::as<bool>() const noexcept;
+template<> std::optional<float>					XmlParser::Attribute::as<float>() const noexcept;
+template<> std::optional<QString>				XmlParser::Attribute::as<QString>() const noexcept;
+template<> std::optional<const char8_t *>		XmlParser::Attribute::as<const char8_t *>() const noexcept;
+template<> std::optional<std::u8string_view>	XmlParser::Attribute::as<std::u8string_view>() const noexcept;
+template<> std::optional<std::uint8_t>			XmlParser::Attribute::as<std::uint8_t>() const noexcept;
+template<> std::optional<std::uint32_t>			XmlParser::Attribute::as<std::uint32_t>() const noexcept;
+template<> std::optional<std::uint64_t>			XmlParser::Attribute::as<std::uint64_t>() const noexcept;
 
-template<> std::optional<int>					XmlParser::Attributes::get<int>(const char *attribute, int radix) const noexcept;
-template<> std::optional<std::uint8_t>			XmlParser::Attributes::get<std::uint8_t>(const char *attribute, int radix) const noexcept;
-template<> std::optional<std::uint32_t>			XmlParser::Attributes::get<std::uint32_t>(const char *attribute, int radix) const noexcept;
-template<> std::optional<std::uint64_t>			XmlParser::Attributes::get<std::uint64_t>(const char *attribute, int radix) const noexcept;
+template<> std::optional<int>					XmlParser::Attribute::as<int>(int radix) const noexcept;
+template<> std::optional<std::uint8_t>			XmlParser::Attribute::as<std::uint8_t>(int radix) const noexcept;
+template<> std::optional<std::uint32_t>			XmlParser::Attribute::as<std::uint32_t>(int radix) const noexcept;
+template<> std::optional<std::uint64_t>			XmlParser::Attribute::as<std::uint64_t>(int radix) const noexcept;
 
 
 #endif // XMLPARSER_H

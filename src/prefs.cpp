@@ -933,30 +933,25 @@ bool Preferences::load(QIODevice &input)
 
 	xml.onElementBegin({ "preferences" }, [&](const XmlParser::Attributes &attributes)
 	{
-		// this is called menu_bar_shown in the XML for purely historical reasons
-		std::optional<bool> windowBarsShown = attributes.get<bool>("menu_bar_shown");
-		if (windowBarsShown)
-			globalUiInfo.m_windowBarsShown = *windowBarsShown;
+		// windowBarsShown is called menu_bar_shown in the XML for purely historical reasons
+		const auto [windowBarsShown, windowStateAttr, selectedTabAttr, auditing, showStopEmulationWarning] = attributes.get("menu_bar_shown", "window_state", "selected_tab", "auditing", "show_stop_emulation_warning");
 
-		std::optional<WindowState> windowState = attributes.get<WindowState>("window_state", s_windowState_parser);
+		globalUiInfo.m_windowBarsShown = windowBarsShown.as<bool>().value_or(globalUiInfo.m_windowBarsShown);
+		globalUiInfo.m_auditingState = auditing.as<AuditingState>(s_auditingStateParser).value_or(globalUiInfo.m_auditingState);
+		globalUiInfo.m_showStopEmulationWarning = showStopEmulationWarning.as<bool>().value_or(globalUiInfo.m_showStopEmulationWarning);
+
+		std::optional<WindowState> windowState = windowStateAttr.as<WindowState>(s_windowState_parser);
 		if (windowState)
 			setWindowState(*windowState);
 
-		std::optional<list_view_type> selected_tab = attributes.get<list_view_type>("selected_tab", s_list_view_type_parser);
-		if (selected_tab)
-			setSelectedTab(*selected_tab);
-
-		std::optional<AuditingState> auditingState = attributes.get<AuditingState>("auditing", s_auditingStateParser);
-		if (auditingState)
-			globalUiInfo.m_auditingState = *auditingState;
-
-		std::optional<bool> showStopEmulationWarning = attributes.get<bool>("show_stop_emulation_warning");
-		if (showStopEmulationWarning)
-			globalUiInfo.m_showStopEmulationWarning = *showStopEmulationWarning;
+		std::optional<list_view_type> selectedTab = selectedTabAttr.as<list_view_type>(s_list_view_type_parser);
+		if (selectedTab)
+			setSelectedTab(*selectedTab);
 	});
 	xml.onElementBegin({ "preferences", "path" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> typeString = attributes.get<QString>("type");
+		const auto [typeAttr] = attributes.get("type");
+		std::optional<QString> typeString = typeAttr.as<QString>();
 		if (typeString)
 		{
 			auto iter = std::ranges::find_if(s_globalPathInfo, [&typeString](const auto &x)
@@ -980,8 +975,9 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "size" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<int> width = attributes.get<int>("width");
-		std::optional<int> height = attributes.get<int>("height");
+		const auto [widthAttr, heightAttr] = attributes.get("width", "height");
+		std::optional<int> width = widthAttr.as<int>();
+		std::optional<int> height = heightAttr.as<int>();
 
 		if (width && height && isValidDimension(*width) && isValidDimension(*height))
 		{
@@ -999,22 +995,24 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "folder" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> id = attributes.get<QString>("id");
+		const auto [idAttr, isShownAttr, selectedAttr] = attributes.get("id", "shown", "selected");
+		std::optional<QString> id = idAttr.as<QString>();
 		if (id)
 		{
 			FolderPrefs folderPrefs = getFolderPrefs(*id);
-			std::optional<bool> isShown = attributes.get<bool>("shown");
+			std::optional<bool> isShown = isShownAttr.as<bool>();
 			if (isShown)
 				folderPrefs.m_shown = *isShown;
 			setFolderPrefs(*id, std::move(folderPrefs));
 			
-			if (attributes.get<bool>("selected") == true)
+			if (selectedAttr.as<bool>() == true)
 				setMachineFolderTreeSelection(std::move(*id));
 		}
 	});
 	xml.onElementBegin({ "preferences", "customfolder" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> name = attributes.get<QString>("name");
+		const auto [nameAttr] = attributes.get("name");
+		std::optional<QString> name = nameAttr.as<QString>();
 		if (name)
 			current_custom_folder = &m_customFolders.emplace(*name, std::set<QString>()).first->second;
 	});
@@ -1029,17 +1027,19 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "selection" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::u8string_view> list_view = attributes.get<std::u8string_view>("view");
-		if (list_view)
+		const auto [listViewAttr, softlistAttr] = attributes.get("view", "softlist");
+		std::optional<std::u8string_view> listView = listViewAttr.as<std::u8string_view>();
+		if (listView)
 		{
-			QString softlist = attributes.get<QString>("softlist").value_or("");
-			QString key = getListViewSelectionKey(*list_view, std::move(softlist));
+			QString softlist = softlistAttr.as<QString>().value_or("");
+			QString key = getListViewSelectionKey(*listView, std::move(softlist));
 			current_list_view_parameter = &m_list_view_selection[key];
 		}
 	});
 	xml.onElementBegin({ "preferences", "searchboxtext" }, [&](const XmlParser::Attributes &attributes)
 	{
-		QString list_view = attributes.get<QString>("view").value_or("machine");
+		const auto [listViewAttr] = attributes.get("view");
+		QString list_view = listViewAttr.as<QString>().value_or("machine");
 		current_list_view_parameter = &m_list_view_filter[list_view];
 	});
 	xml.onElementEnd({{ "preferences", "selection" },
@@ -1051,42 +1051,46 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementBegin({ "preferences", "column" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<std::u8string_view> view_type = attributes.get<std::u8string_view>("type");
-		std::optional<std::u8string_view> id = attributes.get<std::u8string_view>("id");
-		if (view_type && id)
+		const auto [viewTypeAttr, idAttr, widthAttr, orderAttr, sortAttr] = attributes.get("type", "id", "width", "order", "sort");
+		std::optional<std::u8string_view> viewType = viewTypeAttr.as<std::u8string_view>();
+		std::optional<std::u8string_view> id = idAttr.as<std::u8string_view>();
+		if (viewType && id)
 		{
-			ColumnPrefs &col_prefs = m_column_prefs[std::u8string(*view_type)][std::u8string(*id)];
-			col_prefs.m_width = attributes.get<int>("width").value_or(col_prefs.m_width);
-			if (attributes.get<QString>("order") == "hidden")
+			ColumnPrefs &col_prefs = m_column_prefs[std::u8string(*viewType)][std::u8string(*id)];
+			col_prefs.m_width = widthAttr.as<int>().value_or(col_prefs.m_width);
+			if (orderAttr.as<std::u8string_view>() == u8"hidden")
 				col_prefs.m_order = std::nullopt;
 			else
-				col_prefs.m_order = coalesce(attributes.get<int>("order"), col_prefs.m_order);
-			col_prefs.m_sort = attributes.get<Qt::SortOrder>("sort", s_column_sort_type_parser);
+				col_prefs.m_order = coalesce(orderAttr.as<int>(), col_prefs.m_order);
+			col_prefs.m_sort = sortAttr.as<Qt::SortOrder>(s_column_sort_type_parser);
 		}
 	});
 	xml.onElementBegin({ "preferences", "machine" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> name = attributes.get<QString>("name");
+		const auto [nameAttr, workingDirectoryAttr, lastSaveStateAttr, auditStatusAttr] = attributes.get("name", "working_directory", "last_save_state", "audit_status");
+
+		std::optional<QString> name = nameAttr.as<QString>();
 		if (!name)
 			return XmlParser::ElementResult::Skip;
 		current_machine_name = *name;
 
-		std::optional<QString> workingDirectory = attributes.get<QString>("working_directory");
+		std::optional<QString> workingDirectory = workingDirectoryAttr.as<QString>();
 		if (workingDirectory)
 			setMachinePath(current_machine_name, machine_path_type::WORKING_DIRECTORY, QDir::fromNativeSeparators(*workingDirectory));
 
-		std::optional<QString> lastSaveState = attributes.get<QString>("last_save_state");
+		std::optional<QString> lastSaveState = lastSaveStateAttr.as<QString>();
 		if (lastSaveState)
 			setMachinePath(current_machine_name, machine_path_type::LAST_SAVE_STATE, QDir::fromNativeSeparators(*lastSaveState));
 
-		AuditStatus status = attributes.get<AuditStatus>("audit_status", s_audit_status_parser).value_or(AuditStatus::Unknown);
+		AuditStatus status = auditStatusAttr.as<AuditStatus>(s_audit_status_parser).value_or(AuditStatus::Unknown);
 		setMachineAuditStatus(current_machine_name, status);
 
 		return XmlParser::ElementResult::Ok;
 	});
 	xml.onElementBegin({ "preferences", "machine", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> type = attributes.get<QString>("type");
+		const auto [typeAttr] = attributes.get("type");
+		std::optional<QString> type = typeAttr.as<QString>();
 		if (!type)
 			return XmlParser::ElementResult::Skip;
 
@@ -1095,24 +1099,26 @@ bool Preferences::load(QIODevice &input)
 	});
 	xml.onElementEnd({ "preferences", "machine", "device", "recentfile" }, [&](std::u8string &&content)
 	{
-			QString path = QDir::fromNativeSeparators(util::toQString(content));
+		QString path = QDir::fromNativeSeparators(util::toQString(content));
 		if (!path.trimmed().isEmpty())
 			m_machine_info[current_machine_name].m_recentDeviceFiles[current_device_type].push_back(std::move(path));
 	});
 	xml.onElementBegin({ "preferences", "software" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<QString> list = attributes.get<QString>("list");
-		std::optional<QString> name = attributes.get<QString>("name");
+		const auto [listAttr, nameAttr, statusAttr] = attributes.get("list", "name", "audit_status");
+		std::optional<QString> list = listAttr.as<QString>();
+		std::optional<QString> name = nameAttr.as<QString>();
 		if (list && name)
 		{
-			AuditStatus status = attributes.get<AuditStatus>("audit_status", s_audit_status_parser).value_or(AuditStatus::Unknown);
+			AuditStatus status = statusAttr.as<AuditStatus>(s_audit_status_parser).value_or(AuditStatus::Unknown);
 			setSoftwareAuditStatus(*list, *name, status);
 		}
 	});
 	xml.onElementBegin({ "preferences", "mameiniimport" }, [&](const XmlParser::Attributes &attributes)
 	{
-		std::optional<global_path_type> setting = attributes.get<global_path_type>("setting", s_globalPathTypeMameSettingParser);
-		std::optional<MameIniImportActionPreference> preference = attributes.get<MameIniImportActionPreference>("preference", g_mameIniImportActionPreferenceParser);
+		const auto [settingAttr, preferenceAttr] = attributes.get("setting", "preference");
+		std::optional<global_path_type> setting = settingAttr.as<global_path_type>(s_globalPathTypeMameSettingParser);
+		std::optional<MameIniImportActionPreference> preference = preferenceAttr.as<MameIniImportActionPreference>(g_mameIniImportActionPreferenceParser);
 		if (setting)
 			setMameIniImportActionPreference(*setting, preference);
 	});

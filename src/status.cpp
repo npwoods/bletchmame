@@ -117,27 +117,32 @@ status::update status::update::read(QIODevice &input_stream)
 	XmlParser xml;
 	xml.onElementBegin({ "status" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [phaseAttr, pausedAttr, pollingInputSeqAttr, hasInputUsingMouseAttr, hasMouseEnabledProblemAttr, startupTextAttr, debuggerPresentAttr]
+			= attributes.get("phase", "paused", "polling_input_seq", "has_input_using_mouse", "has_mouse_enabled_problem", "startup_text", "debugger_present");
 		rootTagParseCount++;
-		result.m_phase						= attributes.get<status::machine_phase>("phase", s_machine_phase_parser);
-		result.m_paused						= attributes.get<bool>("paused");
-		result.m_polling_input_seq			= attributes.get<bool>("polling_input_seq");
-		result.m_has_input_using_mouse		= attributes.get<bool>("has_input_using_mouse");
-		result.m_has_mouse_enabled_problem	= attributes.get<bool>("has_mouse_enabled_problem");
-		result.m_startup_text				= attributes.get<QString>("startup_text");
-		result.m_debugger_present			= attributes.get<bool>("debugger_present");
+		result.m_phase						= phaseAttr.as<status::machine_phase>(s_machine_phase_parser);
+		result.m_paused						= pausedAttr.as<bool>();
+		result.m_polling_input_seq			= pollingInputSeqAttr.as<bool>();
+		result.m_has_input_using_mouse		= hasInputUsingMouseAttr.as<bool>();
+		result.m_has_mouse_enabled_problem	= hasMouseEnabledProblemAttr.as<bool>();
+		result.m_startup_text				= startupTextAttr.as<QString>();
+		result.m_debugger_present			= debuggerPresentAttr.as<bool>();
 	});
 	xml.onElementBegin({ "status", "video" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_speed_percent				= attributes.get<float>("speed_percent");
-		result.m_frameskip					= attributes.get<QString>("frameskip");
-		result.m_effective_frameskip		= attributes.get<int>("effective_frameskip");
-		result.m_throttled					= attributes.get<bool>("throttled");
-		result.m_throttle_rate				= attributes.get<float>("throttle_rate");
-		result.m_is_recording				= attributes.get<bool>("is_recording");
+		const auto [speedPercentAttr, frameskipAttr, effectiveFrameskipAttr, throttledAttr, throttleRateAttr, isRecordingAttr]
+			= attributes.get("speed_percent", "frameskip", "effective_frameskip", "throttled", "throttle_rate", "is_recording");
+		result.m_speed_percent				= speedPercentAttr.as<float>();
+		result.m_frameskip					= frameskipAttr.as<QString>();
+		result.m_effective_frameskip		= effectiveFrameskipAttr.as<int>();
+		result.m_throttled					= throttledAttr.as<bool>();
+		result.m_throttle_rate				= throttleRateAttr.as<float>();
+		result.m_is_recording				= isRecordingAttr.as<bool>();
 	});
 	xml.onElementBegin({ "status", "sound" }, [&](const XmlParser::Attributes &attributes)
 	{
-		result.m_sound_attenuation			= attributes.get<int>("attenuation");
+		const auto [attenuationAttr] = attributes.get("attenuation");
+		result.m_sound_attenuation			= attenuationAttr.as<int>();
 	});
 	xml.onElementBegin({ "status", "images" }, [&](const XmlParser::Attributes &)
 	{
@@ -145,28 +150,33 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "images", "image" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [tagAttr, filenameAttr] = attributes.get("tag", "filename");
 		image &image = result.m_images->emplace_back();
-		image.m_tag							= attributes.get<QString>("tag").value_or("");
-		image.m_file_name					= attributes.get<QString>("filename").value_or("");
+		image.m_tag							= tagAttr.as<QString>().value_or("");
+		image.m_file_name					= filenameAttr.as<QString>().value_or("");
 		normalize_tag(image.m_tag);
 	});
 	xml.onElementBegin({ "status", "images", "image", "details"}, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [instanceNameAttr, isReadableAttr, isWriteableAttr, isCreatableAttr, mustBeLoadedAttr] = attributes.get(
+			"instance_name", "is_readable", "is_writeable", "is_creatable", "must_be_loaded");
+
 		image &image = util::last(*result.m_images);
 		image.m_details = std::make_shared<image_details>();
 		image_details &details = *image.m_details;
-		details.m_instance_name				= attributes.get<QString>("instance_name").value_or("");
-		details.m_is_readable				= attributes.get<bool>("is_readable").value_or(false);
-		details.m_is_writeable				= attributes.get<bool>("is_writeable").value_or(false);
-		details.m_is_creatable				= attributes.get<bool>("is_creatable").value_or(false);
-		details.m_must_be_loaded			= attributes.get<bool>("must_be_loaded").value_or(false);
+		details.m_instance_name				= instanceNameAttr.as<QString>().value_or("");
+		details.m_is_readable				= isReadableAttr.as<bool>().value_or(false);
+		details.m_is_writeable				= isWriteableAttr.as<bool>().value_or(false);
+		details.m_is_creatable				= isCreatableAttr.as<bool>().value_or(false);
+		details.m_must_be_loaded			= mustBeLoadedAttr.as<bool>().value_or(false);
 	});
 	xml.onElementBegin({ "status", "images", "image", "details", "format" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, descriptionAttr] = attributes.get("name", "description");
 		image &image = util::last(*result.m_images);
 		image_format &format = image.m_details->m_formats.emplace_back();
-		format.m_name						= attributes.get<QString>("name").value_or("");
-		format.m_description				= attributes.get<QString>("description").value_or("");
+		format.m_name						= nameAttr.as<QString>().value_or("");
+		format.m_description				= descriptionAttr.as<QString>().value_or("");
 	});
 	xml.onElementEnd({ "status", "images", "image", "details", "format", "extension" }, [&](std::u8string &&content)
 	{
@@ -180,15 +190,17 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "cassettes", "cassette" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [tagAttr, isStoppedAttr, isPlayingAttr, isRecordingAttr, motorStateAttr, speakerStateAttr, positionAttr, lengthAttr]
+			= attributes.get("tag", "is_stopped", "is_playing", "is_recording", "motor_state", "speaker_state", "position", "length");
 		cassette &cassette = result.m_cassettes->emplace_back();
-		cassette.m_tag						= attributes.get<QString>("tag").value_or("");
-		cassette.m_is_stopped				= attributes.get<bool>("is_readable").value_or(false);
-		cassette.m_is_playing				= attributes.get<bool>("is_playing").value_or(false);
-		cassette.m_is_recording				= attributes.get<bool>("is_recording").value_or(false);
-		cassette.m_motor_state				= attributes.get<bool>("motor_state").value_or(false);
-		cassette.m_speaker_state			= attributes.get<bool>("speaker_state").value_or(false);
-		cassette.m_position					= attributes.get<float>("position").value_or(0.0);
-		cassette.m_length					= attributes.get<float>("length").value_or(0.0);
+		cassette.m_tag						= tagAttr.as<QString>().value_or("");
+		cassette.m_is_stopped				= isStoppedAttr.as<bool>().value_or(false);
+		cassette.m_is_playing				= isPlayingAttr.as<bool>().value_or(false);
+		cassette.m_is_recording				= isRecordingAttr.as<bool>().value_or(false);
+		cassette.m_motor_state				= motorStateAttr.as<bool>().value_or(false);
+		cassette.m_speaker_state			= speakerStateAttr.as<bool>().value_or(false);
+		cassette.m_position					= positionAttr.as<float>().value_or(0.0);
+		cassette.m_length					= lengthAttr.as<float>().value_or(0.0);
 		normalize_tag(cassette.m_tag);
 	});
 	xml.onElementBegin({ "status", "slots" }, [&](const XmlParser::Attributes &)
@@ -208,10 +220,11 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "slots", "slot" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, currentOptionAttr, fixedAttr] = attributes.get("name", "current_option", "fixed");
 		slot &slot = result.m_slots->emplace_back();
-		slot.m_name							= attributes.get<QString>("name").value_or("");
-		slot.m_current_option				= attributes.get<QString>("current_option").value_or("");
-		slot.m_fixed						= attributes.get<bool>("fixed").value_or(false);
+		slot.m_name							= nameAttr.as<QString>().value_or("");
+		slot.m_current_option				= currentOptionAttr.as<QString>().value_or("");
+		slot.m_fixed						= fixedAttr.as<bool>().value_or(false);
 		normalize_tag(slot.m_name);
 	});
 	xml.onElementBegin({ "status", "inputs" }, [&](const XmlParser::Attributes &)
@@ -220,24 +233,28 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "inputs", "input" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [portTagAttr, nameAttr, maskAttr, classAttr, groupAttr, playerAttr, typeAttr, isAnalogAttr, firstKeyboardCode, valueAttr]
+			= attributes.get("port_tag", "name", "mask", "class", "group", "player", "type", "is_analog", "first_keyboard_code", "value");
+
 		input &input = result.m_inputs->emplace_back();
-		input.m_port_tag					= attributes.get<QString>("port_tag").value_or("");
-		input.m_name						= attributes.get<QString>("name").value_or("");
-		input.m_mask						= attributes.get<ioport_value>("mask").value_or(0);
-		input.m_class						= attributes.get<status::input::input_class>("class", s_input_class_parser).value_or(status::input::input_class::UNKNOWN);
-		input.m_group						= attributes.get<int>("group").value_or(0);
-		input.m_player						= attributes.get<int>("player").value_or(0);
-		input.m_type						= attributes.get<int>("type").value_or(0);
-		input.m_is_analog					= attributes.get<bool>("is_analog").value_or(false);
-		input.m_first_keyboard_code			= attributes.get<int>("first_keyboard_code").value_or(0);
-		input.m_value						= attributes.get<ioport_value>("value").value_or(0);
+		input.m_port_tag					= portTagAttr.as<QString>().value_or("");
+		input.m_name						= nameAttr.as<QString>().value_or("");
+		input.m_mask						= maskAttr.as<ioport_value>().value_or(0);
+		input.m_class						= classAttr.as<status::input::input_class>(s_input_class_parser).value_or(status::input::input_class::UNKNOWN);
+		input.m_group						= groupAttr.as<int>().value_or(0);
+		input.m_player						= playerAttr.as<int>().value_or(0);
+		input.m_type						= typeAttr.as<int>().value_or(0);
+		input.m_is_analog					= isAnalogAttr.as<bool>().value_or(false);
+		input.m_first_keyboard_code			= firstKeyboardCode.as<int>().value_or(0);
+		input.m_value						= valueAttr.as<ioport_value>().value_or(0);
 		normalize_tag(input.m_port_tag);
 	});
 	xml.onElementBegin({ "status", "inputs", "input", "seq" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [typeAttr, tokensAttr] = attributes.get("type", "tokens");
 		input_seq &seq = util::last(*result.m_inputs).m_seqs.emplace_back();
-		seq.m_type							= attributes.get<status::input_seq::type>("type", s_inputseq_type_parser).value_or(status::input_seq::type::STANDARD);
-		seq.m_tokens						= attributes.get<QString>("tokens").value_or("");
+		seq.m_type							= typeAttr.as<status::input_seq::type>(s_inputseq_type_parser).value_or(status::input_seq::type::STANDARD);
+		seq.m_tokens						= tokensAttr.as<QString>().value_or("");
 	});
 	xml.onElementBegin({ "status", "input_devices" }, [&](const XmlParser::Attributes &)
 	{
@@ -245,24 +262,27 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "input_devices", "class" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, enabledAttr, multiAttr] = attributes.get("name", "enabled", "multi");
 		input_class &input_class = result.m_input_classes->emplace_back();
-		input_class.m_name					= attributes.get<QString>("name").value_or("");
-		input_class.m_enabled				= attributes.get<bool>("enabled").value_or(false);
-		input_class.m_multi					= attributes.get<bool>("multi").value_or(false);
+		input_class.m_name					= nameAttr.as<QString>().value_or("");
+		input_class.m_enabled				= enabledAttr.as<bool>().value_or(false);
+		input_class.m_multi					= multiAttr.as<bool>().value_or(false);
 	});
 	xml.onElementBegin({ "status", "input_devices", "class", "device" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, idAttr, indexAttr] = attributes.get("name", "id", "devindex");
 		input_device &input_device = result.m_input_classes->back().m_devices.emplace_back();
-		input_device.m_name					= attributes.get<QString>("name").value_or("");
-		input_device.m_id					= attributes.get<QString>("id").value_or("");
-		input_device.m_index				= attributes.get<int>("devindex").value_or(0);
+		input_device.m_name					= nameAttr.as<QString>().value_or("");
+		input_device.m_id					= idAttr.as<QString>().value_or("");
+		input_device.m_index				= indexAttr.as<int>().value_or(0);
 	});
 	xml.onElementBegin({ "status", "input_devices", "class", "device", "item" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, tokenAttr, codeAttr] = attributes.get("name", "token", "code");
 		input_device_item &item = result.m_input_classes->back().m_devices.back().m_items.emplace_back();
-		item.m_name							= attributes.get<QString>("name").value_or("");
-		item.m_token						= attributes.get<QString>("token").value_or("");
-		item.m_code							= attributes.get<QString>("code").value_or("");
+		item.m_name							= nameAttr.as<QString>().value_or("");
+		item.m_token						= tokenAttr.as<QString>().value_or("");
+		item.m_code							= codeAttr.as<QString>().value_or("");
 	});
 	xml.onElementBegin({ "status", "cheats" }, [&](const XmlParser::Attributes &attributes)
 	{
@@ -270,31 +290,35 @@ status::update status::update::read(QIODevice &input_stream)
 	});
 	xml.onElementBegin({ "status", "cheats", "cheat" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [idAttr, enabledAttr, hasRunScriptAttr, hasOnScriptAttr, hasOffScriptAttr, hasChangeScriptAttr, descriptionAttr, commentAttr]
+			= attributes.get("id", "enabled", "has_run_script", "has_on_script", "has_off_script", "has_change_script", "description", "comment");
 		cheat &cheat = result.m_cheats->emplace_back();
-		cheat.m_id							= attributes.get<QString>("id").value_or("");
-		cheat.m_enabled						= attributes.get<bool>("enabled").value_or(false);
-		cheat.m_has_run_script				= attributes.get<bool>("has_run_script").value_or(false);
-		cheat.m_has_on_script				= attributes.get<bool>("has_on_script").value_or(false);
-		cheat.m_has_off_script				= attributes.get<bool>("has_off_script").value_or(false);
-		cheat.m_has_change_script			= attributes.get<bool>("has_change_script").value_or(false);
-		cheat.m_description					= attributes.get<QString>("description").value_or("");
-		cheat.m_comment						= attributes.get<QString>("comment").value_or("");
+		cheat.m_id							= idAttr.as<QString>().value_or("");
+		cheat.m_enabled						= enabledAttr.as<bool>().value_or(false);
+		cheat.m_has_run_script				= hasRunScriptAttr.as<bool>().value_or(false);
+		cheat.m_has_on_script				= hasOnScriptAttr.as<bool>().value_or(false);
+		cheat.m_has_off_script				= hasOffScriptAttr.as<bool>().value_or(false);
+		cheat.m_has_change_script			= hasChangeScriptAttr.as<bool>().value_or(false);
+		cheat.m_description					= descriptionAttr.as<QString>().value_or("");
+		cheat.m_comment						= commentAttr.as<QString>().value_or("");
 	});
 	xml.onElementBegin({ "status", "cheats", "cheat", "parameter" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [valueAttr, minimumAttr, maximumAttr, stepAttr] = attributes.get("value", "minimum", "maximum", "step");
 		cheat &cheat = util::last(*result.m_cheats);
 		cheat_parameter &param = cheat.m_parameter.emplace();
-		param.m_value						= attributes.get<std::uint64_t>("value").value_or(0);
-		param.m_minimum						= attributes.get<std::uint64_t>("minimum").value_or(0);
-		param.m_maximum						= attributes.get<std::uint64_t>("maximum").value_or(0);
-		param.m_step						= attributes.get<std::uint64_t>("step").value_or(0);
+		param.m_value						= valueAttr.as<std::uint64_t>().value_or(0);
+		param.m_minimum						= minimumAttr.as<std::uint64_t>().value_or(0);
+		param.m_maximum						= maximumAttr.as<std::uint64_t>().value_or(0);
+		param.m_step						= stepAttr.as<std::uint64_t>().value_or(0);
 	});
 	xml.onElementBegin({ "status", "cheats", "cheat", "parameter", "item" }, [&](const XmlParser::Attributes &attributes)
 	{
+		const auto [valueAttr, textAttr] = attributes.get("value", "text");
 		cheat &cheat = util::last(*result.m_cheats);
 		cheat_parameter &param = *cheat.m_parameter;
-		std::uint64_t value					= attributes.get<std::uint64_t>("value").value_or(0);
-		QString text						= attributes.get<QString>("text").value_or("");
+		std::uint64_t value					= valueAttr.as<std::uint64_t>().value_or(0);
+		QString text						= textAttr.as<QString>().value_or("");
 		param.m_items[value] = std::move(text);
 	});
 

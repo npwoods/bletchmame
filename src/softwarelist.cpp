@@ -26,13 +26,15 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 	std::string current_device_extensions;
 	xml.onElementBegin({ "softwarelist" }, [this](const XmlParser::Attributes &attributes)
 	{
-		m_name			= attributes.get<QString>("name").value_or("");
-		m_description	= attributes.get<QString>("description").value_or("");
+		const auto [nameAttr, descriptionAttr] = attributes.get("name", "description");
+		m_name			= nameAttr.as<QString>().value_or("");
+		m_description	= nameAttr.as<QString>().value_or("");
 	});
 	xml.onElementBegin({ "softwarelist", "software" }, [this](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr] = attributes.get("name");
 		software &s = m_software.emplace_back(*this);
-		s.m_name		= attributes.get<QString>("name").value_or("");
+		s.m_name		= nameAttr.as<QString>().value_or("");
 		s.m_parts.reserve(16);
 	});
 	xml.onElementEnd({ "softwarelist", "software" }, [this]()
@@ -53,28 +55,31 @@ bool software_list::load(QIODevice &stream, QString &error_message)
 	});
 	xml.onElementBegin({ "softwarelist", "software", "part" }, [this](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, interfaceAttr] = attributes.get("name", "interface");
 		software &s		= util::last(m_software);
 		part &p			= s.m_parts.emplace_back();
-		p.m_name		= attributes.get<QString>("name").value_or("");
-		p.m_interface	= attributes.get<QString>("interface").value_or("");
+		p.m_name		= nameAttr.as<QString>().value_or("");
+		p.m_interface	= interfaceAttr.as<QString>().value_or("");
 	});
 	xml.onElementBegin({ "softwarelist", "software", "part", "dataarea" }, [this](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr] = attributes.get("name");
 		software &s		= util::last(m_software);
 		part &p			= util::last(s.m_parts);
 		dataarea &a		= p.m_dataareas.emplace_back();
-		a.m_name		= attributes.get<QString>("name").value_or("");
+		a.m_name		= nameAttr.as<QString>().value_or("");
 	});
 	xml.onElementBegin({ "softwarelist", "software", "part", "dataarea", "rom" }, [this](const XmlParser::Attributes &attributes)
 	{
+		const auto [nameAttr, sizeAttr, crcAttr, sha1Attr] = attributes.get("name", "size", "crc", "sha1");
 		software &s		= util::last(m_software);
 		part &p			= util::last(s.m_parts);
 		dataarea &a		= util::last(p.m_dataareas);
 		rom &r			= a.m_roms.emplace_back();
-		r.m_name		= attributes.get<QString>("name").value_or("");
-		r.m_size		= attributes.get<std::uint64_t>("size");
-		r.m_crc32		= attributes.get<std::uint32_t>("crc", 16);
-		r.m_sha1		= util::fixedByteArrayFromHex<20>(attributes.get<std::u8string_view>("sha1"));
+		r.m_name		= nameAttr.as<QString>().value_or("");
+		r.m_size		= sizeAttr.as<std::uint64_t>();
+		r.m_crc32		= crcAttr.as<std::uint32_t>(16);
+		r.m_sha1		= util::fixedByteArrayFromHex<20>(sha1Attr.as<std::u8string_view>());
 	});
 
 	// parse the XML, but be bold and try to reserve lots of space
