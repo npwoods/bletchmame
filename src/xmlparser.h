@@ -94,7 +94,7 @@ public:
 				if (func(*text, funcResult))
 					result = std::move(funcResult);
 				else
-					[[unlikely]] reportAttributeParsingError(m_valuePtr[-1], m_valuePtr[0]);
+					reportAttributeParsingError(m_valuePtr[-1], m_valuePtr[0]);
 
 			}
 			return result;
