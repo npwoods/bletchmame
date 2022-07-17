@@ -319,7 +319,6 @@ bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDat
 
 void XmlParser::appendCurrentXmlError() noexcept
 {
-	[[unlikely]];
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *errorString = XML_ErrorString(code);
 	appendError(errorString);
@@ -332,7 +331,6 @@ void XmlParser::appendCurrentXmlError() noexcept
 
 void XmlParser::appendError(QString &&message) noexcept
 {
-	[[unlikely]];
 	Error &error = m_errors.emplace_back();
 	error.m_lineNumber = XML_GetCurrentLineNumber(m_parser);
 	error.m_columnNumber = XML_GetCurrentColumnNumber(m_parser);
@@ -347,7 +345,6 @@ void XmlParser::appendError(QString &&message) noexcept
 
 QString XmlParser::errorContext() const noexcept
 {
-	[[unlikely]];
 	int contextOffset = 0, contextSize = 0;
 	const char *contextString = XML_GetInputContext(m_parser, &contextOffset, &contextSize);
 	return errorContext(contextString, contextOffset, contextSize);
@@ -360,7 +357,6 @@ QString XmlParser::errorContext() const noexcept
 
 QString XmlParser::errorContext(const char *contextString, int contextOffset, int contextSize) noexcept
 {
-	[[unlikely]];
 	QString result;
 	if (contextString)
 	{
@@ -798,7 +794,6 @@ template<> std::optional<std::u8string_view> XmlParser::Attribute::as<std::u8str
 
 void XmlParser::Attribute::reportAttributeParsingError(const char *attrName, const char *attrValue) noexcept
 {
-	[[unlikely]];
 	QString message = QString("Error parsing attribute \"%1\" (text=\"%2\")").arg(
 		QString(attrName),
 		QString(attrValue));
