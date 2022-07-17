@@ -317,7 +317,7 @@ bool XmlParser::parseSingleBuffer(QIODevice &input, std::optional<QFile> &xmlDat
 //  appendCurrentXmlError
 //-------------------------------------------------
 
-void XmlParser::appendCurrentXmlError() noexcept
+ATTR_COLD void XmlParser::appendCurrentXmlError() noexcept
 {
 	XML_Error code = XML_GetErrorCode(m_parser);
 	const char *errorString = XML_ErrorString(code);
@@ -329,7 +329,7 @@ void XmlParser::appendCurrentXmlError() noexcept
 //  appendError
 //-------------------------------------------------
 
-void XmlParser::appendError(QString &&message) noexcept
+ATTR_COLD void XmlParser::appendError(QString &&message) noexcept
 {
 	Error &error = m_errors.emplace_back();
 	error.m_lineNumber = XML_GetCurrentLineNumber(m_parser);
@@ -343,8 +343,8 @@ void XmlParser::appendError(QString &&message) noexcept
 //  errorContext
 //-------------------------------------------------
 
-QString XmlParser::errorContext() const noexcept
-{
+ATTR_COLD QString XmlParser::errorContext() const noexcept
+{	
 	int contextOffset = 0, contextSize = 0;
 	const char *contextString = XML_GetInputContext(m_parser, &contextOffset, &contextSize);
 	return errorContext(contextString, contextOffset, contextSize);
@@ -355,7 +355,7 @@ QString XmlParser::errorContext() const noexcept
 //  errorContext
 //-------------------------------------------------
 
-QString XmlParser::errorContext(const char *contextString, int contextOffset, int contextSize) noexcept
+ATTR_COLD QString XmlParser::errorContext(const char *contextString, int contextOffset, int contextSize) noexcept
 {
 	QString result;
 	if (contextString)
@@ -388,9 +388,8 @@ QString XmlParser::errorContext(const char *contextString, int contextOffset, in
 //  errorMessagesSingleString
 //-------------------------------------------------
 
-QString XmlParser::errorMessagesSingleString() const noexcept
+ATTR_COLD QString XmlParser::errorMessagesSingleString() const noexcept
 {
-	[[unlikely]];
 	QString result;
 	for (const Error &error : m_errors)
 	{
@@ -792,7 +791,7 @@ template<> std::optional<std::u8string_view> XmlParser::Attribute::as<std::u8str
 //  Attribute::reportAttributeParsingError
 //-------------------------------------------------
 
-void XmlParser::Attribute::reportAttributeParsingError(const char *attrName, const char *attrValue) noexcept
+ATTR_COLD void XmlParser::Attribute::reportAttributeParsingError(const char *attrName, const char *attrValue) noexcept
 {
 	QString message = QString("Error parsing attribute \"%1\" (text=\"%2\")").arg(
 		QString(attrName),
