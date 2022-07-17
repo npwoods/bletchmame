@@ -11,6 +11,11 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+// Qt headers
+#include <QFileInfo>
+#include <QWidget>
+
+// standard headers
 #include <unordered_map>
 #include <optional>
 #include <functional>
@@ -18,9 +23,6 @@
 #include <stdexcept>
 #include <string_view>
 #include <wctype.h>
-
-#include <QFileInfo>
-#include <QWidget>
 
 
 //**************************************************************************
@@ -30,6 +32,17 @@
 // we use QTreeView::expandRecursively(), which was introduced in Qt 5.13
 #if QT_VERSION < QT_VERSION_CHECK(5, 13, 0)
 #error BletchMAME requires Qt version 5.13
+#endif
+
+
+//**************************************************************************
+//  ATTRIBUTES
+//**************************************************************************
+
+#if defined(__GNUC__) || defined(__clang__)
+#define ATTR_COLD __attribute__((cold))
+#else
+#define ATTR_COLD
 #endif
 
 
@@ -254,10 +267,6 @@ constexpr int enum_count()
 	return static_cast<int>(T::Max) + 1;
 }
 
-
-//**************************************************************************
-//  QSTRING HELPERS
-//**************************************************************************
 
 //**************************************************************************
 //  STRING & CONTAINER UTILITIES
