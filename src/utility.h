@@ -278,6 +278,7 @@ extern const QString g_empty_string;
 // string functions
 QString toQString(std::u8string_view s);
 std::u8string toU8String(const QString &s);
+std::u8string_view trim(std::u8string_view s);
 
 //-------------------------------------------------
 //  string_split

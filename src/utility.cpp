@@ -107,6 +107,20 @@ std::u8string util::toU8String(const QString &s)
 
 
 //-------------------------------------------------
+//  trim
+//-------------------------------------------------
+
+std::u8string_view util::trim(std::u8string_view s)
+{
+	auto front_iter = std::find_if(s.begin(), s.end(), [](char8_t ch) { return !isspace(ch); });
+	auto back_iter = front_iter != s.end()
+		? std::find_if(s.rbegin(), s.rend(), [](char8_t ch) { return !isspace(ch); }).base()
+		: s.end();
+	return std::u8string_view(front_iter, back_iter);
+}
+
+
+//-------------------------------------------------
 //  globalPositionBelowWidget
 //-------------------------------------------------
 

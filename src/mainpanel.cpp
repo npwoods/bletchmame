@@ -116,6 +116,7 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	, m_host(host)
 	, m_infoDb(infoDb)
 	, m_iconLoader(prefs)
+	, m_historyWatcher(m_prefs, host.taskDispatcher())
 {
 	// set up Qt form
 	m_ui = std::make_unique<Ui::MainPanel>();
@@ -214,14 +215,22 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 
 	// set up splitters
 	setupSplitter(*m_ui->machinesSplitter, &Preferences::getMachineSplitterSizes, &Preferences::setMachineSplitterSizes);
+	setupSplitter(*m_ui->softwareSplitter, &Preferences::getSoftwareSplitterSizes, &Preferences::setSoftwareSplitterSizes);
 
 	// set up splitter togglers for the machines view
 	(void)new SplitterViewToggler(this, *m_ui->machinesFoldersToggleButton,	*m_ui->machinesSplitter, 0, 1, [this]() { persistSplitterSizes(*m_ui->machinesSplitter, &Preferences::setMachineSplitterSizes); });
 	(void)new SplitterViewToggler(this, *m_ui->machinesInfoToggleButton,	*m_ui->machinesSplitter, 2, 1, [this]() { persistSplitterSizes(*m_ui->machinesSplitter, &Preferences::setMachineSplitterSizes); });
+	(void)new SplitterViewToggler(this, *m_ui->softwareInfoToggleButton,	*m_ui->softwareSplitter, 1, 0, [this]() { persistSplitterSizes(*m_ui->softwareSplitter, &Preferences::setSoftwareSplitterSizes); });
 
 	// set up a resize event filter to resize snapshot imagery
 	QObject &eventFilter = *new SnapshotViewEventFilter(*this);
 	m_ui->machinesSnapLabel->installEventFilter(&eventFilter);
+
+	// prepare to monitor history XML files
+	connect(&m_historyWatcher, &HistoryWatcher::historyFileChanged, this, [this]()
+	{
+		updateStatusFromSelection();
+	});
 
 	// monitor prefs changes
 	connect(&m_prefs, &Preferences::globalPathRomsChanged, this, [this](const QString &newPath)
@@ -836,6 +845,7 @@ void MainPanel::updateStatusFromSelection()
 	std::shared_ptr<profiles::profile> selectedProfile;
 	QString description, statusString, totalString;
 	QTableView *tableView;
+	std::optional<Identifier> historyIdentifier;
 
 	Preferences::list_view_type list_view_type = m_prefs.getSelectedTab();
 	switch (list_view_type)
@@ -849,6 +859,8 @@ void MainPanel::updateStatusFromSelection()
 		}
 		totalString = "%1 machines";
 		tableView = m_ui->machinesTableView;
+		if (selectedMachine)
+			historyIdentifier = MachineIdentifier(selectedMachine->name());
 		break;
 
 	case Preferences::list_view_type::SOFTWARELIST:
@@ -859,6 +871,8 @@ void MainPanel::updateStatusFromSelection()
 		}
 		totalString = "%1 softwares";
 		tableView = m_ui->softwareTableView;
+		if (selectedSoftware)
+			historyIdentifier = SoftwareIdentifier(selectedSoftware->parent().name(), selectedSoftware->name());
 		break;
 
 	case Preferences::list_view_type::PROFILE:
@@ -879,6 +893,15 @@ void MainPanel::updateStatusFromSelection()
 	setStatusMessage(description.isEmpty() ? "No selection" : std::move(description));
 	m_statusWidgets[0].setText(statusString);
 	m_statusWidgets[1].setText(totalString.arg(tableView->model()->rowCount()));
+
+	// and set up the history
+	QString historyText = historyIdentifier
+		? m_historyWatcher.db().getRichText(*historyIdentifier)
+		: QString();
+	m_ui->machinesHistoryScrollArea->setVisible(list_view_type == Preferences::list_view_type::MACHINE && !historyText.isEmpty());
+	m_ui->machinesHistoryLabel->setText(list_view_type == Preferences::list_view_type::MACHINE ? historyText : "");
+	m_ui->softwareHistoryScrollArea->setVisible(list_view_type == Preferences::list_view_type::SOFTWARELIST && !historyText.isEmpty());
+	m_ui->softwareHistoryLabel->setText(list_view_type == Preferences::list_view_type::SOFTWARELIST ? historyText : "");
 }
 
 

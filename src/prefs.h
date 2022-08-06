@@ -87,8 +87,9 @@ public:
 		PROFILES,
 		CHEATS,
 		SNAPSHOTS,
+		HISTORY,
 
-		Max = SNAPSHOTS
+		Max = HISTORY
 	};
 
 	// paths that are per-machine
@@ -181,6 +182,8 @@ public:
 
 	const QList<int> &getMachineSplitterSizes() const													{ return m_machine_splitter_sizes; }
 	void setMachineSplitterSizes(QList<int> &&sizes)													{ m_machine_splitter_sizes = std::move(sizes); }
+	const QList<int> &getSoftwareSplitterSizes() const													{ return m_software_splitter_sizes; }
+	void setSoftwareSplitterSizes(QList<int> &&sizes)													{ m_software_splitter_sizes = std::move(sizes); }
 
 	FolderPrefs getFolderPrefs(const QString &folder) const;
 	void setFolderPrefs(const QString &folder, FolderPrefs &&prefs);
@@ -255,6 +258,7 @@ signals:
 	void globalPathIconsChanged(const QString &newPath);
 	void globalPathProfilesChanged(const QString &newPath);
 	void globalPathSnapshotsChanged(const QString &newPath);
+	void globalPathHistoryChanged(const QString &newPath);
 
 	// bulk dropping of audit statuses
 	void bulkDroppedMachineAuditStatuses();
@@ -316,6 +320,7 @@ private:
 	list_view_type																				m_selected_tab;
 	QString																						m_machine_folder_tree_selection;
 	QList<int>																					m_machine_splitter_sizes;
+	QList<int>																					m_software_splitter_sizes;
 	std::map<QString, FolderPrefs>																m_folderPrefs;
 	std::map<QString, std::set<QString>>														m_customFolders;
 	std::unordered_map<QString, QString>														m_list_view_selection;

@@ -233,6 +233,7 @@ private:
 	void watchForImageMount(const QString &tag);
 	bool attachToMainWindow() const;
 	QString attachWidgetId() const;
+	virtual TaskDispatcher &taskDispatcher() override final { return m_taskDispatcher; }
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) override final;
 	virtual info::machine getRunningMachine() const override final;
 	virtual Preferences &getPreferences() override final;

@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.16 (TBD)
+	- Added support for viewing history.xml files (for both machines and software list items)
 	- Added support for 7-zip
 
 - 2.15 (2022-May-22)
