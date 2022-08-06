@@ -86,6 +86,27 @@ std::size_t util::bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
 
 
 //-------------------------------------------------
+//  toQString
+//-------------------------------------------------
+
+QString util::toQString(std::u8string_view s)
+{
+	return QString::fromUtf8(s.data(), s.size());
+}
+
+
+//-------------------------------------------------
+//  toU8String
+//-------------------------------------------------
+
+std::u8string util::toU8String(const QString &s)
+{
+	QByteArray byteArray = s.toUtf8();
+	return std::u8string((const char8_t *)byteArray.data(), (size_t)byteArray.size());
+}
+
+
+//-------------------------------------------------
 //  globalPositionBelowWidget
 //-------------------------------------------------
 
