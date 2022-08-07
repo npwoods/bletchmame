@@ -11,9 +11,9 @@
 
 #include <QEvent>
 #include <optional>
-#include <variant>
 
 #include "audit.h"
+#include "identifier.h"
 #include "info.h"
 #include "task.h"
 #include "throttler.h"
@@ -23,90 +23,19 @@
 //  TYPE DECLARATIONS
 //**************************************************************************
 
-// ======================> MachineAuditIdentifier
-
-class MachineAuditIdentifier
-{
-public:
-	// ctor
-	MachineAuditIdentifier(const QString &machineName);
-	MachineAuditIdentifier(const MachineAuditIdentifier &) = default;
-	MachineAuditIdentifier(MachineAuditIdentifier &&) = default;
-
-	// operators
-	MachineAuditIdentifier &operator=(const MachineAuditIdentifier &) = default;
-	bool operator==(const MachineAuditIdentifier &) const = default;
-
-	// accessors
-	const QString &machineName() const { return m_machineName; }
-
-private:
-	QString	m_machineName;
-};
-
-
-namespace std
-{
-	template<>
-	struct hash<MachineAuditIdentifier>
-	{
-		std::size_t operator()(const MachineAuditIdentifier &x) const;
-	};
-}
-
-
-// ======================> SoftwareAuditIdentifier
-
-class SoftwareAuditIdentifier
-{
-public:
-	// ctor
-	SoftwareAuditIdentifier(const QString &softwareList, const QString &software);
-	SoftwareAuditIdentifier(const SoftwareAuditIdentifier &) = default;
-	SoftwareAuditIdentifier(SoftwareAuditIdentifier &&) = default;
-
-	// operators
-	SoftwareAuditIdentifier &operator=(const SoftwareAuditIdentifier &) = default;
-	bool operator==(const SoftwareAuditIdentifier &) const = default;
-
-	// accessors
-	const QString &softwareList() const { return m_softwareList; }
-	const QString &software() const { return m_software; }
-
-private:
-	QString	m_softwareList;
-	QString	m_software;
-};
-
-
-namespace std
-{
-	template<>
-	struct hash<SoftwareAuditIdentifier>
-	{
-		std::size_t operator()(const SoftwareAuditIdentifier &x) const;
-	};
-}
-
-
-// ======================> AuditIdentifier
-
-typedef std::variant<MachineAuditIdentifier, SoftwareAuditIdentifier> AuditIdentifier;
-
-
 // ======================> AuditResult
 
 class AuditResult
 {
 public:
-	AuditResult(AuditIdentifier &&identifier, AuditStatus status);
+	AuditResult(Identifier &&identifier, AuditStatus status);
 
 	// accessors
-	const AuditIdentifier &identifier() const { return m_identifier; }
+	const Identifier &identifier() const { return m_identifier; }
 	AuditStatus status() const { return m_status; }
 
 private:
-	AuditIdentifier	m_identifier;
+	Identifier	m_identifier;
 	AuditStatus	m_status;
 };
 
@@ -171,7 +100,7 @@ public:
 
 	// accessors
 	bool isEmpty() const { return m_entries.empty(); }
-	std::vector<AuditIdentifier> getIdentifiers() const;
+	std::vector<Identifier> getIdentifiers() const;
 
 protected:
 	// virtuals
@@ -182,9 +111,9 @@ private:
 
 	struct Entry
 	{
-		Entry(AuditIdentifier &&identifier);
+		Entry(Identifier &&identifier);
 
-		AuditIdentifier	m_identifier;
+		Identifier		m_identifier;
 		Audit			m_audit;
 	};
 

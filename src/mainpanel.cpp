@@ -1116,23 +1116,26 @@ void MainPanel::setAuditStatuses(const std::vector<AuditResult> &results)
 		// determine the type of audit
 		std::visit(util::overloaded
 		{
-			[this, &result](const MachineAuditIdentifier &identifier)
+			[this, &result](const MachineIdentifier &identifier)
 			{
 				// does this machine audit result represent a change?
-				if (m_prefs.getMachineAuditStatus(identifier.machineName()) != result.status())
+				QString machineName = util::toQString(identifier.machineName());
+				if (m_prefs.getMachineAuditStatus(machineName) != result.status())
 				{
 					// if so, record it
-					m_prefs.setMachineAuditStatus(identifier.machineName(), result.status());
+					m_prefs.setMachineAuditStatus(machineName, result.status());
 					machineListItemModel().auditStatusChanged(identifier);
 				}
 			},
-			[this, &result](const SoftwareAuditIdentifier &identifier)
+			[this, &result](const SoftwareIdentifier &identifier)
 			{
 				// does this software audit result represent a change?
-				if (m_prefs.getSoftwareAuditStatus(identifier.softwareList(), identifier.software()) != result.status())
+				QString softwareList = util::toQString(identifier.softwareList());
+				QString software = util::toQString(identifier.software());
+				if (m_prefs.getSoftwareAuditStatus(softwareList, software) != result.status())
 				{
 					// if so, record it
-					m_prefs.setSoftwareAuditStatus(identifier.softwareList(), identifier.software(), result.status());
+					m_prefs.setSoftwareAuditStatus(softwareList, software, result.status());
 					softwareListItemModel().auditStatusChanged(identifier);
 				}
 			}

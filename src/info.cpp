@@ -544,6 +544,17 @@ std::optional<info::machine> info::database::find_machine(const QString &machine
 
 
 //-------------------------------------------------
+//  database::find_machine
+//-------------------------------------------------
+
+std::optional<info::machine> info::database::find_machine(std::u8string_view machine_name) const noexcept
+{
+	QString machineNameQString = util::toQString(machine_name);
+	return find_machine(machineNameQString);
+}
+
+
+//-------------------------------------------------
 //  info::database::State ctor
 //-------------------------------------------------
 

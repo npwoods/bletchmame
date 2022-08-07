@@ -32,7 +32,7 @@ AuditQueue::AuditQueue(const Preferences &prefs, const info::database &infoDb, c
 //  push
 //-------------------------------------------------
 
-void AuditQueue::push(AuditIdentifier &&identifier, bool isPrioritized)
+void AuditQueue::push(Identifier &&identifier, bool isPrioritized)
 {
 	// has this entry already been pushed?
 	auto mapIter = m_auditTaskMap.find(identifier);
@@ -77,7 +77,7 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 	const std::uint64_t MAX_MEDIA_SIZE_PER_TASK = 50000000;
 
 	// prepare a vector of entries
-	std::vector<AuditIdentifier> entries;
+	std::vector<Identifier> entries;
 	entries.reserve(m_maxAuditsPerTask);
 	std::uint64_t totalMediaSize = 0;
 
@@ -87,7 +87,7 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 		&& totalMediaSize < MAX_MEDIA_SIZE_PER_TASK)	// and finally did we hit the maximum media size?
 	{
 		// find an undispatched entry
-		AuditIdentifier &entry = m_undispatchedAudits.front();
+		Identifier &entry = m_undispatchedAudits.front();
 
 		// estimate its size and bail if it would be too big
 		std::uint64_t mediaSize = getExpectedMediaSize(entry);
@@ -116,12 +116,12 @@ AuditTask::ptr AuditQueue::tryCreateAuditTask()
 //  getExpectedMediaSize
 //-------------------------------------------------
 
-std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdentifier) const
+std::uint64_t AuditQueue::getExpectedMediaSize(const Identifier &auditIdentifier) const
 {
 	std::uint64_t result = 0;
 	std::visit(util::overloaded
 	{
-		[this, &result] (const MachineAuditIdentifier &x)
+		[this, &result] (const MachineIdentifier &x)
 		{
 			// machine audit
 			std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
@@ -131,7 +131,7 @@ std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdent
 					result += rom.size();
 			}
 		},
-		[this, &result](const SoftwareAuditIdentifier &x)
+		[this, &result](const SoftwareIdentifier &x)
 		{
 			// software audit
 			const software_list::software *software = findSoftware(x.softwareList(), x.software());
@@ -159,23 +159,23 @@ std::uint64_t AuditQueue::getExpectedMediaSize(const AuditIdentifier &auditIdent
 //  createAuditTask
 //-------------------------------------------------
 
-AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers) const
+AuditTask::ptr AuditQueue::createAuditTask(const std::vector<Identifier> &auditIdentifiers) const
 {
 	// create an audit task with a single audit
 	AuditTask::ptr auditTask = std::make_shared<AuditTask>(false, currentCookie());
 
-	for (const AuditIdentifier &identifier : auditIdentifiers)
+	for (const Identifier &identifier : auditIdentifiers)
 	{
 		std::visit(util::overloaded
 		{
-			[this, &auditTask](const MachineAuditIdentifier &x)
+			[this, &auditTask](const MachineIdentifier &x)
 			{
 				// machine audit
 				std::optional<info::machine> machine = m_infoDb.find_machine(x.machineName());
 				if (machine)
 					auditTask->addMachineAudit(m_prefs, *machine);
 			},
-			[this, &auditTask](const SoftwareAuditIdentifier &x)
+			[this, &auditTask](const SoftwareIdentifier &x)
 			{
 				// software audit
 				const software_list::software *software = findSoftware(x.softwareList(), x.software());
@@ -192,20 +192,22 @@ AuditTask::ptr AuditQueue::createAuditTask(const std::vector<AuditIdentifier> &a
 //  findSoftware
 //-------------------------------------------------
 
-const software_list::software *AuditQueue::findSoftware(const QString &softwareList, const QString &software) const
+const software_list::software *AuditQueue::findSoftware(std::u8string_view softwareList, std::u8string_view software) const
 {
 	// find the software list with the specified name
-	auto softwareListIter = std::ranges::find_if(m_softwareListCollection.software_lists(), [&softwareList](const software_list::ptr &ptr)
+	QString softwareListQString = util::toQString(softwareList);
+	auto softwareListIter = std::ranges::find_if(m_softwareListCollection.software_lists(), [&softwareListQString](const software_list::ptr &ptr)
 	{
-		return ptr->name() == softwareList;
+		return ptr->name() == softwareListQString;
 	});
 	if (softwareListIter == m_softwareListCollection.software_lists().end())
 		return nullptr;
 
 	// find the software with the specified name
-	auto softwareIter = std::ranges::find_if((*softwareListIter)->get_software(), [&software](const software_list::software &sw)
+	QString softwareQString = util::toQString(software);
+	auto softwareIter = std::ranges::find_if((*softwareListIter)->get_software(), [&softwareQString](const software_list::software &sw)
 	{
-		return sw.name() == software;
+		return sw.name() == softwareQString;
 	});
 	if (softwareIter == (*softwareListIter)->get_software().end())
 		return nullptr;

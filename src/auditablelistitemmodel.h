@@ -28,8 +28,8 @@ public:
 	using QAbstractItemModel::QAbstractItemModel;
 
 	// virtuals
-	virtual AuditIdentifier getAuditIdentifier(int row) const = 0;
-	virtual bool isAuditIdentifierPresent(const AuditIdentifier &identifier) const = 0;
+	virtual Identifier getAuditIdentifier(int row) const = 0;
+	virtual bool isAuditIdentifierPresent(const Identifier &identifier) const = 0;
 };
 
 #endif // AUDITABLELISTITEMMODEL_H

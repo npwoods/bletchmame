@@ -60,9 +60,9 @@ void AuditCursor::setListItemModel(AuditableListItemModel *model)
 //  next
 //-------------------------------------------------
 
-std::optional<AuditIdentifier> AuditCursor::next(int basePosition)
+std::optional<Identifier> AuditCursor::next(int basePosition)
 {
-	std::optional<AuditIdentifier> result;
+	std::optional<Identifier> result;
 
 	// basic sanity checks
 	assert(m_model);
@@ -104,33 +104,36 @@ std::optional<AuditIdentifier> AuditCursor::next(int basePosition)
 //  getIdentifierAtCurrentPosition
 //-------------------------------------------------
 
-std::optional<AuditIdentifier> AuditCursor::getIdentifierAtCurrentPosition() const
+std::optional<Identifier> AuditCursor::getIdentifierAtCurrentPosition() const
 {
 	// sanity checks
 	assert(m_position >= 0);
 	assert(m_model);
 
 	// get an identifier
-	AuditIdentifier identifier = m_model->getAuditIdentifier(m_position);
+	Identifier identifier = m_model->getAuditIdentifier(m_position);
 
 	// get the audit status
 	std::optional<AuditStatus> status;
 	std::visit(util::overloaded
 	{
-		[this, &status](const MachineAuditIdentifier &identifier)
+		[this, &status](const MachineIdentifier &identifier)
 		{
-			status = m_prefs.getMachineAuditStatus(identifier.machineName());
+			QString machineName = util::toQString(identifier.machineName());
+			status = m_prefs.getMachineAuditStatus(machineName);
 		},
-		[this, &status](const SoftwareAuditIdentifier &identifier)
+		[this, &status](const SoftwareIdentifier &identifier)
 		{
-			status = m_prefs.getSoftwareAuditStatus(identifier.softwareList(), identifier.software());
+			QString softwareList = util::toQString(identifier.softwareList());
+			QString software = util::toQString(identifier.software());
+			status = m_prefs.getSoftwareAuditStatus(softwareList, software);
 		}
 	}, identifier);
 
 	// only return the identifier if the audit status is unknown
 	return status == AuditStatus::Unknown
 		? std::move(identifier)
-		: std::optional<AuditIdentifier>();
+		: std::optional<Identifier>();
 }
 
 

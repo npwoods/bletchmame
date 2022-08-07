@@ -60,7 +60,7 @@ void SoftwareListItemModel::load(const software_list_collection &software_col, b
 				assert(dev_interface.isEmpty());
 
 				// add this to the software index map (needed for auditing)
-				SoftwareAuditIdentifier auditIdentifier(software.parent().name(), software.name());
+				SoftwareIdentifier auditIdentifier(software.parent().name(), software.name());
 				m_softwareIndexMap.emplace(std::move(auditIdentifier), util::safe_static_cast<int>(m_parts.size()));
 
 				// and add it to the parts list
@@ -101,7 +101,7 @@ void SoftwareListItemModel::internalReset()
 //  auditStatusChanged
 //-------------------------------------------------
 
-void SoftwareListItemModel::auditStatusChanged(const SoftwareAuditIdentifier &identifier)
+void SoftwareListItemModel::auditStatusChanged(const SoftwareIdentifier &identifier)
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
 	auto iter = m_softwareIndexMap.find(identifier);
@@ -279,10 +279,10 @@ QVariant SoftwareListItemModel::headerData(int section, Qt::Orientation orientat
 //  getAuditIdentifier
 //-------------------------------------------------
 
-AuditIdentifier SoftwareListItemModel::getAuditIdentifier(int row) const
+Identifier SoftwareListItemModel::getAuditIdentifier(int row) const
 {
 	const software_list::software &software = m_parts[row].software();
-	return SoftwareAuditIdentifier(software.parent().name(), software.name());
+	return SoftwareIdentifier(software.parent().name(), software.name());
 }
 
 
@@ -290,9 +290,9 @@ AuditIdentifier SoftwareListItemModel::getAuditIdentifier(int row) const
 //  isAuditIdentifierPresent
 //-------------------------------------------------
 
-bool SoftwareListItemModel::isAuditIdentifierPresent(const AuditIdentifier &identifier) const
+bool SoftwareListItemModel::isAuditIdentifierPresent(const Identifier &identifier) const
 {
-	const SoftwareAuditIdentifier *softwareAuditIdentifier = std::get_if<SoftwareAuditIdentifier>(&identifier);
+	const SoftwareIdentifier *softwareAuditIdentifier = std::get_if<SoftwareIdentifier>(&identifier);
 	if (!softwareAuditIdentifier)
 		return false;
 

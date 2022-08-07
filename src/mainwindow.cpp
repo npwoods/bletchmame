@@ -2844,7 +2844,7 @@ void MainWindow::auditIfAppropriate(const info::machine &machine)
 		&& m_prefs.getMachineAuditStatus(machine.name()) == AuditStatus::Unknown)
 	{
 		// then add it to the queue
-		MachineAuditIdentifier identifier(machine.name());
+		MachineIdentifier identifier(machine.name());
 		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
@@ -2862,7 +2862,7 @@ void MainWindow::auditIfAppropriate(const software_list::software &software)
 		&& m_prefs.getSoftwareAuditStatus(software.parent().name(), software.name()) == AuditStatus::Unknown)
 	{
 		// then add it to the queue
-		SoftwareAuditIdentifier identifier(software.parent().name(), software.name());
+		SoftwareIdentifier identifier(software.parent().name(), software.name());
 		m_auditQueue.push(std::move(identifier), true);
 		updateAuditTimer();
 	}
@@ -3029,23 +3029,25 @@ bool MainWindow::reportAuditResult(const AuditResult &result)
 //  auditIdentifierString
 //-------------------------------------------------
 
-const QString *MainWindow::auditIdentifierString(const AuditIdentifier &identifier) const
+const QString *MainWindow::auditIdentifierString(const Identifier &identifier) const
 {
 	const QString *result = nullptr;
 
 	std::visit(util::overloaded
 	{
-		[this, &result] (const MachineAuditIdentifier &identifier)
+		[this, &result] (const MachineIdentifier &identifier)
 		{
 			std::optional<info::machine> machine = m_info_db.find_machine(identifier.machineName());
 			if (machine)
 				result = &machine->description();
 		},
-		[this, &result](const SoftwareAuditIdentifier &identifier)
+		[this, &result](const SoftwareIdentifier &identifier)
 		{
+			QString softwareListQString = util::toQString(identifier.softwareList());
+			QString softwareQString = util::toQString(identifier.software());
 			const software_list::software *software = m_auditSoftwareListCollection.find_software_by_list_and_name(
-				identifier.softwareList(),
-				identifier.software());
+				softwareListQString,
+				softwareQString);
 			if (software)
 				result = &software->description();
 		}
@@ -3095,7 +3097,7 @@ void MainWindow::addLowPriorityAudits()
 		int basePosition = m_auditCursor.currentPosition();
 
 		// keep on getting identifiers
-		std::optional<AuditIdentifier> identifier;
+		std::optional<Identifier> identifier;
 		while (m_auditQueue.isCloseToEmpty() && bool(identifier = m_auditCursor.next(basePosition)))
 		{
 			m_auditQueue.push(std::move(*identifier), false);

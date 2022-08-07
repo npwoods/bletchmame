@@ -33,7 +33,7 @@ public:
 
 	// methods
 	void setListItemModel(AuditableListItemModel *model);
-	std::optional<AuditIdentifier> next(int basePosition);
+	std::optional<Identifier> next(int basePosition);
 
 private:
 	Preferences &							m_prefs;
@@ -42,7 +42,7 @@ private:
 	int										m_position;
 
 	// private methods
-	std::optional<AuditIdentifier> getIdentifierAtCurrentPosition() const;
+	std::optional<Identifier> getIdentifierAtCurrentPosition() const;
 	void onModelReset();
 };
 
