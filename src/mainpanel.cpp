@@ -212,14 +212,12 @@ MainPanel::MainPanel(info::database &infoDb, Preferences &prefs, IMainPanelHost 
 	// set up the tab widget
 	m_ui->tabWidget->setCurrentIndex(static_cast<int>(m_prefs.getSelectedTab()));
 
-	// set up machine splitters
-	const QList<int> &machineSplitterSizes = m_prefs.getMachineSplitterSizes();
-	if (!machineSplitterSizes.isEmpty())
-		m_ui->machinesSplitter->setSizes(machineSplitterSizes);
+	// set up splitters
+	setupSplitter(*m_ui->machinesSplitter, &Preferences::getMachineSplitterSizes, &Preferences::setMachineSplitterSizes);
 
 	// set up splitter togglers for the machines view
-	(void)new SplitterViewToggler(this, *m_ui->machinesFoldersToggleButton, *m_ui->machinesSplitter, 0, 1, [this]() { persistMachineSplitterSizes(); });
-	(void)new SplitterViewToggler(this, *m_ui->machinesInfoToggleButton, *m_ui->machinesSplitter, 2, 1, [this]() { persistMachineSplitterSizes(); });
+	(void)new SplitterViewToggler(this, *m_ui->machinesFoldersToggleButton,	*m_ui->machinesSplitter, 0, 1, [this]() { persistSplitterSizes(*m_ui->machinesSplitter, &Preferences::setMachineSplitterSizes); });
+	(void)new SplitterViewToggler(this, *m_ui->machinesInfoToggleButton,	*m_ui->machinesSplitter, 2, 1, [this]() { persistSplitterSizes(*m_ui->machinesSplitter, &Preferences::setMachineSplitterSizes); });
 
 	// set up a resize event filter to resize snapshot imagery
 	QObject &eventFilter = *new SnapshotViewEventFilter(*this);
@@ -949,13 +947,29 @@ void MainPanel::machineFoldersTreeViewSelectionChanged(const QItemSelection &new
 
 
 //-------------------------------------------------
-//  persistMachineSplitterSizes
+//  setupSplitter
 //-------------------------------------------------
 
-void MainPanel::persistMachineSplitterSizes()
+void MainPanel::setupSplitter(QSplitter &splitter, const QList<int> &(Preferences::*getSplitterSizesProc)() const, void (Preferences::*setSplitterSizesProc)(QList<int> &&))
 {
-	QList<int> splitterSizes = m_ui->machinesSplitter->sizes();
-	m_prefs.setMachineSplitterSizes(std::move(splitterSizes));
+	// load the initial sizes
+	const QList<int> &splitterSizes = (m_prefs.*getSplitterSizesProc)();
+	if (!splitterSizes.isEmpty())
+		splitter.setSizes(splitterSizes);
+
+	// set up the splitter moved event
+	connect(&splitter, &QSplitter::splitterMoved, this, [this, &splitter, setSplitterSizesProc](int, int) { persistSplitterSizes(splitter, setSplitterSizesProc); });
+}
+
+
+//-------------------------------------------------
+//  persistSplitterSizes
+//-------------------------------------------------
+
+void MainPanel::persistSplitterSizes(QSplitter &splitter, void (Preferences::*setSplitterSizesProc)(QList<int> &&))
+{
+	QList<int> splitterSizes = splitter.sizes();
+	(m_prefs.*setSplitterSizesProc)(std::move(splitterSizes));
 }
 
 
@@ -1356,14 +1370,4 @@ void MainPanel::on_tabWidget_currentChanged(int index)
 	m_prefs.setSelectedTab(list_view_type);
 	updateTabContents();
 	updateStatusFromSelection();
-}
-
-
-//-------------------------------------------------
-//  on_machinesSplitter_splitterMoved
-//-------------------------------------------------
-
-void MainPanel::on_machinesSplitter_splitterMoved(int pos, int index)
-{
-	persistMachineSplitterSizes();
 }

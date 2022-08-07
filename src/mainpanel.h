@@ -29,6 +29,7 @@ class QTableWidgetItem;
 class QAbstractItemModel;
 class QTableView;
 class QSortFilterProxyModel;
+class QSplitter;
 QT_END_NAMESPACE
 
 class AuditableListItemModel;
@@ -96,7 +97,6 @@ private slots:
 	void on_profilesTableView_activated(const QModelIndex &index);
 	void on_profilesTableView_customContextMenuRequested(const QPoint &pos);
 	void on_tabWidget_currentChanged(int index);
-	void on_machinesSplitter_splitterMoved(int pos, int index);
 
 signals:
 	void statusMessageChanged(const QString &statusMessage);
@@ -149,7 +149,8 @@ private:
 	ProfileListItemModel &profileListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
-	void persistMachineSplitterSizes();
+	void setupSplitter(QSplitter &splitter, const QList<int> &(Preferences::*getSplitterSizesProc)() const, void (Preferences::*setSplitterSizesProc)(QList<int> &&));
+	void persistSplitterSizes(QSplitter &splitter, void (Preferences::*setSplitterSizesProc)(QList<int> &&));
 	void updateInfoPanel(const QString &machineName);
 	void updateSnapshot();
 	void identifyExpandedFolderTreeItems();
