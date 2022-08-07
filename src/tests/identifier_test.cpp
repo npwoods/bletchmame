@@ -23,7 +23,7 @@ namespace
 		void identifierHash();
 		void identifierEqualTo();
 	};
-};
+}
 
 
 //**************************************************************************
