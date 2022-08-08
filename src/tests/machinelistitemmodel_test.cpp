@@ -96,17 +96,17 @@ void Test::auditStatusChanged()
 	});
 
 	// invoke with a bogus item; nothing should happen
-	model.auditStatusChanged(MachineAuditIdentifier("BOGUS_MACHINE"));
+	model.auditStatusChanged(MachineIdentifier("BOGUS_MACHINE"));
 	QVERIFY(!topLeft);
 	QVERIFY(!bottomRight);
 
 	// now try a real machine
-	model.auditStatusChanged(MachineAuditIdentifier("coco"));
+	model.auditStatusChanged(MachineIdentifier("coco"));
 	QVERIFY(topLeft == model.index(9, 0));
 	QVERIFY(bottomRight == model.index(9, 0));
 
 	// now try another real machine
-	model.auditStatusChanged(MachineAuditIdentifier("coco2b"));
+	model.auditStatusChanged(MachineIdentifier("coco2b"));
 	QVERIFY(topLeft == model.index(12, 0));
 	QVERIFY(bottomRight == model.index(12, 0));
 }

@@ -80,10 +80,11 @@ bool MachineListItemModel::isMachinePresent(const info::machine &machine) const
 //  auditStatusChanged
 //-------------------------------------------------
 
-void MachineListItemModel::auditStatusChanged(const MachineAuditIdentifier &identifier)
+void MachineListItemModel::auditStatusChanged(const MachineIdentifier &identifier)
 {
 	ProfilerScope prof(CURRENT_FUNCTION);
-	auto iter = m_reverseIndexes.find(identifier.machineName());
+	QString machineName = util::toQString(identifier.machineName());
+	auto iter = m_reverseIndexes.find(machineName);
 	if (iter != m_reverseIndexes.end())
 		iconsChanged(iter->second, iter->second);
 }
@@ -292,9 +293,9 @@ QVariant MachineListItemModel::headerData(int section, Qt::Orientation orientati
 //  getAuditIdentifier
 //-------------------------------------------------
 
-AuditIdentifier MachineListItemModel::getAuditIdentifier(int row) const
+Identifier MachineListItemModel::getAuditIdentifier(int row) const
 {
-	return MachineAuditIdentifier(machineFromRow(row).name());
+	return MachineIdentifier(machineFromRow(row).name());
 }
 
 
@@ -302,10 +303,10 @@ AuditIdentifier MachineListItemModel::getAuditIdentifier(int row) const
 //  isAuditIdentifierPresent
 //-------------------------------------------------
 
-bool MachineListItemModel::isAuditIdentifierPresent(const AuditIdentifier &identifier) const
+bool MachineListItemModel::isAuditIdentifierPresent(const Identifier &identifier) const
 {
-	// first check to see if this is a MachineAuditIdentifier
-	const MachineAuditIdentifier *machineAuditIdentifier = std::get_if<MachineAuditIdentifier>(&identifier);
+	// first check to see if this is a MachineIdentifier
+	const MachineIdentifier *machineAuditIdentifier = std::get_if<MachineIdentifier>(&identifier);
 	if (!machineAuditIdentifier)
 		return false;
 

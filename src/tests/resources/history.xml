@@ -1,0 +1,578 @@
+<?xml version="1.0"?>
+<history version="2.45" date="2022-06-30">
+  <!-- abridged history.xml used for testing -->
+	<entry>
+		<software>
+			<item list="nes" name="zelda" />
+			<item list="nes" name="zeldaa" />
+			<item list="nes" name="zeldau" />
+			<item list="nes" name="zeldaua" />
+			<item list="vgmplay" name="zelda_nes" />
+		</software>
+		<text>Nintendo NES cart. published 35 years ago:
+
+The Legend of Zelda (c) 1987 Nintendo of America, Inc.
+
+North American release. Game developed in Japan. See the original for more information.
+
+- TECHNICAL -
+
+GAME ID: NES-ZL-USA
+
+- TRIVIA -
+
+The Legend of Zelda was released on November 15, 1987 in the USA.
+
+The Legend of Zelda was the first NES cartridge that was released with a shiny gold colored plating, breaking away from the usual gray color.
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=55708&amp;o=2
+		</text>
+	</entry>
+	<entry>
+		<software>
+			<item list="tg16" name="legaxe2" />
+		</software>
+		<text>NEC TurboGrafx-16 cart. published 32 years ago:
+
+The Legendary Axe II [Model TGX020048] (c) 1990 NEC Home Electronics, Ltd.
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=84364&amp;o=2
+		</text>
+	</entry>
+	<entry>
+		<software>
+			<item list="mc10" name="pacman" />
+		</software>
+		<text>TRS-80 MC-10 cass. published 16 years ago:
+
+Pac-Man (c) 2006 Dionne [Greg Dionne]
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=87681&amp;o=2
+		</text>
+	</entry>
+	<entry>
+		<systems>
+			<system name="pacman" />
+			<system name="pacmod" />
+			<system name="pacmanf" />
+			<system name="pacmanblb" />
+		</systems>
+		<text>
+Arcade Video game published 42 years ago:
+
+Pac-Man (c) 1980 Midway Mfg. Co.
+
+Export release by Bally/Midway for North America. Game developed by Namco and originally known as Puckman in Japan. For more information about the game itself, please see the original Japanese release entry, &quot;Puckman [Upright model]&quot;.
+
+- TECHNICAL -
+
+Upright model
+Game No. 932
+
+- TRIVIA -
+
+Pac-Man was released in October 1980 in North America by Bally/Midway, under license from Namco. 96,000 units were produced in America. 
+
+Reportedly, when Bally/Midway obtained the rights to Pac-Man, Namco was offering four different games, which ended up being licensed to Game Plan and Bally/Midway. Game Plan&apos;s Ken Anderson reports that he and Bally&apos;s Dave Marofske flipped a coin to see who would get first crack at the games. Game Plan won and chose a tank game (which they released as &quot;Tank Battalion&quot;) over Pac-Man. The other game they got was released as &quot;King &amp; Balloon&quot;. Bally/Midway, meanwhile, took Pac-Man and &quot;Rally-X&quot;.
+
+Midway made the following changes to the game (from the original Namco version):
+- The game&apos;s name (and likewise its main character) has been changed to Pac-Man. Refer to the Namco Upright version entry, Trivia section, for details behind this name change. 
+- The name/nickname combinations for the ghosts in this version are:
+Shadow - &quot;Blinky&quot; (red ghost)
+Speedy - &quot;Pinky&quot; (pink ghost)
+Bashful - &quot;Inky&quot; (cyan ghost)
+Pokey - &quot;Clyde&quot; (orange ghost)
+- Notice that the pink ghost&apos;s nickname remains unchanged from the Japanese version.
+- Unlike the Japanese version, the American version has no DIP switch for alternate ghost names.  
+
+The game&apos;s cult status in the early 80&apos;s was such that it inspired a hit song by &apos;Buckner and Garcia&apos; called &apos;Pac-Man Fever&apos;, released in 1982 on the album of the same name. 
+
+The game also spawned a virtual cottage industry of best-selling how-to books strategy guides on how to beat the game by using patterns with names like the &quot;Bazo&apos;s Breaker&quot;, the &quot;Donut Dazzler&quot; and the &quot;GET pattern&quot; (named after the first initials of the members of a team of players from Davis, California: George Huang, Ed Bazo, and Tom Fertado). 
+
+A Pac-Man unit appears in the movie &apos;Getting There&apos;, in the 1982 movie &apos;Jekyll &amp; Hyde - Together Again&apos;, in the 1982 movie &apos;Fast Times at Ridgemont High&apos;, in the 1983 movie &apos;WarGames&apos;, in the 1983 movie &apos;Joysticks&apos;, in the 1983 movie &apos;Koyaanisqatsi - Life out of Balance&apos;, in the 1985 movie &apos;The Heavenly Kid&apos;, in the 1985 movie &apos;Better Off Dead&apos;, and in the 1986 movie &apos;The Color of Money&apos;. 
+
+A Pac-Man unit appears in the pilot of Season One of &apos;The A-Team&apos;. It is where Amy (Melinda Culea) meets Murdock (Dwight Schultz) for the first time. 
+
+MB (Milton Bradley) released a board game based on this video game in 1982 (Pac-Man Game, &apos;As Much Fun as the Action Packed Arcade Game of the Same Name&apos;). In this board game, the dots in the maze are represented by white marbles. There are also yellow marbles representing the power pills in the maze. There are also two ghosts pawns of the same color in the game. The object is to roll the dice and move your Pac-Man playing piece around the maze gobbling up as many marbles as you can using the count on one die, and move either ghost pawn using the count on the other die. There are yellow dots imprinted on the game board to lay out the path each character must take; these dots do not count as spaces. Use the ghosts to try to catch your opponents. When this happens, that opponent is sent back home and surrenders two marbles to the player who moved the ghost. If a Pac-Man gobbles up a yellow marble, that player earns the right to gobble a ghost. When this happens, the gobbled ghost is returned to the ghost pen, the player takes two marbles away from any opponent, and the player&apos;s yellow marble is returned to the game board. Once the maze is cleared of white marbles, the game is over and the player with the most white marbles (yellow marbles do not count) is the winner. 
+
+&apos;Pac-Man&apos; is also the nickname of the Filipino boxing champion Manny Pacquiao. The two-time world champion earned the distinction as the only boxer who has knocked down both future Mexican &apos;Hall of Famer&apos; Marco Antonio &apos;Baby Face Assassin&apos; Barrera (knocked out in 11th round) and Erik &apos;El Terrible&apos; Morales (knocked out in 10th round). Pacquiao has been on the top 10 list of the best &apos;pound-for-pound&apos; fighters in the world. 
+
+In the multi-racial country of Malaysia, &apos;Pac-Man&apos; is a slang term coined to describe men who only date ladies of other races. 
+
+The name &apos;Pac-Man&apos; has been given to a nebula, cataloged as NGC 281. The Pac-Man Nebula is an H II region in the constellation of Cassiopeia. It includes or is near the open cluster IC 1590, the double star HD 5005, and several Bok globules. The shape of the nebula resembles the famous video game icon, Pac-Man. It is visible in amateur telescopes from dark sky locations. 
+
+The Cassini Robotic spacecraft (Cassini-Huygens) were captured images during a close pass to the moon of Saturn named &apos;Mimas&apos;, and collected by the composite infrared spectrometer (CIRS). The images show the fluctuating temperatures experienced by Mimas. The combined map with this images form a shape of this character Pac-Man. 
+
+On May 21, 2010, to celebrate Pac-Man&apos;s 30th Anniversary, Google, the famous internet search engine, has created the first ever interactive Doodle! This doodle allowed people to play Pac-Man on the home page (at the place of the original logo).
+
+- UPDATES -
+
+Midway&apos;s new revision program for Pac-Man was released in December 1981; the new program increases the difficulty of the game and adds a new challenge to players already familiar with the original.
+
+- PORTS -
+
+NOTE: Only ports released in North America [US] are listed here. For ports released in other regions, please see the original Namco (Japanese version) upright entry. 
+
+* CONSOLES: 
+Bally Astrocade &quot;Muncher&quot; 
+Emerson Arcadia &quot;Gobbler&quot; 
+Atari 2600 (1981) &quot;Pac-Man [Model CX2646]&quot; 
+Atari 5200 (1982) &quot;Pac-Man [Model CX5208]&quot; 
+Mattel Intellivision (1983) &quot;Pac-Man [Model 70251]&quot; 
+Nintendo NES (1987) by Tengen 
+Nintendo NES (nov.1993) &quot;Pac-Man [Model NES-P7]&quot; 
+Sony PlayStation (jul.31, 1996) &quot;Namco Museum Vol.1 [Model SLUS-00215]&quot; 
+Nintendo 64 (oct.31, 1999) &quot;Namco Museum 64 [Model NUS-NNME-USA]&quot; 
+Sega Dreamcast (june.25, 2000) &quot;Namco Museum [Model T-1403N]&quot; 
+Sony PlayStation 2 (dec.4, 2001) &quot;Namco Museum [Model SLUS-20273]&quot; 
+Microsoft XBOX (oct.9, 2002) &quot;Namco Museum&quot; 
+Nintendo GameCube (oct.9, 2002) &quot;Namco Museum [Model DOL-GNME-USA]&quot; 
+Sony PlayStation 2 (aug.30, 2005) &quot;Namco Museum - 50th Anniversary [Model SLUS-21164]&quot; 
+Microsoft XBOX (aug.30, 2005) &quot;Namco Museum - 50th Anniversary [Model NMO-2201A-NM]&quot; 
+Nintendo GameCube (aug.30, 2005) &quot;Namco Museum - 50th Anniversary [Model DOL-G5NE-USA]&quot; 
+Microsoft XBOX 360 [XBLA] (aug.9, 2006) 
+Microsoft XBOX 360 [XBLA] (nov.4, 2008) &quot;Namco Museum - Virtual Arcade [Model 21022]&quot; 
+Sony PlayStation 3 (jul.16, 2009) &quot;Namco Museum Essentials [Model NPUB-30086]&quot; 
+Nintendo Wii (nov.16, 2010) &quot;Namco Museum Megamix&quot; 
+Sony PlayStation 3 [PSN] (feb.25, 2014) &quot;Pac-Man Museum [Model NPUB-31383]&quot; 
+Microsoft XBOX 360 [XBLA] (feb.26, 2014) &quot;Pac-Man Museum&quot;
+Microsoft XBOX One [XBOX Store] (apr.20, 2016) &quot;Arcade Game Series - Pac-Man&quot;
+Sony PlayStation 4 [PSN] (apr.20, 2016) &quot;Arcade Game Series - Pac-Man [Model CUSA-03955]&quot; 
+
+* HANDHELDS: 
+Sega Game Gear (1991) &quot;Pac-Man [Model T-14018]&quot; 
+Nintendo Game Boy (apr.1991) &quot;Pac-Man [Model DMG-PC-USA]&quot;  
+SNK Neo-Geo Pocket Color (jul.31, 1999) &quot;Pac-Man [Model NEOP00551]&quot; 
+Nintendo Game Boy Color (aug.1999) &quot;Pac-Man - Special Color Edition [Model DMG-AACE-USA]&quot; 
+Nintendo Game Boy Advance (jul.12, 2001) &quot;Pac-Man Collection [Model AGB-APCE-USA]&quot; 
+Sony PSP (aug.23, 2005) &quot;Namco Museum Battle Collection [Model ULUS-10035]&quot; 
+Nintendo DS (sept.18, 2007) &quot;Namco Museum DS [Model NTR-YNME-USA]&quot; 
+Nintendo 3DS (jul.26, 2011) &quot;Pac-Man &amp; Galaga Dimensions [Model CTR-APGE-USA]&quot; 
+
+* COMPUTERS: 
+Tandy Color Computer (1981) &quot;Pac-Tac&quot; 
+Atari 400 (1982) 
+Atari 800 (1982) &quot;Pac-Man [Model CXL4022]&quot; 
+Commodore VIC-20 (1982) 
+PC [Booter] (1982) &quot;PC-Man&quot; 
+Tandy Color Computer (1982) &quot;Ghost Gobbler&quot; 
+Tandy Color Computer (1982) &quot;Pack Maze&quot; 
+Apple II (1983) 
+Commodore C64 (1983) by Thunder Mountain 
+Commodore C64 (1983) &quot;Pac-Man [Model RX8502]&quot; 
+PC [Booter] (1983) 
+PC [Booter] (1983) &quot;Ascii Man&quot;, a part of the &quot;Friendlyware PC Arcade&quot; suite 
+PC [MS-DOS] (1983) 
+Tandy Color Computer (1983) &quot;Pac Jaws&quot; 
+Tandy Color Computer (1983) &quot;Pac-Tac II&quot; 
+Texas Instruments TI-99/4A (1983) &quot;Pac-Man [Model RX8500]&quot;
+Tandy Color Computer (1990) &quot;Pac-Dude&quot;
+Apple II GS (1992) &quot;Pac Man GS&quot;
+Apple Macintosh (1992) &quot;Mac-Man&quot;
+PC [MS Windows 95, CD-ROM] (1995) &quot;Mac-Man&quot;, part of &quot;Windows Arcade Pack&quot; 
+PC [MS Windows 95, 3.5&quot;] (mar.31, 1996) &quot;Microsoft Return of Arcade&quot; 
+Tandy Color Computer 3 (1997) 
+PC [MS-DOS] (1997) &quot;Champ Pac-Em&quot; - CHAMProgramming 
+PC [MS Windows, CD-ROM] (2000) &quot;Microsoft Return of Arcade Anniversary Edition&quot; 
+PC [MS Windows, CD-ROM] (oct.25, 2005) &quot;Namco Museum - 50th Anniversary&quot; 
+PC [MS Windows, Online] (2009) &quot;Namco All Stars: Pac-Man and Dig Dug&quot; by WildTangent Games 
+Apple iPhone/iPad (mar.31, 2010) &quot;Pac-Man for iPad [Model 363297482]&quot;  
+PC [MS Windows, Online] (aug.4, 2010) &quot;Namco All-Stars: PAC-MAN&quot; by WildTangent Games 
+Steam (feb.25, 2014) &quot;Pac-Man Museum [Model 236470]&quot; 
+Steam (apr.19, 2016) &quot;Arcade Game Series - Pac-Man [Model 394160]&quot; 
+
+* OTHERS: 
+VFD handheld game (1981) by Coleco. 
+LCD handheld game (1992) by Micro Games of America 
+Arcade (1996) &quot;Namco Classics Collection Vol.2&quot; 
+LCD handheld color game (1999) released by Micro Games of America 
+Arcade (2000) &quot;Ms. Pac-Man/Galaga - 20th Anniversary Class of 1981 Reunion&quot; as a hidden game. 
+Namco Classics TV game (2003) by Jakks Pacific 
+Mobile Phones (june.13, 2003) 
+Arcade (2005) &quot;Pac-Man - 25th Anniversary Edition&quot; 
+Super Pac-Man TV game (2006) by Jakks Pacific 
+Arcade Gold featuring Pac-Man (2007) by Jakks Pacific 
+Retro Arcade featuring Pac-Man (2008) by Jakks Pacific 
+Apple iPhone/iPod (jul.9, 2008) &quot;Pac-Man [Model 281656475]&quot; 
+Android Market (sept.23, 2008)
+BlackBerry (june.30, 2009) &quot;Pac-Man [Model 967]&quot; 
+Android (jan.11, 2010) 
+Windows Mobile (mar.15, 2010)
+Apple iPhone/iPod (mar.31, 2010) &quot;Pac-Man for iPad [Model 363297482]&quot; 
+Arcade (2010) &quot;Pac-Man&apos;s Arcade Party&quot; 
+Android Market (2011) 
+Pac-Man Connect and Play (2012) by Bandai 
+Apple iPhone/iPod (mar.13, 2012) &quot;Namco Arcade [Model 465606050]&quot; 
+Android Market (apr.6, 2012) by Namco Networks America 
+Android (mar.22, 2013) &quot;Pac-Man + Tournaments&quot;
+Arcade (2018) &quot;Pac-Man&apos;s Pixel Bash&quot;
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=1914&amp;o=2
+		</text>
+	</entry>
+	<entry>
+		<software>
+			<item list="a2600" name="pacman" />
+			<item list="a2600" name="pacmane" />
+		</software>
+		<text>Atari 2600 cart. published 41 years ago:
+
+Pac-Man (c) 1981 Atari, Incorporated.
+
+We know that millions of people all over the world just love the PAC-MAN arcade game.  PAC-MAN has won the hearts of men, women, and children everywhere.  We also know that PAC-MAN has traditionally been an arcade game.  Well, we at ATARI know all about arcade games. After all, we make some of the greatest arcade games in the world, and
+we know how to bring the same dynamite game play into your home.
+
+The object of the game is to keep PAC-MAN happy and healthy in his home of Mazeland. PAC-MAN starts the game with four lives(turns). The longer he survives, the more points you score. You score a point for every video wafer that PAC-MAN eats. You also score points when PAC-MAN eats power pills, vitamins, and ghosts. Everytime PAC-MAN eats all of the video wafers on the maze, he earns an extra life and a new maze full of video wafers.
+
+The following information lists all of PAC-MAN&apos;s nutritional needs, which also happen to be your point-scoring objects.
+
+Video Wafers: These are the dotted lines on the screen. You maneuver PAC-MAN around the playfield over the video wafers.  He automatically eats the video wafers, and they disappear from the maze. You score one point for each video wafer he eats. (To score a point, PAC-MAN must pass directly over the video wafer.)
+
+Power Pills: Power pills are located in the four corners of the playfield. Each power pill is worth five points. When PAC-MAN eats a power pill, the ghosts become a transparent blue color.
+
+During this time, PAC-MAN has the super-strength to overcome the  ghosts. This is his big chance to chase and gobble down each ghost. Unfortunately, this great power only lasts a few seconds.  When the power starts wearing off, the ghosts turn pink and then back to yellow. (Musical notes stop several seconds before ghosts turn back.)
+
+Vitamins: Vitamins are the two intersecting rectangles in the center of the playfield. They only appear for a few moments and then disappear and reappear. The vitamins are worth 100 points each time PAC-MAN eats them.
+
+Ghosts: The ghosts are the quartet of bad guys chasing PAC-MAN around the maze. If a ghost eats PAC-MAN, you lose a turn(one life). On the other hand, if PAC-MAN eats a ghost, you score points.  PAC-MAN can only eat ghosts after eating a power pill.  Then he can run around the maze eating ghosts. The first ghost is worth 20 points, the second  ghost is worth 40 points, the third is worth 80 points, and the fourth is worth 160 points. If the power pill wears off before PAC-MAN eats all the ghosts, he must eat another power pill and start chasing the ghosts again(starting at 20 points again). After PAC-MAN eats a ghost, you only see eyes left on the ghost.  But, the ghosts are  reincarnated by returning to the big, square chamber in the center of the playfield.
+
+PAC-MAN includes 8 game variations.  Each variation has a one-player game and a two-player game.  In the two-player games, the left player starts the game.  Each player takes a turn until PAC-MAN gets eaten by a ghost.
+
+Games 1, 2, 7, and 8 feature a slow moving PAC-MAN.  The ghosts in each of these games move at different speeds as follows:
+
+GAME 1 Ghosts move at jogging speed.
+GAME 2 Ghosts move at running speed.
+GAME 7 Ghosts crawl especially slow for young children.
+GAME 8 Ghosts move at walking speed.
+
+Games 3, 4, 5, and 6 feature a fast PAC-MAN with the ghosts moving at varying speeds as follows:
+
+GAME 3 Ghosts crawl around the maze.
+GAME 4 Ghosts move at walking speed.
+GAME 5 Ghosts move at jogging speed.
+GAME 6 Ghosts move at running speed.
+
+Games 3 and 7 are recommended for young children.  Game 6 is the most difficult game variation.  For a real challenge try Game 6 with difficulty level A.
+
+NOTE: Sometimes the ghosts try to hide behind each other, so they appear to be one single ghost chasing PAC-MAN.
+
+- TECHNICAL -
+
+Model CX2646
+
+- SCORING -
+
+VIDEO WAFER = 1 POINT.
+POWER PILL = 5 POINTS.
+VITAMINS = 100 POINTS.
+FIRST GHOST = 20 POINTS.
+SECOND GHOST = 40 POINTS.
+THIRD GHOST = 80 POINTS.
+FOURTH GHOST = 160 POINTS.
+
+- TIPS AND TRICKS -
+
+* When all of the ghosts are hiding on top of each other, eat a Power Pill and then you can gobble all four ghosts in one big bite and score 300 points.
+
+* Try to eat as many Video Wafers as possible before eating a Power Pill.  This will save the Power Pill until you really need it.
+
+* Before you eat a Power Pill, stay in the corner close to it so you can tease the ghosts into moving closer to you, thus allowing you to eat more ghosts with one Power Pill.
+
+* Use the top and bottom openings in the maze like a tunnel to outsmart the ghosts.  Slip in or out of the openings to escape hungry ghosts.
+
+- STAFF -
+
+Programmer: Tod Frye
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=50771&amp;o=2
+		</text>
+	</entry>
+	<entry>
+		<software>
+			<item list="a5200" name="pacman" />
+		</software>
+		<text>Atari 5200 cart. published 40 years ago:
+
+Pac-Man (c) 1982 Atari, Incorporated.
+
+Pac-Man comes home. Keep PAC-MAN alive. Guide him and guard him; protect him from the ghosts. Gobble dots, energy pills, truit, bells, ATARI logos, keys and ghosts to score points. Eat all the dots on the screen and the maze starts all over. Score 10,000 points and earn a bonus PAC-MAN.
+
+The game starts with three PAC-MAN lives, which are indicated by three small PAC-MAN symbles at the lower left corner of the screen. When game play begins, PAC-MAN moves to the starting position at the center, close to the bottom of the screen. Use the joystick to guide PAC-MAN around the maze. As PAC-MAN passes over the dots, he gobbles them up and you score points (see SCORING). Also in the maze are four large energy pills and four ghosts. The ghosts are out to devour PAC-MAN, but the energy pills give PAC-MAN the necessary power to gobble up the ghosts before the ghosts gobble him up.
+
+When PAC-MAN eats an energy pill, the ghosts turn blue with fright (see Figure 2). PAC-MAN can then chase the ghosts and gobble them up. But watch out, when the ghosts start blinking, run quickly; they&apos;re about to change back to their true colors. The more ghosts you gobble up with one energy pill, the more points you score.
+
+For a tasty bonus treat, PAC-MAN delights in munching fruit. Cherries, strawberries, oranges, apples, and melons appear at the center of the screen. They only last a few seconds, so grab the fruit quickly to score bonus points. After munching all the fruit, PAC-MAN can collect these other valuable bonus prizes: bells, ATARI logos, and keys (see SCORING, for the specific points you can score throughout the game).
+
+- TECHNICAL -
+
+Model CX5208
+
+- SCORING -
+
+Dot: 10 points
+Energy Pill: 50 points
+Cherry: 100 points
+Strawberry: 200 points
+Orange: 500 points
+Apple: 700 points
+Melon: 1000 points
+Atari Logo: 2000 points
+Bell: 3000 points
+Key: 5000 points
+
+First Ghost: 200 points
+Second Ghost: 400 points
+Third Ghost: 800 points
+Fourth Ghost: 1600 points
+
+- TIPS AND TRICKS -
+
+* Novice PAC-MAN players should practice eating all the dots to clear the maze before trying to eat ghosts.
+
+* Stay close to an energy pill before you eat it, and tease the ghosts into moving toward you. When the ghosts get close, eat the energy pill and gobble up as many of them as you can.
+
+* Use the side openings of the maze like escape tunnels. Move to either side while quickly evading the ghosts.
+
+* Use strategy, and try to save your energy pills until you absolutely need them. When you are in a hurry, travel a route already cleared of dots. You move 20 percent faster if there are no dots in your path.
+
+* Look for patterns in the maze. When you find one that works well, memorize it.
+
+- STAFF -
+
+Graphics: Alan Murphy
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=50072&amp;o=2
+		</text>
+	</entry>
+
+	<entry>
+		<systems>
+			<system name="rampage" />
+			<system name="rampage2" />
+		</systems>
+		<text>
+Arcade Video game published 36 years ago:
+
+Rampage (c) 1986 Bally Midway.
+
+Rampage is a classic B-movie inspired smash-em-up in which up to three players take on the roles of three mutated monsters - George the giant ape, Lizzie the giant lizard and Ralph the giant wolf - who move from city to city destroying skyscrapers and vehicles, while eating or killing any people that get in their way. 
+
+The monsters&apos; health can be damaged in a number of ways: by being shot by National Guardsmen, by being hit by another monster, by falling from a building, by being hit by police cars or tanks, by going underwater, by being struck by lightning, or by eating something bad, such as dynamite. Health is replenished by eating food found in damaged buildings. 
+
+If the players&apos; health gauge diminishes completely, the monsters will revert back to their original human form and walk sideways off the screen. Rampage has a &quot;buy back in&quot; option, however; if players chose to continue the game before the human figure leaves the play area, the game will continue from that stage. 
+
+Rampage is set over the course of 128 days in cities across North America. The game starts in Peoria, Illinois and ends in Plano, Illinois. In Plano, players receive a mega vitamin bonus which heals all the monsters and provides a large point bonus. After this, the cycle of cities repeats five times. After 768 days, the game resets back to Day One. 
+
+* Examples of bonuses and hazards found inside damaged buildings: 
+Food: Milk, Turkey, Hot Toast, Fruit 
+Bonus: Flower Pot, TV Set, Money Bag 
+Hazard: Cactus, Poison, Toaster 
+
+* Examples of bonuses and hazards found outside damaged buildings: 
+Bonus: Auto (or Truck), Commuter Train, Person in Manhole 
+Hazard: National Guard Tank, Police Car, Storm Cloud 
+
+Further bonus points can be earned by grabbing a fleeing &apos;Townie&apos; from a building window. This has two benefits: 1) While holding the Townie, all swat team members disappear from the building windows and 2) accumulating points are scored during the time the Townie is held.
+
+- TECHNICAL -
+
+Bally Midway MCR 3 hardware
+Game No. 0E36
+
+Main CPU: Zilog Z80 (@ 5 Mhz)
+Sound CPU: Motorola 68000 (@ 8 Mhz)
+Sound Chips: DAC
+
+Players: 3
+Control: 8-way joystick
+Buttons: 2
+
+- TRIVIA -
+
+Rampage was released in October 1986.
+
+It was also released as a conversion kit for Star Guards as &quot;Rampage [No. 00F06]&quot;.
+
+Rampage incorporates Bally Midway&apos;s JOIN THE ACTION feature : each set of game controls includes a corresponding start (Jump) button, which is activated independently. This allows a person, after inserting the proper coinage, to begin play at any time including while the other sets of game controls are in use.
+
+Rampage has an impressive 768 different levels. The 128th level of the game is &apos;Plano, Illinois&apos;, and was the only level in the game with less than three buildings. Brian, one of the designers, said : Plano Illinois was only two buildings because Plano Il is a Tiny town, in which my partner Jeff was born and raised.
+
+These are the random headlines you may encounter during the game. These headlines appear when the next day begins :
+EX-MUTANT IS ARRESTED FOR STREAKING!
+LAB SCREW-UP WEARS OFF...FILM AT 11
+SPOUSE OF MUTANT FILES LEGAL ACTION
+FORMER BEAST SAYS IT MAY HAPPEN AGAIN
+STILL AT LARGE...VERY LARGE!
+IS THERE NO END TO THIS RAMPAGE???
+PROPERTY VALUES AT ALL TIME LOW
+YOUR AD HERE CALL NOW! 1-800-ZOO-KEEP
+JOB OPENINGS IN NATIONAL GUARD!
+REAL LIFE JEKYLL AND HYDE STORY!!
+
+A Rampage unit appears in the 1991 movie &apos;Terminator 2 - Judgment Day&apos;.
+
+Rampage was included as a bonus in &quot;Rampage - Total Destruction&quot; for the Nintendo GameCube, Sony PlayStation 2, and Nintendo Wii.
+
+- SCORING -
+
+Scoring in this game is relatively complicated due to the various numbers of enemies. In addition, you also score points for hitting buildings and collecting bonus and/or food items. 
+
+* ITEMS 
+Bag of loot : 100-500 points. 
+Boater : 750 points. 
+Building destroyed : 2,500 points - You will only get the points if your monster destroys the building. Buildings destroyed by things other than you monster will not earn you these points. 
+Car (parked) : 100 points. 
+Car (moving slowly) : 200 points. 
+Car (parked then takes off quickly) : 750 points. 
+Food such as turkey, milk, fruit, hamburger, or toast : 175 points. 
+Eating one of the civilians : 500 points. 
+Flower pot : 500 points. 
+Helicopter : 750 points. 
+Holding designated victim : 4,000 - 6,000 points. 
+Light bulb (off) : 500 points. 
+Manhole cover (per hit) : 500 points. 
+Mega-vitamin bonus (every 128 days) : 5,000 points. 
+National guardsman : 50 points. 
+Neon sign : 1,000 points. 
+Paratrooper : 50 points. 
+Photographer : 750 points. 
+Police car : 750 points. 
+Punch causes partial break in building : 25 points. 
+Punch cause full break/hole in building : 225 points. 
+Safe (after opening) : 100-500 points. 
+Tank : 200 points. 
+Television (off) : 500 points. 
+Train (per hit) : 500 points.
+
+- TIPS AND TRICKS -
+
+You start the game with your monsters at the bottom of the screen. After the game starts, it is time for you to start the &apos;urban renewal&apos; process.
+
+* After you start, you will start being attacked. There is no real way to avoid a lot of the attacks by the National Guardsmen due to the sheer volume of fire they are laying down. Your best bet is to keep moving and make yourself a hard target to hit.
+
+* To move quickly from building to building, jump toward the building and push up to grab the building. This enables you to use your monster&apos;s ability to both jump and climb at the same time.
+
+* To relieve some pressure from the National Guardsmen, climb up the buildings and smash the windows where they pop out from or just eat them when they are leaning out the window. Move quickly since their buddies are still shooting or throwing dynamite at your monster.
+
+* Unless you are totally obsessed with points, let the National Guardsmen do your work for you. A great example of this is that about midway through a day, a National Guard-man will rush out from the side of the screen with explosives. They will place them at the base of a building. This demolishes the building and helps you along to the next day.
+
+* Another way to destroy buildings is to weaken it up, then jump on the roof. Your monster&apos;s weight will cause the building to collapse.
+
+* The air units can be rather dangerous. During the beginning days, the helicopters will overfly your monster, turn around, and then dive in for the attack. You can destroy the helicopters when they are coming in to prevent their attack. Also, when you are moving around, you make it harder for them to get a bead on your monster.
+
+* During the later days, helicopters will drop bombs. Again, paying attention to everything that is going on will allow you to easily escape the bomb being dropped. You can also entice the helicopter to drop a bomb when you are on top of a building. When the bomb is dropped, jump out of the way and let the bomb do the damage to the building for you.
+
+* Make sure that you either grab the food or eat the National Guardsmen to keep your health up. If you can hold out for 128 days, you will get all of your health restored for that day and days 256, 384, 512, 640, and 768. Also keep in mind that if you punch too fast, you may end up getting something that will harm your monster.
+
+* Paratroopers can be a particular pain. If you plan to attack a building with a Paratrooper unit on it, make sure you quickly scale the building and eat said unit. It makes life a lot easier since their rapid fire can put a major hurting on your monster.
+
+* Ground units such as Tanks and Police Cars can be a real nuisance. They fire some pretty heavy shells which not only cause a lot of damage, but they also can knock back your monster for quite a distance. There are some ways to combat these units :
+1) Climb quickly up a building. When the unit passes below you, jump down and give it a good punch.
+2) Time the shots and rush the ground unit in-between shots to get a good punch in.
+3) Use available weapons such as manhole covers, flower pots, or safes to drop on them. These things also allow you to hit them at a distance.
+
+* Be sure and watch what your monster grabs at. There are a lot of hazards in the buildings and it is pretty bad when your monster buys the farm doing dumb stuff such as grabbing electrical items such as toasters and light bulbs.
+
+* In addition to the above, dynamite is sometimes in the middle of buildings. When uncovered, you have about two to three seconds to get your monster out of there before they are blown off the building. Eating it will only decrease your monster&apos;s health so run far away when it is uncovered.
+
+- SERIES -
+
+1. Rampage [No. 0E36] (1986, Arcade) 
+2. Rampage - World Tour (1997, Arcade)
+3. Rampage 2 - Universal Tour (1999, Nintendo 64) 
+4. Rampage Through Time (2000, Sony PlayStation) 
+5. Rampage - Total Destruction (2006, GameCube/PS2/Wii)
+
+- STAFF -
+
+Artist : Brian Colin
+Software : Jeff Nauman
+Sounds : Michael Bartlow
+
+Other people involved : Jim Belt, Neil Falconer, Walter Godlewski, Joe Ketza, John Kubik, Tom Leon, Bob Libbe, Sue Lohse, Cary Mednick, Gary Oglesby, Sharon Perry
+
+- PORTS -
+
+* CONSOLES:
+[US] Nintendo NES &quot;Rampage [Model NES-RP]&quot; (dec.1988)
+
+Sega Master System
+[US] &quot;Rampage [Model 5001]&quot; (1988)
+[EU] (1988)
+[AU] (1988) 
+
+[US] Atari 2600 &quot;Rampage [Model AG-049]&quot; (1989)
+[US] Atari 7800 &quot;Rampage [Model AM-049-03]&quot; (1989)
+
+Sony PlayStation
+[US] &quot;Arcade Party Pak [Model SLUS-00952]&quot; (sept.30, 1999)
+[EU] &quot;Arcade Party Pak [Model SLES-02339]&quot; (feb.23, 2001)
+
+[US] Sega Dreamcast &quot;Midway&apos;s Greatest Arcade Hits Vol. 2 [Model T-9714N]&quot; (nov.15, 2001)
+
+Microsoft XBOX
+[US] &quot;Midway Arcade Treasures&quot; (nov.24, 2003)
+[EU] &quot;Midway Arcade Treasures&quot; (feb.6, 2004)
+
+Nintendo GameCube
+[US] &quot;Midway Arcade Treasures [Model DOL-GAKE-USA]&quot; (dec.18, 2003)
+
+Sony PlayStation 2
+[US] &quot;Midway Arcade Treasures [Model SLUS-20801]&quot; (nov.18, 2003)
+[EU] &quot;Midway Arcade Treasures [Model SLES-51927]&quot; (feb.6, 2004)
+
+Microsoft XBOX 360
+[US] &quot;Midway Arcade Origins&quot; (nov.6, 2012)
+[EU] &quot;Midway Arcade Origins&quot; (nov.15, 2012)
+
+Sony PlayStation 3
+[US] &quot;Midway Arcade Origins [Model BLUS-31083]&quot; (nov.6, 2012)
+[EU] &quot;Midway Arcade Origins [Model BLES-01768]&quot; (nov.15, 2012)
+
+* HANDHELDS: 
+Atari Lynx [US] &quot;Rampage [Model PA2022]&quot; (1992)
+
+Nintendo Game Boy Advance
+[US] &quot;2 Games in One! Paperboy + Rampage [Model AGB-B6BE-USA]&quot; (aug.21, 2005)
+[EU] &quot;2 Games in One! Paperboy + Rampage [Model AGB-B6BP]&quot; (sept.16, 2005)
+
+Sony PSP
+[US] &quot;Midway Arcade Treasures Extended Play [Model ULUS-10059]&quot; (dec.13, 2005)
+[EU] &quot;Midway Arcade Treasures Extended Play [Model ULES-00180]&quot; (feb.24, 2006)
+
+* COMPUTERS: 
+[US] Atari ST (1986) 
+[US] [EU] Commodore C64 (1987) 
+[US] Apple II (1988) 
+[US] PC [MS-DOS] (1988) 
+[EU] Sinclair ZX Spectrum (1988) 
+[EU] Amstrad CPC (1988) 
+[EU] Commodore Amiga (1989) 
+[US] Tandy Color Computer (1989) 
+
+PC [MS Windows, CD-ROM]
+[US] &quot;Arcade&apos;s Greatest Hits - The Atari Collection 2&quot; (jan.1, 1999)
+[US] &quot;Midway Arcade Treasures&quot; (aug.27, 2004)
+[EU] &quot;Midway Arcade Treasures&quot; (nov.23, 2004)
+
+* OTHERS: 
+Apple iPhone/iPod [US] (feb.23, 2012) &quot;Midway Arcade [Model 476467441]&quot;
+
+- CONTRIBUTE -
+
+Edit this entry: https://www.arcade-history.com/?&amp;page=detail&amp;id=2174&amp;o=2
+		</text>
+	</entry>
+</history>

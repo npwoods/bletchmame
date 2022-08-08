@@ -86,6 +86,41 @@ std::size_t util::bytesFromHex(std::span<uint8_t> &dest, std::u8string_view hex)
 
 
 //-------------------------------------------------
+//  toQString
+//-------------------------------------------------
+
+QString util::toQString(std::u8string_view s)
+{
+	return QString::fromUtf8(s.data(), s.size());
+}
+
+
+//-------------------------------------------------
+//  toU8String
+//-------------------------------------------------
+
+std::u8string util::toU8String(const QString &s)
+{
+	QByteArray byteArray = s.toUtf8();
+	return std::u8string((const char8_t *)byteArray.data(), (size_t)byteArray.size());
+}
+
+
+//-------------------------------------------------
+//  trim
+//-------------------------------------------------
+
+std::u8string_view util::trim(std::u8string_view s)
+{
+	auto front_iter = std::find_if(s.begin(), s.end(), [](char8_t ch) { return !isspace(ch); });
+	auto back_iter = front_iter != s.end()
+		? std::find_if(s.rbegin(), s.rend(), [](char8_t ch) { return !isspace(ch); }).base()
+		: s.end();
+	return std::u8string_view(front_iter, back_iter);
+}
+
+
+//-------------------------------------------------
 //  globalPositionBelowWidget
 //-------------------------------------------------
 

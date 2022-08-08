@@ -35,25 +35,25 @@ public:
 	int currentCookie() const { return m_currentCookie; }
 
 	// methods
-	void push(AuditIdentifier &&identifier, bool isPrioritized);
+	void push(Identifier &&identifier, bool isPrioritized);
 	AuditTask::ptr tryCreateAuditTask();
 	void bumpCookie();
 
 private:
-	typedef std::unordered_map<AuditIdentifier, AuditTask::ptr> AuditTaskMap;
+	typedef std::unordered_map<Identifier, AuditTask::ptr> AuditTaskMap;
 
 	const Preferences &					m_prefs;
 	const info::database &				m_infoDb;
 	const software_list_collection &	m_softwareListCollection;
 	int									m_maxAuditsPerTask;
 	AuditTaskMap						m_auditTaskMap;
-	std::deque<AuditIdentifier>			m_undispatchedAudits;
+	std::deque<Identifier>				m_undispatchedAudits;
 	int									m_currentCookie;
 
 	// private methods
-	std::uint64_t getExpectedMediaSize(const AuditIdentifier &auditIdentifier) const;
-	AuditTask::ptr createAuditTask(const std::vector<AuditIdentifier> &auditIdentifiers) const;
-	const software_list::software *findSoftware(const QString &softwareList, const QString &software) const;
+	std::uint64_t getExpectedMediaSize(const Identifier &auditIdentifier) const;
+	AuditTask::ptr createAuditTask(const std::vector<Identifier> &auditIdentifiers) const;
+	const software_list::software *findSoftware(std::u8string_view softwareList, std::u8string_view software) const;
 };
 
 #endif // AUDITQUEUE_H

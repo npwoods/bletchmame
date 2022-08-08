@@ -28,7 +28,7 @@ namespace
 
 	private:
 		static void createInfoDb(info::database &db);
-		static void validateAuditIdentifier(const std::optional<AuditIdentifier> &identifier, const char *expected);
+		static void validateAuditIdentifier(const std::optional<Identifier> &identifier, const char *expected);
 	};
 }
 
@@ -54,12 +54,12 @@ void Test::createInfoDb(info::database &db)
 //  validateAuditIdentifier
 //-------------------------------------------------
 
-void Test::validateAuditIdentifier(const std::optional<AuditIdentifier> &identifier, const char *expected)
+void Test::validateAuditIdentifier(const std::optional<Identifier> &identifier, const char *expected)
 {
 	QVERIFY(identifier);
-	const MachineAuditIdentifier *machineAuditIdentifier = std::get_if<MachineAuditIdentifier>(&*identifier);
+	const MachineIdentifier *machineAuditIdentifier = std::get_if<MachineIdentifier>(&*identifier);
 	QVERIFY(machineAuditIdentifier);
-	QVERIFY(machineAuditIdentifier->machineName() == expected);
+	QVERIFY(machineAuditIdentifier->machineName() == (const char8_t *)expected);
 }
 
 

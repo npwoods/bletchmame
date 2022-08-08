@@ -2,6 +2,7 @@
 <RCC version="1.0">
     <qresource>
         <file>resources/garbage.bin</file>
+        <file>resources/history.xml</file>
         <file>resources/listxml_alienar.xml</file>
         <file>resources/listxml_alienar.bin</file>
         <file>resources/listxml_coco.xml</file>

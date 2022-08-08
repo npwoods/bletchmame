@@ -275,26 +275,10 @@ constexpr int enum_count()
 extern const QString g_empty_string;
 
 
-//-------------------------------------------------
-//  toQString
-//-------------------------------------------------
-
-inline QString toQString(std::u8string_view s)
-{
-	return QString::fromUtf8(s.data(), s.size());
-}
-
-
-//-------------------------------------------------
-//  toU8String
-//-------------------------------------------------
-
-inline std::u8string toU8String(const QString &s)
-{
-	QByteArray byteArray = s.toUtf8();
-	return std::u8string((const char8_t *) byteArray.data(), (size_t) byteArray.size());
-}
-
+// string functions
+QString toQString(std::u8string_view s);
+std::u8string toU8String(const QString &s);
+std::u8string_view trim(std::u8string_view s);
 
 //-------------------------------------------------
 //  string_split

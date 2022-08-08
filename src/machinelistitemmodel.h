@@ -20,7 +20,7 @@
 //**************************************************************************
 
 class IconLoader;
-class MachineAuditIdentifier;
+class MachineIdentifier;
 
 // ======================> MachineListItemModel
 
@@ -43,7 +43,7 @@ public:
 	// methods
 	info::machine machineFromIndex(const QModelIndex &index) const;
 	void setMachineFilter(std::function<bool(const info::machine &machine)> &&machineFilter);
-	void auditStatusChanged(const MachineAuditIdentifier &identifier);
+	void auditStatusChanged(const MachineIdentifier &identifier);
 	void allAuditStatusesChanged();
 
 	// virtuals
@@ -53,8 +53,8 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const override;
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-	virtual AuditIdentifier getAuditIdentifier(int row) const override;
-	virtual bool isAuditIdentifierPresent(const AuditIdentifier &identifier) const override;
+	virtual Identifier getAuditIdentifier(int row) const override;
+	virtual bool isAuditIdentifierPresent(const Identifier &identifier) const override;
 
 private:
 	typedef std::unordered_map<std::reference_wrapper<const QString>, int> ReverseIndexMap;

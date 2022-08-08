@@ -137,8 +137,14 @@ add_library(BletchMAME_core
 	src/focuswatchinghook.h
 	src/hash.cpp
 	src/hash.h
+	src/history.cpp
+	src/history.h
+	src/historywatcher.cpp
+	src/historywatcher.h
 	src/iconloader.cpp
 	src/iconloader.h
+	src/identifier.cpp
+	src/identifier.h
 	src/imagemenu.cpp
 	src/imagemenu.h
 	src/importmameinijob.cpp
@@ -300,6 +306,8 @@ add_executable(BletchMAME_tests
 	src/tests/chd_test.cpp
 	src/tests/devstatusdisplay_test.cpp
 	src/tests/hash_test.cpp
+	src/tests/history_test.cpp
+	src/tests/identifier_test.cpp
 	src/tests/importmameinijob_test.cpp
 	src/tests/info_builder_test.cpp
 	src/tests/info_test.cpp

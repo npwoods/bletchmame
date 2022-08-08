@@ -64,7 +64,7 @@ const Audit &AuditTask::addMachineAudit(const Preferences &prefs, const info::ma
 {
 	Entry &entry = *m_entries.emplace(
 		m_entries.end(),
-		MachineAuditIdentifier(machine.name()));
+		MachineIdentifier(machine.name()));
 	entry.m_audit.addMediaForMachine(prefs, machine);
 	return entry.m_audit;
 }
@@ -78,7 +78,7 @@ const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const softwar
 {
 	Entry &entry = *m_entries.emplace(
 		m_entries.end(),
-		SoftwareAuditIdentifier(software.parent().name(), software.name()));
+		SoftwareIdentifier(software.parent().name(), software.name()));
 	entry.m_audit.addMediaForSoftware(prefs, software);
 	return entry.m_audit;
 }
@@ -88,9 +88,9 @@ const Audit &AuditTask::addSoftwareAudit(const Preferences &prefs, const softwar
 //  getIdentifiers
 //-------------------------------------------------
 
-std::vector<AuditIdentifier> AuditTask::getIdentifiers() const
+std::vector<Identifier> AuditTask::getIdentifiers() const
 {
-	std::vector<AuditIdentifier> result;
+	std::vector<Identifier> result;
 	for (const Entry &entry : m_entries)
 		result.push_back(entry.m_identifier);
 	return result;
@@ -123,7 +123,7 @@ void AuditTask::run()
 			break;
 
 		// and record the results
-		results.emplace_back(AuditIdentifier(entry.m_identifier), *status);
+		results.emplace_back(Identifier(entry.m_identifier), *status);
 	}
 
 	// and respond with the event
@@ -136,7 +136,7 @@ void AuditTask::run()
 //  Entry ctor
 //-------------------------------------------------
 
-AuditTask::Entry::Entry(AuditIdentifier &&identifier)
+AuditTask::Entry::Entry(Identifier &&identifier)
 	: m_identifier(std::move(identifier))
 {
 }
@@ -191,55 +191,10 @@ void AuditTask::Callback::postProgressEvent(int entryIndex, std::uint64_t bytesP
 
 
 //-------------------------------------------------
-//  MachineAuditIdentifier ctor
-//-------------------------------------------------
-
-MachineAuditIdentifier::MachineAuditIdentifier(const QString &machineName)
-	: m_machineName(machineName)
-{
-	assert(!machineName.isEmpty());
-}
-
-
-//-------------------------------------------------
-//  std::hash<MachineAuditIdentifier>::operator()
-//-------------------------------------------------
-
-std::size_t std::hash<MachineAuditIdentifier>::operator()(const MachineAuditIdentifier &identifier) const
-{
-	return std::hash<QString>()(identifier.machineName());
-}
-
-
-//-------------------------------------------------
-//  SoftwareAuditIdentifier ctor
-//-------------------------------------------------
-
-SoftwareAuditIdentifier::SoftwareAuditIdentifier(const QString &softwareList, const QString &software)
-	: m_softwareList(softwareList)
-	, m_software(software)
-{
-	assert(!m_softwareList.isEmpty());
-	assert(!m_software.isEmpty());
-}
-
-
-//-------------------------------------------------
-//  std::hash<SoftwareAuditIdentifier>::operator()
-//-------------------------------------------------
-
-std::size_t std::hash<SoftwareAuditIdentifier>::operator()(const SoftwareAuditIdentifier &identifier) const
-{
-	return std::hash<QString>()(identifier.softwareList())
-		^ std::hash<QString>()(identifier.software());
-}
-
-
-//-------------------------------------------------
 //  AuditResult ctor
 //-------------------------------------------------
 
-AuditResult::AuditResult(AuditIdentifier &&identifier, AuditStatus status)
+AuditResult::AuditResult(Identifier &&identifier, AuditStatus status)
 	: m_identifier(std::move(identifier))
 	, m_status(status)
 {

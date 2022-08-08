@@ -41,7 +41,8 @@ const std::array<Preferences::GlobalPathInfo, util::enum_count<Preferences::glob
 		{ "plugins",	"pluginspath",		"Plugins" },
 		{ "profiles",	nullptr,			"Profiles" },
 		{ "cheats",		"cheatpath",		"Cheats" },
-		{ "snap",		nullptr,			"Snapshots" }
+		{ "snap",		nullptr,			"Snapshots" },
+		{ "history",	nullptr,			"History File" }
 	}
 };
 
@@ -266,6 +267,7 @@ Preferences::PathCategory Preferences::getPathCategory(global_path_type path_typ
 	switch (path_type)
 	{
 	case Preferences::global_path_type::EMU_EXECUTABLE:
+	case Preferences::global_path_type::HISTORY:
 		result = PathCategory::SingleFile;
 		break;
 
@@ -413,6 +415,9 @@ void Preferences::internalSetGlobalPath(global_path_type type, QString &&path)
 		break;
 	case global_path_type::SNAPSHOTS:
 		emit globalPathSnapshotsChanged(dest);
+		break;
+	case global_path_type::HISTORY:
+		emit globalPathHistoryChanged(dest);
 		break;
 	default:
 		// do nothing
@@ -993,6 +998,12 @@ bool Preferences::load(QIODevice &input)
 		if (!splitterSizes.isEmpty())
 			setMachineSplitterSizes(std::move(splitterSizes));
 	});
+	xml.onElementEnd({ "preferences", "softwarelistsplitters" }, [&](std::u8string &&content)
+	{
+		QList<int> splitterSizes = intListFromString(content);
+		if (!splitterSizes.isEmpty())
+			setSoftwareSplitterSizes(std::move(splitterSizes));
+	});
 	xml.onElementBegin({ "preferences", "folder" }, [&](const XmlParser::Attributes &attributes)
 	{
 		const auto [idAttr, isShownAttr, selectedAttr] = attributes.get("id", "shown", "selected");
@@ -1188,6 +1199,8 @@ void Preferences::save(QIODevice &output)
 	}
 	if (!m_machine_splitter_sizes.isEmpty())
 		writer.writeTextElement("machinelistsplitters", stringFromIntList(m_machine_splitter_sizes));
+	if (!m_software_splitter_sizes.isEmpty())
+		writer.writeTextElement("softwarelistsplitters", stringFromIntList(m_software_splitter_sizes));
 
 	// import preference
 	for (const auto &[pathType, importPref] : m_importActionPreferences)

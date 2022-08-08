@@ -24,6 +24,14 @@ namespace
 		void fixedByteArrayFromHex_parseError1()	{ fixedByteArrayFromHex_parseError(u8""); }
 		void fixedByteArrayFromHex_parseError2()	{ fixedByteArrayFromHex_parseError(u8"01234"); }
 		void fixedByteArrayFromHex_parseError3()	{ fixedByteArrayFromHex_parseError(u8"0123456X"); }
+		void trim_1()								{ trim(u8"", u8""); }
+		void trim_2()								{ trim(u8"foo", u8"foo"); }
+		void trim_3()								{ trim(u8"foo\n", u8"foo"); }
+		void trim_4()								{ trim(u8"\nfoo\n", u8"foo"); }
+		void trim_5()								{ trim(u8"   ", u8""); }
+		void trim_6()								{ trim(u8" \n ", u8""); }
+		void trim_7()								{ trim(u8"foo bar", u8"foo bar"); }
+		void trim_8()								{ trim(u8"  foo bar ", u8"foo bar"); }
 
 		void enum_parser();
 		void return_value_substitutor();
@@ -62,6 +70,7 @@ namespace
 		}
 
 		void fixedByteArrayFromHex_parseError(std::u8string_view s);
+		void trim(std::u8string_view input, std::u8string_view expected);
 	};
 }
 
@@ -177,6 +186,17 @@ void Test::toU8String()
 	QString qstr = QString::fromWCharArray(L"Hey \u5582");
 	std::u8string str = util::toU8String(qstr);
 	QVERIFY(str == u8"Hey \u5582");
+}
+
+
+//-------------------------------------------------
+//  trim
+//-------------------------------------------------
+
+void Test::trim(std::u8string_view input, std::u8string_view expected)
+{
+	std::u8string_view actual = util::trim(input);
+	QVERIFY(actual == expected);
 }
 
 

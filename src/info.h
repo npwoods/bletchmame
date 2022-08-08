@@ -692,6 +692,7 @@ namespace info
 		bool load(const QByteArray &byteArray, const QString &expected_version = "") noexcept;
 		void reset() noexcept;
 		std::optional<machine> find_machine(const QString &machine_name) const noexcept;
+		std::optional<machine> find_machine(std::u8string_view machine_name) const noexcept;
 		const QString &version() const noexcept { return *m_version; }
 		void addOnChangedHandler(std::function<void()> &&onChanged) noexcept;
 

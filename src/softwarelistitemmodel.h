@@ -47,7 +47,7 @@ public:
 	// methods
 	void load(const software_list_collection &software_col, bool load_parts, const QString &dev_interface = "");
 	void reset();
-	void auditStatusChanged(const SoftwareAuditIdentifier &identifier);
+	void auditStatusChanged(const SoftwareIdentifier &identifier);
 	void allAuditStatusesChanged();
 
 	// accessors
@@ -60,8 +60,8 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const override;
 	virtual QVariant data(const QModelIndex &index, int role) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-	virtual AuditIdentifier getAuditIdentifier(int row) const override;
-	virtual bool isAuditIdentifierPresent(const AuditIdentifier &identifier) const override;
+	virtual Identifier getAuditIdentifier(int row) const override;
+	virtual bool isAuditIdentifierPresent(const Identifier &identifier) const override;
 
 private:
 	// ======================> SoftwareAndPart
@@ -83,7 +83,7 @@ private:
 	std::function<void(const software_list::software &)>	m_softwareIconAccessedCallback;
 	std::vector<SoftwareAndPart>							m_parts;
 	std::vector<QString>									m_softlist_names;
-	std::unordered_map<SoftwareAuditIdentifier, int>		m_softwareIndexMap;
+	std::unordered_map<SoftwareIdentifier, int>				m_softwareIndexMap;
 
 	void internalReset();
 	void iconsChanged(int startIndex, int endIndex);

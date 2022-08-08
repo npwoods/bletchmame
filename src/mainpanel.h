@@ -10,6 +10,7 @@
 #define MAINPANEL_H
 
 // bletchmame headers
+#include "historywatcher.h"
 #include "iconloader.h"
 #include "profile.h"
 #include "prefs.h"
@@ -29,6 +30,7 @@ class QTableWidgetItem;
 class QAbstractItemModel;
 class QTableView;
 class QSortFilterProxyModel;
+class QSplitter;
 QT_END_NAMESPACE
 
 class AuditableListItemModel;
@@ -45,6 +47,7 @@ class SoftwareListItemModel;
 class IMainPanelHost
 {
 public:
+	virtual TaskDispatcher &taskDispatcher() = 0;
 	virtual void run(const info::machine &machine, std::unique_ptr<SessionBehavior> &&sessionBehavior) = 0;
 	virtual void auditIfAppropriate(const info::machine &machine) = 0;
 	virtual void auditIfAppropriate(const software_list::software &software) = 0;
@@ -96,7 +99,6 @@ private slots:
 	void on_profilesTableView_activated(const QModelIndex &index);
 	void on_profilesTableView_customContextMenuRequested(const QPoint &pos);
 	void on_tabWidget_currentChanged(int index);
-	void on_machinesSplitter_splitterMoved(int pos, int index);
 
 signals:
 	void statusMessageChanged(const QString &statusMessage);
@@ -117,6 +119,7 @@ private:
 	IconLoader							m_iconLoader;
 	std::optional<AssetFinder>			m_snapshotAssetFinder;
 	QPixmap								m_currentSnapshot;
+	HistoryWatcher						m_historyWatcher;
 	std::vector<QString>				m_expandedTreeItems;
 	QString								m_statusMessage;
 	std::array<QLabel, 2>				m_statusWidgets;
@@ -149,7 +152,8 @@ private:
 	ProfileListItemModel &profileListItemModel();
 	const QSortFilterProxyModel &sortFilterProxyModel(const QTableView &tableView) const;
 	void machineFoldersTreeViewSelectionChanged(const QItemSelection &newSelection, const QItemSelection &oldSelection);
-	void persistMachineSplitterSizes();
+	void setupSplitter(QSplitter &splitter, const QList<int> &(Preferences::*getSplitterSizesProc)() const, void (Preferences::*setSplitterSizesProc)(QList<int> &&));
+	void persistSplitterSizes(QSplitter &splitter, void (Preferences::*setSplitterSizesProc)(QList<int> &&));
 	void updateInfoPanel(const QString &machineName);
 	void updateSnapshot();
 	void identifyExpandedFolderTreeItems();
