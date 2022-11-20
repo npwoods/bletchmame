@@ -20,7 +20,6 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
-        qt: [6.2.0]
     runs-on: windows-latest
     defaults:
       run:
@@ -40,7 +39,7 @@ jobs:
         msystem: MINGW64
         update: false
         release: false
-        install: git parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-polly mingw-w64-x86_64-mlir mingw-w64-x86_64-clang mingw-w64-x86_64-clang-analyzer mingw-w64-x86_64-clang-tools-extra patch
+        install: git parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-polly mingw-w64-x86_64-mlir mingw-w64-x86_64-clang mingw-w64-x86_64-clang-analyzer mingw-w64-x86_64-clang-tools-extra mingw-w64-x86_64-qt6-static patch
 
     # Cache Dependencies
     - name: Cache Dependencies
@@ -50,29 +49,7 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/install
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }}-${{ matrix.qt }}-${{ hashFiles('.github/workflows/windows_msys2.yml', 'scripts/qt6_retrieve.sh', 'scripts/qt6_build_msys2.sh', 'scripts/quazip_build_msys2.sh', 'scripts/lzma_build_msys2.sh')}}
-
-    # Set Up Junction To C Drive
-    - name: Set Up Junction To C Drive
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      shell: cmd
-      run: |
-        rmdir /s /q deps
-        mkdir C:\deps
-        mklink /J deps C:\deps
-        git checkout deps
-
-    # Install old CMake (needed for Qt6 build)
-    - name: Install old CMake (needed for Qt6 build)
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        pacman -U --noconfirm http://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-cmake-3.21.3-1-any.pkg.tar.zst
-
-    # Retrieve Qt6
-    - name: Retrieve Qt6
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        sh scripts/qt6_retrieve.sh -q ${{ matrix.qt }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.build_type }}-${{ hashFiles('.github/workflows/windows_msys2.yml', 'scripts/quazip_build_msys2.sh', 'scripts/lzma_build_msys2.sh')}}
 
     # Retrieve QuaZip
     - name: Retrieve QuaZip
@@ -85,12 +62,6 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         git submodule update --init deps/lzma-c-sdk
-
-    # Build Qt6
-    - name: Build Qt6
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        sh scripts/qt6_build_msys2.sh
 
     # Build QuaZip
     - name: Build QuaZip
@@ -157,7 +128,7 @@ jobs:
 
     # Configure AWS Credentials
     - name: Configure AWS Credentials
-      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release' && matrix.qt == '6.2.0'
+      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -166,7 +137,7 @@ jobs:
       
     # Deploy Artifacts to S3
     - name: Deploy Artifacts to S3
-      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release' && matrix.qt == '6.2.0'
+      if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
       shell: bash
       run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete
 
