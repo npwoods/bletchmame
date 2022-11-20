@@ -51,6 +51,6 @@ cmake -S$QUAZIP_DIR -B$QUAZIP_BUILD_DIR						\
 	-DCMAKE_PREFIX_PATH=$INSTALL_DIR						\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}						\
 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${LTO}				\
-	-DQt6CoreTools_DIR=$INSTALL_DIR/lib/cmake/Qt6CoreTools
+	-DQt6CoreTools_DIR=/mingw64/qt6-static/lib/cmake/Qt6CoreTools
 cmake --build $QUAZIP_BUILD_DIR --parallel
 cmake --install $QUAZIP_BUILD_DIR --prefix $INSTALL_DIR
