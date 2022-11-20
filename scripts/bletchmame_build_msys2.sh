@@ -39,6 +39,7 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
 	-DUSE_PROFILER=${USE_PROFILER}												\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}											\
 	-DCMAKE_PREFIX_PATH="${DEPS_INSTALL_DIR}"									\
+	-DQt6CoreTools_DIR=/mingw64/qt6-static/lib/cmake/Qt6CoreTools
 
 # generate version.gen.h
 mkdir -p ${BLETCHMAME_DIR}/include
