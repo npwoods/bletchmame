@@ -16,6 +16,7 @@ fi
 QUAZIP_DIR=$(dirname $BASH_SOURCE)/../deps/quazip
 INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/msys2
 QUAZIP_BUILD_DIR=$(dirname $BASH_SOURCE)/../deps/build/msys2/quazip
+QT_INSTALL_DIR=C:/msys64/mingw64/qt6-static
 
 # parse arguments
 BUILD_TYPE=Release					# can be Release/Debug/RelWithDebInfo etc
@@ -48,9 +49,8 @@ fi
 cmake -S$QUAZIP_DIR -B$QUAZIP_BUILD_DIR						\
 	-DBUILD_SHARED_LIBS=off									\
 	-DQUAZIP_QT_MAJOR_VERSION=6								\
-	-DCMAKE_PREFIX_PATH=$INSTALL_DIR						\
+	-DCMAKE_PREFIX_PATH="${INSTALL_DIR};${QT_INSTALL_DIR}"	\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}						\
-	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${LTO}				\
-	-DQt6CoreTools_DIR=/mingw64/qt6-static/lib/cmake/Qt6CoreTools
+	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${LTO}
 cmake --build $QUAZIP_BUILD_DIR --parallel
 cmake --install $QUAZIP_BUILD_DIR --prefix $INSTALL_DIR
