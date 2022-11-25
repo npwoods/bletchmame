@@ -14,7 +14,6 @@
 
 // Qt headers
 #include <QString>
-#include <QRegExp>
 
 // standard headrs
 #include <memory>

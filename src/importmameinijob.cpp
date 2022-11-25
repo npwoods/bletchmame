@@ -10,6 +10,9 @@
 #include "importmameinijob.h"
 #include "iniparser.h"
 
+// Qt headers
+#include <QRegularExpression>
+
 // windows headers
 #ifdef Q_OS_WINDOWS
 #include <windows.h>
@@ -315,20 +318,22 @@ QString ImportMameIniJob::expandEnvironmentVariables(const QString &s)
 
 QString ImportMameIniJob::expandEnvironmentVariablesGeneral(const QString& s, QByteArray(*getEnv)(const char* varName))
 {
-	QRegExp env_var("\\$([A-Za-z0-9_]+)");
-	int i;
+	static QRegularExpression env_var("\\$([A-Za-z0-9_]+)");
 	QString r = s;
 
-	while ((i = env_var.indexIn(r)) != -1)
+	QRegularExpressionMatch match;
+	qsizetype offset = 0;
+	while ((match = env_var.match(r, offset)).hasMatch())
 	{
-		QByteArray value(getEnv(env_var.cap(1).toLatin1().data()));
+		offset = match.capturedStart();
+		QString varName = r.mid(offset + 1, match.capturedLength() - 1);
+		QByteArray value(getEnv(varName.toLatin1().data()));
 		if (value.size() > 0)
 		{
-			r.remove(i, env_var.matchedLength());
-			r.insert(i, value);
+			r.remove(offset, match.capturedLength());
+			r.insert(offset, value);
 		}
-		else
-			break;
+		offset++;
 	}
 	return r;
 }
