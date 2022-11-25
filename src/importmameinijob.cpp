@@ -301,23 +301,35 @@ QString ImportMameIniJob::expandEnvironmentVariables(const QString &s)
 	}
 #else // !Q_OS_WINDOWS
 	{
-		QRegExp env_var("\\$([A-Za-z0-9_]+)");
-		int i;
-		r = s;
-
-		while ((i = env_var.indexIn(r)) != -1)
-		{
-			QByteArray value(qgetenv(env_var.cap(1).toLatin1().data()));
-			if (value.size() > 0)
-			{
-				r.remove(i, env_var.matchedLength());
-				r.insert(i, value);
-			}
-			else
-				break;
-		}
+		r = expandEnvironmentVariablesGeneral(s, qgetenv);
 	}
 #endif // Q_OS_WINDOWS
+	return r;
+}
+
+
+//-------------------------------------------------
+//  expandEnvironmentVariablesGeneral - unit testable
+//  version of expandEnvironmentVariables
+//-------------------------------------------------
+
+QString ImportMameIniJob::expandEnvironmentVariablesGeneral(const QString& s, QByteArray(*getEnv)(const char* varName))
+{
+	QRegExp env_var("\\$([A-Za-z0-9_]+)");
+	int i;
+	QString r = s;
+
+	while ((i = env_var.indexIn(r)) != -1)
+	{
+		QByteArray value(getEnv(env_var.cap(1).toLatin1().data()));
+		if (value.size() > 0)
+		{
+			r.remove(i, env_var.matchedLength());
+			r.insert(i, value);
+		}
+		else
+			break;
+	}
 	return r;
 }
 
