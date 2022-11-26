@@ -20,7 +20,6 @@ if (NOT USE_SHARED_LIBS)
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES} -lstdc++ -lpthread")
 add_definitions(-DQUAZIP_STATIC)
-set(QT_STATIC_LIBRARIES bz2 harfbuzz brotlidec brotlicommon)
 endif()
 
 
@@ -51,6 +50,9 @@ include_directories(${LZMA_INCLUDE_DIR})
 
 # Qt
 find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools Test)
+if (NOT USE_SHARED_LIBS)
+set(QT_STATIC_LIBRARIES bz2 harfbuzz brotlidec brotlicommon ${Qt6_DIR}/../../libQt6Core5Compat.a)
+endif()
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
