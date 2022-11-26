@@ -50,7 +50,7 @@ include_directories(${LZMA_INCLUDE_DIR})
 #message(FATAL_ERROR ${LZMA_INCLUDE_DIR})
 
 # Qt
-find_package(Qt6 COMPONENTS Widgets LinguistTools Core5Compat Test REQUIRED)
+find_package(Qt6 COMPONENTS Widgets LinguistTools Test REQUIRED)
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
@@ -278,7 +278,7 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES})
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES})
 
 
 #############################################################################
@@ -287,7 +287,7 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} Q
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc src/winresources.rc)
 target_include_directories(BletchMAME PRIVATE src lib ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
@@ -339,7 +339,7 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${QUAZIP_LIBRARIES} Qt6::Core5Compat ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${QUAZIP_LIBRARIES} ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 
 #############################################################################
