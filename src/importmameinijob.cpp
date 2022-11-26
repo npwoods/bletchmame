@@ -10,6 +10,9 @@
 #include "importmameinijob.h"
 #include "iniparser.h"
 
+// Qt headers
+#include <QRegularExpression>
+
 // windows headers
 #ifdef Q_OS_WINDOWS
 #include <windows.h>
@@ -301,23 +304,37 @@ QString ImportMameIniJob::expandEnvironmentVariables(const QString &s)
 	}
 #else // !Q_OS_WINDOWS
 	{
-		QRegExp env_var("\\$([A-Za-z0-9_]+)");
-		int i;
-		r = s;
-
-		while ((i = env_var.indexIn(r)) != -1)
-		{
-			QByteArray value(qgetenv(env_var.cap(1).toLatin1().data()));
-			if (value.size() > 0)
-			{
-				r.remove(i, env_var.matchedLength());
-				r.insert(i, value);
-			}
-			else
-				break;
-		}
+		r = expandEnvironmentVariablesGeneral(s, qgetenv);
 	}
 #endif // Q_OS_WINDOWS
+	return r;
+}
+
+
+//-------------------------------------------------
+//  expandEnvironmentVariablesGeneral - unit testable
+//  version of expandEnvironmentVariables
+//-------------------------------------------------
+
+QString ImportMameIniJob::expandEnvironmentVariablesGeneral(const QString& s, QByteArray(*getEnv)(const char* varName))
+{
+	static QRegularExpression env_var("\\$([A-Za-z0-9_]+)");
+	QString r = s;
+
+	QRegularExpressionMatch match;
+	qsizetype offset = 0;
+	while ((match = env_var.match(r, offset)).hasMatch())
+	{
+		offset = match.capturedStart();
+		QString varName = r.mid(offset + 1, match.capturedLength() - 1);
+		QByteArray value(getEnv(varName.toLatin1().data()));
+		if (value.size() > 0)
+		{
+			r.remove(offset, match.capturedLength());
+			r.insert(offset, value);
+		}
+		offset++;
+	}
 	return r;
 }
 

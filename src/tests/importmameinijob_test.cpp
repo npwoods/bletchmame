@@ -16,6 +16,19 @@ class ImportMameIniJob::Test : public QObject
 
 private slots:
 	void general();
+	void expandEnvironmentVariablesGeneral_1() { expandEnvironmentVariablesGeneral("FooBar", "FooBar"); }
+	void expandEnvironmentVariablesGeneral_2() { expandEnvironmentVariablesGeneral("FooBar $VAR1", "FooBar Alpha"); }
+	void expandEnvironmentVariablesGeneral_3() { expandEnvironmentVariablesGeneral("FooBar $VAR2", "FooBar Bravo"); }
+	void expandEnvironmentVariablesGeneral_4() { expandEnvironmentVariablesGeneral("FooBar $VAR1 $VAR2", "FooBar Alpha Bravo"); }
+	void expandEnvironmentVariablesGeneral_5() { expandEnvironmentVariablesGeneral("FooBar $BLAH", "FooBar $BLAH"); }
+	void expandEnvironmentVariablesGeneral_6() { expandEnvironmentVariablesGeneral("FooBar $VAR1 $BLAH", "FooBar Alpha $BLAH"); }
+	void expandEnvironmentVariablesGeneral_7() { expandEnvironmentVariablesGeneral("FooBar $", "FooBar $"); }
+	void expandEnvironmentVariablesGeneral_8() { expandEnvironmentVariablesGeneral("FooBar $ $VAR1", "FooBar $ Alpha"); }
+	void expandEnvironmentVariablesGeneral_9() { expandEnvironmentVariablesGeneral("$VAR1", "Alpha"); }
+	void expandEnvironmentVariablesGeneral_10() { expandEnvironmentVariablesGeneral("$VAR2", "Bravo"); }
+
+private:
+	void expandEnvironmentVariablesGeneral(const QString& input, const QString& expected);
 };
 
 
@@ -69,6 +82,32 @@ void ImportMameIniJob::Test::general()
 	QVERIFY(importJob.entries()[8]->importAction()		== ImportMameIniJob::ImportAction::Supplement);
 	QVERIFY(importJob.entries()[9]->labelDisplayText()	== "Cheats");
 	QVERIFY(importJob.entries()[9]->importAction()		== ImportMameIniJob::ImportAction::Supplement);
+}
+
+
+//-------------------------------------------------
+//  fakeGetEnv
+//-------------------------------------------------
+
+static QByteArray fakeGetEnv(const char* varName)
+{
+	QByteArray result;
+	if (!strcmp(varName, "VAR1"))
+		result = QString("Alpha").toLatin1();
+	else if (!strcmp(varName, "VAR2"))
+		result = QString("Bravo").toLatin1();
+	return result;
+}
+
+
+//-------------------------------------------------
+//  expandEnvironmentVariablesGeneral
+//-------------------------------------------------
+
+void ImportMameIniJob::Test::expandEnvironmentVariablesGeneral(const QString &input, const QString &expected)
+{
+	QString actual = ImportMameIniJob::expandEnvironmentVariablesGeneral(input, fakeGetEnv);
+	QVERIFY(actual == expected);
 }
 
 
