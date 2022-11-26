@@ -52,6 +52,9 @@ include_directories(${LZMA_INCLUDE_DIR})
 find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools Test)
 if (NOT USE_SHARED_LIBS)
 set(QT_STATIC_LIBRARIES bz2 harfbuzz brotlidec brotlicommon graphite2 ${Qt6_DIR}/../../libQt6Core5Compat.a)
+if(WIN32)
+set(QT_STATIC_LIBRARIES ${QT_STATIC_LIBRARIES} rpcrt4)
+endif()
 endif()
 
 # QuaZip
