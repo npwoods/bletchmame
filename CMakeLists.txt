@@ -47,10 +47,15 @@ include_directories(${ZLIB_INCLUDE_DIR})
 # LZMA
 find_package(LZMA REQUIRED)
 include_directories(${LZMA_INCLUDE_DIR})
-#message(FATAL_ERROR ${LZMA_INCLUDE_DIR})
 
 # Qt
-find_package(Qt6 COMPONENTS Widgets LinguistTools Test REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools Test)
+if (NOT USE_SHARED_LIBS)
+set(QT_STATIC_LIBRARIES bz2 harfbuzz brotlidec brotlicommon graphite2 ${Qt6_DIR}/../../libQt6Core5Compat.a)
+if(WIN32)
+set(QT_STATIC_LIBRARIES ${QT_STATIC_LIBRARIES} rpcrt4)
+endif()
+endif()
 
 # QuaZip
 find_package(QuaZip-Qt6 REQUIRED)
@@ -278,7 +283,8 @@ add_library(BletchMAME_core
 	${TS_FILES}
 )
 target_include_directories(BletchMAME_core PRIVATE src lib ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES})
+target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${QT_STATIC_LIBRARIES})
+qt_import_plugins(BletchMAME_core INCLUDE_BY_TYPE imageformats Qt::QGifPlugin Qt::QJpegPlugin EXCLUDE_BY_TYPE sqldrivers)
 
 
 #############################################################################
@@ -287,7 +293,8 @@ target_link_libraries(BletchMAME_core PRIVATE Qt6::Widgets ${QUAZIP_LIBRARIES} $
 
 add_executable(BletchMAME WIN32 src/main.cpp src/resources.qrc src/winresources.rc)
 target_include_directories(BletchMAME PRIVATE src lib ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME PRIVATE BletchMAME_core Qt6::Widgets ${QUAZIP_LIBRARIES} ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${QT_STATIC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+qt_import_plugins(BletchMAME INCLUDE_BY_TYPE imageformats Qt::QGifPlugin Qt::QJpegPlugin EXCLUDE_BY_TYPE sqldrivers)
 install(TARGETS BletchMAME RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
@@ -339,7 +346,8 @@ add_executable(BletchMAME_tests
 )
 add_test(NAME BletchMAME_tests COMMAND BletchMAME_tests)
 target_include_directories(BletchMAME_tests PRIVATE src lib src/test)
-target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${QUAZIP_LIBRARIES} ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(BletchMAME_tests PRIVATE BletchMAME_core Qt6::Widgets Qt6::Test ${QUAZIP_LIBRARIES} ${EXPAT_LIBRARIES} ${ZLIB_LIBRARIES} ${LZMA_LIBRARIES} ${QT_STATIC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+qt_import_plugins(BletchMAME_tests INCLUDE_BY_TYPE imageformats Qt::QGifPlugin Qt::QJpegPlugin EXCLUDE_BY_TYPE sqldrivers)
 
 
 #############################################################################

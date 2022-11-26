@@ -23,6 +23,7 @@ my @allowed_dlls =
 	"version.dll",
 	"winmm.dll",
 	"ws2_32.dll",
+	"rpcrt4.dll",
 	"wtsapi32.dll",
 	"api-ms-win-core-synch-l1-2-0.dll"
 );

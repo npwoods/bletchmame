@@ -8,6 +8,9 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 
 ## Version History
 
+- 2.17 (TBD)
+	- Now using default MSYS2 Qt static build (6.2.1 as of November 2022)
+
 - 2.16 (2022-Aug-14)
 	- Added support for viewing history.xml files (for both machines and software list items)
 	- Added support for 7-zip

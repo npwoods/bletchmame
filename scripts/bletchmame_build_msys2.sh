@@ -15,6 +15,7 @@ BLETCHMAME_DIR=$(dirname $BASH_SOURCE)/..
 BLETCHMAME_BUILD_DIR=build/msys2
 BLETCHMAME_INSTALL_DIR=${BLETCHMAME_BUILD_DIR}
 DEPS_INSTALL_DIR=$(dirname $BASH_SOURCE)/../deps/install/msys2
+QT_INSTALL_DIR=C:/msys64/mingw64/qt6-static
 
 # parse arguments
 USE_PROFILER=off
@@ -33,12 +34,12 @@ done
 # set up build directory
 rm -rf ${BLETCHMAME_BUILD_DIR}
 echo "Build Type: $BUILD_TYPE"
-cmake -S. -B${BLETCHMAME_BUILD_DIR}												\
-	-DUSE_SHARED_LIBS=off														\
-	-DHAS_VERSION_GEN_H=1														\
-	-DUSE_PROFILER=${USE_PROFILER}												\
-	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}											\
-	-DCMAKE_PREFIX_PATH="${DEPS_INSTALL_DIR}"									\
+cmake -S. -B${BLETCHMAME_BUILD_DIR}								\
+	-DUSE_SHARED_LIBS=off										\
+	-DHAS_VERSION_GEN_H=1										\
+	-DUSE_PROFILER=${USE_PROFILER}								\
+	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}							\
+	-DCMAKE_PREFIX_PATH="${DEPS_INSTALL_DIR};${QT_INSTALL_DIR}"	\
 
 # generate version.gen.h
 mkdir -p ${BLETCHMAME_DIR}/include
