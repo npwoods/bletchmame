@@ -97,7 +97,7 @@ endif()
 
 # Configure warnings for different compilers
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
-add_compile_options(/W3 /WX -D_CRT_SECURE_NO_WARNINGS -Wno-sometimes-uninitialized)
+add_compile_options(/W3 /WX -D_CRT_SECURE_NO_WARNINGS -Wno-sometimes-uninitialized -Wno-ignored-pragmas)
 elseif ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
 add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-sign-compare -Wno-missing-field-initializers -Wno-unused-parameter)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
