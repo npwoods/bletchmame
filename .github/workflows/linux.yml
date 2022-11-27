@@ -21,7 +21,7 @@ jobs:
       matrix:
         cxx: [clang++, g++-10]
         build_type: [Debug, Release]
-        qt: [6.2.0, 6.3.0]
+        qt: [6.2.1, 6.4.0]
     runs-on: ubuntu-latest
     steps:
 

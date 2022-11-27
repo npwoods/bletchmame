@@ -6,6 +6,10 @@
 
 ***************************************************************************/
 
+// Qt headers
+#include <QString>
+
+// bletchmame includes
 #include "iniparser.h"
 
 

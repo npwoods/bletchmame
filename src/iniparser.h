@@ -9,6 +9,7 @@
 #ifndef INIPARSER_H
 #define INIPARSER_H
 
+// Qt headers
 #include <QTextStream>
 
 
