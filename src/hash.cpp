@@ -65,7 +65,11 @@ std::optional<Hash> Hash::calculate(QIODevice &stream, const CalculateCallback &
 			crc32 = s_crcTable[(crc32 ^ buffer[i]) & 0xFF] ^ (crc32 >> 8);
 
 		// SHA-1 processing
+#if QT_VERSION < 0x060300
 		cryptographicHash.addData(buffer, len);
+#else // !QT_VERSION < 0x060300
+		cryptographicHash.addData(QByteArrayView(buffer, len));
+#endif // QT_VERSION < 0x060300
 
 		// invoke callback if appropriate
 		if (callback(bytesProcessed))
