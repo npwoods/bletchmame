@@ -118,7 +118,8 @@ jobs:
     - name: Run Unit Tests
       run: |
         echo Running Unit Tests
+        echo Setting Path
+        echo "PATH=%PATH%;%GITHUB_WORKSPACE%/deps/install/msvc2019\bin;$Qt6_DIR\bin" >> $GITHUB_ENV
+        echo Path set
         echo PATH=%PATH%
         cd ./build/msvc2019/${{ matrix.config }} ; ./BletchMAME_tests.exe
-      env:
-        PATH: ${env.PATH};${{ GITHUB_WORKSPACE}}deps\install\msvc2019\bin;$Qt6_DIR\bin
