@@ -81,6 +81,7 @@ jobs:
 
     # Retrieve lzma-c-sdk
     - name: Retrieve lzma-c-sdk
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |        
         git submodule update --init deps/lzma-c-sdk
 
@@ -116,6 +117,8 @@ jobs:
     # Run Unit Tests
     - name: Run Unit Tests
       run: |
-        cp ./deps/install/msvc2019/bin/*.dll ./build/msvc2019/${{ matrix.config }}
-        cp $Qt6_DIR/bin/*.dll ./build/msvc2019/${{ matrix.config }}
+        echo Running Unit Tests
+        echo PATH=%PATH%
         cd ./build/msvc2019/${{ matrix.config }} ; ./BletchMAME_tests.exe
+      env:
+        PATH: ${env.PATH};${{ GITHUB_WORKSPACE}}deps\install\msvc2019\bin;$Qt6_DIR\bin
