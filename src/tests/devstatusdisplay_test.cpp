@@ -19,6 +19,7 @@ class DevicesStatusDisplay::Test : public QObject
 
 private slots:
 	void formatTime_1()		{ formatTime(62.3f, "1:02"); }
+	void imagesLoad();
 
 private:
 	void formatTime(float seconds, const QString &expected);
@@ -37,6 +38,18 @@ void DevicesStatusDisplay::Test::formatTime(float seconds, const QString &expect
 {
 	QString actual = DevicesStatusDisplay::formatTime(seconds);
 	QVERIFY(expected == actual);
+}
+
+
+//-------------------------------------------------
+//  imagesLoad
+//-------------------------------------------------
+
+void DevicesStatusDisplay::Test::imagesLoad()
+{
+	QVERIFY(!tryLoadImage(s_cassettePixmapResourceName));
+	QVERIFY(!tryLoadImage(s_cassettePlayPixmapResourceName));
+	QVERIFY(!tryLoadImage(s_cassetteRecordPixmapResourceName));
 }
 
 

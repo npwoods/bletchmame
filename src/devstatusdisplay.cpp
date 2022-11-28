@@ -46,6 +46,11 @@ private:
 //  MAIN IMPLEMENTATION
 //**************************************************************************
 
+const char *DevicesStatusDisplay::s_cassettePixmapResourceName = ":/resources/dev_cassette.png";
+const char *DevicesStatusDisplay::s_cassettePlayPixmapResourceName = ":/resources/dev_cassette_play.png";
+const char *DevicesStatusDisplay::s_cassetteRecordPixmapResourceName = ":/resources/dev_cassette_record.png";
+
+
 //-------------------------------------------------
 //  ctor
 //-------------------------------------------------
@@ -53,9 +58,9 @@ private:
 DevicesStatusDisplay::DevicesStatusDisplay(IImageMenuHost &host, QObject *parent)
 	: QObject(parent)
 	, m_host(host)
-	, m_cassettePixmap(":/resources/dev_cassette.png")
-	, m_cassettePlayPixmap(":/resources/dev_cassette_play.png")
-	, m_cassetteRecordPixmap(":/resources/dev_cassette_record.png")
+	, m_cassettePixmap(s_cassettePixmapResourceName)
+	, m_cassettePlayPixmap(s_cassettePlayPixmapResourceName)
+	, m_cassetteRecordPixmap(s_cassetteRecordPixmapResourceName)
 {
 }
 
