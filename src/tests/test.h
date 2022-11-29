@@ -11,11 +11,16 @@
 #ifndef TEST_H
 #define TEST_H
 
+// Qt headers
+#include <QImageReader>
 #include <QTest>
 
+// C++ headers
 #include <forward_list>
 #include <functional>
 #include <memory>
+#include <optional>
+
 
 // ======================> TestFixtureBase
 class TestFixtureBase
@@ -64,5 +69,6 @@ int runAndExcerciseListXml(int argc, char *argv[], bool sequential, int run_coun
 
 // helper functions
 QByteArray buildInfoDatabase(const QString &fileName = ":/resources/listxml_coco.xml", bool skipDtd = false);
+std::optional<QImageReader::ImageReaderError> tryLoadImage(const QString& fileName);
 
 #endif // TEST_H

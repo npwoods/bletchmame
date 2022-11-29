@@ -34,6 +34,31 @@
 //**************************************************************************
 
 //-------------------------------------------------
+//  tryLoadImage
+//-------------------------------------------------
+
+std::optional<QImageReader::ImageReaderError> tryLoadImage(const QString &fileName)
+{
+	// verify that the filename is set
+	if (fileName.isEmpty())
+		return QImageReader::FileNotFoundError;
+
+	// verify that we can read it
+	QFile file(fileName);
+	if (!file.open(QIODevice::ReadOnly))
+		return QImageReader::FileNotFoundError;
+	if (file.size() <= 0)
+		return QImageReader::InvalidDataError;
+	
+	// verify that we can process the image
+	QImageReader reader(fileName);
+	return reader.canRead()
+		? std::optional<QImageReader::ImageReaderError>()
+		: reader.error();
+}
+
+
+//-------------------------------------------------
 //  TestFixtureBase ctor
 //-------------------------------------------------
 

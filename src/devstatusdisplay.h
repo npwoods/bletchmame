@@ -48,6 +48,10 @@ signals:
 	void addWidget(QWidget &widget);
 
 private:
+	static const char *s_cassettePixmapResourceName;
+	static const char *s_cassettePlayPixmapResourceName;
+	static const char *s_cassetteRecordPixmapResourceName;
+
 	class DisplayWidget;
 	typedef std::unordered_map<QString, DisplayWidget &> DisplayWidgetMap;
 
