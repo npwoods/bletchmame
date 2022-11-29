@@ -120,4 +120,4 @@ jobs:
         echo Running Unit Tests
         echo Listing directory
         ls -l ./build/msvc2019/${{ matrix.config }}
-        cd ./build/msvc2019/${{ matrix.config }} ; export PATH=$PATH:$Qt6_DIR/bin:$GITHUB_WORKSPACE/deps/install/msvc2019/bin ; echo $PATH ; ./BletchMAME_tests.exe
+        cd ./build/msvc2019/${{ matrix.config }} ; export PATH=$PATH:`cygpath $Qt6_DIR/bin`:`cygpath $GITHUB_WORKSPACE/deps/install/msvc2019/bin` ; echo $PATH ; ./BletchMAME_tests.exe
