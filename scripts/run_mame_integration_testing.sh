@@ -28,4 +28,5 @@ cat <<EOF | parallel --joblog - $SCRIPTS_DIR/test_mame_interactions.sh
 	mame0229
 	mame0235
 	mame0240
+	mame0250
 EOF
