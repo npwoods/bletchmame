@@ -8,7 +8,18 @@
 my @allowed_dlls =
 (
 	"advapi32.dll",
+	"api-ms-win-core-synch-l1-2-0.dll",
+	"api-ms-win-core-winrt-l1-1-0.dll",
+	"api-ms-win-core-winrt-string-l1-1-0.dll",
+	"authz.dll",
+	"authz.dll",
+	"comdlg32.dll",
+	"d3d11.dll",
+	"d3d9.dll",
+	"dcomp.dll",
 	"dwmapi.dll",
+	"dwrite.dll",
+	"dxgi.dll",
 	"gdi32.dll",
 	"imm32.dll",
 	"kernel32.dll",
@@ -16,16 +27,17 @@ my @allowed_dlls =
 	"netapi32.dll",
 	"ole32.dll",
 	"oleaut32.dll",
+	"rpcrt4.dll",
+	"shcore.dll",
 	"shell32.dll",
+	"shlwapi.dll",
 	"user32.dll",
 	"userenv.dll",
 	"uxtheme.dll",
 	"version.dll",
 	"winmm.dll",
 	"ws2_32.dll",
-	"rpcrt4.dll",
-	"wtsapi32.dll",
-	"api-ms-win-core-synch-l1-2-0.dll"
+	"wtsapi32.dll"
 );
 my %allowed_dlls_hash = map {$_ => 1} @allowed_dlls;
 my $bad_import_count = 0;
