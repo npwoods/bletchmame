@@ -22,7 +22,7 @@ jobs:
         cxx: [clang++, g++-10]
         build_type: [Debug, Release]
         qt: [6.2.1, 6.4.0]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
 
     # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -31,6 +31,10 @@ jobs:
       with:
         fetch-depth: 0
 
+    # Install OpenGL
+    - name: Install OpenGL
+      uses: openrndr/setup-opengl@v1.1
+
     # Install Qt
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
@@ -38,10 +42,6 @@ jobs:
         version: ${{ matrix.qt }}
         modules: 'qt5compat'
         dir: ${{ github.workspace }}
-
-    # Install OpenGL
-    - name: Install OpenGL
-      uses: openrndr/setup-opengl@v1.1
 
     # Install Packages
     - name: Install Packages
