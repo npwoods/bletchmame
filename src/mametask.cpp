@@ -84,11 +84,19 @@ void MameTask::prepare(Preferences &prefs, EventHandlerFunc &&eventHandler)
 	// log the command line (if appropriate)
 	if (LOG_LAUNCH_COMMAND)
 	{
-		QFile file(QCoreApplication::applicationDirPath() + "/mame_command_line.txt");
+		// format the command line
+		QString commandLine = formatCommandLine(m_program, m_arguments);
+
+		qDebug() << "-- BEGIN MAME COMMAND LINE --";
+		qDebug() << commandLine;
+		qDebug() << "-- END MAME COMMAND LINE --";
+
+		QString logFile = QCoreApplication::applicationDirPath() + "/mame_command_line.txt";
+		QFile file(logFile);
 		if (file.open(QIODevice::WriteOnly))
 		{
-			QTextStream textStream(&file);
-			formatCommandLine(textStream, m_program, m_arguments);
+			QTextStream(&file) << commandLine;
+			qDebug() << "-- Logged to " << logFile;
 		}
 	}
 }
@@ -130,28 +138,32 @@ void MameTask::appendExtraArguments(QStringList &argv, const QString &extraArgum
 
 
 //-------------------------------------------------
-//  formatCommandLine
+//  formatCommandLine - formats a command line for
+//  debugging purposes
 //-------------------------------------------------
 
-void MameTask::formatCommandLine(QTextStream &stream, const QString &program, const QStringList &arguments)
+QString MameTask::formatCommandLine(const QString &program, const QStringList &arguments)
 {
 	bool isFirst = true;
 	QStringList allParams;
 	allParams << program << arguments;
+
+	QString result;
 	for (const QString &str : allParams)
 	{
 		if (isFirst)
 			isFirst = false;
 		else
-			stream << ' ';
+			result += ' ';
 
 		bool needsQuotes = str.isEmpty() || str.indexOf(' ') >= 0;
 		if (needsQuotes)
-			stream << '\"';
-		stream << str;
+			result += '\"';
+		result += str;
 		if (needsQuotes)
-			stream << '\"';
+			result += '\"';
 	}
+	return result;
 }
 
 

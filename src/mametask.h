@@ -87,7 +87,7 @@ private:
 	std::optional<EmuExitCode>	m_emuExitCode;
 
 	static void appendExtraArguments(QStringList &argv, const QString &extraArguments);
-	static void formatCommandLine(QTextStream &stream, const QString &program, const QStringList &arguments);
+	static QString formatCommandLine(const QString &program, const QStringList &arguments);
 };
 
 #endif // MAMETASK_H
