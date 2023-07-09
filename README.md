@@ -9,6 +9,7 @@ To run BletchMAME, run the installer (BletchMAME.msi on Windows) and BletchMAME 
 ## Version History
 
 - 2.17 (TBD)
+	- Fixing BletchMAME's LUA code to be compatible with MAME 0.253 and after
 	- Now using default MSYS2 Qt static build (6.2.1 as of November 2022)
 
 - 2.16 (2022-Aug-14)

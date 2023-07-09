@@ -75,6 +75,17 @@ function string_from_bool(b)
 	end
 end
 
+local band, bor, lshift
+if type(bit32) == "table" then
+	band = bit32.band
+	bor = bit32.bor
+	lshift = bit32.lshit
+else
+	band = (function(a, b) return a & b end)
+	bor = (function(a, b) return a | b end)
+	lshift = (function(a, b) return a << b end)
+end
+
 function utf8_process(str, callback)
 	local seq = 0
 	local val = nil
@@ -84,9 +95,9 @@ function utf8_process(str, callback)
 		if seq == 0 then	
 			seq = c < 0x80 and 1 or c < 0xE0 and 2 or c < 0xF0 and 3 or
 			      c < 0xF8 and 4 or -1
-			val = bit32.band(c, 2^(8-seq) - 1)
+			val = band(c, 2^(8-seq) - 1)
 		else
-			val = bit32.bor(bit32.lshift(val, 6), bit32.band(c, 0x3F))
+			val = bor(lshift(val, 6), band(c, 0x3F))
 		end
 
 		-- do we have an invalid sequence?  if so, serve up a '?'
@@ -1168,9 +1179,15 @@ function startplugin()
 		stop_polling_input_seq()
 		session_active = false
 	end
-	emu.register_stop(function()
-		protected_call(callback_stop, "callback_stop")
-	end)
+	if emu.add_machine_stop_notifier ~= nil then
+		emu.add_machine_stop_notifier(function()
+			protected_call(callback_stop, "callback_stop")
+		end)
+	else
+		emu.register_stop(function()
+			protected_call(callback_stop, "callback_stop")
+		end)
+	end
 
 	-- register another handler to handle commands after prestart
 	function callback_periodic()
