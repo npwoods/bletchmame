@@ -1,8 +1,8 @@
 #############################################
-# BletchMAME Windows MSVC2019 Github Action #
+# BletchMAME Windows MSVC2022 Github Action #
 #############################################
 
-name: Windows MSVC2019
+name: Windows MSVC2022
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -21,7 +21,7 @@ jobs:
       matrix:
         config: [Debug, Release]
         qt: [6.2.1, 6.4.0]
-    runs-on: windows-2019
+    runs-on: windows-latest
     defaults:
       run:
         shell: msys2 {0}
@@ -59,7 +59,7 @@ jobs:
         cache-name: cache-deps
       with:
         path: deps/install
-        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2019.yml', 'scripts/zlib_build_msvc.sh', 'scripts/expat_build_msvc.sh', 'scripts/quazip_build_msvc.sh', 'scripts/lzma_build_msvc.sh')}}
+        key: ${{ runner.os }}-build-${{ matrix.config }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/windows_msvc2022.yml', 'scripts/zlib_build_msvc.sh', 'scripts/expat_build_msvc.sh', 'scripts/quazip_build_msvc.sh', 'scripts/lzma_build_msvc.sh')}}
 
     # Retrieve Zlib
     - name: Retrieve Zlib
@@ -119,5 +119,5 @@ jobs:
       run: |
         echo Running Unit Tests
         echo Listing directory
-        ls -l ./build/msvc2019/${{ matrix.config }}
-        cd ./build/msvc2019/${{ matrix.config }} ; export PATH=$PATH:`cygpath $Qt6_DIR/bin`:`cygpath $GITHUB_WORKSPACE/deps/install/msvc2019/bin` ; echo $PATH ; ./BletchMAME_tests.exe
+        ls -l ./build/msvc2022/${{ matrix.config }}
+        cd ./build/msvc2022/${{ matrix.config }} ; export PATH=$PATH:`cygpath $Qt6_DIR/bin`:`cygpath $GITHUB_WORKSPACE/deps/install/msvc2022/bin` ; echo $PATH ; ./BletchMAME_tests.exe

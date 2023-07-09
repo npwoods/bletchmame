@@ -13,7 +13,7 @@ if [ -z "$BASH_SOURCE" ]; then
 fi
 
 CONFIG=Debug
-MSVC_VER=msvc2019
+MSVC_VER=msvc2022
 
 # parse arguments
 while getopts "c:v:" OPTION; do
