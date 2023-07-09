@@ -15,7 +15,7 @@ TOOLSET=v142
 
 # config is "Debug" by default, but can also be "Release"
 CONFIG=Debug
-MSVC_VER=msvc2019
+MSVC_VER=msvc2022
 
 # QT version is 6.2.0 by default
 QT_VERSION=6.2.0
