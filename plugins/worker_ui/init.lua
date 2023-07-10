@@ -625,13 +625,12 @@ function command_ping(args)
 	next_ping_should_be_light = true
 end
 
--- SLEEP command
+-- SLEEP command (in practice only used by tests)
 local wake_up_time = nil
 function command_sleep(args)
-	-- don't pause and sleep at the same time
+	-- if we're sleeping, unpause
 	if machine().paused then
-		print("@ERROR ### Cannot sleep while paused")
-		return
+		emu.unpause()
 	end
 
 	wake_up_time = emu.time() + tonumber(args[2])
