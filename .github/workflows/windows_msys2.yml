@@ -139,5 +139,5 @@ jobs:
     - name: Deploy Artifacts to S3
       if: success() && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
       shell: bash
-      run: aws s3 sync ./rel/ s3://bletchmame/files/ --delete
+      run: aws s3 sync ./rel/ s3://bletchmame-web-dyn/dyn/ --delete
 
