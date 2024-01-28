@@ -39,7 +39,7 @@ jobs:
         msystem: MINGW64
         update: false
         release: false
-        install: git parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-polly mingw-w64-x86_64-mlir mingw-w64-x86_64-clang mingw-w64-x86_64-clang-analyzer mingw-w64-x86_64-clang-tools-extra mingw-w64-x86_64-qt6-static mingw-w64-x86_64-jasper mingw-w64-x86_64-graphite2 mingw-w64-x86_64-pcre2 mingw-w64-x86_64-libpng patch
+        install: git parallel p7zip mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-polly mingw-w64-x86_64-mlir mingw-w64-x86_64-clang mingw-w64-x86_64-clang-analyzer mingw-w64-x86_64-clang-tools-extra mingw-w64-x86_64-qt6-static mingw-w64-x86_64-jasper mingw-w64-x86_64-graphite2 mingw-w64-x86_64-pcre2 mingw-w64-x86_64-libpng mingw-w64-x86_64-harfbuzz patch
 
     # Cache Dependencies
     - name: Cache Dependencies
