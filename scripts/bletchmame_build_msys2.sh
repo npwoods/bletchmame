@@ -40,8 +40,6 @@ cmake -S. -B${BLETCHMAME_BUILD_DIR}								\
 	-DUSE_PROFILER=${USE_PROFILER}								\
 	-DCMAKE_BUILD_TYPE=${BUILD_TYPE}							\
 	-DCMAKE_PREFIX_PATH="${DEPS_INSTALL_DIR};${QT_INSTALL_DIR}"	\
-	-DCMAKE_DISABLE_FIND_PACKAGE_harfbuzz=TRUE					\
-	--debug-find-pkg=WrapPNG -DQT_DEBUG_FIND_PACKAGE=ON
 
 # generate version.gen.h
 mkdir -p ${BLETCHMAME_DIR}/include
